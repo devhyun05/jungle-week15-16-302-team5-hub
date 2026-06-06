@@ -1,0 +1,10 @@
+# FastAPI backend dependencies to install later.
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg[binary]
+pydantic-settings
+python-jose[cryptography]
+passlib[bcrypt]
+python-dotenv
+httpx
