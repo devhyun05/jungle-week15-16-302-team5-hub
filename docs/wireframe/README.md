@@ -6,19 +6,19 @@
 
 | Page | Route | Image |
 |---|---|---|
-| Home | `/` | `docs/images/wireframes/home.png` |
-| Login | `/login` | `docs/images/wireframes/login.png` |
-| Sign Up | `/signup` | `docs/images/wireframes/signup.png` |
-| Post Detail | `/posts/:postId` | `docs/images/wireframes/post-detail.png` |
-| Create Post | `/posts/new` | `docs/images/wireframes/post-create.png` |
-| Edit Post | `/posts/:postId/edit` | `docs/images/wireframes/post-edit.png` |
-| My Page | `/me` | `docs/images/wireframes/my-page.png` |
+| Home | `/` | `./images/home.png` |
+| Login | `/login` | `./images/login.png` |
+| Sign Up | `/signup` | `./images/signup.png` |
+| Post Detail | `/posts/:postId` | `./images/post-detail.png` |
+| Create Post | `/posts/new` | `./images/post-create.png` |
+| Edit Post | `/posts/:postId/edit` | `./images/post-edit.png` |
+| My Page | `/me` | `./images/my-page.png` |
 
 ## 1. Home
 
 첫 진입 화면이다. 비로그인 사용자도 중고 거래 목록을 바로 탐색할 수 있다.
 
-![Home wireframe](./images/wireframes/home.png)
+![Home wireframe](./images/home.png)
 
 ### Key UI
 
@@ -46,7 +46,7 @@
 
 사용자가 기존 계정으로 로그인하는 화면이다.
 
-![Login wireframe](./images/wireframes/login.png)
+![Login wireframe](./images/login.png)
 
 ### Key UI
 
@@ -70,7 +70,7 @@
 
 새 사용자가 계정을 생성하는 화면이다.
 
-![Sign Up wireframe](./images/wireframes/signup.png)
+![Sign Up wireframe](./images/signup.png)
 
 ### Key UI
 
@@ -95,7 +95,7 @@
 
 게시글 본문, 작성자 정보, AI 요약, 댓글을 확인하는 화면이다.
 
-![Post Detail wireframe](./images/wireframes/post-detail.png)
+![Post Detail wireframe](./images/post-detail.png)
 
 ### Key UI
 
@@ -124,7 +124,7 @@
 
 새 게시글을 작성하고 AI Writing Assistant를 사용할 수 있는 화면이다.
 
-![Create Post wireframe](./images/wireframes/post-create.png)
+![Create Post wireframe](./images/post-create.png)
 
 ### Key UI
 
@@ -155,7 +155,7 @@
 
 기존 게시글을 수정하는 화면이다. 작성 페이지와 동일한 레이아웃을 사용하되 기존 데이터가 채워진 상태로 시작한다.
 
-![Edit Post wireframe](./images/wireframes/post-edit.png)
+![Edit Post wireframe](./images/post-edit.png)
 
 ### Key UI
 
@@ -179,7 +179,7 @@
 
 사용자의 프로필, 내가 작성한 글, 내가 작성한 댓글을 확인하는 화면이다.
 
-![My Page wireframe](./images/wireframes/my-page.png)
+![My Page wireframe](./images/my-page.png)
 
 ### Key UI
 
