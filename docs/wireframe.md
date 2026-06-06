@@ -1,427 +1,217 @@
-# 와이어프레임 명세서
+# Wireframe
 
-## 1. 문서 목적
+이 문서는 Figma Make로 제작한 와이어프레임 PNG를 기준으로 페이지 구조를 정리한다.
 
-이 문서는 현재 작성된 와이어프레임을 기준으로 페이지 구조, 주요 UI 컴포넌트, 사용자 액션, 라우트 구성을 정리한다.
+## Page List
 
-본 문서는 React 화면 구현과 FastAPI API 설계의 기준으로 사용한다.
-
-## 2. 전체 페이지 구성
-
-| 페이지 | 라우트 | 설명 |
+| Page | Route | Image |
 |---|---|---|
-| 홈 페이지 | `/` | 중고 거래 목록, 검색, 카테고리 필터, 정렬을 제공한다. |
-| 로그인 페이지 | `/login` | 사용자가 이메일 또는 사용자명과 비밀번호로 로그인한다. |
-| 회원가입 페이지 | `/signup` | 사용자가 계정을 생성한다. |
-| 게시글 상세 페이지 | `/posts/:postId` | 게시글 본문, 작성자 정보, AI 요약, 댓글을 확인한다. |
-| 게시글 작성 페이지 | `/posts/new` | 새 게시글을 작성하고 AI 작성 보조 기능을 사용한다. |
-| 게시글 수정 페이지 | `/posts/:postId/edit` | 기존 게시글을 수정하고 AI 작성 보조 기능을 사용한다. |
-| 마이페이지 | `/me` | 내 프로필, 내가 쓴 글, 내가 쓴 댓글을 확인한다. |
+| Home | `/` | `docs/images/wireframes/home.png` |
+| Login | `/login` | `docs/images/wireframes/login.png` |
+| Sign Up | `/signup` | `docs/images/wireframes/signup.png` |
+| Post Detail | `/posts/:postId` | `docs/images/wireframes/post-detail.png` |
+| Create Post | `/posts/new` | `docs/images/wireframes/post-create.png` |
+| Edit Post | `/posts/:postId/edit` | `docs/images/wireframes/post-edit.png` |
+| My Page | `/me` | `docs/images/wireframes/my-page.png` |
 
-## 3. 공통 레이아웃
+## 1. Home
 
-모든 페이지는 상단 헤더를 공유한다.
+첫 진입 화면이다. 비로그인 사용자도 중고 거래 목록을 바로 탐색할 수 있다.
 
-```text
-┌────────────────────────────────────────────────────────────┐
-│ [로고: 크래프톤 정글]                         [Login] [Sign Up] │
-└────────────────────────────────────────────────────────────┘
-```
+![Home wireframe](./images/wireframes/home.png)
 
-### 공통 컴포넌트
+### Key UI
 
-| 컴포넌트 | 설명 |
+- Header
+- Logo
+- Login button
+- Sign Up button
+- Search bar
+- Category filter
+- Sort buttons
+- Product card grid
+
+### Main Actions
+
+| Action | Result |
 |---|---|
-| Header | 로고와 인증 버튼을 표시한다. |
-| LogoButton | 클릭 시 홈 페이지로 이동한다. |
-| AuthButtons | 비로그인 상태에서 Login, Sign Up 버튼을 표시한다. |
-| PrimaryButton | 주요 액션 버튼이다. |
-| OutlineButton | 보조 액션 버튼이다. |
+| Search | 검색어 기준으로 목록을 필터링한다. |
+| Select category | 선택한 카테고리의 글만 보여준다. |
+| Select sort option | 최신순, 인기순, 가격낮은순으로 정렬한다. |
+| Click product card | 상세 페이지로 이동한다. |
+| Click Login | 로그인 페이지로 이동한다. |
+| Click Sign Up | 회원가입 페이지로 이동한다. |
 
-### 인증 상태별 헤더
+## 2. Login
 
-| 상태 | 표시 |
+사용자가 기존 계정으로 로그인하는 화면이다.
+
+![Login wireframe](./images/wireframes/login.png)
+
+### Key UI
+
+- Email or username input
+- Password input
+- Remember me checkbox
+- Forgot password link
+- Login button
+- Sign up link
+- Social login buttons
+
+### Main Actions
+
+| Action | Result |
 |---|---|
-| 비로그인 | `Login`, `Sign Up` |
-| 로그인 | `My Page`, `Logout`, `New Post` |
+| Log In | 인증 성공 시 홈 페이지로 이동한다. |
+| Sign up | 회원가입 페이지로 이동한다. |
+| Google / GitHub | 소셜 로그인 플로우를 시작한다. |
 
-## 4. 홈 페이지
+## 3. Sign Up
 
-홈 페이지는 첫 진입 화면이며, 사용자가 바로 목록을 탐색할 수 있도록 구성한다.
+새 사용자가 계정을 생성하는 화면이다.
 
-```text
-┌────────────────────────────────────────────────────────────┐
-│ Header                                                     │
-├────────────────────────────────────────────────────────────┤
-│ SearchBar                                                  │
-│ [검색어 입력]                                      [검색]   │
-│                                                            │
-│ CategoryFilter                                             │
-│ [전체] [전자기기] [의류/잡화] [도서] [가구/인테리어] [스포츠] [기타] │
-│                                                            │
-│ SectionHeader                                              │
-│ 중고 거래 목록                                 [최신순] [인기순] [가격낮은순] │
-│                                                            │
-│ ProductGrid                                                │
-│ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐ │
-│ │ 이미지      │ │ 이미지      │ │ 이미지      │ │ 이미지      │ │
-│ │ 제목        │ │ 제목        │ │ 제목        │ │ 제목        │ │
-│ │ 가격        │ │ 가격        │ │ 가격        │ │ 가격        │ │
-│ │ 지역/시간   │ │ 지역/시간   │ │ 지역/시간   │ │ 지역/시간   │ │
-│ │ 좋아요/댓글 │ │ 좋아요/댓글 │ │ 좋아요/댓글 │ │ 좋아요/댓글 │ │
-│ └────────────┘ └────────────┘ └────────────┘ └────────────┘ │
-└────────────────────────────────────────────────────────────┘
-```
+![Sign Up wireframe](./images/wireframes/signup.png)
 
-### 주요 컴포넌트
+### Key UI
 
-| 컴포넌트 | 설명 |
+- Username input
+- Email input
+- Password input
+- Confirm password input
+- Terms agreement checkbox
+- Create account button
+- Login link
+- Social signup buttons
+
+### Main Actions
+
+| Action | Result |
 |---|---|
-| SearchBar | 키워드 검색 입력과 검색 버튼을 제공한다. |
-| CategoryFilter | 거래글 카테고리를 선택한다. |
-| SortButtons | 최신순, 인기순, 가격낮은순 정렬을 제공한다. |
-| ProductCard | 거래글 요약 정보를 카드 형태로 표시한다. |
-| ProductGrid | 상품/게시글 카드를 4열 그리드로 표시한다. |
+| Create Account | 회원가입을 요청한다. |
+| Log in | 로그인 페이지로 이동한다. |
+| Google / GitHub | 소셜 회원가입 플로우를 시작한다. |
 
-### 상품 카드 표시 정보
+## 4. Post Detail
 
-| 정보 | 설명 |
+게시글 본문, 작성자 정보, AI 요약, 댓글을 확인하는 화면이다.
+
+![Post Detail wireframe](./images/wireframes/post-detail.png)
+
+### Key UI
+
+- Breadcrumb
+- Post tags
+- Post title
+- Author metadata
+- Post content
+- Post action buttons
+- Similar posts sidebar
+- Author card
+- AI summary box
+- Comment form
+- Comment list
+
+### Main Actions
+
+| Action | Result |
 |---|---|
-| 대표 이미지 | 거래글 대표 이미지 |
-| 제목 | 거래글 제목 |
-| 가격 | 판매 가격 |
-| 위치 | 거래 지역 |
-| 등록 시간 | 게시글 작성 시점 |
-| 좋아요 수 | 관심 표시 수 |
-| 댓글 수 | 댓글 또는 문의 수 |
+| Edit | 작성자라면 수정 페이지로 이동한다. |
+| Like | 게시글 좋아요를 토글한다. |
+| Comment | 댓글을 작성한다. |
+| Similar post click | 관련 게시글 상세로 이동한다. |
 
-### 주요 액션
+## 5. Create Post
 
-| 액션 | 결과 |
+새 게시글을 작성하고 AI Writing Assistant를 사용할 수 있는 화면이다.
+
+![Create Post wireframe](./images/wireframes/post-create.png)
+
+### Key UI
+
+- Title input
+- Tag selector
+- Editor toolbar
+- Content editor
+- Save draft button
+- Publish button
+- AI Writing Assistant panel
+- Quick action buttons
+- AI suggestions
+- Ask the AI input
+- Writing stats
+
+### AI Actions
+
+| Action | Purpose |
 |---|---|
-| 검색어 입력 후 검색 | 검색 결과 목록을 표시한다. |
-| 카테고리 선택 | 선택한 카테고리의 게시글만 표시한다. |
-| 정렬 선택 | 선택한 기준으로 목록을 정렬한다. |
-| 카드 클릭 | 게시글 상세 페이지로 이동한다. |
-| Login 클릭 | 로그인 페이지로 이동한다. |
-| Sign Up 클릭 | 회원가입 페이지로 이동한다. |
-
-## 5. 로그인 페이지
-
-로그인 페이지는 중앙 정렬 카드 레이아웃을 사용한다.
-
-```text
-┌────────────────────────────────────────────────────────────┐
-│ Header                                                     │
-├────────────────────────────────────────────────────────────┤
-│                                                            │
-│                      ┌────────────────────┐                │
-│                      │ 아이콘              │                │
-│                      │ Welcome back        │                │
-│                      │ Email or Username   │                │
-│                      │ Password            │                │
-│                      │ Remember me         │                │
-│                      │ [Log In]            │                │
-│                      │ Sign up 링크         │                │
-│                      │ Google / GitHub      │                │
-│                      └────────────────────┘                │
-└────────────────────────────────────────────────────────────┘
-```
-
-### 주요 컴포넌트
-
-| 컴포넌트 | 설명 |
-|---|---|
-| AuthCard | 로그인 폼 전체를 감싸는 카드 |
-| TextInput | 이메일 또는 사용자명 입력 |
-| PasswordInput | 비밀번호 입력 |
-| Checkbox | 로그인 유지 여부 |
-| SubmitButton | 로그인 요청 |
-| SocialLoginButtons | Google, GitHub 로그인 버튼 |
-
-### 주요 액션
-
-| 액션 | 결과 |
-|---|---|
-| Log In 클릭 | 로그인 성공 시 홈 페이지로 이동한다. |
-| Sign up 링크 클릭 | 회원가입 페이지로 이동한다. |
-| Google/GitHub 클릭 | 소셜 로그인 플로우를 시작한다. |
-
-## 6. 회원가입 페이지
-
-회원가입 페이지는 로그인 페이지와 동일한 카드 구조를 사용한다.
-
-```text
-┌────────────────────────────────────────────────────────────┐
-│ Header                                                     │
-├────────────────────────────────────────────────────────────┤
-│                                                            │
-│                      ┌────────────────────┐                │
-│                      │ 아이콘              │                │
-│                      │ Create an account   │                │
-│                      │ Username            │                │
-│                      │ Email               │                │
-│                      │ Password            │                │
-│                      │ Confirm Password    │                │
-│                      │ 약관 동의            │                │
-│                      │ [Create Account]    │                │
-│                      │ Log in 링크          │                │
-│                      │ Google / GitHub      │                │
-│                      └────────────────────┘                │
-└────────────────────────────────────────────────────────────┘
-```
-
-### 주요 컴포넌트
-
-| 컴포넌트 | 설명 |
-|---|---|
-| AuthCard | 회원가입 폼 전체를 감싸는 카드 |
-| UsernameInput | 사용자명 입력 |
-| EmailInput | 이메일 입력 |
-| PasswordInput | 비밀번호 입력 |
-| ConfirmPasswordInput | 비밀번호 확인 입력 |
-| TermsCheckbox | 약관 동의 체크박스 |
-| SubmitButton | 회원가입 요청 |
-| SocialLoginButtons | Google, GitHub 로그인 버튼 |
-
-### 주요 액션
-
-| 액션 | 결과 |
-|---|---|
-| Create Account 클릭 | 회원가입 성공 시 로그인 또는 홈 페이지로 이동한다. |
-| Log in 링크 클릭 | 로그인 페이지로 이동한다. |
-| Google/GitHub 클릭 | 소셜 회원가입 플로우를 시작한다. |
-
-## 7. 게시글 상세 페이지
-
-게시글 상세 페이지는 본문 영역과 우측 사이드바를 함께 제공한다.
-
-```text
-┌────────────────────────────────────────────────────────────┐
-│ Header                                                     │
-├────────────────────────────────────────────────────────────┤
-│ Breadcrumb                                                 │
-│                                                            │
-│ ┌────────────────────────────────────────┬───────────────┐ │
-│ │ PostContent                            │ Sidebar       │ │
-│ │ [태그] [태그]                          │ Similar Posts │ │
-│ │ 제목                                   │ Author Card   │ │
-│ │ 작성자 / 날짜 / 읽는 시간               │               │ │
-│ │ 본문                                   │               │ │
-│ │ 좋아요 / 댓글 / 조회수                  │               │ │
-│ └────────────────────────────────────────┴───────────────┘ │
-│                                                            │
-│ AI Summary                                                 │
-│                                                            │
-│ Comments                                                   │
-│ [댓글 입력] [Post Comment]                                 │
-│ 댓글 목록                                                   │
-└────────────────────────────────────────────────────────────┘
-```
-
-### 주요 컴포넌트
-
-| 컴포넌트 | 설명 |
-|---|---|
-| Breadcrumb | 홈에서 현재 글까지의 경로를 표시한다. |
-| PostContent | 게시글 제목, 본문, 메타 정보를 표시한다. |
-| PostActionButtons | 공유, 북마크, 수정 버튼을 표시한다. |
-| SimilarPostsCard | 유사 게시글 목록을 표시한다. |
-| AuthorCard | 작성자 정보와 팔로우 버튼을 표시한다. |
-| AiSummaryBox | AI 요약 결과를 표시한다. |
-| CommentForm | 댓글 입력 폼 |
-| CommentList | 댓글 목록 |
-
-### AI 기능
-
-| 기능 | 설명 |
-|---|---|
-| AI 요약 | 게시글 본문을 핵심 bullet로 요약한다. |
-| 유사 게시글 추천 | RAG 검색 결과를 우측 또는 본문 하단에 표시한다. |
-
-## 8. 게시글 작성 페이지
-
-게시글 작성 페이지는 좌측 작성 폼과 우측 AI Writing Assistant 패널로 구성한다.
-
-```text
-┌────────────────────────────────────────────────────────────┐
-│ Header                                                     │
-├────────────────────────────────────────────────────────────┤
-│ Create New Post                             [Save Draft] [Publish] │
-│                                                            │
-│ ┌────────────────────────────────────────┬───────────────┐ │
-│ │ Editor                                 │ AI Assistant  │ │
-│ │ Title                                  │ Quick Actions │ │
-│ │ Tags                                   │ - Improve     │ │
-│ │ Toolbar                                │ - Grammar     │ │
-│ │ Content Editor                         │ - Outline     │ │
-│ │                                        │ - Suggest tag │ │
-│ │                                        │ Suggestions   │ │
-│ │                                        │ Ask the AI    │ │
-│ │                                        │ Stats         │ │
-│ └────────────────────────────────────────┴───────────────┘ │
-│ [Cancel]                                      [Save Draft] [Publish] │
-└────────────────────────────────────────────────────────────┘
-```
-
-### 주요 컴포넌트
-
-| 컴포넌트 | 설명 |
-|---|---|
-| PostEditor | 제목, 태그, 본문 입력 영역 |
-| TagSelector | 태그 선택 및 추가 |
-| EditorToolbar | 굵게, 기울임, 코드, 링크, 이미지, 미리보기 등 |
-| AiAssistantPanel | AI 글쓰기 보조 패널 |
-| QuickActionGrid | AI 빠른 액션 버튼 목록 |
-| AiSuggestions | AI 개선 제안 목록 |
-| AskAiInput | AI에게 직접 질문하는 입력창 |
-| EditorStats | 단어 수, 글자 수, 예상 읽기 시간 |
-
-### AI Quick Actions
-
-| 액션 | 설명 |
-|---|---|
-| Improve writing | 문장을 더 자연스럽게 개선한다. |
+| Improve writing | 글을 더 자연스럽게 개선한다. |
 | Fix grammar | 문법과 오탈자를 수정한다. |
 | Make shorter | 글을 더 짧게 요약한다. |
-| Add examples | 예시를 추가한다. |
+| Add examples | 본문에 예시를 추가한다. |
 | Generate outline | 글의 개요를 생성한다. |
 | Suggest tags | 본문 기반 태그를 추천한다. |
 
-### 주요 액션
+## 6. Edit Post
 
-| 액션 | 결과 |
+기존 게시글을 수정하는 화면이다. 작성 페이지와 동일한 레이아웃을 사용하되 기존 데이터가 채워진 상태로 시작한다.
+
+![Edit Post wireframe](./images/wireframes/post-edit.png)
+
+### Key UI
+
+- Existing title
+- Existing selected tags
+- Editable content
+- Save draft button
+- Update post button
+- AI Writing Assistant panel
+- Writing stats
+
+### Main Actions
+
+| Action | Result |
 |---|---|
-| Save Draft 클릭 | 임시 저장한다. |
-| Publish 클릭 | 게시글을 발행하고 상세 페이지로 이동한다. |
-| Cancel 클릭 | 이전 페이지 또는 홈으로 이동한다. |
-| AI 액션 클릭 | 선택한 AI 보조 작업을 실행한다. |
+| Save Draft | 수정 중인 내용을 임시 저장한다. |
+| Update Post | 수정 내용을 저장하고 상세 페이지로 이동한다. |
+| AI quick action | 현재 본문을 기준으로 AI 보조 기능을 실행한다. |
 
-## 9. 게시글 수정 페이지
+## 7. My Page
 
-게시글 수정 페이지는 작성 페이지와 동일한 레이아웃을 사용하되 기존 데이터가 입력된 상태로 시작한다.
+사용자의 프로필, 내가 작성한 글, 내가 작성한 댓글을 확인하는 화면이다.
 
-```text
-┌────────────────────────────────────────────────────────────┐
-│ Header                                                     │
-├────────────────────────────────────────────────────────────┤
-│ Edit Post                                  [Save Draft] [Update Post] │
-│                                                            │
-│ ┌────────────────────────────────────────┬───────────────┐ │
-│ │ Editor with existing content            │ AI Assistant  │ │
-│ │ Title                                   │ Quick Actions │ │
-│ │ Tags                                    │ Suggestions   │ │
-│ │ Toolbar                                 │ Ask the AI    │ │
-│ │ Existing Content                        │ Stats         │ │
-│ └────────────────────────────────────────┴───────────────┘ │
-│ [Cancel]                                   [Save Draft] [Update Post] │
-└────────────────────────────────────────────────────────────┘
-```
+![My Page wireframe](./images/wireframes/my-page.png)
 
-### 작성 페이지와의 차이점
+### Key UI
 
-| 항목 | 작성 페이지 | 수정 페이지 |
+- Profile card
+- User avatar
+- Email
+- Member since
+- Activity stats
+- My Posts tab
+- My Comments tab
+- New Post button
+- Edit / Delete actions
+
+### Main Actions
+
+| Action | Result |
+|---|---|
+| Edit Profile | 프로필 수정 플로우로 이동한다. |
+| New Post | 게시글 작성 페이지로 이동한다. |
+| Edit post | 게시글 수정 페이지로 이동한다. |
+| Delete post | 게시글 삭제 확인을 표시한다. |
+| Delete comment | 댓글 삭제 확인을 표시한다. |
+
+## Implementation Notes
+
+- 홈 페이지의 글 목록과 상세 조회는 비로그인 사용자도 접근할 수 있다.
+- 글쓰기, 글 수정, 댓글 작성, 마이페이지, AI Writing Assistant 실행은 로그인 사용자만 사용할 수 있다.
+- AI Summary와 Similar Posts는 게시글 상세 화면에 배치한다.
+- AI Writing Assistant는 작성/수정 화면 오른쪽 패널에 고정한다.
+
+## Change History
+
+| Date | Author | Description |
 |---|---|---|
-| 제목 | Create New Post | Edit Post |
-| 주요 버튼 | Publish | Update Post |
-| 초기값 | 빈 폼 | 기존 제목, 태그, 본문 |
-| 권한 | 로그인 사용자 | 게시글 작성자 |
-
-## 10. 마이페이지
-
-마이페이지는 프로필 카드, 탭, 내 활동 목록으로 구성한다.
-
-```text
-┌────────────────────────────────────────────────────────────┐
-│ Header                                                     │
-├────────────────────────────────────────────────────────────┤
-│ ProfileCard                                                │
-│ Avatar / nickname / email / 가입일 / 통계 / Edit Profile    │
-│                                                            │
-│ Tabs                                                       │
-│ [My Posts] [My Comments]                                   │
-│                                                            │
-│ My Posts                                                   │
-│ ┌────────────────────────────────────────────────────────┐ │
-│ │ 태그 / 제목 / 좋아요 / 댓글 / 조회수 / 날짜 / 수정 / 삭제 │ │
-│ └────────────────────────────────────────────────────────┘ │
-│                                                            │
-│ My Comments                                                │
-│ ┌────────────────────────────────────────────────────────┐ │
-│ │ 댓글 내용 / 원본 게시글 / 날짜 / 수정 / 삭제             │ │
-│ └────────────────────────────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────┘
-```
-
-### 주요 컴포넌트
-
-| 컴포넌트 | 설명 |
-|---|---|
-| ProfileCard | 사용자 기본 정보와 활동 통계를 표시한다. |
-| ActivityTabs | 내 게시글과 내 댓글을 전환한다. |
-| MyPostList | 내가 작성한 게시글 목록 |
-| MyCommentList | 내가 작성한 댓글 목록 |
-| Edit/DeleteButtons | 글과 댓글 수정, 삭제 액션 |
-
-### 표시 통계
-
-| 통계 | 설명 |
-|---|---|
-| Posts | 내가 작성한 게시글 수 |
-| Comments | 내가 작성한 댓글 수 |
-| Likes received | 받은 좋아요 수 |
-| Views total | 총 조회 수 |
-
-## 11. 컴포넌트 목록
-
-### 공통 컴포넌트
-
-| 컴포넌트 | 사용 페이지 |
-|---|---|
-| Header | 전체 페이지 |
-| LogoButton | 전체 페이지 |
-| Button | 전체 페이지 |
-| Card | 전체 페이지 |
-| Badge | 홈, 상세, 작성, 수정, 마이페이지 |
-| Avatar | 상세, 댓글, 마이페이지 |
-| TextInput | 홈, 로그인, 회원가입, 작성, 수정 |
-| Textarea | 댓글, 작성, 수정, AI 질문 |
-| Tabs | 마이페이지 |
-
-### 게시글 컴포넌트
-
-| 컴포넌트 | 사용 페이지 |
-|---|---|
-| ProductCard | 홈 |
-| PostContent | 상세 |
-| CommentForm | 상세 |
-| CommentList | 상세 |
-| PostEditor | 작성, 수정 |
-| TagSelector | 작성, 수정 |
-
-### AI 컴포넌트
-
-| 컴포넌트 | 사용 페이지 |
-|---|---|
-| AiAssistantPanel | 작성, 수정 |
-| AiSummaryBox | 상세 |
-| SimilarPostsCard | 상세 |
-| QuickActionGrid | 작성, 수정 |
-| AiSuggestions | 작성, 수정 |
-| AskAiInput | 작성, 수정 |
-
-## 12. 구현 우선순위
-
-| 우선순위 | 범위 |
-|---|---|
-| 1 | 공통 Header, 홈 페이지, 로그인, 회원가입 |
-| 2 | 게시글 상세, 댓글 UI |
-| 3 | 게시글 작성, 게시글 수정 |
-| 4 | 마이페이지 |
-| 5 | AI 요약, AI Writing Assistant, 유사 게시글 추천 |
-
-## 13. 변경 이력
-
-| 날짜 | 작성자 | 내용 |
-|---|---|---|
-| 2026-06-06 | 이현성 | 와이어프레임 기준 문서 최초 작성 |
+| 2026-06-06 | Hyunseong Lee | Add wireframe PNG documentation |
