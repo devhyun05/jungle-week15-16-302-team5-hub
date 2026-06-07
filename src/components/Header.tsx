@@ -1,27 +1,20 @@
 import { Link } from "react-router"
-import logo from "../assets/krafton-jungle-logo.png"
+import JungleMarketLogo from "./JungleMarketLogo"
 
 const Header = () => {
   return (
-    <header className="border-b bg-white">
+    <header className="border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link to="/" className="text-xl font-bold text-gray-900">
-          <img src={logo} alt="크래프톤 정글 로고" className="h-12 w-auto" />
+        <Link to="/" aria-label="JungleMarket 홈으로 이동">
+          <JungleMarketLogo size="sm" />
         </Link>
 
         <nav className="flex items-center gap-6">
           <Link
             to="/login"
-            className="text-sm font-medium text-gray-600 hover:text-gray-900"
+            className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
           >
-            Login
-          </Link>
-
-          <Link
-            to="/login"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            Signup
+            로그인
           </Link>
         </nav>
       </div>
