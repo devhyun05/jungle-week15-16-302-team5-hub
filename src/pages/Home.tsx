@@ -1,3 +1,5 @@
+import { useState } from "react"
+
 const products = [
   {
     id: 1,
@@ -73,7 +75,18 @@ const products = [
   },
 ]
 
+const categories = [
+  "전체",
+  "전자기기",
+  "의류/잡화",
+  "도서",
+  "가구/인테리어",
+  "스포츠",
+  "기타",
+]
 const Home = () => {
+  const [selectedCategory, setSelectedCategory] = useState("전체")
+
   return (
     <>
       <form className="mx-auto max-w-2xl">
@@ -124,54 +137,20 @@ const Home = () => {
         {/* 카테고리 버튼 UI */}
         <div>
           <div className="flex flex-wrap gap-2.5">
-            <button
-              type="button"
-              className="rounded-lg bg-gray-800 px-4 py-2 text-sm font-semibold text-white"
-            >
-              전체
-            </button>
-
-            <button
-              type="button"
-              className="rounded-lg border-2 border-gray-400 bg-white px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-50"
-            >
-              전자기기
-            </button>
-
-            <button
-              type="button"
-              className="rounded-lg border-2 border-gray-400 bg-white px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-50"
-            >
-              의류/잡화
-            </button>
-
-            <button
-              type="button"
-              className="rounded-lg border-2 border-gray-400 bg-white px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-50"
-            >
-              도서
-            </button>
-
-            <button
-              type="button"
-              className="rounded-lg border-2 border-gray-400 bg-white px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-50"
-            >
-              가구/인테리어
-            </button>
-
-            <button
-              type="button"
-              className="rounded-lg border-2 border-gray-400 bg-white px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-50"
-            >
-              스포츠
-            </button>
-
-            <button
-              type="button"
-              className="rounded-lg border-2 border-gray-400 bg-white px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-50"
-            >
-              기타
-            </button>
+            {categories.map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setSelectedCategory(category)}
+                className={
+                  selectedCategory === category
+                    ? "rounded-lg border-2 border-gray-400 px-4 py-2 text-sm font-semibold text-white bg-gray-800"
+                    : "rounded-lg border-2 border-gray-400 px-4 py-2 text-sm font-semibold text-gray-500 bg-white"
+                }
+              >
+                {category}
+              </button>
+            ))}
           </div>
         </div>
       </form>
