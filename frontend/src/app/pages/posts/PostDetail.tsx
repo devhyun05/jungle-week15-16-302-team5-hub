@@ -24,11 +24,13 @@ function categoryVariant(category: string) {
 }
 
 export function PostDetail() {
+  // /posts/:id의 id 값을 읽어서 mock posts 중 해당 글을 찾습니다.
   const { id } = useParams();
   const navigate = useNavigate();
   const { role } = useOutletContext<MainLayoutContext>();
   const post = posts.find((item) => String(item.id) === id);
 
+  // 삭제 확인, 안내 문구, 댓글 입력은 아직 서버가 아닌 local state로만 관리합니다.
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deleteNotice, setDeleteNotice] = useState("");
   const [commentInput, setCommentInput] = useState("");
@@ -44,6 +46,7 @@ export function PostDetail() {
   ]);
 
   if (!post) {
+    // URL id와 맞는 mock 게시글이 없을 때 보여주는 안전 화면입니다.
     return (
       <div className="mx-auto flex min-h-[60vh] max-w-xl items-center justify-center">
         <Card className="w-full">
@@ -72,6 +75,7 @@ export function PostDetail() {
     }
 
     // TODO backend: 실제 댓글 저장 API는 백엔드 연결 후 구현 예정.
+    // 지금은 현재 상세 화면의 comments state에만 댓글을 추가합니다.
     setComments((prev) => [
       ...prev,
       {

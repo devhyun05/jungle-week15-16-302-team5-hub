@@ -2,6 +2,7 @@ import { BookOpen, Briefcase, MessageSquare, Wrench, type LucideIcon } from "luc
 
 export type UserRole = "STUDENT" | "COACH";
 
+// 게시글 카테고리는 화면 필터와 URL query string에서 같은 slug를 사용합니다.
 export type CategorySlug =
   | "learning-log"
   | "troubleshooting"
@@ -14,6 +15,7 @@ export type PortfolioStatus = "작성중" | "보완 필요" | "정리 완료";
 export type CoachFeedbackStatus = "요청 전" | "요청함" | "검토 중" | "피드백 완료" | "수정 요청";
 export type TargetType = "post" | "portfolio";
 
+// 카테고리 탭과 대시보드 카드가 함께 사용하는 표시 정보입니다.
 export type Category = {
   slug: CategorySlug;
   label: string;
@@ -22,6 +24,7 @@ export type Category = {
   color: string;
 };
 
+// 게시글 목록, 상세, 내 기록 화면이 공통으로 사용하는 mock 게시글 구조입니다.
 export type MockPost = {
   id: number;
   title: string;
@@ -43,6 +46,7 @@ export type MockPost = {
   relatedCommit?: string;
 };
 
+// GitHub repo와 JungleLog 기록을 연결해서 포트폴리오로 관리하는 프로젝트 구조입니다.
 export type PortfolioProject = {
   id: string;
   title: string;
@@ -64,6 +68,7 @@ export type PortfolioProject = {
   lastCommitAt: string;
 };
 
+// 학생이 코치에게 보낸 리뷰 요청과 코치 인박스가 함께 사용하는 구조입니다.
 export type ReviewRequest = {
   id: string;
   requesterId: string;

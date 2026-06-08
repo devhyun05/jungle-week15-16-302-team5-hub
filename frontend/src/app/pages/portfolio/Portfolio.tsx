@@ -31,6 +31,7 @@ function categoryVariant(category: string) {
 }
 
 export function Portfolio() {
+  // projects는 서버 DB 대신 현재 화면에서만 유지되는 포트폴리오 프로젝트 목록입니다.
   const [projects, setProjects] = useState<PortfolioProject[]>(portfolioProjects);
   const [repoUrl, setRepoUrl] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -40,6 +41,7 @@ export function Portfolio() {
   const [selectedPostIds, setSelectedPostIds] = useState<number[]>(portfolioProjects[0].linkedPostIds);
   const [notice, setNotice] = useState("");
 
+  // 프로젝트 검색창은 프로젝트명, repo, GitHub URL, 기술 스택을 기준으로 필터링합니다.
   const filteredProjects = useMemo(
     () =>
       projects.filter((project) => {
@@ -56,6 +58,7 @@ export function Portfolio() {
     [projects, searchKeyword],
   );
 
+  // 왼쪽에서 선택한 프로젝트가 오른쪽 상세 패널의 기준 데이터가 됩니다.
   const selectedProject = projects.find((project) => project.id === selectedProjectId) ?? filteredProjects[0] ?? projects[0];
   const linkedRecords = useMemo(
     () => posts.filter((post) => selectedProject.linkedPostIds.includes(post.id)),
@@ -97,6 +100,7 @@ export function Portfolio() {
     };
 
     // TODO backend: 실제 GitHub 프로젝트 등록과 분석 결과 저장 API는 백엔드/MCP 연결 후 구현 예정.
+    // 지금은 입력한 repo URL로 mock 프로젝트를 만들어 목록에 추가합니다.
     setProjects((prev) => [newProject, ...prev]);
     setSelectedProjectId(newProject.id);
     setSelectedPostIds([]);
@@ -124,6 +128,7 @@ export function Portfolio() {
 
   const applyConnectedRecords = () => {
     // TODO backend: 실제 프로젝트-게시글 연결 저장 API는 백엔드 연결 후 구현 예정.
+    // 지금은 selectedPostIds를 현재 프로젝트의 linkedPostIds에 반영하는 mock 동작입니다.
     setProjects((prev) =>
       prev.map((project) =>
         project.id === selectedProject.id

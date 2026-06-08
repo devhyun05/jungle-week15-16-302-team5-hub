@@ -25,6 +25,7 @@ const outputOptions = [
 ] as const;
 
 function buildPortfolioDraft(project: PortfolioProject, linkedRecordCount: number) {
+  // 실제 OpenAI 호출 전까지는 선택 프로젝트 정보를 이용해 고정된 mock 초안을 만듭니다.
   return `1. 프로젝트 한 줄 소개
 ${project.title}는 ${project.stack.slice(0, 3).join(", ")} 기반으로 구현한 프로젝트입니다. GitHub 커밋 기록과 JungleLog에 남긴 ${linkedRecordCount}개의 학습 기록을 연결해 구현 과정과 문제 해결 경험을 포트폴리오 글로 정리합니다.
 
@@ -42,6 +43,7 @@ AI 기능은 버튼 하나가 아니라 어떤 자료를 참고하고 어떤 결
 }
 
 function buildInterviewQuestions(project: PortfolioProject) {
+  // 면접 질문도 현재는 RAG/Agent 결과가 아니라 mock 텍스트입니다.
   return `1. ${project.title}에서 GitHub 정보는 어떤 방식으로 활용되나요?
 - GitHub repo URL, 최근 커밋, README를 MCP를 통해 가져오고 AI 생성의 참고 자료로 사용하는 흐름을 목표로 합니다.
 
@@ -56,6 +58,7 @@ function buildInterviewQuestions(project: PortfolioProject) {
 }
 
 export function AIAssistant() {
+  // 포트폴리오 화면에서 넘어올 때 project와 type query string으로 초기 선택값을 맞춥니다.
   const [searchParams] = useSearchParams();
   const initialProjectId = searchParams.get("project") ?? portfolioProjects[0].id;
   const initialType: OutputType = searchParams.get("type") === "interview" ? "interview" : "portfolio";
@@ -65,6 +68,7 @@ export function AIAssistant() {
   const [savedNotice, setSavedNotice] = useState("");
   const [copyNotice, setCopyNotice] = useState("");
 
+  // AI 도우미는 직접 입력 대신 포트폴리오 관리에 등록된 프로젝트를 기준으로 동작합니다.
   const selectedProject = portfolioProjects.find((project) => project.id === selectedProjectId) ?? portfolioProjects[0];
   const linkedRecords = useMemo(
     () => posts.filter((post) => selectedProject.linkedPostIds.includes(post.id)),

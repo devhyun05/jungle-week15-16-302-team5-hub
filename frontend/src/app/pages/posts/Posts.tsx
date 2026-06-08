@@ -16,10 +16,12 @@ function categoryVariant(category: string) {
 }
 
 export function Posts() {
+  // category는 URL query string에 저장해서 /posts?category=... 형태로 공유할 수 있게 합니다.
   const [searchParams, setSearchParams] = useSearchParams();
   const [keyword, setKeyword] = useState("");
   const selectedCategory = searchParams.get("category") ?? "all";
 
+  // mock posts 배열에서 현재 카테고리와 검색어에 맞는 글만 계산합니다.
   const filteredPosts = useMemo(
     () =>
       posts.filter((post) => {
@@ -40,6 +42,7 @@ export function Posts() {
   );
 
   const selectCategory = (slug: "all" | CategorySlug) => {
+    // 탭을 누르면 state가 아니라 URL query string을 바꿔서 필터 상태를 표현합니다.
     if (slug === "all") setSearchParams({});
     else setSearchParams({ category: slug });
   };

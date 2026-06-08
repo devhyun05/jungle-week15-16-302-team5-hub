@@ -33,17 +33,20 @@ const coachNavItems = [
   { name: "설정", path: "/settings", icon: Settings },
 ];
 
+// MainLayout이 Outlet 아래의 자식 페이지들에게 넘기는 공통 context입니다.
 export type MainLayoutContext = {
   role: UserRole;
   setRole: (role: UserRole) => void;
 };
 
+// 지금은 백엔드 로그인 전이라 localStorage에 저장된 mock role을 초기값으로 사용합니다.
 function getInitialRole(): UserRole {
   const savedRole = window.localStorage.getItem("junglelog-mock-role");
   return savedRole === "COACH" ? "COACH" : "STUDENT";
 }
 
 export function MainLayout() {
+  // roleState가 바뀌면 사이드바 메뉴, 프로필, 접근 가능한 화면이 함께 바뀝니다.
   const [roleState, setRoleState] = useState<UserRole>(getInitialRole);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
@@ -52,6 +55,7 @@ export function MainLayout() {
     window.localStorage.setItem("junglelog-mock-role", nextRole);
   };
 
+  // 역할에 따라 사이드바 메뉴 구성이 달라집니다.
   const navItems = roleState === "STUDENT" ? studentNavItems : coachNavItems;
   const profile = useMemo(
     () =>
@@ -150,6 +154,7 @@ export function MainLayout() {
               </Button>
 
               {isNotificationOpen && (
+                // 지금은 서버 알림이 아니라 mock notifications 배열을 드롭다운으로 보여줍니다.
                 <div className="absolute right-0 top-11 z-20 w-80 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
                   <div className="border-b border-slate-100 px-4 py-3">
                     <p className="text-sm font-semibold text-slate-900">알림</p>
@@ -190,6 +195,7 @@ export function MainLayout() {
         </header>
 
         <main className="flex-1 overflow-y-auto bg-slate-50 p-4 sm:p-6 lg:p-8">
+          {/* 자식 라우트는 useOutletContext로 role과 setRole을 읽을 수 있습니다. */}
           <Outlet context={{ role: roleState, setRole } satisfies MainLayoutContext} />
         </main>
       </div>

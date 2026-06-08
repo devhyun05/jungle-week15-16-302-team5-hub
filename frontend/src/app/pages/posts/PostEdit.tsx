@@ -10,6 +10,7 @@ import { Textarea } from "../../components/ui/Textarea";
 import { categories, posts } from "../../data/mockData";
 
 function bodyFromPost(postId?: string) {
+  // 수정 화면에서는 기존 mock 게시글의 section들을 하나의 textarea 본문으로 합칩니다.
   const post = posts.find((item) => String(item.id) === postId);
   if (!post) return "";
 
@@ -22,12 +23,14 @@ function bodyFromPost(postId?: string) {
 }
 
 export function PostEdit() {
+  // /posts/new와 /posts/:id/edit이 같은 컴포넌트를 공유하기 때문에 URL로 작성/수정 모드를 구분합니다.
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const isEditMode = location.pathname.includes("/edit");
   const existingPost = posts.find((post) => String(post.id) === id);
 
+  // 아래 state들은 입력값을 React가 직접 관리하는 controlled input 값입니다.
   const [title, setTitle] = useState(isEditMode ? existingPost?.title ?? "" : "");
   const [category, setCategory] = useState(isEditMode ? existingPost?.category ?? categories[0].label : categories[0].label);
   const [isPublic, setIsPublic] = useState(isEditMode ? existingPost?.isPublic ?? true : true);
@@ -56,6 +59,7 @@ export function PostEdit() {
     }
 
     // TODO backend: 실제 게시글 작성/수정 저장 API는 백엔드 연결 후 구현 예정.
+    // 지금은 검증 문구와 라우트 이동만으로 작성/수정 흐름을 확인합니다.
     setError("");
     setNotice(isEditMode ? "mock으로 수정되었습니다. 상세 화면으로 이동합니다." : "mock으로 게시글이 발행되었습니다. 목록으로 이동합니다.");
     window.setTimeout(() => navigate(isEditMode ? `/posts/${id ?? existingPost?.id ?? 1}` : "/posts"), 700);

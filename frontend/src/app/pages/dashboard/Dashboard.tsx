@@ -10,9 +10,11 @@ import type { MainLayoutContext } from "../../layouts/MainLayout";
 const recentRecords = posts.slice(0, 3);
 
 export function Dashboard() {
+  // MainLayout에서 넘긴 role로 학생용 대시보드와 코치용 대시보드를 나눕니다.
   const { role } = useOutletContext<MainLayoutContext>();
 
   if (role === "COACH") {
+    // 코치는 글 작성보다 들어온 리뷰 요청을 처리하는 흐름을 우선으로 봅니다.
     const waitingReviews = reviewRequests.filter((request) => request.status !== "피드백 완료" && request.status !== "최종 확인");
 
     return (

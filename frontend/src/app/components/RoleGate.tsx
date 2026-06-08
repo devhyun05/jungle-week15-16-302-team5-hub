@@ -12,13 +12,16 @@ type RoleGateProps = {
 };
 
 export function RoleGate({ allowedRoles, children }: RoleGateProps) {
+  // MainLayout의 Outlet context에서 현재 mock role을 가져옵니다.
   const { role } = useOutletContext<MainLayoutContext>();
   const canAccess = allowedRoles.includes(role);
 
   if (canAccess) {
+    // 허용된 role이면 감싸고 있던 실제 페이지를 그대로 보여줍니다.
     return <>{children}</>;
   }
 
+  // 접근할 수 없는 role이면 역할에 맞는 기본 화면으로 돌려보냅니다.
   const fallbackPath = role === "COACH" ? "/coach-review" : "/";
 
   return (

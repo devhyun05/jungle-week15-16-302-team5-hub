@@ -18,10 +18,12 @@ function categoryVariant(category: string) {
 }
 
 export function MyRecords() {
+  // 내 기록 화면은 카테고리, 공개 여부, 검색어를 각각 state로 관리합니다.
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>("all");
   const [keyword, setKeyword] = useState("");
 
+  // 전체 mock posts 중 현재 필터 조건에 맞는 기록만 화면에 보여줍니다.
   const filteredRecords = useMemo(
     () =>
       posts.filter((post) => {

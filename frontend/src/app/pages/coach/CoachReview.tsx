@@ -35,6 +35,7 @@ function ReviewStatusBadge({ status }: { status: ReviewStatus }) {
 }
 
 function StudentReviewView() {
+  // 학생 화면은 리뷰 요청을 생성하고 내가 보낸 요청 목록을 관리합니다.
   const [targetType, setTargetType] = useState<"post" | "portfolio">("post");
   const [targetId, setTargetId] = useState(String(posts[0].id));
   const [selectedCoachIds, setSelectedCoachIds] = useState<string[]>([coaches[0].id]);
@@ -44,6 +45,7 @@ function StudentReviewView() {
     reviewRequests.filter((request) => request.requesterId === "student-1"),
   );
 
+  // 리뷰 대상 유형에 따라 게시글 목록 또는 포트폴리오 프로젝트 목록을 선택지로 사용합니다.
   const targetOptions: Array<MockPost | PortfolioProject> = targetType === "post" ? posts : portfolioProjects;
   const selectedTarget = targetOptions.find((item) => String(item.id) === targetId) ?? targetOptions[0];
 
@@ -241,6 +243,7 @@ function StudentReviewView() {
 }
 
 function CoachInboxView() {
+  // 코치 화면은 들어온 리뷰 요청을 검색/필터링하고 상태와 피드백을 수정합니다.
   const [requests, setRequests] = useState<ReviewRequest[]>(reviewRequests);
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [selectedStatus, setSelectedStatus] = useState("전체");
@@ -249,6 +252,7 @@ function CoachInboxView() {
   const selectedRequest = requests.find((request) => request.id === selectedId) ?? requests[0];
   const [feedback, setFeedback] = useState(selectedRequest.feedback);
 
+  // 카테고리, 상태, 검색어 조건을 모두 만족하는 요청만 인박스에 보여줍니다.
   const filteredRequests = useMemo(
     () =>
       requests.filter((request) => {
@@ -438,6 +442,7 @@ function CoachInboxView() {
 }
 
 export function CoachReview() {
+  // 같은 /coach-review 주소라도 role에 따라 완전히 다른 화면을 보여줍니다.
   const { role } = useOutletContext<MainLayoutContext>();
   return role === "STUDENT" ? <StudentReviewView /> : <CoachInboxView />;
 }
