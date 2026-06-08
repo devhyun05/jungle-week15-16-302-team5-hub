@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router"
 import JungleMarketLogo from "./JungleMarketLogo"
 import { useMockAuth } from "../lib/mockAuth"
@@ -6,11 +6,30 @@ import { useMockAuth } from "../lib/mockAuth"
 const Header = () => {
   const { user, isLoggedIn, logoutMockUser } = useMockAuth()
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
+  const profileMenuRef = useRef<HTMLDivElement>(null)
 
   const handleLogout = () => {
     logoutMockUser()
     setIsProfileMenuOpen(false)
   }
+
+  useEffect(() => {
+    if (!isProfileMenuOpen) {
+      return
+    }
+
+    const handleClickOutside = (event: PointerEvent) => {
+      if (!profileMenuRef.current?.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false)
+      }
+    }
+
+    document.addEventListener("pointerdown", handleClickOutside)
+
+    return () => {
+      document.removeEventListener("pointerdown", handleClickOutside)
+    }
+  }, [isProfileMenuOpen])
 
   return (
     <header className="relative z-50 border-b border-gray-200 bg-white/95 backdrop-blur">
@@ -29,7 +48,7 @@ const Header = () => {
                 새 글 작성
               </Link>
 
-              <div className="relative">
+              <div className="relative" ref={profileMenuRef}>
                 <button
                   type="button"
                   onClick={() => setIsProfileMenuOpen((isOpen) => !isOpen)}
