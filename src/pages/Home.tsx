@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link } from "react-router"
 
 const products = [
   {
@@ -185,15 +186,29 @@ const Home = () => {
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {products.map((product) => (
-            <article
+            <Link
               key={product.id}
+              to={`/post-details/${product.id}`}
               className="overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
             >
               {/* 이미지 자리 */}
-              <div className="relative h-56 border-b border-gray-300 bg-gray-50">
-                <div className="absolute left-0 top-0 h-full w-full">
-                  <div className="absolute left-0 top-0 h-[1.5px] w-[145%] origin-left rotate-45 bg-gray-400" />
-                  <div className="absolute right-0 top-0 h-[1.5px] w-[145%] origin-right -rotate-45 bg-gray-400" />
+              <div className="flex h-56 items-center justify-center border-b border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-300 shadow-sm">
+                  <svg
+                    className="h-6 w-6"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.8"
+                      d="M4 16l4.5-4.5a2 2 0 0 1 2.8 0L16 16m-2-2 1.5-1.5a2 2 0 0 1 2.8 0L20 14m-16 5h16a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-11h.01"
+                    />
+                  </svg>
                 </div>
               </div>
 
@@ -218,7 +233,7 @@ const Home = () => {
                   </div>
                 </div>
               </div>
-            </article>
+            </Link>
           ))}
         </div>
       </section>
