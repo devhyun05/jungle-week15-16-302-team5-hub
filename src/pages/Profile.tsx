@@ -113,7 +113,11 @@ const Profile = () => {
       <div className="mt-10 border-b border-gray-300">
         <div className="flex gap-8">
           <button
-            className="border-b-2 border-gray-800 px-2 pb-4 text-sm font-semibold text-gray-900"
+            className={`border-b-2 px-2 pb-4 text-sm font-semibold transition ${
+              activeTab === "posts"
+                ? "border-gray-800 text-gray-900"
+                : "border-transparent text-gray-400 hover:text-gray-700"
+            }`}
             onClick={() => {
               setActiveTab("posts")
             }}
@@ -121,7 +125,11 @@ const Profile = () => {
             📄 내가 쓴 글
           </button>
           <button
-            className="px-2 pb-4 text-sm font-semibold text-gray-400 hover:text-gray-700"
+            className={`border-b-2 px-2 pb-4 text-sm font-semibold transition ${
+              activeTab === "inquiries"
+                ? "border-gray-800 text-gray-900"
+                : "border-transparent text-gray-400 hover:text-gray-700"
+            }`}
             onClick={() => {
               setActiveTab("inquiries")
             }}
