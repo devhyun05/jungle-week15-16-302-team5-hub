@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { Link } from "react-router"
+
 const posts = [
   {
     id: 1,
@@ -76,9 +78,12 @@ const Profile = () => {
             </div>
           </div>
 
-          <button className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
+          <Link
+            to="/profile-edit"
+            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+          >
             프로필 수정
-          </button>
+          </Link>
         </div>
 
         {/* 프로필 통계 */}
