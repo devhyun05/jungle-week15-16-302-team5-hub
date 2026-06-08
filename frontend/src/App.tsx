@@ -1,11 +1,11 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import Header from "./components/Header.jsx";
-import HomePage from "./pages/HomePage.jsx";
-import LoginPage from "./pages/LoginPage.jsx";
-import SignupPage from "./pages/SignupPage.jsx";
-import PostListPage from "./pages/PostListPage.jsx";
-import PostDetailPage from "./pages/PostDetailPage.jsx";
-import PostEditorPage from "./pages/PostEditorPage.jsx";
+import Header from "./components/Header";
+import HomePage from "./pages/HomePage";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import PostListPage from "./pages/PostListPage";
+import PostDetailPage from "./pages/PostDetailPage";
+import PostEditorPage from "./pages/PostEditorPage";
 
 export default function App() {
   // TODO: 인증 상태를 확인하고 보호된 route를 분리한다.
