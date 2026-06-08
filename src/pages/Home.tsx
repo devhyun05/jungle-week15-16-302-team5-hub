@@ -84,9 +84,12 @@ const categories = [
   "스포츠",
   "기타",
 ]
+
+const sortOptions = ["최신순", "인기순", "가격낮은순"]
+
 const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState("전체")
-
+  const [selectedSortOption, setSelectedSortOption] = useState("최신순")
   return (
     <>
       <form className="mx-auto max-w-2xl">
@@ -163,24 +166,20 @@ const Home = () => {
           </h2>
 
           <div className="flex gap-2">
-            <button
-              type="button"
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100"
-            >
-              최신순
-            </button>
-            <button
-              type="button"
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100"
-            >
-              인기순
-            </button>
-            <button
-              type="button"
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100"
-            >
-              가격낮은순
-            </button>
+            {sortOptions.map((sortOption) => (
+              <button
+                key={sortOption}
+                type="button"
+                onClick={() => setSelectedSortOption(sortOption)}
+                className={
+                  selectedSortOption === sortOption
+                    ? "rounded-lg border-2 border-gray-400 px-4 py-2 text-sm font-semibold text-white bg-gray-800"
+                    : "rounded-lg border-2 border-gray-400 px-4 py-2 text-sm font-semibold text-gray-500 bg-white"
+                }
+              >
+                {sortOption}
+              </button>
+            ))}
           </div>
         </div>
 
