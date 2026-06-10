@@ -1,8 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { login } from '../api/auth'
 
 export function LoginPage() {
+    const navigate = useNavigate()
+
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
@@ -23,6 +26,8 @@ export function LoginPage() {
             localStorage.setItem('access_token', result.access_token)
 
             console.log('Logged in user:', result.user)
+
+            navigate('/')
         } catch {
             setError('failed to log in.')
         } finally {

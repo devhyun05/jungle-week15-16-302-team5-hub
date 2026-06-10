@@ -51,7 +51,7 @@ export function PostListPage() {
                     <p>Browse beauty and fashion discussions from the community.</p>
                 </div>
 
-                <button type="button">Write post</button>
+                <Link to="/posts/new">Write post</Link>
             </section>
 
             {posts.length === 0 ? (

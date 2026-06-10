@@ -3,6 +3,7 @@ import { Link, Route, Routes } from 'react-router-dom'
 import { LoginPage } from './pages/LoginPage'
 import { PostDetailPage } from './pages/PostDetailPage'
 import { PostListPage } from './pages/PostListPage'
+import { PostCreatePage } from './pages/PostCreatePage'
 import './index.css'
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
         <Route path="/" element={<PostListPage />} />
         <Route path="/login" element={<LoginPage  />} />
         <Route path="/posts/:postId" element={<PostDetailPage />} />
+        <Route path="/posts/new" element={<PostCreatePage />} />
       </Routes>
     </div>
   )
