@@ -1,5 +1,5 @@
 ﻿
-import { useMemo, useState } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Link, useOutletContext } from "react-router";
 import { AlertCircle, CheckCircle2, ChevronRight, MessageSquare, Search, Send, ShieldCheck, XCircle } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
@@ -20,6 +20,11 @@ import {
 } from "../../data/mockData";
 import type { MainLayoutContext } from "../../layouts/MainLayout";
 
+type ReviewRequestStateProps = {
+  requests: ReviewRequest[];
+  setRequests: Dispatch<SetStateAction<ReviewRequest[]>>;
+};
+
 const statusColors: Record<ReviewStatus, string> = {
   "대기 중": "bg-slate-100 text-slate-700",
   "검토 중": "bg-blue-100 text-blue-700",
@@ -34,15 +39,16 @@ function ReviewStatusBadge({ status }: { status: ReviewStatus }) {
   return <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusColors[status]}`}>{status}</span>;
 }
 
-function StudentReviewView() {
+function StudentReviewView({ requests, setRequests }: ReviewRequestStateProps) {
   // 학생 화면은 리뷰 요청을 생성하고 내가 보낸 요청 목록을 관리합니다.
   const [targetType, setTargetType] = useState<"post" | "portfolio">("post");
   const [targetId, setTargetId] = useState(String(posts[0].id));
   const [selectedCoachIds, setSelectedCoachIds] = useState<string[]>([coaches[0].id]);
   const [message, setMessage] = useState("");
   const [notice, setNotice] = useState("");
-  const [requests, setRequests] = useState<ReviewRequest[]>(
-    reviewRequests.filter((request) => request.requesterId === "student-1"),
+  const studentRequests = useMemo(
+    () => requests.filter((request) => request.requesterId === "student-1"),
+    [requests],
   );
 
   // 리뷰 대상 유형에 따라 게시글 목록 또는 포트폴리오 프로젝트 목록을 선택지로 사용합니다.
@@ -211,7 +217,7 @@ function StudentReviewView() {
           <CardTitle className="text-base">내가 보낸 요청 목록</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {requests.map((request) => (
+          {studentRequests.map((request) => (
             <div key={request.id} className="rounded-lg border border-slate-200 p-4">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
@@ -242,15 +248,15 @@ function StudentReviewView() {
   );
 }
 
-function CoachInboxView() {
+function CoachInboxView({ requests, setRequests }: ReviewRequestStateProps) {
   // 코치 화면은 들어온 리뷰 요청을 검색/필터링하고 상태와 피드백을 수정합니다.
-  const [requests, setRequests] = useState<ReviewRequest[]>(reviewRequests);
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [selectedStatus, setSelectedStatus] = useState("전체");
   const [keyword, setKeyword] = useState("");
   const [selectedId, setSelectedId] = useState(reviewRequests[0].id);
   const selectedRequest = requests.find((request) => request.id === selectedId) ?? requests[0];
   const [feedback, setFeedback] = useState(selectedRequest.feedback);
+  const [feedbackNotice, setFeedbackNotice] = useState("");
 
   // 카테고리, 상태, 검색어 조건을 모두 만족하는 요청만 인박스에 보여줍니다.
   const filteredRequests = useMemo(
@@ -278,16 +284,30 @@ function CoachInboxView() {
   const selectRequest = (request: ReviewRequest) => {
     setSelectedId(request.id);
     setFeedback(request.feedback);
+    setFeedbackNotice("");
   };
 
   const updateStatus = (status: ReviewStatus) => {
-    const savedFeedback = status === "최종 확인" && !feedback.trim() ? "이 정도면 만족합니다. 최종 확인 처리했습니다." : feedback;
+    const trimmedFeedback = feedback.trim();
+
+    if ((status === "수정 요청" || status === "피드백 완료") && !trimmedFeedback) {
+      setFeedbackNotice("피드백 내용을 입력한 뒤 학생에게 보내주세요.");
+      return;
+    }
+
+    const savedFeedback =
+      status === "최종 확인" && !trimmedFeedback
+        ? "이 정도면 만족합니다. 최종 확인 처리했습니다."
+        : trimmedFeedback;
 
     // TODO backend: 실제 코치 리뷰 상태 변경과 피드백 저장 API는 백엔드 연결 후 구현 예정.
     setRequests((prev) =>
-      prev.map((request) => (request.id === selectedRequest.id ? { ...request, status, feedback: savedFeedback } : request)),
+      prev.map((request) =>
+        request.id === selectedRequest.id ? { ...request, status, feedback: savedFeedback } : request,
+      ),
     );
     setFeedback(savedFeedback);
+    setFeedbackNotice("학생에게 mock 피드백과 상태를 보냈습니다.");
   };
 
   return (
@@ -408,8 +428,15 @@ function CoachInboxView() {
             <CardContent className="flex flex-col gap-3 p-4">
               <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
                 <MessageSquare className="h-4 w-4 text-indigo-500" />
-                피드백 작성
+                피드백 작성 및 전송
               </div>
+
+              {feedbackNotice && (
+                <div className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                  {feedbackNotice}
+                </div>
+              )}
+
               <Textarea
                 value={feedback}
                 onChange={(event) => setFeedback(event.target.value)}
@@ -418,21 +445,21 @@ function CoachInboxView() {
               />
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" className="h-8 text-xs" onClick={() => updateStatus("검토 중")}>
-                  검토 중
+                  검토 중으로 변경
                 </Button>
                 <Button variant="outline" className="h-8 border-amber-200 bg-amber-50 text-xs text-amber-700" onClick={() => updateStatus("수정 요청")}>
                   <AlertCircle className="mr-1 h-3 w-3" />
-                  수정 요청
+                  수정 요청 보내기
                 </Button>
                 <Button className="h-8 bg-indigo-600 px-4 text-xs text-white hover:bg-indigo-700" onClick={() => updateStatus("피드백 완료")}>
-                  피드백 완료
+                  피드백 완료 보내기
                 </Button>
                 <Button variant="outline" className="h-8 border-emerald-200 bg-emerald-50 text-xs text-emerald-700" onClick={() => updateStatus("최종 확인")}>
                   <ShieldCheck className="mr-1 h-3 w-3" />
-                  최종 확인
+                  최종 확인 보내기
                 </Button>
               </div>
-              <p className="text-xs text-slate-400">최종 확인은 코치가 “이 정도면 만족합니다”라고 판단한 상태입니다.</p>
+              <p className="text-xs text-slate-400">최종 확인은 코치가 “이 정도면 만족합니다”라고 판단한 상태입니다. 원문 댓글 자동 등록은 백엔드 연결 후 구현 예정입니다.</p>
             </CardContent>
           </Card>
         </div>
@@ -444,5 +471,12 @@ function CoachInboxView() {
 export function CoachReview() {
   // 같은 /coach-review 주소라도 role에 따라 완전히 다른 화면을 보여줍니다.
   const { role } = useOutletContext<MainLayoutContext>();
-  return role === "STUDENT" ? <StudentReviewView /> : <CoachInboxView />;
+
+  const [requests, setRequests] = useState<ReviewRequest[]>(reviewRequests);
+
+  return role === "STUDENT" ? (
+    <StudentReviewView requests={requests} setRequests={setRequests} />
+  ) : (
+    <CoachInboxView requests={requests} setRequests={setRequests} />
+  );
 }

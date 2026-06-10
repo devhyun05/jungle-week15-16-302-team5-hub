@@ -8,13 +8,11 @@ import {
   LayoutDashboard,
   List,
   PenSquare,
-  Search,
   Settings,
   UserCheck,
 } from "lucide-react";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
 import { notifications, type UserRole } from "../data/mockData";
 
 const studentNavItems = [
@@ -28,7 +26,7 @@ const studentNavItems = [
 ];
 
 const coachNavItems = [
-  { name: "대시보드", path:"/", icon: LayoutDashboard },
+  { name: "대시보드", path: "/", icon: LayoutDashboard },
   { name: "코치 리뷰 인박스", path: "/coach-review", icon: UserCheck },
   { name: "전체 게시글", path: "/posts", icon: List },
   { name: "설정", path: "/settings", icon: Settings },
@@ -130,16 +128,7 @@ export function MainLayout() {
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-1 items-center gap-4">
-            <div className="relative hidden w-full max-w-md sm:block">
-              <Search className="absolute left-2.5 top-2 h-4 w-4 text-slate-500" />
-              <Input
-                type="search"
-                placeholder="게시글, 트러블슈팅, 태그 검색..."
-                className="w-full bg-slate-50 pl-9"
-              />
-            </div>
-          </div>
+          <div className="flex flex-1" />
 
           <div className="flex items-center gap-3">
             <div className="relative">
