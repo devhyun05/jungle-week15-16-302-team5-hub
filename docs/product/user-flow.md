@@ -109,6 +109,99 @@ GlowBoard is designed around focused topic discussions. A user lands on a beauty
 9. Show MCP source preview.
 10. Show README architecture summary and test result.
 
+## Day 1 MVP Screen Memo
+
+Day 1 화면 메모는 예쁜 디자인보다 입력값, 사용 행동, 상태, 필요한 API를 확인하기 위한 초안이다.
+댓글, 태그, 검색, 페이징, AI 패널은 Day 2 이후에 붙인다.
+
+### Login
+
+```text
+입력값:
+- email
+- password
+
+버튼/행동:
+- 로그인 버튼을 누르면 login API를 호출한다.
+- 회원가입 링크를 누르면 Signup 화면 또는 signup form으로 이동한다.
+- 로그인 성공 시 Post List로 이동한다.
+
+상태:
+- loading: 로그인 요청을 보내는 중
+- error: 로그인 정보가 올바르지 않습니다
+- empty: 별도 empty 상태 없음
+
+필요 API:
+- POST /api/auth/login
+```
+
+### Post List
+
+```text
+입력값:
+- Day 1에서는 없음
+- 검색어 입력은 화면에 둘 수 있지만 실제 검색 연결은 Day 2에서 한다
+
+버튼/행동:
+- 게시글 제목을 누르면 Post Detail로 이동한다.
+- 글쓰기 버튼을 누르면 Post Form으로 이동한다.
+- 로그인하지 않은 사용자가 글쓰기 버튼을 누르면 Login으로 이동한다.
+
+상태:
+- loading: 게시글 목록을 불러오는 중
+- error: 게시글을 불러오지 못했습니다
+- empty: 아직 게시글이 없습니다
+
+필요 API:
+- GET /api/posts
+```
+
+### Post Detail
+
+```text
+입력값:
+- 없음
+
+버튼/행동:
+- 뒤로 가기 버튼을 누르면 Post List로 이동한다.
+- 작성자일 때만 수정 버튼과 삭제 버튼을 보여준다.
+- 수정 버튼을 누르면 Post Form 수정 모드로 이동한다.
+- 삭제 버튼을 누르면 delete API를 호출하고 성공 시 Post List로 이동한다.
+
+상태:
+- loading: 게시글 상세를 불러오는 중
+- error: 게시글을 불러오지 못했습니다
+- empty: 게시글이 없거나 삭제되었습니다
+
+필요 API:
+- GET /api/posts/{post_id}
+- DELETE /api/posts/{post_id}
+```
+
+### Post Form
+
+```text
+입력값:
+- title
+- body
+
+버튼/행동:
+- 저장 버튼을 누르면 작성 모드에서는 create API를 호출한다.
+- 저장 버튼을 누르면 수정 모드에서는 update API를 호출한다.
+- 취소 버튼을 누르면 이전 화면으로 돌아간다.
+
+상태:
+- loading: 기존 글을 불러오는 중 또는 저장 중
+- error: 저장하지 못했습니다
+- empty: 수정 모드에서 기존 글을 찾을 수 없습니다
+- validation: title 또는 body가 비어 있으면 저장하지 않는다
+
+필요 API:
+- POST /api/posts
+- GET /api/posts/{post_id}
+- PUT /api/posts/{post_id}
+```
+
 ## Wireframe Drafts
 
 와이어프레임은 구현 전에 화면의 정보 구조를 확인하기 위한 초안이다. 실제 UI 구현 중 바뀌면 이 섹션을 같이 수정한다.

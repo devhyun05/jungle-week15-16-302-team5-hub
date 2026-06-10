@@ -171,3 +171,20 @@ Error response:
 - [ ] request/response shape가 바뀌면 frontend type과 함께 수정한다.
 - [ ] 401/403/404/422/500 계열 error를 빠뜨리지 않는다.
 - [ ] README 요구사항 구현 위치 표에 endpoint를 연결한다.
+
+
+## Day 1 MVP API Contract
+
+Day 1에서는 auth와 posts CRUD만 먼저 구현한다.
+댓글, 태그, 검색, 페이징, AI API는 Day 2 이후에 확장한다.
+
+| Method | Path | Auth | Purpose | Request | Response | Error |
+|---|---|---|---|---|---|---|
+| POST | `/api/auth/signup` | no | 회원가입 | email, display_name, password | user | 409, 422 |
+| POST | `/api/auth/login` | no | 로그인 | email, password | access_token, user | 401, 422 |
+| GET | `/api/auth/me` | yes | 현재 사용자 확인 | none | user | 401 |
+| GET | `/api/posts` | no | 게시글 목록 조회 | none | post[] | none |
+| POST | `/api/posts` | yes | 게시글 작성 | title, body | post | 401, 422 |
+| GET | `/api/posts/{post_id}` | no | 게시글 상세 조회 | path: post_id | post | 404 |
+| PUT | `/api/posts/{post_id}` | owner | 게시글 수정 | path: post_id, body: title?, body? | post | 401, 403, 404, 422 |
+| DELETE | `/api/posts/{post_id}` | owner | 게시글 삭제 | path: post_id | success | 401, 403, 404 |

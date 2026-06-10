@@ -166,3 +166,38 @@ erDiagram
 - [ ] `vector` extension is enabled before vector columns.
 - [ ] Unique constraints match service logic.
 - [ ] Migration file names clearly describe the change.
+
+
+## Day 1 MVP ERD
+
+Day 1에서는 게시판 MVP에 필요한 `users`, `sessions`, `posts`만 먼저 구현한다.
+댓글, 태그, embedding, source metadata는 Day 2 이후에 확장한다.
+
+```text
+users
+- id: PK
+- email: unique
+- display_name: string
+- password_hash: string
+- created_at: datetime
+
+sessions
+- id: PK
+- user_id: FK -> users.id
+- refresh_token_hash: string
+- expires_at: datetime
+- created_at: datetime
+
+posts
+- id: PK
+- author_id: FK -> users.id
+- title: string
+- body: text
+- created_at: datetime
+- updated_at: datetime
+
+users 1 ---- N sessions
+users 1 ---- N posts
+posts.author_id -> users.id
+sessions.user_id -> users.id
+```

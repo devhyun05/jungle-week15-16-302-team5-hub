@@ -15,7 +15,7 @@ When the user asks to learn, practice, drill, review basics, or continue a study
 
 Additional learning or work-check topics should be added directly to the matching Day in `docs/planning/index.html` and `docs/learning/GLOWBOARD_학습_단계별_가이드.md`, not kept in a separate candidate file.
 
-`docs/planning/index.html` is the user-facing detailed schedule. It is intentionally more detailed than the learning md files because the user studies from it. The learning md files are AI-agent-facing handoff and judgment documents: use them to find the current Day/block and completion criteria, then consult the matching Day in `docs/planning/index.html` for detailed learning notes, work order, manual checks, troubleshooting order, and stop criteria.
+`docs/planning/index.html` is the user-facing detailed schedule. It is intentionally more detailed than the learning md files because the user studies from it. The learning md files are AI-agent-facing handoff and judgment documents: use them to find the current Day/block and completion criteria, then consult the matching Day in `docs/planning/index.html` for detailed learning notes, work order, implementation references, manual checks, and stop criteria.
 
 ### Learning Session Rules
 
@@ -133,3 +133,6 @@ Fill these in after the project structure is created.
 - Do not commit `.env` files.
 - Do not write API keys directly in source code.
 - Use environment variables for secrets.
+- Agents must not read real secret files such as `.env` unless the user explicitly asks for that exact file.
+- Prefer `.env.example`, masked values, and "loaded/not loaded" checks when helping with environment setup.
+- Before final submission or deployment, rotate or replace any development DB passwords, JWT secrets, and API keys that may have been shared or exposed during development.
