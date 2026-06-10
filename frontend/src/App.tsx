@@ -1,8 +1,13 @@
-import { LoginPage } from './pages/LoginPage'
+/* import { LoginPage } from './pages/LoginPage' */
+import { PostListPage } from './pages/PostListPage'
 import './index.css'
 
 function App() {
+  /*
   return <LoginPage />
+  */
+
+  return <PostListPage />
 
   /*
   return (
