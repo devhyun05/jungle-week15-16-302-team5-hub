@@ -232,27 +232,32 @@ export function Portfolio() {
         <section className="w-full space-y-6 lg:w-2/3">
           <Card className="bg-white">
             <div className="border-b border-slate-100 p-6">
-              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900">{selectedProject.title}</h2>
-                  <a href={selectedProject.githubUrl} className="mt-1 flex items-center gap-1 font-mono text-sm text-emerald-600 hover:underline">
-                    <Github className="h-4 w-4" /> {selectedProject.repo}
+              <div className="space-y-4">
+                <div className="min-w-0">
+                  <h2 className="text-xl font-bold leading-7 text-slate-900">{selectedProject.title}</h2>
+                  <a
+                    href={selectedProject.githubUrl}
+                    title={selectedProject.githubUrl}
+                    className="mt-1 flex min-w-0 items-start gap-1 font-mono text-sm leading-5 text-emerald-600 hover:underline"
+                  >
+                    <Github className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span className="break-all">{selectedProject.repo}</span>
                   </a>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" className="gap-2" asChild>
+                  <Button size="sm" className="gap-2 whitespace-nowrap" asChild>
                     <Link to={`/ai-assistant?project=${selectedProject.id}&type=portfolio`}>
                       <Sparkles className="h-4 w-4" />
                       AI 도우미에서 포트폴리오 글 만들기
                     </Link>
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => setIsConnectOpen(true)}>
+                  <Button variant="outline" size="sm" className="whitespace-nowrap" onClick={() => setIsConnectOpen(true)}>
                     기록 연결하기
                   </Button>
-                  <Button variant="outline" size="sm" asChild>
+                  <Button variant="outline" size="sm" className="whitespace-nowrap" asChild>
                     <Link to="/coach-review">코치 리뷰 요청하기</Link>
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={refreshGithubInfo} disabled={analyzing}>
+                  <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={refreshGithubInfo} disabled={analyzing}>
                     <RefreshCw className={`mr-1 h-3 w-3 ${analyzing ? "animate-spin" : ""}`} />
                     GitHub 정보 새로고침
                   </Button>
