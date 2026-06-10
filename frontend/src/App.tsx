@@ -1,4 +1,10 @@
+import { LoginPage } from './pages/LoginPage'
+import './index.css'
+
 function App() {
+  return <LoginPage />
+
+  /*
   return (
     <div className="app-shell">
       <header className="top-bar">
@@ -21,6 +27,7 @@ function App() {
       </main>
     </div>
   )
+  */
 }
 
 export default App
