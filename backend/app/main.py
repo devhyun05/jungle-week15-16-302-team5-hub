@@ -3,8 +3,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api.routes.auth import router as auth_router
+from app.api.routes.posts import router as posts_router
 from app.db.base import Base
 from app.db.session import engine
+from app.models.post import Post  # noqa: F401
 from app.models.session import UserSession  # noqa: F401
 from app.models.user import User  # noqa: F401
 
@@ -17,6 +19,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="GlowBoard API", lifespan=lifespan)
 
 app.include_router(auth_router)
+app.include_router(posts_router)
 
 
 @app.get("/health")
