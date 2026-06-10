@@ -1,15 +1,12 @@
-/* import { LoginPage } from './pages/LoginPage' */
+import { Link, Route, Routes } from 'react-router-dom'
+
+import { LoginPage } from './pages/LoginPage'
+import { PostDetailPage } from './pages/PostDetailPage'
 import { PostListPage } from './pages/PostListPage'
 import './index.css'
 
 function App() {
-  /*
-  return <LoginPage />
-  */
 
-  return <PostListPage />
-
-  /*
   return (
     <div className="app-shell">
       <header className="top-bar">
@@ -19,20 +16,17 @@ function App() {
         </div>
 
         <nav>
-          <button type="button">Log in</button>
-          <button type="button">Sign up</button>
+          <Link to="/login">Log in</Link>
         </nav>
       </header>
 
-      <main className="page">
-        <section>
-          <h1>Topics</h1>
-          <p>Posts will appear here after the API is connected.</p>
-        </section>
-      </main>
+      <Routes>
+        <Route path="/" element={<PostListPage />} />
+        <Route path="/login" element={<LoginPage  />} />
+        <Route path="/posts/:postId" element={<PostDetailPage />} />
+      </Routes>
     </div>
   )
-  */
 }
 
 export default App
