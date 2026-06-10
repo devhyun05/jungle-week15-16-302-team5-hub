@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { listPosts } from '../api/posts'
 import type { Post } from '../types/post'
@@ -59,7 +60,9 @@ export function PostListPage() {
                 <ul className="post-list">
                     {posts.map((post) => (
                         <li key={post.id} className="post-card">
-                            <h2>{post.title}</h2>
+                            <Link to={`/posts/${post.id}`}>
+                                <h2>{post.title}</h2>
+                            </Link>
                             <p>{post.body}</p>
                             <small>Author #{post.author_id}</small>
                         </li>
