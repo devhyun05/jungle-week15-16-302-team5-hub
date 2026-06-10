@@ -91,6 +91,7 @@ const sortOptions = ["최신순", "인기순", "가격낮은순"]
 const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState("전체")
   const [selectedSortOption, setSelectedSortOption] = useState("최신순")
+
   return (
     <>
       <form className="mx-auto max-w-2xl">
