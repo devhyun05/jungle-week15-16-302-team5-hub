@@ -34,7 +34,7 @@ export const router = createBrowserRouter([
         // index route는 "/" 주소로 들어왔을 때 보여줄 기본 화면입니다.
         index: true,
         element: (
-          <RoleGate allowedRoles={["STUDENT"]}>
+          <RoleGate allowedRoles={["STUDENT","COACH"]}>
             <Dashboard />
           </RoleGate>
         ),

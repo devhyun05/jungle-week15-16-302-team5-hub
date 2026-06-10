@@ -28,6 +28,7 @@ const studentNavItems = [
 ];
 
 const coachNavItems = [
+  { name: "대시보드", path:"/", icon: LayoutDashboard },
   { name: "코치 리뷰 인박스", path: "/coach-review", icon: UserCheck },
   { name: "전체 게시글", path: "/posts", icon: List },
   { name: "설정", path: "/settings", icon: Settings },
