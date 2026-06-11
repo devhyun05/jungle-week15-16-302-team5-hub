@@ -1,12 +1,24 @@
-import { Link, Route, Routes } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, Route, Routes, useNavigate } from 'react-router-dom'
 
 import { LoginPage } from './pages/LoginPage'
 import { PostDetailPage } from './pages/PostDetailPage'
 import { PostListPage } from './pages/PostListPage'
 import { PostCreatePage } from './pages/PostCreatePage'
+import { PostEditPage } from './pages/PostEditPage'
 import './index.css'
 
 function App() {
+  const navigate = useNavigate()
+  const [token, setToken] = useState<string | null>(() => 
+    localStorage.getItem('access_token'),
+  )
+
+  function handleLogout() {
+    localStorage.removeItem('access_token')
+    setToken(null)
+    navigate('/')
+  }
 
   return (
     <div className="app-shell">
@@ -17,15 +29,25 @@ function App() {
         </div>
 
         <nav>
+          {token ? (
+            <button type="button" onClick={handleLogout}>
+              Log out
+            </button>
+          ) : (
           <Link to="/login">Log in</Link>
+          )}
         </nav>
       </header>
 
       <Routes>
         <Route path="/" element={<PostListPage />} />
-        <Route path="/login" element={<LoginPage  />} />
+        <Route
+          path="/login"
+          element={<LoginPage onLogin={(nextToken) => setToken(nextToken)} />}
+        />
         <Route path="/posts/:postId" element={<PostDetailPage />} />
         <Route path="/posts/new" element={<PostCreatePage />} />
+        <Route path="/posts/:postId/edit" element={<PostEditPage />} />
       </Routes>
     </div>
   )

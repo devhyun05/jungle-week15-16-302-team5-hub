@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 
-import { getPost } from '../api/posts'
+import { deletePost, getPost } from '../api/posts'
 import type { Post } from '../types/post'
 
 export function PostDetailPage() {
+    const navigate = useNavigate()
     const { postId } = useParams()
 
     const [post, setPost] = useState<Post | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [deleting, setDeleting] = useState(false)
 
     useEffect(() => {
         async function loadPost() {
@@ -33,6 +35,37 @@ export function PostDetailPage() {
 
         loadPost()
     }, [postId])
+
+    async function handleDelete() {
+        if (!post) {
+            return
+        }
+
+        const token = localStorage.getItem('access_token')
+
+        if (!token) {
+            navigate('/login')
+            return
+        }
+
+        const confirmed = window.confirm('Delete this post?')
+
+        if (!confirmed) {
+            return
+        }
+
+        setDeleting(true)
+        setError(null)
+
+        try {
+            await deletePost(post.id, token)
+            navigate('/')
+        } catch {
+            setError('Failed to delete post.')
+        } finally {
+            setDeleting(false)
+        }
+    }
 
     if (loading) {
         return (
@@ -68,6 +101,12 @@ export function PostDetailPage() {
                 <h1>{post.title}</h1>
                 <p>{post.body}</p>
                 <small>Author #{post.author_id}</small>
+                <div className="post-actions">
+                    <button type="button" onClick={handleDelete} disabled={deleting}>
+                        {deleting ? 'Deleting...' : 'Delete'}
+                    </button>
+                    <Link to={`/posts/${post.id}/edit`}>Edit</Link>
+                </div>
             </article>
         </main>
     )
