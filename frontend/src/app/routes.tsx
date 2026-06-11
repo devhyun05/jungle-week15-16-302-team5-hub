@@ -5,7 +5,8 @@ import { RoleGate } from "./components/RoleGate";
 
 // URL에 연결할 페이지 컴포넌트들을 한 곳에서 모읍니다.
 import { Login } from "./pages/auth/Login";
-import { Signup } from "./pages/auth/Signup";
+import { PendingApproval } from "./pages/auth/PendingApproval";
+import { AdminUsers } from "./pages/admin/AdminUsers";
 import { Dashboard } from "./pages/dashboard/Dashboard";
 import { Posts } from "./pages/posts/Posts";
 import { PostDetail } from "./pages/posts/PostDetail";
@@ -18,11 +19,10 @@ import { Settings } from "./pages/settings/Settings";
 
 export const router = createBrowserRouter([
   {
-    // 로그인/회원가입처럼 서비스 본문과 분리된 인증 화면 묶음입니다.
+    // Google 로그인처럼 서비스 본문과 분리된 인증 화면 묶음입니다.
     element: <AuthLayout />,
     children: [
       { path: "/login", element: <Login /> },
-      { path: "/signup", element: <Signup /> },
     ],
   },
   {
@@ -34,27 +34,50 @@ export const router = createBrowserRouter([
         // index route는 "/" 주소로 들어왔을 때 보여줄 기본 화면입니다.
         index: true,
         element: (
-          <RoleGate allowedRoles={["STUDENT","COACH"]}>
+          <RoleGate allowedRoles={["STUDENT", "COACH", "ADMIN"]}>
             <Dashboard />
           </RoleGate>
         ),
       },
-      { path: "posts", element: <Posts /> },
+      { path: "pending-approval", element: <PendingApproval /> },
       {
-        // 글쓰기, 내 기록, 포트폴리오, AI 도우미는 학생 전용 화면입니다.
+        path: "admin/users",
+        element: (
+          <RoleGate allowedRoles={["ADMIN"]}>
+            <AdminUsers />
+          </RoleGate>
+        ),
+      },
+      {
+        path: "posts",
+        element: (
+          <RoleGate allowedRoles={["STUDENT", "COACH", "ADMIN"]}>
+            <Posts />
+          </RoleGate>
+        ),
+      },
+      {
+        // 글쓰기, 내 기록, 포트폴리오, AI 도우미는 학생 중심 화면이며 관리자는 직접 URL로 확인할 수 있습니다.
         path: "posts/new",
         element: (
-          <RoleGate allowedRoles={["STUDENT"]}>
+          <RoleGate allowedRoles={["STUDENT", "ADMIN"]}>
             <PostEdit />
           </RoleGate>
         ),
       },
       // ":id" 값은 PostDetail에서 useParams로 읽어 상세 게시글을 찾습니다.
-      { path: "posts/:id", element: <PostDetail /> },
+      {
+        path: "posts/:id",
+        element: (
+          <RoleGate allowedRoles={["STUDENT", "COACH", "ADMIN"]}>
+            <PostDetail />
+          </RoleGate>
+        ),
+      },
       {
         path: "posts/:id/edit",
         element: (
-          <RoleGate allowedRoles={["STUDENT"]}>
+          <RoleGate allowedRoles={["STUDENT", "ADMIN"]}>
             <PostEdit />
           </RoleGate>
         ),
@@ -62,7 +85,7 @@ export const router = createBrowserRouter([
       {
         path: "my-records",
         element: (
-          <RoleGate allowedRoles={["STUDENT"]}>
+          <RoleGate allowedRoles={["STUDENT", "ADMIN"]}>
             <MyRecords />
           </RoleGate>
         ),
@@ -70,7 +93,7 @@ export const router = createBrowserRouter([
       {
         path: "portfolio",
         element: (
-          <RoleGate allowedRoles={["STUDENT"]}>
+          <RoleGate allowedRoles={["STUDENT", "ADMIN"]}>
             <Portfolio />
           </RoleGate>
         ),
@@ -78,14 +101,28 @@ export const router = createBrowserRouter([
       {
         path: "ai-assistant",
         element: (
-          <RoleGate allowedRoles={["STUDENT"]}>
+          <RoleGate allowedRoles={["STUDENT", "ADMIN"]}>
             <AIAssistant />
           </RoleGate>
         ),
       },
       // CoachReview는 내부에서 STUDENT/COACH role에 따라 다른 화면을 보여줍니다.
-      { path: "coach-review", element: <CoachReview /> },
-      { path: "settings", element: <Settings /> },
+      {
+        path: "coach-review",
+        element: (
+          <RoleGate allowedRoles={["STUDENT", "COACH", "ADMIN"]}>
+            <CoachReview />
+          </RoleGate>
+        ),
+      },
+      {
+        path: "settings",
+        element: (
+          <RoleGate allowedRoles={["STUDENT", "COACH", "ADMIN"]}>
+            <Settings />
+          </RoleGate>
+        ),
+      },
     ],
   },
 ]);

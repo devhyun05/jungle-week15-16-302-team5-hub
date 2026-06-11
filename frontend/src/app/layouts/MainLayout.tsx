@@ -5,15 +5,17 @@ import {
   BookOpen,
   Bot,
   Briefcase,
+  Clock,
   LayoutDashboard,
   List,
   PenSquare,
   Settings,
   UserCheck,
+  Users,
 } from "lucide-react";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
-import { notifications, type UserRole } from "../data/mockData";
+import { notifications, type ApprovalStatus, type UserRole } from "../data/mockData";
 
 const studentNavItems = [
   { name: "대시보드", path: "/", icon: LayoutDashboard },
@@ -32,21 +34,55 @@ const coachNavItems = [
   { name: "설정", path: "/settings", icon: Settings },
 ];
 
+const adminNavItems = [
+  { name: "사용자 승인", path: "/admin/users", icon: Users },
+];
+
+const pendingNavItems = [
+  { name: "승인 상태", path: "/pending-approval", icon: Clock },
+];
+
 // MainLayout이 Outlet 아래의 자식 페이지들에게 넘기는 공통 context입니다.
 export type MainLayoutContext = {
   role: UserRole;
   setRole: (role: UserRole) => void;
+  approvalStatus: ApprovalStatus;
+  setApprovalStatus: (status: ApprovalStatus) => void;
 };
 
 // 지금은 백엔드 로그인 전이라 localStorage에 저장된 mock role을 초기값으로 사용합니다.
 function getInitialRole(): UserRole {
   const savedRole = window.localStorage.getItem("junglelog-mock-role");
-  return savedRole === "COACH" ? "COACH" : "STUDENT";
+  if (savedRole === "COACH" || savedRole === "ADMIN") {
+    return savedRole;
+  }
+
+  return "STUDENT";
+}
+
+function getInitialApprovalStatus(): ApprovalStatus {
+  const savedStatus = window.localStorage.getItem("junglelog-mock-approval-status");
+  if (savedStatus === "승인 대기" || savedStatus === "거절" || savedStatus === "정지") {
+    return savedStatus;
+  }
+
+  return "승인 완료";
+}
+
+function getRoleLabel(role: UserRole) {
+  const labels: Record<UserRole, string> = {
+    STUDENT: "학생",
+    COACH: "코치",
+    ADMIN: "관리자",
+  };
+
+  return labels[role];
 }
 
 export function MainLayout() {
   // roleState가 바뀌면 사이드바 메뉴, 프로필, 접근 가능한 화면이 함께 바뀝니다.
   const [roleState, setRoleState] = useState<UserRole>(getInitialRole);
+  const [approvalStatus, setApprovalStatusState] = useState<ApprovalStatus>(getInitialApprovalStatus);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   const setRole = (nextRole: UserRole) => {
@@ -54,13 +90,30 @@ export function MainLayout() {
     window.localStorage.setItem("junglelog-mock-role", nextRole);
   };
 
+  const setApprovalStatus = (nextStatus: ApprovalStatus) => {
+    setApprovalStatusState(nextStatus);
+    window.localStorage.setItem("junglelog-mock-approval-status", nextStatus);
+  };
+
   // 역할에 따라 사이드바 메뉴 구성이 달라집니다.
-  const navItems = roleState === "STUDENT" ? studentNavItems : coachNavItems;
+  const navItems =
+    approvalStatus !== "승인 완료"
+      ? pendingNavItems
+      : roleState === "STUDENT"
+        ? studentNavItems
+        : roleState === "COACH"
+          ? coachNavItems
+          : adminNavItems;
   const profile = useMemo(
-    () =>
-      roleState === "STUDENT"
-        ? { name: "김정글", initial: "김", badge: "STUDENT" }
-        : { name: "이코치", initial: "이", badge: "COACH" },
+    () => {
+      if (roleState === "ADMIN") {
+        return { name: "정글 운영자", initial: "운", badge: "관리자" };
+      }
+
+      return roleState === "STUDENT"
+        ? { name: "김정글", initial: "김", badge: "학생" }
+        : { name: "이코치", initial: "이", badge: "코치" };
+    },
     [roleState],
   );
 
@@ -75,8 +128,8 @@ export function MainLayout() {
         </div>
 
         <div className="mx-4 mb-4 rounded-lg border border-slate-200 bg-slate-50 p-1">
-          <div className="grid grid-cols-2 gap-1">
-            {(["STUDENT", "COACH"] as UserRole[]).map((item) => (
+          <div className="grid grid-cols-3 gap-1">
+            {(["STUDENT", "COACH", "ADMIN"] as UserRole[]).map((item) => (
               <button
                 key={item}
                 type="button"
@@ -85,11 +138,25 @@ export function MainLayout() {
                   roleState === item ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-900"
                 }`}
               >
+                {getRoleLabel(item)}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-1">
+            {(["승인 완료", "승인 대기", "거절", "정지"] as ApprovalStatus[]).map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setApprovalStatus(item)}
+                className={`rounded-md px-2 py-1.5 text-xs font-semibold transition-colors ${
+                  approvalStatus === item ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
                 {item}
               </button>
             ))}
           </div>
-          <p className="mt-2 px-1 text-[11px] text-slate-400">mock role 전환</p>
+          <p className="mt-2 px-1 text-[11px] text-slate-400">개발용 mock 전환기입니다. 실제 서비스에서는 보이지 않습니다.</p>
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-4">
@@ -121,6 +188,11 @@ export function MainLayout() {
               <Badge variant={roleState === "STUDENT" ? "success" : "outline"} className="px-1.5 py-0 text-[10px]">
                 {profile.badge}
               </Badge>
+              {approvalStatus !== "승인 완료" && (
+                <Badge variant="warning" className="ml-1 px-1.5 py-0 text-[10px]">
+                  {approvalStatus}
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -166,18 +238,32 @@ export function MainLayout() {
               )}
             </div>
 
-            {roleState === "STUDENT" ? (
+            {approvalStatus !== "승인 완료" ? (
+              <Button asChild variant="outline" className="gap-2">
+                <Link to="/pending-approval">
+                  <Clock className="h-4 w-4" />
+                  <span>승인 상태</span>
+                </Link>
+              </Button>
+            ) : roleState === "STUDENT" ? (
               <Button asChild className="gap-2">
                 <Link to="/posts/new">
                   <PenSquare className="h-4 w-4" />
                   <span>글쓰기</span>
                 </Link>
               </Button>
-            ) : (
+            ) : roleState === "COACH" ? (
               <Button asChild variant="outline" className="gap-2">
                 <Link to="/coach-review">
                   <UserCheck className="h-4 w-4" />
                   <span>리뷰 인박스</span>
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild variant="outline" className="gap-2">
+                <Link to="/admin/users">
+                  <Users className="h-4 w-4" />
+                  <span>사용자 승인</span>
                 </Link>
               </Button>
             )}
@@ -186,7 +272,7 @@ export function MainLayout() {
 
         <main className="flex-1 overflow-y-auto bg-slate-50 p-4 sm:p-6 lg:p-8">
           {/* 자식 라우트는 useOutletContext로 role과 setRole을 읽을 수 있습니다. */}
-          <Outlet context={{ role: roleState, setRole } satisfies MainLayoutContext} />
+          <Outlet context={{ role: roleState, setRole, approvalStatus, setApprovalStatus } satisfies MainLayoutContext} />
         </main>
       </div>
     </div>

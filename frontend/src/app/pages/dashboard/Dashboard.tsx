@@ -1,5 +1,5 @@
 ﻿
-import { Link, useOutletContext } from "react-router";
+import { Link, Navigate, useOutletContext } from "react-router";
 import { ArrowRight, Briefcase, GitCommit, Inbox, MessageSquare, PenSquare, Sparkles } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
@@ -12,6 +12,10 @@ const recentRecords = posts.slice(0, 3);
 export function Dashboard() {
   // MainLayout에서 넘긴 role로 학생용 대시보드와 코치용 대시보드를 나눕니다.
   const { role } = useOutletContext<MainLayoutContext>();
+
+  if (role === "ADMIN") {
+    return <Navigate to="/admin/users" replace />;
+  }
 
   if (role === "COACH") {
     // 코치는 글 작성보다 들어온 리뷰 요청을 처리하는 흐름을 우선으로 봅니다.

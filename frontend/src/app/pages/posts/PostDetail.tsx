@@ -6,15 +6,26 @@ import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import { posts } from "../../data/mockData";
+import type { UserRole } from "../../data/mockData";
 import type { MainLayoutContext } from "../../layouts/MainLayout";
 
 type CommentItem = {
   id: string;
   author: string;
-  role: "STUDENT" | "COACH";
+  role: UserRole;
   createdAt: string;
   content: string;
 };
+
+function getRoleLabel(role: UserRole) {
+  const labels: Record<UserRole, string> = {
+    STUDENT: "학생",
+    COACH: "코치",
+    ADMIN: "관리자",
+  };
+
+  return labels[role];
+}
 
 function categoryVariant(category: string) {
   if (category === "트러블슈팅") return "warning";
@@ -80,7 +91,7 @@ export function PostDetail() {
       ...prev,
       {
         id: `comment-local-${Date.now()}`,
-        author: role === "COACH" ? "이코치" : "김정글",
+        author: role === "COACH" ? "이코치" : role === "ADMIN" ? "정글 운영자" : "김정글",
         role,
         createdAt: "방금 전",
         content: commentInput.trim(),
@@ -112,9 +123,13 @@ export function PostDetail() {
                 삭제
               </Button>
             </div>
-          ) : (
+          ) : role === "COACH" ? (
             <Button variant="outline" size="sm" asChild>
               <Link to="/coach-review">리뷰 인박스</Link>
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/admin/users">사용자 승인</Link>
             </Button>
           )}
         </div>
@@ -244,7 +259,7 @@ export function PostDetail() {
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-slate-900">{comment.author}</span>
                     <Badge variant={comment.role === "COACH" ? "success" : "secondary"} className="text-[10px]">
-                      {comment.role}
+                      {getRoleLabel(comment.role)}
                     </Badge>
                   </div>
                   <span className="text-xs text-slate-500">{comment.createdAt}</span>

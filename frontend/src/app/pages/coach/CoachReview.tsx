@@ -248,7 +248,7 @@ function StudentReviewView({ requests, setRequests }: ReviewRequestStateProps) {
   );
 }
 
-function CoachInboxView({ requests, setRequests }: ReviewRequestStateProps) {
+function CoachInboxView({ requests, setRequests, isAdmin = false }: ReviewRequestStateProps & { isAdmin?: boolean }) {
   // 코치 화면은 들어온 리뷰 요청을 검색/필터링하고 상태와 피드백을 수정합니다.
   // TODO backend: 실제 코치 id는 로그인/JWT 연결 후 인증 정보에서 가져옵니다.
   const currentCoachId = "coach-1";
@@ -256,8 +256,8 @@ function CoachInboxView({ requests, setRequests }: ReviewRequestStateProps) {
   const [selectedStatus, setSelectedStatus] = useState("전체");
   const [keyword, setKeyword] = useState("");
   const coachRequests = useMemo(
-    () => requests.filter((request) => request.coachIds.includes(currentCoachId)),
-    [currentCoachId, requests],
+    () => (isAdmin ? requests : requests.filter((request) => request.coachIds.includes(currentCoachId))),
+    [currentCoachId, isAdmin, requests],
   );
   const [selectedId, setSelectedId] = useState(() => coachRequests[0]?.id ?? reviewRequests[0].id);
   const selectedRequest = coachRequests.find((request) => request.id === selectedId) ?? coachRequests[0] ?? reviewRequests[0];
@@ -483,6 +483,6 @@ export function CoachReview() {
   return role === "STUDENT" ? (
     <StudentReviewView requests={requests} setRequests={setRequests} />
   ) : (
-    <CoachInboxView requests={requests} setRequests={setRequests} />
+    <CoachInboxView requests={requests} setRequests={setRequests} isAdmin={role === "ADMIN"} />
   );
 }

@@ -1,6 +1,7 @@
 import { BookOpen, Briefcase, MessageSquare, Wrench, type LucideIcon } from "lucide-react";
 
-export type UserRole = "STUDENT" | "COACH";
+export type UserRole = "STUDENT" | "COACH" | "ADMIN";
+export type ApprovalStatus = "승인 대기" | "승인 완료" | "거절" | "정지";
 
 // 게시글 카테고리는 화면 필터와 URL query string에서 같은 slug를 사용합니다.
 export type CategorySlug =
@@ -14,6 +15,19 @@ export type ReviewStatus = "대기 중" | "검토 중" | "피드백 완료" | "�
 export type PortfolioStatus = "작성중" | "보완 필요" | "정리 완료";
 export type CoachFeedbackStatus = "요청 전" | "요청함" | "검토 중" | "피드백 완료" | "수정 요청";
 export type TargetType = "post" | "portfolio";
+
+export type UserAccount = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  approvalStatus: ApprovalStatus;
+  track?: string;
+  coachField?: string;
+  requestedAt: string;
+  approvedAt?: string;
+  approvedBy?: string;
+};
 
 // 카테고리 탭과 대시보드 카드가 함께 사용하는 표시 정보입니다.
 export type Category = {
@@ -105,6 +119,59 @@ export const coaches = [
   { id: "coach-1", name: "이코치", field: "Backend" },
   { id: "coach-2", name: "정멘토", field: "Portfolio" },
   { id: "coach-3", name: "한리뷰", field: "Frontend" },
+];
+
+export const userAccounts: UserAccount[] = [
+  {
+    id: "user-admin-1",
+    name: "정글 운영자",
+    email: "admin@junglelog.dev",
+    role: "ADMIN",
+    approvalStatus: "승인 완료",
+    requestedAt: "2026.06.01",
+    approvedAt: "2026.06.01",
+    approvedBy: "system",
+  },
+  {
+    id: "student-1",
+    name: "김정글",
+    email: "student1@junglelog.dev",
+    role: "STUDENT",
+    approvalStatus: "승인 완료",
+    track: "Backend",
+    requestedAt: "2026.06.02",
+    approvedAt: "2026.06.02",
+    approvedBy: "정글 운영자",
+  },
+  {
+    id: "coach-1",
+    name: "이코치",
+    email: "coach1@junglelog.dev",
+    role: "COACH",
+    approvalStatus: "승인 완료",
+    coachField: "Backend",
+    requestedAt: "2026.06.02",
+    approvedAt: "2026.06.02",
+    approvedBy: "정글 운영자",
+  },
+  {
+    id: "pending-1",
+    name: "신청학생",
+    email: "pending-student@junglelog.dev",
+    role: "STUDENT",
+    approvalStatus: "승인 대기",
+    track: "Frontend",
+    requestedAt: "2026.06.11",
+  },
+  {
+    id: "pending-2",
+    name: "신청코치",
+    email: "pending-coach@junglelog.dev",
+    role: "COACH",
+    approvalStatus: "승인 대기",
+    coachField: "Portfolio",
+    requestedAt: "2026.06.11",
+  },
 ];
 
 export const posts: MockPost[] = [
