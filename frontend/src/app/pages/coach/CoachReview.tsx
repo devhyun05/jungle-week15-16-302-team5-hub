@@ -250,18 +250,24 @@ function StudentReviewView({ requests, setRequests }: ReviewRequestStateProps) {
 
 function CoachInboxView({ requests, setRequests }: ReviewRequestStateProps) {
   // 코치 화면은 들어온 리뷰 요청을 검색/필터링하고 상태와 피드백을 수정합니다.
+  // TODO backend: 실제 코치 id는 로그인/JWT 연결 후 인증 정보에서 가져옵니다.
+  const currentCoachId = "coach-1";
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [selectedStatus, setSelectedStatus] = useState("전체");
   const [keyword, setKeyword] = useState("");
-  const [selectedId, setSelectedId] = useState(reviewRequests[0].id);
-  const selectedRequest = requests.find((request) => request.id === selectedId) ?? requests[0];
+  const coachRequests = useMemo(
+    () => requests.filter((request) => request.coachIds.includes(currentCoachId)),
+    [currentCoachId, requests],
+  );
+  const [selectedId, setSelectedId] = useState(() => coachRequests[0]?.id ?? reviewRequests[0].id);
+  const selectedRequest = coachRequests.find((request) => request.id === selectedId) ?? coachRequests[0] ?? reviewRequests[0];
   const [feedback, setFeedback] = useState(selectedRequest.feedback);
   const [feedbackNotice, setFeedbackNotice] = useState("");
 
   // 카테고리, 상태, 검색어 조건을 모두 만족하는 요청만 인박스에 보여줍니다.
   const filteredRequests = useMemo(
     () =>
-      requests.filter((request) => {
+      coachRequests.filter((request) => {
         const categoryMatch = selectedCategory === "전체" || request.category === selectedCategory;
         const statusMatch = selectedStatus === "전체" || request.status === selectedStatus;
         const query = keyword.trim().toLowerCase();
@@ -275,7 +281,7 @@ function CoachInboxView({ requests, setRequests }: ReviewRequestStateProps) {
 
         return categoryMatch && statusMatch && keywordMatch;
       }),
-    [keyword, requests, selectedCategory, selectedStatus],
+    [coachRequests, keyword, selectedCategory, selectedStatus],
   );
 
   const targetPost = posts.find((post) => String(post.id) === selectedRequest.targetId);
