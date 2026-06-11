@@ -5,14 +5,15 @@
 ## Page List
 
 | Page | Route | Image |
-|---|---|---|
-| Home | `/` | `./images/home.png` |
-| Login | `/login` | `./images/login.png` |
-| Sign Up | `/signup` | `./images/signup.png` |
-| Post Detail | `/posts/:postId` | `./images/post-detail.png` |
-| Create Post | `/posts/new` | `./images/post-create.png` |
-| Edit Post | `/posts/:postId/edit` | `./images/post-edit.png` |
-| My Page | `/me` | `./images/my-page.png` |
+| --- | --- | --- |
+| Home | `/` | [home.png](./images/home.png) |
+| Login | `/login` | [login.png](./images/login.png) |
+| Post Detail | `/post-details/:postId` | [post-detail.png](./images/post-detail.png) |
+| Create Post | `/post-create` | [post-create.png](./images/post-create.png) |
+| Edit Post | `/post-edit` | [post-edit.png](./images/post-edit.png) |
+| My Page | `/profile` | [my-page.png](./images/my-page.png) |
+
+> `signup.png`는 초기 와이어프레임 참고 이미지로 보관한다. 현재 MVP에서는 Slack 로그인으로 가입과 로그인을 통합하므로 별도 회원가입 페이지는 사용하지 않는다.
 
 ## 1. Home
 
@@ -25,7 +26,6 @@
 - Header
 - Logo
 - Login button
-- Sign Up button
 - Search bar
 - Category filter
 - Sort buttons
@@ -40,56 +40,36 @@
 | Select sort option | 최신순, 인기순, 가격낮은순으로 정렬한다. |
 | Click product card | 상세 페이지로 이동한다. |
 | Click Login | 로그인 페이지로 이동한다. |
-| Click Sign Up | 회원가입 페이지로 이동한다. |
 
 ## 2. Login
 
-사용자가 기존 계정으로 로그인하는 화면이다.
+사용자가 Slack 계정으로 로그인하는 화면이다.
 
 ![Login wireframe](./images/login.png)
 
 ### Key UI
 
-- Email or username input
-- Password input
-- Remember me checkbox
-- Forgot password link
-- Login button
-- Sign up link
-- Social login buttons
+- JungleMarket logo
+- Slack login button
+- Slack workspace 안내 문구
 
 ### Main Actions
 
 | Action | Result |
-|---|---|
-| Log In | 인증 성공 시 홈 페이지로 이동한다. |
-| Sign up | 회원가입 페이지로 이동한다. |
-| Google / GitHub | 소셜 로그인 플로우를 시작한다. |
+| --- | --- |
+| Slack으로 계속하기 | 인증 성공 시 홈 페이지로 이동한다. |
 
 ## 3. Sign Up
 
-새 사용자가 계정을 생성하는 화면이다.
+초기 와이어프레임 단계에서 작성했던 회원가입 화면이다. 현재 MVP에서는 별도 회원가입 페이지를 사용하지 않는다.
 
 ![Sign Up wireframe](./images/signup.png)
 
-### Key UI
+### Current Decision
 
-- Username input
-- Email input
-- Password input
-- Confirm password input
-- Terms agreement checkbox
-- Create account button
-- Login link
-- Social signup buttons
-
-### Main Actions
-
-| Action | Result |
-|---|---|
-| Create Account | 회원가입을 요청한다. |
-| Log in | 로그인 페이지로 이동한다. |
-| Google / GitHub | 소셜 회원가입 플로우를 시작한다. |
+- Slack 로그인 최초 성공 시 사용자 정보를 자동 생성한다.
+- 별도 `/signup` 라우트는 사용하지 않는다.
+- 추가 프로필 정보가 필요하면 `/profile-edit`에서 입력한다.
 
 ## 4. Post Detail
 
@@ -99,57 +79,53 @@
 
 ### Key UI
 
-- Breadcrumb
-- Post tags
+- Product image area
+- Category badge
+- Sale status badge
 - Post title
-- Author metadata
-- Post content
-- Post action buttons
-- Similar posts sidebar
+- Seller metadata
+- Price
+- Description
+- Reaction summary
 - Author card
-- AI summary box
 - Comment form
 - Comment list
+- Related products sidebar
 
 ### Main Actions
 
 | Action | Result |
-|---|---|
+| --- | --- |
 | Edit | 작성자라면 수정 페이지로 이동한다. |
-| Like | 게시글 좋아요를 토글한다. |
 | Comment | 댓글을 작성한다. |
-| Similar post click | 관련 게시글 상세로 이동한다. |
+| Related product click | 관련 상품 상세로 이동한다. |
 
 ## 5. Create Post
 
-새 게시글을 작성하고 AI Writing Assistant를 사용할 수 있는 화면이다.
+새 판매글을 작성하고 AI 작성 도구를 사용할 수 있는 화면이다.
 
 ![Create Post wireframe](./images/post-create.png)
 
 ### Key UI
 
 - Title input
-- Tag selector
-- Editor toolbar
-- Content editor
+- Price input
+- Location input
+- Category select
+- Sale status select
+- Image upload
+- Description textarea
 - Save draft button
 - Publish button
-- AI Writing Assistant panel
-- Quick action buttons
-- AI suggestions
-- Ask the AI input
-- Writing stats
+- AI writing action buttons
 
 ### AI Actions
 
 | Action | Purpose |
-|---|---|
-| Improve writing | 글을 더 자연스럽게 개선한다. |
-| Fix grammar | 문법과 오탈자를 수정한다. |
-| Make shorter | 글을 더 짧게 요약한다. |
-| Add examples | 본문에 예시를 추가한다. |
-| Generate outline | 글의 개요를 생성한다. |
-| Suggest tags | 본문 기반 태그를 추천한다. |
+| --- | --- |
+| 문장 다듬기 | 설명을 더 자연스럽게 개선한다. |
+| 오타 수정 | 오탈자를 수정한다. |
+| 태그 추천 | 본문 기반 태그를 추천한다. |
 
 ## 6. Edit Post
 
@@ -160,24 +136,26 @@
 ### Key UI
 
 - Existing title
-- Existing selected tags
-- Editable content
+- Existing price
+- Existing location
+- Existing category
+- Existing sale status
+- Existing description
 - Save draft button
 - Update post button
-- AI Writing Assistant panel
-- Writing stats
+- AI writing action buttons
 
 ### Main Actions
 
 | Action | Result |
-|---|---|
+| --- | --- |
 | Save Draft | 수정 중인 내용을 임시 저장한다. |
 | Update Post | 수정 내용을 저장하고 상세 페이지로 이동한다. |
 | AI quick action | 현재 본문을 기준으로 AI 보조 기능을 실행한다. |
 
 ## 7. My Page
 
-사용자의 프로필, 내가 작성한 글, 내가 작성한 댓글을 확인하는 화면이다.
+사용자의 프로필, 내가 작성한 글, 댓글 내역을 확인하는 화면이다.
 
 ![My Page wireframe](./images/my-page.png)
 
@@ -186,7 +164,7 @@
 - Profile card
 - User avatar
 - Email
-- Member since
+- Joined date
 - Activity stats
 - My Posts tab
 - My Comments tab
@@ -196,9 +174,10 @@
 ### Main Actions
 
 | Action | Result |
-|---|---|
+| --- | --- |
 | Edit Profile | 프로필 수정 플로우로 이동한다. |
 | New Post | 게시글 작성 페이지로 이동한다. |
+| Click post | 게시글 상세 페이지로 이동한다. |
 | Edit post | 게시글 수정 페이지로 이동한다. |
 | Delete post | 게시글 삭제 확인을 표시한다. |
 | Delete comment | 댓글 삭제 확인을 표시한다. |
@@ -206,12 +185,13 @@
 ## Implementation Notes
 
 - 홈 페이지의 글 목록과 상세 조회는 비로그인 사용자도 접근할 수 있다.
-- 글쓰기, 글 수정, 댓글 작성, 마이페이지, AI Writing Assistant 실행은 로그인 사용자만 사용할 수 있다.
-- AI Summary와 Similar Posts는 게시글 상세 화면에 배치한다.
-- AI Writing Assistant는 작성/수정 화면 오른쪽 패널에 고정한다.
+- 글쓰기, 글 수정, 댓글 작성, 마이페이지, AI 작성 도구 실행은 로그인 사용자만 사용할 수 있다.
+- 작성/수정 폼은 `PostForm` 컴포넌트를 공유한다.
+- 현재 프론트엔드는 Slack 로그인 mock 상태를 사용한다.
 
 ## Change History
 
 | Date | Author | Description |
-|---|---|---|
+| --- | --- | --- |
 | 2026-06-06 | Hyunseong Lee | Add wireframe PNG documentation |
+| 2026-06-08 | Codex | Restore wireframe documentation and align routes with current frontend |

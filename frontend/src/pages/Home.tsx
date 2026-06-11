@@ -1,0 +1,245 @@
+import { useState } from "react"
+import { Link } from "react-router"
+
+const products = [
+  {
+    id: 1,
+    title: "맥북 프로 14인치 M3",
+    price: "2,200,000원",
+    location: "서초구",
+    time: "3분 전",
+    likes: 12,
+    comments: 3,
+  },
+  {
+    id: 2,
+    title: "나이키 에어포스1 270mm",
+    price: "65,000원",
+    location: "강남구",
+    time: "15분 전",
+    likes: 7,
+    comments: 1,
+  },
+  {
+    id: 3,
+    title: "아이패드 프로 11인치",
+    price: "850,000원",
+    location: "마포구",
+    time: "32분 전",
+    likes: 24,
+    comments: 8,
+  },
+  {
+    id: 4,
+    title: "다이슨 에어랩 완전세트",
+    price: "430,000원",
+    location: "용산구",
+    time: "1시간 전",
+    likes: 31,
+    comments: 14,
+  },
+  {
+    id: 5,
+    title: "소니 WH-1000XM5 헤드폰",
+    price: "280,000원",
+    location: "송파구",
+    time: "2시간 전",
+    likes: 18,
+    comments: 5,
+  },
+  {
+    id: 6,
+    title: "캠핑 의자 2개 세트",
+    price: "45,000원",
+    location: "은평구",
+    time: "3시간 전",
+    likes: 9,
+    comments: 2,
+  },
+  {
+    id: 7,
+    title: "레고 테크닉 42083",
+    price: "120,000원",
+    location: "광진구",
+    time: "5시간 전",
+    likes: 15,
+    comments: 4,
+  },
+  {
+    id: 8,
+    title: "닌텐도 스위치 OLED",
+    price: "310,000원",
+    location: "강동구",
+    time: "7시간 전",
+    likes: 22,
+    comments: 6,
+  },
+]
+
+const categories = [
+  "전체",
+  "전자기기",
+  "의류/잡화",
+  "도서",
+  "가구/인테리어",
+  "스포츠",
+  "기타",
+]
+
+const sortOptions = ["최신순", "인기순", "가격낮은순"]
+
+const Home = () => {
+  const [selectedCategory, setSelectedCategory] = useState("전체")
+  const [selectedSortOption, setSelectedSortOption] = useState("최신순")
+
+  return (
+    <>
+      <form className="mx-auto max-w-2xl">
+        <label
+          htmlFor="search"
+          className="block mb-2.5 text-sm font-medium text-heading sr-only"
+        >
+          Search
+        </label>
+
+        {/* 검색창 */}
+        <div className="relative mb-5 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg shadow-gray-200/70">
+          <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-5">
+            <svg
+              className="h-5 w-5 text-gray-400"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeWidth="2"
+                d="m21 21-3.5-3.5M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
+              />
+            </svg>
+          </div>
+
+          <input
+            type="search"
+            id="search"
+            className="block h-14 w-full rounded-xl border border-transparent bg-gray-50 ps-12 pe-24 text-sm font-medium text-gray-800 outline-none placeholder:text-gray-400 focus:border-[#A7F3D0] focus:bg-white focus:ring-4 focus:ring-[#ECFDF5]"
+            placeholder="검색어를 입력하세요. 예: 맥북, 아이패드, 나이키"
+            required
+          />
+
+          <button
+            type="submit"
+            className="absolute end-4 top-1/2 -translate-y-1/2 rounded-lg bg-[#00C471] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#00A862] focus:outline-none focus:ring-4 focus:ring-[#A7F3D0]"
+          >
+            검색
+          </button>
+        </div>
+
+        {/* 카테고리 버튼 UI */}
+        <div>
+          <div className="flex flex-wrap gap-2.5">
+            {categories.map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setSelectedCategory(category)}
+                className={
+                  selectedCategory === category
+                    ? "rounded-lg border-2 border-gray-400 px-4 py-2 text-sm font-semibold text-white bg-gray-800"
+                    : "rounded-lg border-2 border-gray-400 px-4 py-2 text-sm font-semibold text-gray-500 bg-white"
+                }
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
+      </form>
+
+      {/* 중고 거래 목록 */}
+      <section className="mx-auto mt-10 max-w-7xl px-4">
+        <div className="mb-5 flex items-center justify-between border-b border-dashed border-gray-300 pb-3">
+          <h2 className="text-xl font-semibold text-gray-800">
+            중고 거래 목록
+          </h2>
+
+          <div className="flex gap-2">
+            {sortOptions.map((sortOption) => (
+              <button
+                key={sortOption}
+                type="button"
+                onClick={() => setSelectedSortOption(sortOption)}
+                className={
+                  selectedSortOption === sortOption
+                    ? "rounded-lg border-2 border-gray-400 px-4 py-2 text-sm font-semibold text-white bg-gray-800"
+                    : "rounded-lg border-2 border-gray-400 px-4 py-2 text-sm font-semibold text-gray-500 bg-white"
+                }
+              >
+                {sortOption}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {products.map((product) => (
+            <Link
+              key={product.id}
+              to={`/post-details/${product.id}`}
+              className="overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+            >
+              {/* 이미지 자리 */}
+              <div className="flex h-56 items-center justify-center border-b border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-300 shadow-sm">
+                  <svg
+                    className="h-6 w-6"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.8"
+                      d="M4 16l4.5-4.5a2 2 0 0 1 2.8 0L16 16m-2-2 1.5-1.5a2 2 0 0 1 2.8 0L20 14m-16 5h16a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-11h.01"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              {/* 상품 정보 */}
+              <div className="p-4">
+                <h3 className="mb-2 text-base font-medium text-gray-800">
+                  {product.title}
+                </h3>
+
+                <p className="mb-2 text-lg font-semibold text-gray-950">
+                  {product.price}
+                </p>
+
+                <p className="mb-4 text-sm text-gray-500">
+                  {product.location} · {product.time}
+                </p>
+
+                <div className="border-t border-dashed border-gray-300 pt-3">
+                  <div className="flex gap-3 text-sm text-gray-500">
+                    <span>♡ {product.likes}</span>
+                    <span>💬 {product.comments}</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </>
+  )
+}
+
+export default Home
