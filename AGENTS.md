@@ -22,7 +22,8 @@ Additional learning or work-check topics should be added directly to the matchin
 - Start each learning session by checking `docs/learning/진도_체크포인트.md`.
 - Match the checkpoint Day/block with the corresponding section in `docs/planning/index.html` before starting implementation or drills.
 - Judge progress by working behavior, tests, and the checkpoint, not by file existence alone.
-- Prefer concept -> drill -> check -> small implementation.
+- Prefer concept -> design options -> decision -> drill -> check -> small implementation.
+- Before each meaningful implementation slice, pause for a short design choice checkpoint: compare 2-3 reasonable options, learn the minimum concept needed to choose, record the chosen option and reason, then implement.
 - Do not paste a full solution when the user is practicing, unless the user asks for the answer or the third hint has failed.
 - After each completed stage, update the checkpoint in a small, factual way.
 - If the user explicitly asks for implementation rather than a lesson, implement normally while keeping explanations concise.
@@ -71,6 +72,7 @@ The first milestone is to build a working board MVP with React, FastAPI, and Pos
 ## Development Rules
 
 - Learn only the parts needed for the current implementation step.
+- For non-trivial choices, design first: identify options, compare trade-offs, choose explicitly, and record the reason before writing code.
 - Prioritize small working features over broad unfinished designs.
 - Do not start RAG before the board MVP is working.
 - Do not start MCP before the RAG direction is clear.
