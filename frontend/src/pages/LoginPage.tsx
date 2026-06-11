@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom'
 
 import { login } from '../api/auth'
 
-export function LoginPage() {
+type LoginPageProps = {
+  onLogin: (token: string) => void
+}
+
+export function LoginPage({ onLogin }: LoginPageProps) {
     const navigate = useNavigate()
 
     const [email, setEmail] = useState('')
@@ -24,8 +28,7 @@ export function LoginPage() {
             })
 
             localStorage.setItem('access_token', result.access_token)
-
-            console.log('Logged in user:', result.user)
+            onLogin(result.access_token)
 
             navigate('/')
         } catch {
