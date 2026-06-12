@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { getPost, updatePost } from '../api/posts'
+import { getCurrentUserIdFromToken } from '../utils/authToken'
 
 export function PostEditPage() {
     const { postId } = useParams()
@@ -27,6 +28,13 @@ export function PostEditPage() {
 
             try {
                 const result = await getPost(Number(postId))
+                const currentUserId = getCurrentUserIdFromToken()
+
+                if (currentUserId !== result.author_id) {
+                    setLoadError('You are not authorized to edit this post.')
+                    return
+                }
+
                 setTitle(result.title)
                 setBody(result.body)
             } catch {
