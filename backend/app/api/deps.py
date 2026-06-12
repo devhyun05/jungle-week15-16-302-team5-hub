@@ -32,7 +32,7 @@ def get_current_user(
     
     try:
         user_id_int = int(user_id)
-    except ValueError as exc:
+    except (ValueError, TypeError) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",

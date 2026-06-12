@@ -136,3 +136,25 @@ def test_me_without_token_returns_401(client: TestClient):
     response = client.get("/api/auth/me")
 
     assert response.status_code == 401
+
+
+def test_me_with_invalid_token_subject_returns_401(
+    client: TestClient,
+    monkeypatch,
+):
+    # token decode 자체는 성공했지만 sub가 int로 바꿀 수 없는 모양이면 500이 아니라 401이어야 한다.
+    from app.api import deps
+
+    monkeypatch.setattr(
+        deps,
+        "decode_access_token",
+        lambda token: {"sub": {"unexpected": "shape"}},
+    )
+
+    response = client.get(
+        "/api/auth/me",
+        headers={"Authorization": "Bearer fake-token"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid token"
