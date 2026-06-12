@@ -63,9 +63,19 @@ def update_post(db: Session,
         )
     
     if update_request.title is not None:
+        if not update_request.title.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Title cannot be empty or whitespace",
+            )
         post.title = update_request.title
 
     if update_request.body is not None:
+        if not update_request.body.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Body cannot be empty or whitespace",
+            )
         post.body = update_request.body
 
     db.commit()

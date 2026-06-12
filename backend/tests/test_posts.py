@@ -191,6 +191,46 @@ def test_other_user_cannot_update_post(client: TestClient):
     assert response.json()["detail"] == "Not allowed to update this post"
 
 
+def test_update_post_rejects_blank_title(client: TestClient):
+    token = signup_and_login(
+        client,
+        email="author@example.com",
+        display_name="Author",
+    )
+    post = create_post(client, token)
+
+    response = client.put(
+        f"/api/posts/{post['id']}",
+        headers=auth_headers(token),
+        json={
+            "title": "   ",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Title cannot be empty or whitespace"
+
+
+def test_update_post_rejects_blank_body(client: TestClient):
+    token = signup_and_login(
+        client,
+        email="author@example.com",
+        display_name="Author",
+    )
+    post = create_post(client, token)
+
+    response = client.put(
+        f"/api/posts/{post['id']}",
+        headers=auth_headers(token),
+        json={
+            "body": "   ",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Body cannot be empty or whitespace"
+
+
 def test_author_can_delete_post(client: TestClient):
     token = signup_and_login(
         client,
