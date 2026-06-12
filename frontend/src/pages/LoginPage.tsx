@@ -28,6 +28,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             })
 
             localStorage.setItem('access_token', result.access_token)
+            localStorage.setItem('current_user_id', String(result.user.id))
             onLogin(result.access_token)
 
             navigate('/')
