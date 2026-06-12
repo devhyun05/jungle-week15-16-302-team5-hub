@@ -4,17 +4,20 @@ from sqlalchemy.orm import Session
 from app.models.post import Post
 from app.models.user import User
 from app.schemas.post import PostCreateRequest, PostResponse, PostUpdateRequest
-
+from app.services.tag_service import resolve_tags
 
 def create_post(
     db: Session,
     post_request: PostCreateRequest,
     current_user: User,
 ) -> Post:
+    tags = resolve_tags(db, post_request.tag_names)
+
     post = Post(
         title=post_request.title,
         body=post_request.body,
         author_id=current_user.id,
+        tags=tags,
     )
     
     db.add(post)
@@ -78,6 +81,9 @@ def update_post(db: Session,
             )
         post.body = update_request.body
 
+    if update_request.tag_names is not None:
+        post.tags = resolve_tags(db, update_request.tag_names)
+
     db.commit()
     db.refresh(post)
 
@@ -98,3 +104,6 @@ def delete_post(db: Session,
     
     db.delete(post)
     db.commit()
+
+
+
