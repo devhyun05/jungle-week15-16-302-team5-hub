@@ -16,6 +16,7 @@ function App() {
 
   function handleLogout() {
     localStorage.removeItem('access_token')
+    localStorage.removeItem('current_user_id')
     setToken(null)
     navigate('/')
   }
