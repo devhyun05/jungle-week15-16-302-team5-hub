@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, ForeignKey, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.tag import post_tags
 
 
 def utc_now() -> datetime:
@@ -23,3 +24,4 @@ class Post(Base):
         default=utc_now,
         onupdate=utc_now,
     )
+    tags = relationship("Tag", secondary=post_tags, back_populates="posts")
