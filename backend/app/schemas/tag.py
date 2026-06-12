@@ -1,6 +1,4 @@
-"""Pydantic schemas for tag APIs.
+"""Tag schema practice target.
 
-TODO:
-- TagResponse: id, name, tag_type.
-- PopularTagResponse: name, count.
+Session 06 will implement tag list and popular tag response schemas.
 """

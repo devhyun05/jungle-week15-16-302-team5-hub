@@ -1,0 +1,23 @@
+# Agent Learning Notes
+
+- React 학습은 `frontend/react-hooks-practice` 폴더를 기준으로 진행한다.
+- 학습 진도는 `frontend/react-hooks-practice/progress-check.md`를 기준으로 확인한다.
+- 별도 RAG/MCP 전용 페이지는 없고 `/agent` 화면에서 내부 검색과 상품 검색 흐름을 함께 다룬다.
+- 각 세션은 코드 작성 전에 오리엔테이션으로 시작한다.
+- 오리엔테이션에서는 구현 개념, 문법, 키워드, 변수명, 데이터 흐름을 충분히 자세히 설명한다.
+- 오리엔테이션은 실제 브라우저 동작 예시에서 시작하고, 사용자 행동 -> 값 변화 -> 렌더 반영 흐름을 추적한다.
+- 초보 개념은 `React가 정한 것`, `브라우저가 주는 것`, `사용자가 이름 짓는 것`을 구분해서 설명한다.
+- 추상 표현은 코드 한 줄과 함께 풀어 설명한다. 예: setter는 직접 대입이 아니라 React에 다음 값을 맡기는 함수.
+- 이벤트 설명은 `event`, `target`, `value` 또는 `checked`로 쪼개서 설명한다.
+- state 예시는 입력 중인 값, 새로고침 후 남는 값, 여러 화면이 공유하는 값을 구분한다.
+- 연습용 `*.tsx` 파일에는 코드 빈칸을 미리 넣지 않는다. 파일에는 세션 목표 주석만 둔다.
+- 빈칸 연습은 항상 Level 3에서 시작하되, 빈칸 코드는 Codex가 세션 중 채팅으로 제공한다.
+- Level 3 빈칸은 완성 코드 뼈대 안에 `____`를 넣고, 각 빈칸 옆에 짧은 의미 주석과 `(a)`, `(b)` 같은 라벨을 붙인다.
+- Codex는 정답 전체를 먼저 보여주지 않고, 사용자가 채운 코드를 점검하며 힌트를 준다.
+- 코드 피드백은 한 번에 1-3개만 짚고, 재작성 목표를 작게 준다.
+- 각 연습 파일은 작게 유지하고, 주요 개념을 여러 파일로 쪼개서 다룬다.
+- 주요 세션은 useState 문자열, boolean, controlled input, form submit, async loading, navigate, mount effect, cleanup effect, dependency effect, useMemo, route params, object state, array toggle, conditional list render 순서로 진행한다.
+- 사용자가 React 학습, 훅 연습, 세션 시작, 이어서 하기 등을 요청하면 먼저 `progress-check.md`를 읽고 현재 진도를 요약한다.
+- 진도 확인 뒤에는 다음 추천 세션을 말하고 "이 세션 오리엔테이션부터 시작할까요?"라고 물어본다.
+- 사용자가 시작을 승인하기 전에는 Level 3 빈칸을 내지 않는다.
+- 세션 종료 시에는 사용자의 진행 상태에 따라 `progress-check.md`를 업데이트할지 확인하고, 승인되면 상태와 메모를 반영한다.

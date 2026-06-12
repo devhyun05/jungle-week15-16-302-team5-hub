@@ -1,7 +1,5 @@
-"""Authentication service.
+"""Authentication service practice target.
 
-TODO:
-- 비밀번호 해시 생성/검증.
-- JWT access token 생성/검증.
-- current_user dependency에서 사용할 사용자 조회.
+Session 03 will implement password hashing, JWT creation, and current-user
+dependencies.
 """

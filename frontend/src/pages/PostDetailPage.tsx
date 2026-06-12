@@ -1,88 +1,252 @@
-import { Link } from "react-router-dom";
-import AiDiagnosisPanel from "../components/AiDiagnosisPanel";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { createComment, deleteComment, fetchComments, updateComment } from "../api/comments";
+import { deletePost, fetchPost } from "../api/posts";
 import TagBadge from "../components/TagBadge";
+import type { Comment, CommentListResponse, Post, PostType } from "../types";
+import {
+  articleH1,
+  badgeBase,
+  badgeTone,
+  button,
+  cn,
+  featureLinkTone,
+  ghostButton,
+  h2,
+  h3,
+  iconBase,
+  iconTone,
+  meta,
+  muted,
+  pageHeader,
+  pageStack,
+  surfaceCard,
+  tagRow,
+  textarea,
+} from "../styles/ui";
+
+const categoryMeta: Record<PostType, { label: string; className: string }> = {
+  recipe: { label: "레시피 공유", className: cn(badgeBase, badgeTone.mint) },
+  failure: { label: "실패 질문", className: cn(badgeBase, badgeTone.coral) },
+  review: { label: "후기", className: cn(badgeBase, badgeTone.lavender) },
+  general: { label: "일반", className: cn(badgeBase, badgeTone.mint) },
+};
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
 
 export default function PostDetailPage() {
+  const { postId } = useParams();
+  const navigate = useNavigate();
+  const [post, setPost] = useState<Post | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [comment, setComment] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingContent, setEditingContent] = useState("");
+  const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  const category = useMemo(
+    () => post ? categoryMeta[post.post_type] : categoryMeta.failure,
+    [post],
+  );
+
+  async function loadDetail() {
+    if (!postId) {
+      return;
+    }
+    setIsLoading(true);
+    setMessage("");
+    try {
+      const [postResponse, commentsResponse] = await Promise.all([
+        fetchPost<Post>(postId),
+        fetchComments<CommentListResponse>(postId),
+      ]);
+      setPost(postResponse);
+      setComments(commentsResponse.items);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "게시글을 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadDetail();
+  }, [postId]);
+
+  async function handleCommentSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!postId || !comment.trim()) {
+      return;
+    }
+    setMessage("");
+    try {
+      await createComment(postId, { content: comment });
+      setComment("");
+      await loadDetail();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "댓글 작성에 실패했습니다.");
+    }
+  }
+
+  async function handlePostDelete() {
+    if (!postId || !confirm("게시글을 삭제할까요?")) {
+      return;
+    }
+    try {
+      await deletePost(postId);
+      navigate("/posts");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "게시글 삭제에 실패했습니다.");
+    }
+  }
+
+  async function handleCommentUpdate(commentId: number) {
+    if (!editingContent.trim()) {
+      return;
+    }
+    try {
+      await updateComment(commentId, { content: editingContent });
+      setEditingCommentId(null);
+      setEditingContent("");
+      await loadDetail();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "댓글 수정에 실패했습니다.");
+    }
+  }
+
+  async function handleCommentDelete(commentId: number) {
+    if (!confirm("댓글을 삭제할까요?")) {
+      return;
+    }
+    try {
+      await deleteComment(commentId);
+      await loadDetail();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "댓글 삭제에 실패했습니다.");
+    }
+  }
+
+  if (isLoading) {
+    return <p className={muted}>게시글을 불러오는 중입니다.</p>;
+  }
+
+  if (!post) {
+    return (
+      <section className={pageStack}>
+        <Link className="font-extrabold text-mint-dark" to="/posts">게시판으로 돌아가기</Link>
+        <div className={surfaceCard}>
+          <p className="font-extrabold text-ink">게시글을 찾을 수 없습니다.</p>
+          {message && <p className={muted}>{message}</p>}
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="page-stack">
-      <Link className="feature-link" to="/posts">← 게시판으로 돌아가기</Link>
-      <div className="two-column">
+    <section className={pageStack}>
+      <Link className="font-extrabold text-mint-dark" to="/posts">게시판으로 돌아가기</Link>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div>
-          <article className="article-card">
-            <div className="page-header">
-              <div className="post-card-top">
-                <span className="badge badge-coral">실패 질문</span>
-                <span className="meta">2025.06.06 · 조회 247</span>
+          <article className="grid gap-[22px] rounded-lg border border-line bg-white p-6">
+            <div className={pageHeader}>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className={category.className}>{category.label}</span>
+                <span className={meta}>{formatDate(post.created_at)}</span>
               </div>
-              <h1>클리어 슬라임 만들었는데 자꾸 거품이 생겨요</h1>
-              <div className="comment-item">
-                <span className="avatar">민</span>
-                <p className="meta"><strong>민트연구원</strong><br />슬라임 입문자 · 게시글 12개</p>
+              <h1 className={articleH1}>{post.title}</h1>
+              <div className="flex items-start gap-2.5">
+                <span className={cn(iconBase, iconTone.mint)}>{post.author.nickname.slice(0, 1)}</span>
+                <p className={meta}><strong>{post.author.nickname}</strong><br />{post.author.email}</p>
               </div>
             </div>
-            <div className="tag-row">
-              {["클리어슬라임", "거품", "투명도", "초보질문"].map((tag) => (
-                <TagBadge key={tag} label={tag} />
-              ))}
+            <div className={tagRow}>
+              {post.tags.length ? post.tags.map((tag) => <TagBadge key={tag} label={tag} />) : <TagBadge label="태그없음" />}
             </div>
-            <div className="article-body">
-              <p>안녕하세요. 슬라임 만든 지 3개월 된 초보입니다.</p>
-              <p>
-                클리어 슬라임을 여러 번 시도했는데 항상 거품이 잡히지 않아요. 글루에 활성제를 넣는 순서를
-                바꿔봤는데도 결과가 비슷합니다.
-              </p>
-              <p><strong>사용 재료</strong></p>
-              <p>Elmer's 클리어 PVA 글루 100ml, 봉사수, 글리터 약간</p>
+            {post.slime_type && <p className={muted}><strong>슬라임 종류</strong> {post.slime_type}</p>}
+            <div className="grid gap-4 whitespace-pre-wrap leading-[1.8] text-ink">
+              {post.content}
             </div>
-            <div className="surface-card">
-              <p className="muted">슬라임 사진 2장</p>
-            </div>
-            <footer className="post-card-footer">
-              <span className="feature-link coral">좋아요 34</span>
-              <span className="post-metrics">
-                <span>저장</span>
-                <span>공유</span>
-              </span>
-            </footer>
+            {post.is_owner && (
+              <footer className="flex items-center justify-end gap-2.5">
+                <Link className={ghostButton} to={`/posts/${post.id}/edit`}>수정</Link>
+                <button className={ghostButton} type="button" onClick={handlePostDelete}>삭제</button>
+              </footer>
+            )}
           </article>
 
-          <section className="comments-card">
-            <h2>댓글 3개</h2>
-            <div className="comment-list">
-              {[
-                ["슬라임박사", "글루 종류가 중요해요. 활성제는 조금씩 천천히 넣어보세요."],
-                ["투명슬라임연구소", "빠르게 저으면 공기가 많이 들어갑니다. 한 방향으로 천천히 저어주세요."],
-                ["라벤더공방", "완성 후 24~48시간 두면 거품이 자연스럽게 없어질 때가 많습니다."],
-              ].map(([author, comment], index) => (
-                <div className="comment-item" key={author}>
-                  <span className={index === 0 ? "avatar lavender" : "avatar"}>{author.slice(0, 1)}</span>
-                  <div className="comment-body">
-                    <p><strong>{author}</strong> <span className="meta">방금 전</span></p>
-                    <p className="muted">{comment}</p>
+          <section className="mt-[18px] grid gap-[22px] rounded-lg border border-line bg-white p-6">
+            <h2 className={h2}>댓글 {comments.length}개</h2>
+            {message && <p className="rounded-lg border border-coral/20 bg-coral/10 p-3 text-base font-bold text-coral">{message}</p>}
+            <div className="grid gap-[18px]">
+              {comments.map((item, index) => (
+                <div className="flex items-start gap-2.5" key={item.id}>
+                  <span className={cn(iconBase, index % 2 === 0 ? iconTone.lavender : iconTone.mint)}>
+                    {item.author.nickname.slice(0, 1)}
+                  </span>
+                  <div className="grid flex-1 gap-[8px]">
+                    <p><strong>{item.author.nickname}</strong> <span className={meta}>{formatDate(item.created_at)}</span></p>
+                    {editingCommentId === item.id ? (
+                      <div className="grid gap-2">
+                        <textarea className={textarea} value={editingContent} onChange={(event) => setEditingContent(event.target.value)} />
+                        <div className="flex gap-2">
+                          <button className={button} type="button" onClick={() => handleCommentUpdate(item.id)}>저장</button>
+                          <button className={ghostButton} type="button" onClick={() => setEditingCommentId(null)}>취소</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className={muted}>{item.content}</p>
+                    )}
+                    {item.is_owner && editingCommentId !== item.id && (
+                      <div className="flex gap-2">
+                        <button
+                          className={cn("font-extrabold", featureLinkTone.mint)}
+                          type="button"
+                          onClick={() => {
+                            setEditingCommentId(item.id);
+                            setEditingContent(item.content);
+                          }}
+                        >
+                          수정
+                        </button>
+                        <button className={cn("font-extrabold", featureLinkTone.coral)} type="button" onClick={() => handleCommentDelete(item.id)}>
+                          삭제
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
-            <textarea className="textarea" aria-label="댓글 입력" placeholder="도움이 되는 댓글을 남겨주세요." />
-            <button className="button" type="button">등록</button>
+            <form className="grid gap-3" onSubmit={handleCommentSubmit}>
+              <textarea className={textarea} aria-label="댓글 입력" placeholder="도움이 되는 댓글을 남겨주세요." value={comment} onChange={(event) => setComment(event.target.value)} />
+              <button className={button} type="submit">댓글 등록</button>
+            </form>
           </section>
         </div>
 
-        <aside className="page-stack">
-          <section className="surface-card page-stack">
+        <aside className={pageStack}>
+          <section className={cn(surfaceCard, pageStack)}>
             <div>
-              <span className="badge badge-mint">RAG</span>
-              <h3>유사 게시글</h3>
+              <span className={cn(badgeBase, badgeTone.coral)}>AI Agent</span>
+              <h3 className={cn(h3, "mt-2")}>진단 흐름</h3>
             </div>
-            {["클리어 슬라임 거품 제거하는 방법", "거품 없는 클리어 슬라임 기본 레시피", "저도 같은 문제 겪었어요"].map((title) => (
-              <div className="result-item" key={title}>
-                <span className="badge badge-mint">유사도 90%</span>
-                <p className="muted">{title}</p>
+            {["게시글 내용은 RAG 지식으로 활용됩니다.", "Agent가 비슷한 사례와 도구 결과를 함께 확인합니다.", "결과에서 해결 순서와 추천 태그를 확인합니다."].map((title) => (
+              <div className="flex items-center gap-2.5" key={title}>
+                <span className={cn(badgeBase, badgeTone.mint)}>흐름</span>
+                <p className={muted}>{title}</p>
               </div>
             ))}
-            <button className="ghost-button" type="button">더 많은 사례 찾기</button>
+            <Link className={ghostButton} to="/agent">Agent에서 확인하기</Link>
           </section>
-          <AiDiagnosisPanel />
         </aside>
       </div>
     </section>

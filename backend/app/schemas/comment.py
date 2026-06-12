@@ -1,7 +1,4 @@
-"""Pydantic schemas for comment APIs.
+"""Comment schema practice target.
 
-TODO:
-- CommentCreate: content.
-- CommentUpdate: content.
-- CommentResponse: id, post_id, user, content, created_at.
+Session 10 will implement comment request/response schemas.
 """

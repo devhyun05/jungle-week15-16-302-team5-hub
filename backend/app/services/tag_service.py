@@ -1,7 +1,4 @@
-"""Tag service.
+"""Tag service practice target.
 
-TODO:
-- 초기 태그 조회/생성.
-- 게시글과 태그 연결.
-- AI 추천 태그를 기존 태그와 매칭.
+Sessions 06 and 09 will implement initial tags and post-tag replacement.
 """

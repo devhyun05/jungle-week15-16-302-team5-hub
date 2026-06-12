@@ -1,24 +1,46 @@
 import { apiRequest } from "./client";
-import type { ApiPayload } from "../types";
 
-export function diagnosePost<TResponse = unknown>(postId: number | string, location = "Seoul") {
-  // TODO: POST /ai/diagnose 호출.
-  // 반환값은 상황 요약, 원인 후보, 유사 사례, 습도 정보, 해결 순서, 추천 태그이다.
-  return apiRequest<TResponse>("/ai/diagnose", {
-    method: "POST",
-    body: JSON.stringify({ post_id: postId, location }),
-  });
+export interface RagResult {
+  post_id?: number | null;
+  title: string;
+  post_type: string;
+  score: number;
+  excerpt: string;
+  tags: string[];
 }
 
-export function fetchSimilarPosts<TResponse = unknown>(postId: number | string) {
-  // TODO: RAG 유사 실패 사례만 별도로 조회할 때 사용한다.
-  return apiRequest<TResponse>(`/ai/similar-posts/${postId}`);
+export interface RagSearchResponse {
+  query: string;
+  items: RagResult[];
 }
 
-export function suggestTags<TResponse = unknown>(payload: ApiPayload) {
-  // TODO: 게시글 작성 중 AI 자동 태그 추천에 사용한다.
-  return apiRequest<TResponse>("/ai/tags/suggest", {
+export interface ProductResult {
+  material: string;
+  search_keyword: string;
+  estimated_price: string;
+  source: string;
+  link: string;
+}
+
+export interface ProductSearchResponse {
+  query: string;
+  inferred_materials: string[];
+  items: ProductResult[];
+  adapter: string;
+}
+
+export interface AgentRouteResponse {
+  route: "rag" | "mcp" | "rag+mcp";
+  tool_calls: string[];
+  answer: string;
+  rag?: RagSearchResponse | null;
+  products?: ProductSearchResponse | null;
+  recommended_tags: string[];
+}
+
+export function routeAgent(message: string) {
+  return apiRequest<AgentRouteResponse>("/ai/agent/route", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ message }),
   });
 }

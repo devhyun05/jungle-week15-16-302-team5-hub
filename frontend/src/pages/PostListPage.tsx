@@ -1,132 +1,270 @@
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { fetchPosts } from "../api/posts";
+import { fetchPopularTags } from "../api/tags";
 import PostCard from "../components/PostCard";
-import type { PostCardData } from "../types";
+import TagBadge from "../components/TagBadge";
+import type { Post, PostCardData, PostListResponse, PostType, TagListResponse } from "../types";
+import {
+  button,
+  cn,
+  field,
+  ghostButton,
+  h1,
+  h3,
+  iconBase,
+  iconTone,
+  meta,
+  muted,
+  pageHeader,
+  pageStack,
+  sectionTitleRow,
+  surfaceCard,
+} from "../styles/ui";
 
 interface Category {
   label: string;
   description: string;
   icon: string;
-  selected?: boolean;
+  value: PostType | "";
 }
 
 const categories: Category[] = [
-  { label: "레시피 공유", description: "슬라임 제작 레시피", icon: "R", selected: true },
-  { label: "실패 질문", description: "실패 원인 질문과 해결", icon: "Q" },
-  { label: "후기", description: "제작 결과 후기", icon: "V" },
-  { label: "팁", description: "유용한 관리 팁", icon: "T" },
+  { label: "전체", description: "모든 게시글", icon: "A", value: "" },
+  { label: "레시피 공유", description: "슬라임 제작 레시피", icon: "R", value: "recipe" },
+  { label: "실패 질문", description: "실패 원인 질문과 해결", icon: "Q", value: "failure" },
+  { label: "후기", description: "제작 결과 후기", icon: "V", value: "review" },
+  { label: "일반", description: "팁과 자유 글", icon: "G", value: "general" },
 ];
 
-const filterTags = [
-  "전체",
-  "클리어슬라임",
-  "버터슬라임",
-  "크런치슬라임",
-  "물먹음",
-  "끈적임",
-  "베이스실패",
-  "풀베이스",
-];
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric" }).format(new Date(value));
+}
 
-const posts: PostCardData[] = [
-  {
-    id: 1,
-    type: "failure",
-    title: "클리어 슬라임 만들었는데 자꾸 거품이 생겨요",
-    summary: "글루에 활성제를 넣는 순서를 바꿔봤는데도 거품이 잡히지 않아요.",
-    tags: ["클리어슬라임", "거품", "투명도"],
-    hasImage: true,
-    author: "민트연구원",
-    time: "2시간 전",
-    comments: 12,
-    saves: 34,
-  },
-  {
-    id: 2,
-    type: "recipe",
-    title: "버터슬라임 황금 레시피 공유합니다",
-    summary: "습도 관계없이 일정한 질감을 유지하는 비율을 정리했어요.",
-    tags: ["버터슬라임", "황금레시피", "점도조절"],
-    hasImage: true,
-    author: "슬라임장인",
-    time: "4시간 전",
-    comments: 28,
-    saves: 156,
-  },
-  {
-    id: 3,
-    type: "review",
-    title: "크런치슬라임에 넣을 필러 조합 후기",
-    summary: "어항 자갈과 미니 폼볼 조합이 소리도 좋고 촉감도 안정적이었습니다.",
-    tags: ["크런치슬라임", "필러", "소리"],
-    author: "아쿠아드롭",
-    time: "6시간 전",
-    comments: 7,
-    saves: 23,
-  },
-  {
-    id: 4,
-    type: "tip",
-    title: "장마철 슬라임 보관하는 꿀팁 모음",
-    summary: "실리카겔 배치부터 밀폐 용기 선택까지 습도 높은 날 관리법을 모았습니다.",
-    tags: ["보관법", "장마", "습도"],
-    author: "라벤더공방",
-    time: "어제",
-    comments: 19,
-    saves: 87,
-  },
-];
+function toCardData(post: Post): PostCardData {
+  return {
+    id: post.id,
+    type: post.post_type,
+    title: post.title,
+    summary: post.summary,
+    tags: post.tags,
+    author: post.author.nickname,
+    time: formatDate(post.created_at),
+    comments: post.comment_count,
+    isOwner: post.is_owner,
+  };
+}
+
+interface PaginationProps {
+  page: number;
+  totalPages: number;
+  onChange: (page: number) => void;
+}
+
+function Pagination({ page, totalPages, onChange }: PaginationProps) {
+  const isFirst = page <= 1;
+  const isLast = page >= totalPages;
+
+  return (
+    <div className="flex items-center justify-center gap-3">
+      <button
+        className="inline-flex min-h-9 items-center rounded-full border border-line bg-white px-4 text-base font-bold text-muted transition hover:border-mint/50 hover:text-mint-dark disabled:cursor-not-allowed disabled:opacity-40"
+        type="button"
+        disabled={isFirst}
+        onClick={() => onChange(page - 1)}
+      >
+        이전
+      </button>
+      <span className="inline-flex min-h-9 items-center rounded-full bg-mint px-4 text-base font-bold text-white">
+        {page} / {totalPages}
+      </span>
+      <button
+        className="inline-flex min-h-9 items-center rounded-full border border-line bg-white px-4 text-base font-bold text-muted transition hover:border-mint/50 hover:text-mint-dark disabled:cursor-not-allowed disabled:opacity-40"
+        type="button"
+        disabled={isLast}
+        onClick={() => onChange(page + 1)}
+      >
+        다음
+      </button>
+    </div>
+  );
+}
 
 export default function PostListPage() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [popularTags, setPopularTags] = useState<string[]>([]);
+  const [keyword, setKeyword] = useState("");
+  const [submittedKeyword, setSubmittedKeyword] = useState("");
+  const [postType, setPostType] = useState<PostType | "">("");
+  const [selectedTag, setSelectedTag] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const selectedCategory = useMemo(
+    () => categories.find((category) => category.value === postType) || categories[0],
+    [postType],
+  );
+
+  useEffect(() => {
+    let ignore = false;
+    async function loadTags() {
+      try {
+        const response = await fetchPopularTags<TagListResponse>();
+        if (!ignore) {
+          setPopularTags(response.items.map((tag) => tag.name).slice(0, 10));
+        }
+      } catch {
+        if (!ignore) {
+          setPopularTags(["클리어슬라임", "버터슬라임", "끈적임", "거품", "실패해결"]);
+        }
+      }
+    }
+    loadTags();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+    async function loadPosts() {
+      setIsLoading(true);
+      setMessage("");
+      try {
+        const response = await fetchPosts<PostListResponse>({
+          page,
+          size: 10,
+          keyword: submittedKeyword || undefined,
+          post_type: postType || undefined,
+          tag: selectedTag || undefined,
+        });
+        if (!ignore) {
+          setPosts(response.items);
+          setTotal(response.total);
+          setTotalPages(response.total_pages);
+        }
+      } catch (error) {
+        if (!ignore) {
+          setMessage(error instanceof Error ? error.message : "게시글을 불러오지 못했습니다.");
+          setPosts([]);
+          setTotal(0);
+          setTotalPages(1);
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    }
+    loadPosts();
+    return () => {
+      ignore = true;
+    };
+  }, [page, postType, selectedTag, submittedKeyword]);
+
+  function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmittedKeyword(keyword.trim());
+    setPage(1);
+  }
+
+  function chooseType(value: PostType | "") {
+    setPostType(value);
+    setPage(1);
+  }
+
+  function chooseTag(tag: string) {
+    setSelectedTag((current) => (current === tag ? "" : tag));
+    setPage(1);
+  }
+
   return (
-    <section className="page-stack">
-      <div className="section-title-row">
-        <div className="page-header">
-          <h1>슬라임 연구 게시판</h1>
-          <p className="muted">총 4,281개의 게시글 · 오늘 28개 작성됨</p>
+    <section className={pageStack}>
+      <div className={sectionTitleRow}>
+        <div className={pageHeader}>
+          <h1 className={h1}>슬라임 연구 게시판</h1>
+          <p className={muted}>게시글 {total.toLocaleString()}개 · {selectedCategory.label} 보기</p>
         </div>
-        <Link to="/posts/new" className="button">글쓰기</Link>
+        <Link to="/posts/new" className={button}>글쓰기</Link>
       </div>
 
-      <div className="category-grid">
-        {categories.map((category) => (
-          <article className="surface-card stat-card" key={category.label}>
-            <span className={category.selected ? "icon-pill" : "icon-pill lavender"}>{category.icon}</span>
-            <div>
-              <h3>{category.label}</h3>
-              <p className="meta">{category.description}</p>
-            </div>
-          </article>
-        ))}
+      <div className="grid gap-4 md:grid-cols-5">
+        {categories.map((category) => {
+          const selected = category.value === postType;
+          return (
+            <button
+              className={cn(surfaceCard, "flex items-center gap-3.5 text-left transition hover:border-mint/50", selected && "border-mint bg-mint-soft")}
+              key={category.label}
+              type="button"
+              onClick={() => chooseType(category.value)}
+            >
+              <span className={cn(iconBase, selected ? iconTone.mint : iconTone.lavender)}>{category.icon}</span>
+              <span>
+                <span className={h3}>{category.label}</span>
+                <span className={meta}>{category.description}</span>
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="surface-card">
-        <div className="toolbar">
-          <input className="search-input" aria-label="게시글 검색" placeholder="제목, 내용, 재료 검색" />
-          <button className="ghost-button" type="button">필터</button>
-          <button className="ghost-button" type="button">최신순</button>
+      <form className={surfaceCard} onSubmit={handleSearch}>
+        <div className="flex items-center gap-3 max-md:flex-col max-md:items-stretch">
+          <input
+            className={field}
+            aria-label="게시글 검색"
+            placeholder="제목, 내용, 증상 검색"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+          />
+          <button className={ghostButton} type="submit">검색</button>
+          <button
+            className={ghostButton}
+            type="button"
+            onClick={() => {
+              setKeyword("");
+              setSubmittedKeyword("");
+              setSelectedTag("");
+              setPostType("");
+              setPage(1);
+            }}
+          >
+            초기화
+          </button>
         </div>
-      </div>
+      </form>
 
-      <div className="chip-row">
-        {filterTags.map((tag) => (
-          <span className={tag === "전체" ? "chip is-selected" : "chip"} key={tag}>
-            {tag === "전체" ? "#전체" : `#${tag}`}
-          </span>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => chooseTag("")}>
+          <TagBadge label="전체" selected={!selectedTag} />
+        </button>
+        {popularTags.map((tag) => (
+          <button type="button" onClick={() => chooseTag(tag)} key={tag}>
+            <TagBadge label={tag} selected={selectedTag === tag} />
+          </button>
         ))}
       </div>
 
-      <div className="post-grid">
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
-        ))}
-      </div>
+      {message && <p className="rounded-lg border border-coral/20 bg-coral/10 p-4 font-bold text-coral">{message}</p>}
+      {isLoading && <p className={muted}>게시글을 불러오는 중입니다.</p>}
 
-      <div className="pagination">
-        <span className="chip is-selected">1</span>
-        <span className="chip">2</span>
-        <span className="chip">3</span>
-        <span className="chip">4</span>
-      </div>
+      {!isLoading && posts.length === 0 ? (
+        <div className={surfaceCard}>
+          <p className="font-extrabold text-ink">검색 결과가 없어요.</p>
+          <p className={muted}>다른 태그나 검색어로 다시 찾아보세요.</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {posts.map((post) => (
+            <PostCard key={post.id} post={toCardData(post)} />
+          ))}
+        </div>
+      )}
+
+      <Pagination page={page} totalPages={totalPages} onChange={setPage} />
     </section>
   );
 }

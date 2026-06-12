@@ -1,3 +1,4 @@
-"""SQLAlchemy model exports."""
+"""SQLAlchemy model exports practice target.
 
-# TODO: User, Post, Comment, Tag, AI diagnosis model을 여기서 export한다.
+Sessions 02 and 05 will export models here after each model is implemented.
+"""

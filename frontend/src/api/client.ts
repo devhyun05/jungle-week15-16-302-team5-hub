@@ -1,11 +1,54 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const TOKEN_KEY = "malang_access_token";
+const USER_KEY = "malang_user";
+export const AUTH_CHANGE_EVENT = "malang-auth-change";
+
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+export function getStoredToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function getStoredUser<TUser = unknown>() {
+  const raw = localStorage.getItem(USER_KEY);
+  if (!raw) {
+    return null;
+  }
+  try {
+    return JSON.parse(raw) as TUser;
+  } catch {
+    return null;
+  }
+}
+
+export function storeSession<TUser>(token: string, user: TUser) {
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+}
+
+export function clearSession() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+}
 
 export async function apiRequest<TResponse = unknown>(path: string, options: RequestInit = {}): Promise<TResponse> {
-  // TODO: localStorage의 access token을 Authorization header에 자동으로 붙인다.
-  // TODO: 공통 에러 응답을 처리하고 화면에서 사용할 메시지로 변환한다.
   const headers = new Headers(options.headers);
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
+  }
+  const token = getStoredToken();
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -14,7 +57,14 @@ export async function apiRequest<TResponse = unknown>(path: string, options: Req
   });
 
   if (!response.ok) {
-    throw new Error("API 요청 처리 로직을 구현해야 합니다.");
+    let message = "API 요청에 실패했습니다.";
+    try {
+      const body = await response.json();
+      message = typeof body.detail === "string" ? body.detail : message;
+    } catch {
+      message = response.statusText || message;
+    }
+    throw new ApiError(message, response.status);
   }
 
   if (response.status === 204) {

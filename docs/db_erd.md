@@ -1,64 +1,87 @@
-# 말랑 연구소 DB ERD 보강안
+# 말랑 연구소 DB 설계서
 
-## 기준
+## 설계 기준
 
-- Notion `전체 아키텍처`와 하위 `DB 설계` 페이지는 PostgreSQL + pgvector를 기준으로, 게시판 데이터가 RAG와 AI 진단의 지식 베이스가 되는 구조를 정의한다.
-- 현재 코드의 `backend/app/models`는 실제 SQLAlchemy 컬럼 정의가 아직 없고 TODO 문서 문자열만 있다.
-- `db/init.sql`도 `CREATE EXTENSION IF NOT EXISTS vector;`와 테이블 계획 주석, `embeddings` 예시만 있는 상태다.
+- 구현 최소 요구사항을 만족하는 필수 테이블 중심 DB 설계다.
+- 기본 게시판 기능은 `users`, `posts`, `comments`, `tags`, `post_tags`로 처리한다.
+- RAG 검색은 `embeddings`에 게시글/댓글 벡터를 저장해서 처리한다.
+- MCP와 AI Agent 결과는 웹 페이지에서 재조회하지 않으므로 별도 저장 테이블을 두지 않고 API 응답으로 처리한다.
+- 레시피, 실패 사례, 후기 상세값은 별도 상세 테이블로 분리하지 않고 `posts`의 선택 컬럼으로 관리한다.
 
-## 현재 설계에 있는 핵심 테이블
+## 요구사항 반영표
 
-- `users`: 회원 정보
-- `posts`: 모든 게시글 공통 정보
-- `comments`: 게시글 댓글
-- `tags`, `post_tags`: 태그와 게시글-태그 다대다 관계
-- `recipes`: 레시피 게시글 상세
-- `failure_cases`: 실패 질문/해결 게시글 상세
-- `ai_diagnoses`: AI Agent 진단 결과
-- `embeddings`: RAG 검색용 pgvector 임베딩
-
-## 테이블 역할 설명
-
-| 테이블 | 역할 | 주요 연결 |
+| 요구사항 | DB 반영 | 설명 |
 | --- | --- | --- |
-| `users` | 회원 계정 정보를 저장한다. 이메일, 비밀번호 해시, 닉네임을 관리하며 게시글, 댓글, 반응의 주체가 된다. | `posts.user_id`, `comments.user_id`, `post_reactions.user_id` |
-| `posts` | 레시피, 실패 질문, 후기, 일반 글의 공통 게시글 정보를 저장하는 중심 테이블이다. 화면의 목록/상세 조회와 RAG 원본 데이터의 출발점이다. | `users`, `comments`, `post_tags`, `recipes`, `failure_cases`, `review_details`, `post_images`, `ai_diagnoses` |
-| `comments` | 게시글에 달린 댓글과 답글을 저장한다. 실제 해결 팁이 포함될 수 있으므로 RAG 검색용 지식 데이터로도 사용한다. | `posts`, `users`, `comments.parent_comment_id`, `embeddings` |
-| `tags` | 슬라임 종류, 실패 증상, 질감, 난이도 같은 태그 마스터 데이터를 저장한다. 검색/필터와 AI 추천 태그의 기준이 된다. | `post_tags` |
-| `post_tags` | 게시글과 태그의 다대다 관계를 저장하는 조인 테이블이다. 하나의 게시글에 여러 태그를 붙이고, 하나의 태그로 여러 게시글을 찾게 해준다. | `posts`, `tags` |
-| `recipes` | `post_type=recipe` 게시글의 상세 레시피 정보를 저장한다. 재료, 비율, 제작 단계, 완성 질감, 보관 팁처럼 레시피에만 필요한 필드를 분리한다. | `posts`, `embeddings` |
-| `failure_cases` | `post_type=failure` 게시글의 실패 증상과 해결 상태를 저장한다. AI 진단과 RAG 유사 사례 검색에서 가장 중요한 실패 데이터다. | `posts`, `ai_diagnoses`, `embeddings` |
-| `review_details` | `post_type=review` 게시글의 후기 전용 정보를 저장한다. 완성 질감, 만족도, 사용한 레시피 스냅샷, 후기 메모를 분리해 관리한다. | `posts`, `embeddings` |
-| `post_images` | 게시글에 첨부된 이미지 URL과 표시 순서를 저장한다. 작성 화면의 이미지 업로드와 상세 화면의 사진 영역을 지원한다. | `posts` |
-| `post_reactions` | 좋아요, 저장 같은 사용자 반응을 저장한다. 한 사용자가 같은 게시글에 같은 반응을 중복으로 남기지 않도록 제약을 둔다. | `posts`, `users` |
-| `ai_diagnoses` | AI Agent가 생성한 진단 요약, 원인 후보, 해결 단계, 추천 태그를 저장한다. 진단 결과 자체도 이후 RAG 지식으로 재사용할 수 있다. | `posts`, `weather_observations`, `ai_diagnosis_sources`, `embeddings` |
-| `ai_diagnosis_sources` | AI 진단이 참고한 RAG 근거를 정규화해 저장한다. 어떤 게시글/댓글/레시피가 몇 점의 유사도로 사용됐는지 추적할 수 있다. | `ai_diagnoses`, polymorphic `source_type/source_id` |
-| `weather_observations` | MCP 서버가 조회한 날씨/습도 정보를 진단 시점의 스냅샷으로 저장한다. 나중에 같은 진단을 재현하거나 습도와 실패 증상의 관계를 분석할 때 필요하다. | `ai_diagnoses`, `embeddings` |
-| `embeddings` | RAG 검색을 위한 벡터와 임베딩 원문을 저장한다. 게시글, 댓글, 상세 테이블, AI 진단 결과를 `source_type/source_id`로 연결하는 polymorphic 테이블이다. | polymorphic `source_type/source_id` |
+| 회원가입 / 로그인 | `users` | 이메일, 비밀번호 해시, 닉네임 저장 |
+| 게시물 CRUD | `posts` | 게시글 생성, 조회, 수정, 삭제 |
+| 댓글 | `comments` | 게시글별 댓글 저장 |
+| 태그 | `tags`, `post_tags` | 태그 마스터와 게시글-태그 다대다 연결 |
+| 페이징 | `posts.created_at`, `posts.id` 인덱스 | 최신순 목록 조회 기준 |
+| 검색 | `posts`, `tags` | 제목, 본문, 증상, 태그명 기반 키워드 검색 |
+| RAG | `embeddings` | 게시글/댓글을 벡터화해 유사 사례 검색 |
+| MCP | 별도 테이블 없음 | MCP 도구 결과는 요청 시 즉시 반환 |
+| AI Agent | 별도 테이블 없음 | Agent 답변은 요청 시 즉시 생성해 반환 |
 
-## 보강이 필요한 부분
+## 테이블 구성
 
-- `review_details`: `post_type=review`가 있지만 후기 상세 테이블이 없어 완성 질감, 만족도, 사용 기간 같은 후기 전용 정보를 담기 어렵다.
-- `post_images`: 화면과 작성 폼에 이미지 업로드가 있으나 이미지 메타데이터 저장 구조가 없다.
-- `post_reactions`: 좋아요, 저장 같은 사용자 반응이 UI에 보이지만 저장 테이블이 없다.
-- `ai_diagnosis_sources`: `rag_sources`를 JSON으로만 저장하면 어떤 게시글/댓글/진단이 근거였는지 정규화 조회가 어렵다.
-- `weather_observations`: MCP 날씨/습도 결과를 진단 당시 스냅샷으로 보존하면 재현성과 분석에 좋다.
-- `embeddings` 메타데이터: 재임베딩 관리를 위해 `embedding_model`, `embedding_dim`, `content_hash`가 있으면 좋다.
+| 테이블 | 역할 | 필수 기능 |
+| --- | --- | --- |
+| `users` | 회원 계정과 작성자 정보를 저장한다. | 인증, 작성자 표시 |
+| `posts` | 레시피, 실패 질문, 후기, 일반 글을 한 테이블에서 관리한다. | 게시글 CRUD, 검색, 페이징 |
+| `comments` | 게시글의 댓글을 저장한다. | 댓글 |
+| `tags` | 슬라임 종류, 증상, 질감, 난이도, 목적 태그를 저장한다. | 태그, 검색 필터 |
+| `post_tags` | 게시글과 태그의 다대다 관계를 저장한다. | 태그 연결 |
+| `embeddings` | 게시글/댓글에서 잘라낸 검색 조각과 벡터를 저장한다. | 게시글 1:N, 댓글 1:N |
+
+## 관계 차수
+
+| 관계 | 차수 | 설명 |
+| --- | --- | --- |
+| `users` - `posts` | 1:N | 한 사용자는 여러 게시글을 작성할 수 있고, 게시글 하나는 작성자 한 명에 속한다. |
+| `users` - `comments` | 1:N | 한 사용자는 여러 댓글을 작성할 수 있고, 댓글 하나는 작성자 한 명에 속한다. |
+| `posts` - `comments` | 1:N | 한 게시글에는 여러 댓글이 달릴 수 있고, 댓글 하나는 게시글 하나에 속한다. |
+| `posts` - `post_tags` | 1:N | 게시글과 태그의 N:M 관계를 조인 테이블의 1:N 관계로 풀어낸다. |
+| `tags` - `post_tags` | 1:N | 태그와 게시글의 N:M 관계를 조인 테이블의 1:N 관계로 풀어낸다. |
+| `posts` - `embeddings` | 1:N | 게시글 하나는 RAG 검색을 위해 여러 텍스트 조각으로 나뉘어 여러 임베딩을 가질 수 있다. |
+| `comments` - `embeddings` | 1:N | 댓글 하나도 여러 텍스트 조각으로 나뉘어 여러 임베딩을 가질 수 있다. |
+
+`embeddings`는 `post_id`와 `comment_id`를 모두 채우지 않는다. 임베딩 한 행은 게시글 기반이거나 댓글 기반이며, 두 FK 중 정확히 하나만 값을 가진다.
+
+## AI 기능 처리 방식
+
+RAG는 게시글과 댓글을 검색해야 하므로 `embeddings`에 벡터를 저장한다. 반면 MCP와 AI Agent는 현재 화면에서 결과를 즉시 보여주는 기능이므로 DB 저장 대상이 아니다.
+
+AI 기능 흐름:
+
+1. 게시글이나 댓글이 생성되면 RAG 검색을 위해 `embeddings`에 원문 조각과 벡터를 저장한다.
+2. 사용자가 RAG 검색이나 Agent 요청을 보내면 `embeddings`에서 유사한 게시글/댓글 조각을 찾는다.
+3. MCP가 필요한 요청이면 서버가 MCP 도구를 호출하고 결과를 API 응답에 포함한다.
+4. Agent는 RAG 결과와 MCP 결과를 조합해 답변을 만들고, 화면에 바로 반환한다.
 
 ## 전체 ERD
 
-PDF 발표 자료에서 추출한 ERD 이미지다. 문서 렌더링 환경에서 Mermaid가 보이지 않을 때도 전체 관계를 빠르게 확인할 수 있도록 함께 둔다.
+문서 렌더링 환경에서 Mermaid가 보이지 않을 때도 구조를 바로 확인할 수 있도록 PNG 이미지를 함께 둔다.
+테이블 생성 SQL은 [`db_schema_sql.md`](db_schema_sql.md)에 따로 정리한다.
 
-![말랑 연구소 DB 전체 ERD](assets/malrang-erd.png)
+![말랑 연구소 최소 요구사항 DB ERD](assets/malrang-erd.png)
 
-```
+```mermaid
+erDiagram
+    USERS ||--o{ POSTS : writes
+    USERS ||--o{ COMMENTS : writes
+    POSTS ||--o{ COMMENTS : has
+    POSTS ||--o{ POST_TAGS : tagged_with
+    TAGS ||--o{ POST_TAGS : assigned_to
+    POSTS ||--o{ EMBEDDINGS : has_embedding_chunks
+    COMMENTS ||--o{ EMBEDDINGS : has_embedding_chunks
+
     USERS {
       bigint id PK
       varchar email UK
       varchar password_hash
       varchar nickname
-      timestamp created_at
-      timestamp updated_at
+      timestamptz created_at
+      timestamptz updated_at
     }
 
     POSTS {
@@ -69,146 +92,195 @@ PDF 발표 자료에서 추출한 ERD 이미지다. 문서 렌더링 환경에�
       varchar post_type
       varchar slime_type
       varchar difficulty
-      int view_count
-      timestamp created_at
-      timestamp updated_at
-      timestamp deleted_at
+      text ingredients
+      text ratio
+      text steps
+      text texture_result
+      text storage_tip
+      text symptom
+      text attempted_solution
+      varchar solved_status
+      timestamptz created_at
+      timestamptz updated_at
     }
 
     COMMENTS {
       bigint id PK
       bigint post_id FK
       bigint user_id FK
-      bigint parent_comment_id FK
       text content
-      timestamp created_at
-      timestamp updated_at
-      timestamp deleted_at
+      timestamptz created_at
+      timestamptz updated_at
     }
 
     TAGS {
       bigint id PK
       varchar name
       varchar tag_type
-      timestamp created_at
+      timestamptz created_at
     }
 
     POST_TAGS {
       bigint post_id PK,FK
       bigint tag_id PK,FK
-      timestamp created_at
-    }
-
-    RECIPES {
-      bigint id PK
-      bigint post_id FK,UK
-      text ingredients
-      text ratio
-      text steps
-      text texture_result
-      text storage_tip
-    }
-
-    FAILURE_CASES {
-      bigint id PK
-      bigint post_id FK,UK
-      text symptom
-      text attempted_solution
-      varchar solved_status
-      text resolved_solution
-      timestamp resolved_at
-    }
-
-    REVIEW_DETAILS {
-      bigint id PK
-      bigint post_id FK,UK
-      text final_texture
-      int satisfaction_score
-      text used_recipe_snapshot
-      text review_note
-    }
-
-    POST_IMAGES {
-      bigint id PK
-      bigint post_id FK
-      varchar image_url
-      varchar alt_text
-      int sort_order
-      timestamp created_at
-    }
-
-    POST_REACTIONS {
-      bigint id PK
-      bigint post_id FK
-      bigint user_id FK
-      varchar reaction_type
-      timestamp created_at
-    }
-
-    AI_DIAGNOSES {
-      bigint id PK
-      bigint post_id FK
-      text diagnosis_summary
-      jsonb cause_candidates
-      jsonb solution_steps
-      jsonb recommended_tags
-      bigint weather_observation_id FK
-      timestamp created_at
-    }
-
-    AI_DIAGNOSIS_SOURCES {
-      bigint id PK
-      bigint ai_diagnosis_id FK
-      varchar source_type
-      bigint source_id
-      float similarity_score
-      text evidence_excerpt
-      timestamp created_at
-    }
-
-    WEATHER_OBSERVATIONS {
-      bigint id PK
-      varchar location
-      numeric temperature_c
-      numeric humidity_percent
-      varchar provider
-      jsonb raw_payload
-      timestamp observed_at
+      timestamptz created_at
     }
 
     EMBEDDINGS {
       bigint id PK
       varchar source_type
-      bigint source_id
+      bigint post_id FK
+      bigint comment_id FK
       text content
       vector embedding
       varchar embedding_model
       int embedding_dim
       varchar content_hash
-      timestamp created_at
+      timestamptz created_at
+      timestamptz updated_at
     }
 ```
 
-## 주요 제약 조건
+## 테이블 상세
 
-- `users.email` unique
-- `tags(name, tag_type)` unique
-- `post_tags(post_id, tag_id)` unique
-- `recipes.post_id`, `failure_cases.post_id`, `review_details.post_id` unique
-- `post_reactions(user_id, post_id, reaction_type)` unique
-- `ai_diagnosis_sources(source_type, source_id)`는 polymorphic reference이므로 애플리케이션 레벨 검증 필요
-- `embeddings(source_type, source_id)`도 polymorphic reference이므로 애플리케이션 레벨 검증 필요
+### `users`
+
+회원 인증과 작성자 표시를 위한 계정 테이블이다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | `bigint` | PK | 사용자 식별자 |
+| `email` | `varchar(255)` | NOT NULL, UNIQUE, INDEX | 로그인 이메일 |
+| `password_hash` | `varchar(255)` | NOT NULL | 해시 처리된 비밀번호 |
+| `nickname` | `varchar(80)` | NOT NULL | 화면 표시 이름 |
+| `created_at` | `timestamptz` | DEFAULT now | 가입 일시 |
+| `updated_at` | `timestamptz` | DEFAULT now, ON UPDATE | 수정 일시 |
+
+### `posts`
+
+게시글 CRUD, 목록 페이징, 키워드 검색의 중심 테이블이다. 게시글 유형별 상세 데이터는 nullable 컬럼으로 둔다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | `bigint` | PK | 게시글 식별자 |
+| `user_id` | `bigint` | FK, NOT NULL, INDEX | 작성자. `users.id` 참조 |
+| `title` | `varchar(200)` | NOT NULL, INDEX | 제목 |
+| `content` | `text` | NOT NULL | 본문 |
+| `post_type` | `varchar(20)` | NOT NULL, INDEX | `recipe`, `failure`, `review`, `general` |
+| `slime_type` | `varchar(80)` | NULL, INDEX | 슬라임 종류 |
+| `difficulty` | `varchar(80)` | NULL | 난이도 |
+| `ingredients` | `text` | NULL | 레시피 재료 |
+| `ratio` | `text` | NULL | 레시피 비율 |
+| `steps` | `text` | NULL | 제작 순서 |
+| `texture_result` | `text` | NULL | 완성 질감 |
+| `storage_tip` | `text` | NULL | 보관 팁 |
+| `symptom` | `text` | NULL | 실패 증상 |
+| `attempted_solution` | `text` | NULL | 시도한 해결 방법 |
+| `solved_status` | `varchar(40)` | NULL | 해결 상태 |
+| `created_at` | `timestamptz` | DEFAULT now, INDEX | 작성 일시 |
+| `updated_at` | `timestamptz` | DEFAULT now, ON UPDATE | 수정 일시 |
+
+유형별 사용 규칙:
+
+| `post_type` | 주로 사용하는 선택 컬럼 |
+| --- | --- |
+| `recipe` | `ingredients`, `ratio`, `steps`, `texture_result`, `storage_tip`, `difficulty`, `slime_type` |
+| `failure` | `symptom`, `attempted_solution`, `solved_status`, `slime_type` |
+| `review` | `texture_result`, `difficulty`, `slime_type` |
+| `general` | 공통 컬럼 중심 |
+
+### `comments`
+
+게시글 상세 화면의 댓글을 저장한다. 댓글도 RAG 지식 베이스가 될 수 있으므로 `embeddings.comment_id`와 연결된다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | `bigint` | PK | 댓글 식별자 |
+| `post_id` | `bigint` | FK, NOT NULL, INDEX | 댓글이 달린 게시글 |
+| `user_id` | `bigint` | FK, NOT NULL, INDEX | 댓글 작성자 |
+| `content` | `text` | NOT NULL | 댓글 내용 |
+| `created_at` | `timestamptz` | DEFAULT now | 작성 일시 |
+| `updated_at` | `timestamptz` | DEFAULT now, ON UPDATE | 수정 일시 |
+
+### `tags`
+
+검색, 필터, 추천 태그 표시를 위한 태그 마스터 테이블이다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | `bigint` | PK | 태그 식별자 |
+| `name` | `varchar(80)` | NOT NULL, INDEX | 태그명 |
+| `tag_type` | `varchar(40)` | NOT NULL, INDEX | `slime_type`, `symptom`, `texture`, `difficulty`, `purpose` |
+| `created_at` | `timestamptz` | DEFAULT now | 생성 일시 |
+
+제약:
+
+- `UNIQUE(name, tag_type)`
+
+### `post_tags`
+
+게시글과 태그의 다대다 관계를 표현하는 조인 테이블이다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `post_id` | `bigint` | PK, FK | `posts.id` 참조 |
+| `tag_id` | `bigint` | PK, FK | `tags.id` 참조 |
+| `created_at` | `timestamptz` | DEFAULT now | 연결 일시 |
+
+### `embeddings`
+
+RAG 검색을 위한 벡터 저장 테이블이다. 게시글과 댓글을 작은 검색 단위로 저장한다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | `bigint` | PK | 임베딩 식별자 |
+| `source_type` | `varchar(20)` | NOT NULL, INDEX | `post`, `comment` |
+| `post_id` | `bigint` | FK, NULL | 게시글 기반 임베딩이면 `posts.id` 참조 |
+| `comment_id` | `bigint` | FK, NULL | 댓글 기반 임베딩이면 `comments.id` 참조 |
+| `content` | `text` | NOT NULL | 임베딩에 사용한 원문 조각 |
+| `embedding` | `vector(1536)` | NOT NULL | pgvector 임베딩 값 |
+| `embedding_model` | `varchar(100)` | NOT NULL | 임베딩 모델명 |
+| `embedding_dim` | `int` | NOT NULL | 벡터 차원 |
+| `content_hash` | `varchar(64)` | NOT NULL, INDEX | 재임베딩 판단용 해시 |
+| `created_at` | `timestamptz` | DEFAULT now | 생성 일시 |
+| `updated_at` | `timestamptz` | DEFAULT now, ON UPDATE | 수정 일시 |
+
+제약:
+
+- `source_type`은 `post`, `comment` 중 하나다.
+- `post_id`, `comment_id` 중 정확히 하나만 값이 있어야 한다.
+- 같은 조각을 중복 임베딩하지 않도록 `post_id IS NOT NULL`이면 `(post_id, content_hash)`, `comment_id IS NOT NULL`이면 `(comment_id, content_hash)` 기준 partial unique index를 둔다.
+
+## 삭제 및 정합성 정책
+
+- 게시글 삭제 시 댓글과 태그 연결은 cascade 삭제한다.
+- 게시글/댓글 삭제 시 관련 임베딩도 cascade 삭제하거나 재색인 작업에서 제거한다.
+- RAG 검색 품질을 유지하기 위해 게시글/댓글 수정 시 관련 임베딩을 갱신한다.
 
 ## 인덱스 후보
 
-- `posts(post_type, created_at DESC)`
+현재 기능에 필요한 인덱스:
+
+- `users(email)`
+- `posts(created_at DESC, id DESC)`
 - `posts(user_id, created_at DESC)`
+- `posts(post_type, created_at DESC)`
+- `posts(slime_type, created_at DESC)`
 - `comments(post_id, created_at ASC)`
 - `tags(name)`, `tags(tag_type)`
-- `post_tags(post_id)`, `post_tags(tag_id)`
-- `post_reactions(post_id, reaction_type)`
-- `ai_diagnoses(post_id, created_at DESC)`
-- `ai_diagnosis_sources(ai_diagnosis_id, similarity_score DESC)`
-- `embeddings(source_type, source_id)`
+- `post_tags(post_id)`, `post_tags(tag_id, post_id)`
+- `embeddings(source_type, post_id)`, `embeddings(source_type, comment_id)`
+- `embeddings(content_hash)`
 - `embeddings.embedding` HNSW 또는 IVFFLAT vector index
-- 검색 품질이 필요하면 `posts.title`, `posts.content`, `comments.content`에 PostgreSQL full-text index 추가
+
+검색 품질을 높일 때 검토할 인덱스:
+
+- `posts.title`, `posts.content`, `posts.symptom` PostgreSQL full-text index
+- `comments.content` PostgreSQL full-text index
+- `tags.name` trigram 또는 full-text index
+
+## 구현 순서 제안
+
+1. `users`, `posts`, `comments`, `tags`, `post_tags`로 기본 게시판을 완성한다.
+2. 게시글/댓글 저장 후 `embeddings`를 생성하거나, 배치 작업으로 재색인한다.
+3. MCP와 AI Agent는 DB 저장 없이 API 응답으로 결과를 반환한다.

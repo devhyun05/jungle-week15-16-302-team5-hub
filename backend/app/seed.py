@@ -1,7 +1,8 @@
-"""Development seed data.
+"""Development seed practice target.
 
-TODO:
-- 초기 태그 데이터를 삽입한다.
-- RAG 테스트용 레시피/실패 사례/댓글 샘플을 만든다.
-- 데모 입력과 비슷한 실패 사례를 최소 3개 준비한다.
+Session 06 will connect initial tag seeding after tag models and services exist.
 """
+
+
+def seed_database(db: object) -> None:
+    return None

@@ -6,13 +6,13 @@ import SignupPage from "./pages/SignupPage";
 import PostListPage from "./pages/PostListPage";
 import PostDetailPage from "./pages/PostDetailPage";
 import PostEditorPage from "./pages/PostEditorPage";
+import AgentDiagnosisPage from "./pages/AgentDiagnosisPage";
 
 export default function App() {
-  // TODO: 인증 상태를 확인하고 보호된 route를 분리한다.
   return (
     <BrowserRouter>
       <Header />
-      <main className="app-shell">
+      <main className="mx-auto max-w-[1200px] px-5 py-9 pb-[72px] md:px-12">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -21,6 +21,7 @@ export default function App() {
           <Route path="/posts/new" element={<PostEditorPage />} />
           <Route path="/posts/:postId" element={<PostDetailPage />} />
           <Route path="/posts/:postId/edit" element={<PostEditorPage />} />
+          <Route path="/agent" element={<AgentDiagnosisPage />} />
         </Routes>
       </main>
     </BrowserRouter>

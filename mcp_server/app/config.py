@@ -2,12 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """MCP server settings.
-
-    TODO:
-    - WEATHER_API_KEY를 환경 변수에서 읽는다.
-    - DEFAULT_LOCATION을 관리한다.
-    """
+    """MCP server settings."""
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -15,8 +10,8 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    weather_api_key: str = ""
-    default_location: str = "Seoul"
+    shopping_api_key: str = ""
+    shopping_api_base_url: str = ""
 
 
 settings = Settings()

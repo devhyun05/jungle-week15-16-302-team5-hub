@@ -1,8 +1,5 @@
-"""Pydantic schemas for auth APIs.
+"""Auth schema practice target.
 
-TODO:
-- SignupRequest: email, password, nickname.
-- LoginRequest: email, password.
-- TokenResponse: access_token, token_type.
-- MeResponse: id, email, nickname.
+Session 02 will implement signup/login request schemas and user/token response
+schemas from `api-spec.md`.
 """

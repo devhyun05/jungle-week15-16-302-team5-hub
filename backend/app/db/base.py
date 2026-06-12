@@ -1,8 +1,4 @@
-from sqlalchemy.orm import DeclarativeBase
+"""SQLAlchemy declarative base practice target.
 
-
-class Base(DeclarativeBase):
-    """Base class for all SQLAlchemy models."""
-
-
-# TODO: migrations 도입 시 모든 model을 import하여 metadata에 등록한다.
+Session 01 will implement the shared `Base` class used by all models.
+"""
