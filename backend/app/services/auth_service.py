@@ -7,7 +7,8 @@ from app.schemas.auth import LoginRequest, SignupRequest, TokenResponse
 
 
 def signup(db: Session, signup_request: SignupRequest) -> User:
-    existing_user = db.query(User).filter(User.email == signup_request.email).first()
+    email_normalized = signup_request.email.lower()
+    existing_user = db.query(User).filter(User.email == email_normalized).first()
 
     if existing_user:
         raise HTTPException(
@@ -18,7 +19,7 @@ def signup(db: Session, signup_request: SignupRequest) -> User:
     password_hash = hash_password(signup_request.password)
 
     user = User(
-        email=signup_request.email,
+        email=email_normalized,
         display_name=signup_request.display_name,
         password_hash=password_hash,
     )
@@ -31,7 +32,8 @@ def signup(db: Session, signup_request: SignupRequest) -> User:
 
 
 def login(db: Session, login_request: LoginRequest) -> TokenResponse:
-    user = db.query(User).filter(User.email == login_request.email).first()
+    email_normalized = login_request.email.lower()
+    user = db.query(User).filter(User.email == email_normalized).first()
 
     if not user:
         raise HTTPException(
