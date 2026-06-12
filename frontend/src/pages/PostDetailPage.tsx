@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { deletePost, getPost } from '../api/posts'
 import type { Post } from '../types/post'
+import { getCurrentUserIdFromToken } from '../utils/authToken'
 
 export function PostDetailPage() {
     const navigate = useNavigate()
@@ -93,6 +94,8 @@ export function PostDetailPage() {
         )
     }
 
+    const isAuthor = getCurrentUserIdFromToken() === post.author_id
+
     return (
         <main className="page">
             <article className="post-detail">
@@ -101,12 +104,14 @@ export function PostDetailPage() {
                 <h1>{post.title}</h1>
                 <p>{post.body}</p>
                 <small>Author #{post.author_id}</small>
-                <div className="post-actions">
-                    <button type="button" onClick={handleDelete} disabled={deleting}>
-                        {deleting ? 'Deleting...' : 'Delete'}
-                    </button>
-                    <Link to={`/posts/${post.id}/edit`}>Edit</Link>
-                </div>
+                {isAuthor && (
+                    <div className="post-actions">
+                        <button type="button" onClick={handleDelete} disabled={deleting}>
+                            {deleting ? 'Deleting...' : 'Delete'}
+                        </button>
+                        <Link to={`/posts/${post.id}/edit`}>Edit</Link>
+                    </div>
+                )}
             </article>
         </main>
     )
