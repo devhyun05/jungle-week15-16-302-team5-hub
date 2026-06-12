@@ -5,7 +5,8 @@
 ```txt
 pages/
   ai/          AI 도우미
-  auth/        로그인 / 회원가입
+  admin/       사용자 승인 관리
+  auth/        Google 로그인
   coach/       코치 리뷰 요청 / 인박스
   dashboard/   대시보드
   portfolio/   포트폴리오 관리

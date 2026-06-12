@@ -19,10 +19,10 @@ Trello의 전체 TODO 흐름을 기준으로, 각 단계가 완료되었는지 �
 | --- | --- | --- |
 | 0 | 프로젝트 환경 세팅 및 문서 기준 정리 | 완료 |
 | 1 | React mock UI 안정화 | 완료 |
-| 2 | React 코드 이해 및 학습 정리 | 진행 중 |
-| 3 | FastAPI 백엔드 기본 구조 구현 | 예정 |
-| 4 | PostgreSQL DB 설계 및 연결 | 예정 |
-| 5 | 회원가입 / 로그인 / JWT 인증 구현 | 예정 |
+| 2 | React 코드 이해 및 학습 정리 | 완료 |
+| 3 | FastAPI 백엔드 기본 구조 구현 | 완료 |
+| 4 | PostgreSQL DB 설계 및 연결 | 진행 중 |
+| 5 | Google OAuth / 자동 가입 / JWT 인증 구현 | 예정 |
 | 6 | 게시판 CRUD API 구현 | 예정 |
 | 7 | 댓글 / 태그 / 페이징 / 검색 API 구현 | 예정 |
 | 8 | 프론트엔드와 백엔드 API 연결 | 예정 |
@@ -65,9 +65,9 @@ Trello의 전체 TODO 흐름을 기준으로, 각 단계가 완료되었는지 �
 
 ### 2. React 코드 이해 및 학습 정리
 
-목표는 기능을 더 추가하기 전에 지금 만든 React 코드를 직접 이해하는 것이다.
+상태: 완료
 
-진행 문서: [stage-2-react-code-reading.md](stage-2-react-code-reading.md)
+목표는 기능을 더 추가하기 전에 지금 만든 React 코드를 직접 이해하는 것이다.
 
 체크리스트:
 
@@ -96,13 +96,267 @@ Trello의 전체 TODO 흐름을 기준으로, 각 단계가 완료되었는지 �
 진행 기록:
 
 - 2026-06-06: 2단계 시작. 라우트, 레이아웃, RoleGate, mockData, 주요 페이지 파일의 읽는 순서를 정리했다.
+- 2026-06-10: `MainLayout`의 동작하지 않는 헤더 전역 검색 UI를 제거했다. 페이지별 검색은 유지하고, `test.md`를 반복 검증 체크리스트처럼 운영하도록 정리했다.
+- 2026-06-11: `CoachReview`에서 리뷰 요청 state를 부모로 끌어올려 STUDENT / COACH 화면이 같은 mock 원본 요청 state를 공유하도록 정리했다. 학생은 본인 요청만, 코치는 mock `currentCoachId`에 배정된 요청만 필터링하도록 개선했다. 코치 피드백 전송 안내와 빈 피드백 방어 흐름을 추가했고 `npm run build` 성공을 확인했다.
+- 2026-06-11: React Router 훅, state lifting, props, `useMemo`, role 기반 화면 분기까지 복습했으므로 2단계를 완료 처리하고 백엔드 기본 구조 구현으로 이동한다.
+- 2026-06-11: 키워드 학습 문서를 `front-keyword.md`, `back-keyword.md`로 분리하고 중복 안내 문서를 정리했다.
+- 2026-06-11: `test.md`를 자체 QA 체크리스트로 재정의하고, 실제 문제 해결 기록은 `troubleshooting.md`로 분리했다.
+
+### 3. FastAPI 백엔드 기본 구조 구현
+
+상태: 완료
+
+목표는 게시판 API를 바로 완성하는 것이 아니라, FastAPI 서버가 정상 실행되고 기본 API가 응답하는 백엔드 뼈대를 만드는 것이다.
+
+체크리스트:
+
+- Python / pip / Docker 개발 환경 확인
+- backend 가상환경 생성 또는 확인
+- FastAPI / Uvicorn 설치
+- `backend/app/main.py` 생성
+- `backend/app/routers/health.py` 생성
+- `/health` API 응답 확인
+- Swagger 문서 `/docs` 확인
+- CORS 설정 추가
+- README와 study 문서에 백엔드 실행 방법 정리
+
+완료 기준:
+
+- `uvicorn app.main:app --reload`로 서버가 실행된다.
+- `GET /health`가 `{ "status": "ok" }` 형태로 응답한다.
+- `http://localhost:8000/docs`에서 Swagger 문서를 확인할 수 있다.
+- 프론트엔드와 연결할 수 있도록 CORS 기본 설정이 들어가 있다.
+- 백엔드 기본 구조와 실행 방법이 문서에 정리되어 있다.
+
+진행 기록:
+
+- 2026-06-11: 백엔드 세팅 명령어와 실행 방법을 계속 누적하기 위해 `setup.md`를 추가했다.
+- 2026-06-11: FastAPI / Uvicorn 설치 후 `requirements.txt`를 생성했다.
+- 2026-06-11: `main.py`와 `routers/health.py`를 구성하고 `/health`, `/docs` 응답을 확인했다.
+- 2026-06-11: `pydantic-settings`를 추가하고 `.env` / `config.py` / `.env.example` 기반으로 앱 이름과 CORS origin 설정을 분리했다.
+- 2026-06-11: `test.md` 기준으로 FastAPI 서버, `/health`, `/docs`, CORS, configuration QA를 통과했다.
+
+### 4. PostgreSQL DB 설계 및 연결
+
+상태: 진행 중
+
+목표는 Docker Compose로 PostgreSQL을 실행하고, FastAPI가 DB에 연결할 수 있는 기반을 만드는 것이다.
+
+체크리스트:
+
+- Docker / Docker Compose 설치 확인
+- `docker-compose.yml`의 PostgreSQL 설정 이해
+- `docker compose up -d`로 PostgreSQL 컨테이너 실행
+- `docker ps`로 `junglelog-postgres` 실행 상태 확인
+- `docker logs junglelog-postgres`에서 readiness 로그 확인
+- Docker volume 생성 확인
+- `DATABASE_URL` 환경변수 추가
+- SQLAlchemy / psycopg 설치
+- `db/session.py`에서 DB engine/session 구성
+- DB 연결 확인용 API 또는 스크립트 작성
+
+완료 기준:
+
+- `junglelog-postgres` 컨테이너가 `Up` 상태다.
+- PostgreSQL이 `localhost:5432`에서 연결 가능하다.
+- FastAPI 설정에서 `DATABASE_URL`을 읽을 수 있다.
+- SQLAlchemy session 구성이 완료된다.
+- DB 연결 확인이 성공한다.
+
+진행 기록:
+
+- 2026-06-11: Docker 29.2.1, Docker Compose v5.1.0 확인.
+- 2026-06-11: `docker compose up -d`로 `junglelog-postgres` 컨테이너 실행 성공.
+- 2026-06-11: `docker ps`에서 `0.0.0.0:5432->5432/tcp` 포트 매핑과 `Up` 상태 확인.
+- 2026-06-11: `docker logs junglelog-postgres`에서 `database system is ready to accept connections` 확인.
+- 2026-06-11: `week15_ai_board_postgres_data` volume 생성 확인.
+- 2026-06-11: `SQLAlchemy`, `psycopg[binary]` 설치 후 `requirements.txt`를 갱신했다.
+- 2026-06-11: `.env`, `.env.example`, `config.py`에 `DATABASE_URL` 설정을 추가했다.
+- 2026-06-11: `db/session.py`에서 SQLAlchemy `engine`, `SessionLocal`, `get_db()` 구성을 완료했다.
+- 2026-06-11: `/health/db` endpoint에서 `SELECT 1`을 실행해 FastAPI와 PostgreSQL 연결을 확인했다.
+- 2026-06-11: `test.md` 기준으로 `/health`, `/health/db`, OpenAPI path, Docker 컨테이너 상태, backend compile QA를 통과했다.
+- 2026-06-11: 프론트엔드 `npm run build`도 성공해 기존 React 화면이 깨지지 않았음을 확인했다.
+- 2026-06-11: `docs/agent/db-design.md`에 dbdiagram.io용 ERD v1 DBML 초안을 작성했다.
+- 2026-06-11: 인증 방식을 Google OAuth 단일 로그인으로 확정하고, `users` 테이블과 `/login` mock 화면에 반영했다.
+- 2026-06-11: `/signup` 라우트와 화면을 제거했다. 첫 로그인 자동 가입은 Google OAuth callback에서 처리하고, v1의 학생/코치 권한은 관리자 승인 화면에서 지정한다.
+- 2026-06-11: 정글 내부 서비스 정책에 맞춰 운영자 승인 구조를 v1에 포함했다. `ADMIN` role, `approval_status`, `/pending-approval`, `/admin/users`, `user_approval_logs`, `ADMIN_EMAILS` 초기 관리자 방식을 반영했다.
+- 2026-06-11: 운영자 승인 구조 반영 후 프론트엔드 `npm run build`와 백엔드 `python -m compileall app` 검증을 통과했다.
+- 2026-06-11: 승인 상태 표현을 `승인 대기 / 승인 완료 / 거절 / 정지`로 통일하고, role/승인상태 선택기는 개발용 mock UI임을 명시했다. 관리자 사이드바는 `사용자 승인`만 남기고, 관리자는 직접 URL 접근으로 전체 기록과 리뷰 요청을 확인할 수 있도록 정리했다.
+- 2026-06-12: Google mock 로그인과 관리자 승인 화면을 QA했다. 로그인 클릭 시 신규 학생이 `승인 대기`로 이동하도록 수정했고, `RoleGate`에서 승인 상태 문제와 role 접근 제한 문구를 분리했다. 관리자 화면은 role 선택값을 draft로 들고 있다가 `승인 적용`에서 role과 `승인 완료`를 함께 반영하도록 정리했다.
+- 2026-06-12: DB 설계 v1을 Google OAuth/관리자 승인 정책 기준으로 보정했다. `user_approval_logs.actor_id`를 초기 관리자 자동 생성에 맞게 nullable로 바꾸고, `action`, `approval_note`, 리뷰 상태 목록, 포트폴리오/코치 피드백 상태 목록, v1 확정 결정을 문서화했다.
+- 2026-06-12: `db-design.md`에 테이블별 필드 의미, 타입을 선택한 이유, 현재 화면 기능과의 연결, dbdiagram.io ERD 그림 읽는 법을 추가했다. `post_categories`는 `posts.category_id`, `review_requests.category_id`와 연결되는 기준 테이블임을 명확히 적었다.
+- 2026-06-12: `db-design.md` Preview에서 설명이 바로 보이도록 타입/필드/ERD 그림 읽는 법 섹션을 DBML 코드블록 위로 이동했다. dbdiagram.io 그림은 문서 수정만으로 자동 갱신되지 않고 DBML을 다시 붙여넣어야 한다는 안내를 추가했다.
 
 ## 백엔드 연결 후 구현 예정
 
+- Google OAuth 로그인과 첫 로그인 자동 가입
 - 실제 로그인 사용자 role 판별
+- 운영자 승인 상태 판별
 - JWT 기반 라우트 보호
+- 사용자 승인 / 거절 / 정지 / role 변경 API
 - 실제 게시글 CRUD API 연결
 - 실제 댓글 저장/삭제 API 연결
 - 실제 프로젝트-게시글 연결 저장
 - 실제 GitHub API 분석 결과 저장
 - 실제 OpenAI/RAG/MCP/Agent 호출
+
+## 2026-06-12 DB 설계와 현재 화면 매핑 QA
+
+상태: 완료
+
+목표: 현재 React mock UI에서 쓰는 데이터가 ERD v1에 저장될 수 있는지 확인했다.
+
+확인한 화면:
+
+- 로그인/승인 대기/관리자 사용자 승인
+- 전체 게시글/게시글 상세/게시글 작성/수정/댓글
+- 내 기록
+- 포트폴리오 관리/기록 연결하기
+- AI 도우미
+- 코치 리뷰 요청/코치 인박스
+- 알림 드롭다운
+
+QA 결과:
+
+- 전체 구조는 현재 화면 흐름과 맞다.
+- `users`, `posts`, `comments`, `post_categories`, `tags`, `post_tags`, `portfolio_projects`, `portfolio_project_posts`, `review_requests`, `review_request_coaches`, `notifications`로 v1 화면 대부분을 설명할 수 있다.
+- 화면에서 계산되는 `comments` 수, `linkedRecordCount`, `requesterName`, `coachNames`, `targetTitle`은 DB에 중복 저장하지 않고 JOIN/count 결과로 만든다.
+- 게시글의 `contentSections`는 v1에서 `posts.content text`에 Markdown/본문 문자열로 저장한다.
+- `MockPost.relatedCommit`은 저장 위치가 애매해서 `posts.related_commit text`를 DBML에 추가했다.
+- `PortfolioProject.summary`는 저장 위치가 애매해서 `portfolio_projects.summary text`를 DBML에 추가했다.
+
+다음 작업:
+
+- SQLAlchemy model 작성 시 `db-design.md`의 보정된 DBML을 기준으로 삼는다.
+- 먼저 `users`, `post_categories`, `posts`부터 모델을 만들고, 그 다음 댓글/태그/포트폴리오/코치 리뷰로 확장한다.
+
+## 2026-06-12 DB 필드별 선언 이유 학습 문서 보강
+
+상태: 완료
+
+목표: ERD와 테이블 필드를 보면서 학습할 수 있도록, 각 필드가 왜 필요한지 `db-design.md`에 명시했다.
+
+진행 내용:
+
+- `users`부터 `notifications`까지 v1 테이블의 모든 필드에 대해 선언 이유를 정리했다.
+- 각 필드가 어떤 화면/기능과 연결되는지 설명했다.
+- `post_tags`, `portfolio_project_posts`, `review_request_coaches`처럼 N:M 연결 테이블이 왜 필요한지 따로 설명했다.
+- 화면에는 보이지만 DB에는 저장하지 않고 JOIN/count로 만드는 값도 분리했다.
+
+다음 작업:
+
+- SQLAlchemy model을 만들 때 `db-design.md`의 필드별 선언 이유를 보면서 컬럼을 옮긴다.
+- 모델 작성 후에는 각 모델이 어떤 화면 데이터를 책임지는지 다시 QA한다.
+
+## 2026-06-12 DB 설계와 프론트 mock data 재점검
+
+상태: 완료
+
+목표: `db-design.md`의 ERD v1이 현재 프론트엔드 mock 화면과 실제 API 연결 시 자연스럽게 이어지는지 확인했다.
+
+결과:
+
+- 현재 DB 설계는 프론트엔드 주요 화면과 연결 가능하다.
+- 새 테이블을 추가할 필요는 없다.
+- 기존 보정 컬럼인 `posts.related_commit`, `portfolio_projects.summary` 덕분에 핵심 mock 필드의 저장 위치는 맞춰졌다.
+- `Category.count`, `MockPost.comments`, `PortfolioProject.linkedRecordCount`, `ReviewRequest.coachNames`, `ReviewRequest.targetTitle`, `notifications.time`은 DB에 중복 저장하지 않고 JOIN/count/날짜 계산으로 만든다.
+- `contentSections`는 v1에서 `posts.content` 문자열로 저장하고, 구조화 저장은 v2에서 검토한다.
+- `tech_stack`은 v1에서 `portfolio_projects.tech_stack` text로 충분하고, 고급 검색/통계가 필요해지면 v2에서 분리한다.
+
+다음 작업:
+
+- SQLAlchemy model 작성 시 DB 컬럼명과 프론트 응답 필드명이 다를 수 있음을 의식한다.
+- API schema를 만들 때 `view_count -> views`, `is_public -> isPublic`, `repo_full_name -> repo`처럼 프론트가 쓰기 좋은 응답으로 변환한다.
+
+## 2026-06-12 Google OAuth 이름 저장 정책 정리
+
+상태: 완료
+
+정리 내용:
+
+- `users.name`은 Google 원본 이름이 아니라 JungleLog 안에서 보여줄 서비스 표시 이름으로 정의했다.
+- 첫 로그인 때 Google `name`을 `users.name`의 초기값으로 사용한다.
+- 사용자가 설정 화면에서 이름을 바꾸면 `users.name`을 수정한다.
+- 이후 Google 로그인 때마다 Google `name`으로 `users.name`을 덮어쓰지 않는다.
+- Google 원본 이름 보존이 필요해지면 v2에서 `google_name` 또는 `oauth_name` 컬럼을 추가한다.
+
+다음 OAuth 구현 시 주의할 점:
+
+- OAuth callback에서 `google_sub`로 기존 사용자를 찾는다.
+- 기존 사용자가 있으면 `email`, `profile_image_url`, `last_login_at` 정도만 갱신하고, 사용자가 바꾼 `name`은 유지한다.
+- 신규 사용자일 때만 Google `name`으로 `users.name`을 초기화한다.
+
+## 2026-06-13 SQLAlchemy 모델 1차 구현
+
+상태: 완료
+
+목표: ERD v1에서 가장 먼저 필요한 `users`, `post_categories`, `posts` 테이블을 SQLAlchemy 모델 코드로 옮겼다.
+
+구현한 파일:
+
+- `backend/app/db/models/user.py`
+- `backend/app/db/models/post_category.py`
+- `backend/app/db/models/post.py`
+- `backend/app/db/models/__init__.py`
+
+구현 내용:
+
+- `User` 모델에 Google OAuth 사용자, role, 승인 상태, 승인자, 생성/수정 시간을 선언했다.
+- `PostCategory` 모델에 카테고리 slug, label, 생성/수정 시간을 선언했다.
+- `Post` 모델에 작성자, 카테고리, 제목, 요약, 본문, 연결 커밋, 공개 여부, 조회수, soft delete 시간을 선언했다.
+- `Post.author_id -> users.id`, `Post.category_id -> post_categories.id` 외래키를 연결했다.
+- `User.posts`, `Post.author`, `Post.category`, `PostCategory.posts` 관계를 선언했다.
+
+검증:
+
+- 가상환경 Python으로 `python -m compileall app` 성공.
+- `Base.metadata.tables`에 `post_categories`, `posts`, `users`가 등록되는 것을 확인했다.
+
+주의:
+
+- 시스템 Python으로 확인하면 `sqlalchemy`가 없어서 실패할 수 있다.
+- 백엔드 검증은 `backend/.venv/Scripts/python.exe` 또는 가상환경 활성화 후 실행해야 한다.
+
+다음 작업:
+
+- 테이블 생성 방식을 결정한다. 초보 학습 단계에서는 `Base.metadata.create_all()`로 먼저 테이블 생성 흐름을 확인하고, 이후 Alembic migration으로 넘어가는 방향이 좋다.
+- 그다음 기본 카테고리 seed 데이터를 넣는다.
+
+## 2026-06-13 DB 테이블 생성과 카테고리 seed 구현
+
+상태: 완료
+
+목표: SQLAlchemy 모델로 선언한 `users`, `post_categories`, `posts` 테이블을 실제 PostgreSQL에 생성하고, 기본 게시글 카테고리를 넣었다.
+
+구현한 파일:
+
+- `backend/app/db/init_db.py`
+
+구현 내용:
+
+- `create_tables()`에서 `Base.metadata.create_all(bind=engine)`을 실행한다.
+- `seed_post_categories()`에서 기본 카테고리 5개를 넣는다.
+- 이미 존재하는 `slug`는 다시 넣지 않도록 처리해 seed가 중복되지 않게 했다.
+- `init_db()`에서 테이블 생성과 카테고리 seed를 함께 실행한다.
+
+실행한 명령:
+
+```powershell
+.\.venv\Scripts\python.exe -c "from app.db.init_db import init_db; init_db(); print('init_db done')"
+```
+
+검증:
+
+- 실제 PostgreSQL 테이블 목록: `post_categories`, `posts`, `users`
+- 기본 카테고리 5개 확인:
+  - `learning-log`
+  - `troubleshooting`
+  - `retrospective`
+  - `interview`
+  - `portfolio`
+- `init_db()`를 다시 실행해도 카테고리 개수가 5개로 유지됨을 확인했다.
+
+다음 작업:
+
+- `comments`, `tags`, `post_tags` 모델을 추가한다.
+- 그다음 게시글 조회 API에서 `posts`, `users`, `post_categories`를 JOIN해 프론트 응답 모양으로 내려주는 흐름을 만든다.

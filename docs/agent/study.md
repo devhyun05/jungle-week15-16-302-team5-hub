@@ -17,8 +17,7 @@
 | `frontend/src/app/pages/portfolio/Portfolio.tsx` | GitHub 프로젝트 등록, 기록 연결, 포트폴리오 상태 관리 |
 | `frontend/src/app/pages/ai/AIAssistant.tsx` | 프로젝트 기반 AI 도우미 mock 화면 |
 | `frontend/src/app/pages/coach/CoachReview.tsx` | 학생 리뷰 요청 화면과 코치 인박스 화면 |
-| `frontend/src/app/pages/auth/Login.tsx` | 로그인 mock 화면 |
-| `frontend/src/app/pages/auth/Signup.tsx` | 회원가입 mock 화면 |
+| `frontend/src/app/pages/auth/Login.tsx` | Google 로그인 mock 화면 |
 | `frontend/src/app/pages/settings/Settings.tsx` | 설정 mock 화면 |
 | `frontend/src/app/data/mockData.ts` | 화면에서 쓰는 mock posts, projects, reviewRequests, notifications |
 | `docs/project-structure.md` | 프로젝트 폴더 역할 정리 |
@@ -278,10 +277,6 @@ COACH
 
 2단계는 기능을 더 만드는 단계가 아니라, 지금 만든 React mock UI를 내가 직접 설명할 수 있게 만드는 단계다.
 
-### 이번에 만든 학습 문서
-
-- [stage-2-react-code-reading.md](stage-2-react-code-reading.md)
-
 ### 읽을 순서
 
 1. `routes.tsx`에서 URL과 Page Component 연결을 본다.
@@ -303,3 +298,920 @@ COACH
 - 포트폴리오 관리는 `projects` state로 프로젝트 선택, 등록, 기록 연결을 mock 처리한다.
 - AI 도우미는 선택된 프로젝트와 연결된 기록을 참고 자료처럼 보여준다.
 - 코치 리뷰는 role에 따라 학생용 요청 화면과 코치용 인박스 화면으로 나뉜다.
+
+## 2026-06-11 문서 구조와 키워드 문서 정리
+
+### 정리한 이유
+
+문서가 많아지면서 실제로 계속 참고해야 하는 문서와 과거 단계 안내 문서가 섞였다.
+앞으로는 `docs/agent` 안의 핵심 문서만 보고 진행한다.
+
+### 남긴 문서
+
+| 파일 | 역할 |
+| --- | --- |
+| `agent.md` | agent 문서 폴더 안내 |
+| `code.md` | 구현 전 확인하는 코드 컨벤션 |
+| `log.md` | 단계 진행 상황과 완료 기준 |
+| `study.md` | 구현을 이해하기 위한 학습 기록 |
+| `test.md` | 구현 후 반복 실행하는 자체 QA 체크리스트 |
+| `troubleshooting.md` | QA 중 발견한 실제 문제와 해결 과정 기록 |
+| `front-keyword.md` | 프론트엔드 키워드 정리 |
+| `back-keyword.md` | 백엔드/Trello 공용 키워드 정리 |
+
+### 제거한 문서
+
+- `LOG.md`: `docs/agent/log.md` 안내만 하던 중복 파일
+- `docs/code.md`: `docs/agent/code.md` 안내만 하던 중복 파일
+- `docs/study.md`: `docs/agent/study.md` 안내만 하던 중복 파일
+- `docs/agent/stage-2-react-code-reading.md`: 2단계 완료 후 `study.md` 기록으로 흡수
+
+### 앞으로 키워드 기록 방식
+
+- 프론트 구현에서 나온 키워드는 `front-keyword.md`에 기록한다.
+- 백엔드 구현과 Trello 공용 키워드는 `back-keyword.md`에 기록한다.
+- 키워드는 단순 정의가 아니라 "우리 프로젝트 어디에 쓰였는가"까지 적는다.
+
+### test.md와 troubleshooting.md의 차이
+
+- `test.md`는 Codex가 구현 후 직접 여러 번 돌려보는 QA 체크리스트다.
+- `troubleshooting.md`는 QA 중 실제로 발견한 문제의 증상, 원인, 해결을 남기는 기록장이다.
+- 앞으로 문제를 먼저 `test.md`에 쓰는 것이 아니라, `test.md` 기준으로 검증하고 발견된 문제만 `troubleshooting.md`에 정리한다.
+
+## 2026-06-10 헤더 검색 제거와 검증 문서 정리
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/layouts/MainLayout.tsx` | 공통 레이아웃, 사이드바, 헤더, 알림 드롭다운, role state 관리 |
+| `docs/agent/test.md` | 화면에서 반복 검증할 QA 체크리스트 |
+| `README.md` | 현재 구현 상태와 mock UI 동작 범위 정리 |
+
+### 왜 제거했는가
+
+`MainLayout.tsx` 헤더의 검색창은 화면에는 보였지만 검색어 state, submit handler, `navigate`, 검색 결과 화면 연결이 없었다.
+이런 UI는 사용자가 눌렀을 때 아무 반응이 없어서 기능이 있는 것처럼 오해하게 만든다.
+
+현재 검색은 각 페이지 안에서만 동작한다.
+
+- 전체 게시글: `Posts.tsx`
+- 내 기록: `MyRecords.tsx`
+- 포트폴리오 프로젝트: `Portfolio.tsx`
+- 코치 리뷰 요청: `CoachReview.tsx`
+
+그래서 지금 단계에서는 헤더 전역 검색을 구현하지 않고 제거했다.
+
+### 관련 코드 흐름
+
+`MainLayout.tsx`에서 제거한 것:
+
+- `lucide-react`의 `Search` import
+- 공통 `Input` import
+- `<header>` 안의 전역 검색 UI
+
+남긴 것:
+
+- 알림 드롭다운
+- role 전환
+- STUDENT 글쓰기 버튼
+- COACH 리뷰 인박스 버튼
+
+### 배운 개념
+
+- 보이는 UI는 실제 동작과 연결되어야 한다.
+- 기능이 아직 없다면 mock으로라도 반응을 만들거나, 지금 단계에서 제거해야 한다.
+- 사용하지 않는 import는 빌드에는 통과할 수 있어도 코드 이해를 방해한다.
+- `test.md`의 수동 QA 체크리스트는 나중에 Vitest와 React Testing Library 테스트 케이스로 바꿀 수 있다.
+
+### 나중에 자동 테스트로 바꿀 수 있는 기준
+
+- 알림 아이콘을 클릭하면 알림 목록이 보여야 한다.
+- 헤더에는 동작하지 않는 검색창이 없어야 한다.
+- `/posts` 검색창에 검색어를 입력하면 게시글 목록이 줄어야 한다.
+- STUDENT와 COACH는 같은 `/`에 들어가도 서로 다른 대시보드 내용을 봐야 한다.
+
+### 백엔드 연결 후 구현 예정
+
+- 전역 검색이 필요하면 `MainLayout`에서 검색어를 받아 `/posts?keyword=...`로 이동하게 만든다.
+- 이후 백엔드에서는 DB full-text search 또는 검색 API로 실제 데이터를 조회한다.
+
+## 2026-06-11 코치 리뷰 피드백 흐름 정리
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/coach/CoachReview.tsx` | 학생 리뷰 요청 화면과 코치 리뷰 인박스 화면을 role에 따라 분기 |
+| `README.md` | 코치 피드백 전송 mock 흐름 반영 |
+
+### 왜 수정했는가
+
+기존 구조에서는 `StudentReviewView`와 `CoachInboxView`가 각각 `requests` state를 따로 가지고 있었다.
+그래서 코치가 인박스에서 피드백과 상태를 수정해도 학생의 "내가 보낸 요청 목록"에는 이어지지 않았다.
+
+정확한 목표는 학생과 코치가 같은 목록을 그대로 보는 것이 아니다.
+같은 원본 `requests` state를 공유하되, 화면별로 필요한 요청만 필터링해서 보는 것이다.
+
+### 핵심 변경
+
+`requests` state를 부모 컴포넌트인 `CoachReview`로 끌어올렸다.
+
+```tsx
+const [requests, setRequests] = useState<ReviewRequest[]>(reviewRequests);
+```
+
+그리고 학생 화면과 코치 화면에 props로 전달한다.
+
+```tsx
+<StudentReviewView requests={requests} setRequests={setRequests} />
+<CoachInboxView requests={requests} setRequests={setRequests} />
+```
+
+### 이번에 사용한 React 개념
+
+- state lifting: 여러 자식 컴포넌트가 같은 상태를 봐야 할 때 상태를 공통 부모로 올린다.
+- props: 부모가 가진 상태와 setter를 자식에게 전달한다.
+- controlled textarea: `feedback` state와 `Textarea` 입력값을 연결한다.
+- 조건부 렌더링: `feedbackNotice`가 있을 때만 안내 문구를 보여준다.
+
+### 피드백과 댓글의 차이
+
+- 코치 리뷰 피드백은 리뷰 요청에 대한 공식 응답이다.
+- 게시글 댓글은 원문 게시글 아래에 남기는 일반 대화다.
+- 현재 mock UI에서는 피드백을 리뷰 요청에만 저장한다.
+- 원문 댓글 자동 등록은 백엔드 연결 후 옵션 기능으로 구현할 수 있다.
+
+### 학생 목록과 코치 인박스 필터링
+
+학생 화면은 내가 보낸 요청만 본다.
+
+```tsx
+requests.filter((request) => request.requesterId === "student-1")
+```
+
+코치 화면은 현재 코치에게 배정된 요청만 먼저 본다.
+
+```tsx
+const currentCoachId = "coach-1";
+
+requests.filter((request) => request.coachIds.includes(currentCoachId))
+```
+
+그 다음 코치 인박스에서 검색어, 카테고리, 상태 필터를 추가로 적용한다.
+
+### 백엔드 연결 후 구현 예정
+
+- 코치 리뷰 피드백 저장 API
+- 학생별 리뷰 요청 조회 API
+- 알림 API와 연동해서 "코치 피드백 도착" 알림 생성
+- 선택적으로 "원문 댓글에도 남기기" 기능 구현
+
+## 2026-06-11 FastAPI 설정 분리
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/core/config.py` | `.env` 설정값을 읽어 `settings` 객체로 제공 |
+| `backend/app/main.py` | FastAPI 앱 생성, CORS 설정, router 등록 |
+| `backend/.env.example` | 팀원이 따라 만들 수 있는 환경변수 샘플 |
+| `backend/requirements.txt` | 백엔드 Python 패키지 목록 |
+| `docs/agent/setup.md` | 백엔드 세팅 명령어 기록 |
+| `docs/agent/back-keyword.md` | Configuration, CORS, pydantic-settings 키워드 정리 |
+
+### 왜 설정을 분리했는가
+
+처음에는 `main.py`에 앱 이름과 CORS origin을 직접 적었다.
+하지만 로컬, 배포, 팀원 환경마다 설정값이 달라질 수 있으므로 코드에 직접 박아두면 유지보수가 어려워진다.
+
+그래서 `.env`에 설정값을 두고, `config.py`에서 `settings`로 읽게 했다.
+
+### 코드 흐름
+
+```txt
+backend/.env
+-> config.py의 Settings
+-> settings.app_name
+-> main.py의 FastAPI(title=...)
+```
+
+```txt
+backend/.env
+-> settings.backend_cors_origins
+-> main.py의 CORSMiddleware allow_origins
+```
+
+### 이번에 사용한 백엔드 개념
+
+- environment variable: 환경마다 달라지는 값을 코드 밖에 둔다.
+- configuration: 앱 설정값을 한 곳에서 관리한다.
+- pydantic-settings: `.env` 값을 Pydantic 기반 설정 객체로 읽는다.
+- CORS: React dev server가 FastAPI server에 요청할 수 있게 허용한다.
+- `.env.example`: 실제 secret 없이 필요한 환경변수 목록만 공유한다.
+
+### 내가 이해해야 할 포인트
+
+- `.env`는 실제 로컬 설정이라 Git에 올리지 않는다.
+- `.env.example`은 팀원 공유용이라 Git에 올린다.
+- `main.py`는 하드코딩된 설정 대신 `settings`를 가져다 쓴다.
+- 나중에 DB URL, JWT secret, OpenAI key도 같은 방식으로 설정에 추가한다.
+
+## 2026-06-11 PostgreSQL Docker 실행
+
+### 확인한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `docker-compose.yml` | PostgreSQL 컨테이너 실행 설정 |
+| `docs/agent/setup.md` | Docker/PostgreSQL 실행 명령어 기록 |
+| `docs/agent/back-keyword.md` | PostgreSQL, Docker Compose 키워드 정리 |
+
+### 왜 Docker로 PostgreSQL을 실행하는가
+
+PostgreSQL을 로컬 컴퓨터에 직접 설치하지 않아도, Docker 컨테이너로 진짜 PostgreSQL을 실행할 수 있다.
+팀원도 같은 `docker-compose.yml`을 사용하면 같은 DB 버전과 같은 초기 설정으로 개발할 수 있다.
+
+### docker-compose.yml 읽는 법
+
+```txt
+image: postgres:16
+-> PostgreSQL 16 사용
+
+container_name: junglelog-postgres
+-> 컨테이너 이름
+
+POSTGRES_DB / USER / PASSWORD
+-> 처음 생성되는 DB와 접속 계정
+
+5432:5432
+-> 내 컴퓨터 localhost:5432를 컨테이너 PostgreSQL 5432에 연결
+
+postgres_data
+-> 컨테이너를 껐다 켜도 DB 데이터를 유지하는 volume
+```
+
+### 실행 결과
+
+```powershell
+docker compose up -d
+docker ps
+docker logs junglelog-postgres
+```
+
+확인한 결과:
+
+- `junglelog-postgres` 컨테이너가 `Up` 상태
+- `0.0.0.0:5432->5432/tcp` 포트 매핑 확인
+- 로그에서 `database system is ready to accept connections` 확인
+- `week15_ai_board_postgres_data` volume 생성 확인
+
+### 다음에 연결할 값
+
+FastAPI에서 사용할 DB 연결 문자열은 아래 형태가 된다.
+
+```txt
+postgresql+psycopg://junglelog:junglelog@localhost:5432/junglelog
+```
+
+이 값은 다음 단계에서 `.env`의 `DATABASE_URL`로 추가한다.
+
+## 2026-06-11 FastAPI와 PostgreSQL 연결
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/.env` | 로컬에서 실제로 사용할 `DATABASE_URL` 저장 |
+| `backend/.env.example` | 팀원이 따라 만들 수 있는 DB 연결 문자열 예시 |
+| `backend/app/core/config.py` | `.env`의 `DATABASE_URL`을 `settings.database_url`로 읽음 |
+| `backend/app/db/session.py` | SQLAlchemy engine, session factory, FastAPI DB dependency 구성 |
+| `backend/app/routers/health.py` | `/health/db` endpoint로 DB 연결 확인 |
+| `backend/requirements.txt` | SQLAlchemy, psycopg 설치 기록 |
+
+### 전체 흐름
+
+```txt
+docker-compose.yml
+-> PostgreSQL 컨테이너 실행
+-> .env의 DATABASE_URL
+-> config.py의 settings.database_url
+-> db/session.py의 create_engine
+-> get_db()
+-> health.py의 Depends(get_db)
+-> db.execute(text("SELECT 1"))
+```
+
+### session.py 코드 흐름
+
+```txt
+engine
+-> PostgreSQL 연결 관리자
+
+SessionLocal
+-> 요청마다 DB session을 만들어주는 공장
+
+get_db()
+-> API 함수에 DB session을 빌려주고, 요청이 끝나면 닫아주는 함수
+```
+
+`yield db`를 쓰는 이유는 API 함수가 DB session을 사용한 뒤 다시 `get_db()`로 돌아와 `finally`의 `db.close()`를 실행하기 위해서다.
+
+### 이번에 사용한 백엔드 개념
+
+- SQLAlchemy: Python에서 DB 연결과 쿼리를 다루는 도구
+- psycopg: Python과 PostgreSQL 사이의 실제 통신 드라이버
+- DATABASE_URL: DB 접속 정보를 하나의 문자열로 표현한 값
+- engine: DB 연결을 관리하는 SQLAlchemy 객체
+- session: 요청 하나에서 사용하는 DB 작업 단위
+- dependency injection: FastAPI가 `Depends(get_db)`를 보고 필요한 값을 함수에 넣어주는 방식
+- `SELECT 1`: DB 연결이 살아 있는지 확인하는 가장 단순한 SQL
+
+### 내가 이해해야 할 포인트
+
+- `Session`은 로그인 세션이 아니라 DB 작업 세션이다.
+- API 요청마다 DB session을 열고, 요청이 끝나면 닫는 구조가 기본이다.
+- 실제 게시글 CRUD에서도 라우터 함수는 `db: Session = Depends(get_db)` 형태로 DB에 접근하게 된다.
+- `/health/db`는 기능 API가 아니라 DB 연결 상태를 확인하는 진단용 API다.
+
+### 검증 결과
+
+- `GET /health` 응답 확인
+- `GET /health/db` 응답 확인
+- `/openapi.json`에서 `/health`, `/health/db` path 확인
+- Docker `junglelog-postgres` 컨테이너 `Up` 상태 확인
+- `python -m compileall app`로 백엔드 문법/import 검증 통과
+
+### 다음에 이어질 내용
+
+- DB 테이블 구조 설계
+- Primary Key / Foreign Key
+- SQLAlchemy model
+- ERD
+- 게시글 CRUD API
+
+## 2026-06-11 ERD v1 초안 설계
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `docs/agent/db-design.md` | dbdiagram.io에 붙여넣을 DBML과 테이블 관계 설명 |
+| `docs/agent/agent.md` | agent 문서 목록에 `db-design.md` 추가 |
+| `docs/agent/log.md` | 4단계 진행 기록에 ERD v1 초안 작성 추가 |
+
+### v1에서 설계한 범위
+
+ERD v1은 AI 기능을 제외하고 기본 서비스 데이터만 다룬다.
+
+- 사용자
+- 게시글
+- 댓글
+- 태그
+- 포트폴리오 프로젝트
+- 프로젝트와 게시글 연결
+- 코치 리뷰 요청
+- 코치 배정
+- 알림
+
+### 이번에 사용한 DB 개념
+
+- Entity: 서비스에서 오래 저장해야 하는 핵심 대상이다. 예: user, post, comment.
+- Primary Key: 각 행을 구분하는 고유 id다.
+- Foreign Key: 다른 테이블의 행을 가리키는 연결 id다.
+- 1:N 관계: 사용자 한 명이 여러 게시글을 작성하는 관계다.
+- N:M 관계: 게시글과 태그처럼 양쪽 모두 여러 개로 연결될 수 있는 관계다.
+- Junction Table: N:M 관계를 풀기 위해 두 테이블 사이에 두는 연결 테이블이다.
+- Normalization: 중복을 줄이고 관계를 명확하게 나누는 설계 방식이다.
+
+### 중요한 설계 판단
+
+- 학생과 코치는 `users.role`로 구분한다.
+- 카테고리는 `post_categories` 테이블로 분리했다.
+- 게시글과 태그는 `post_tags` 연결 테이블로 묶는다.
+- 포트폴리오 프로젝트와 게시글은 `portfolio_project_posts` 연결 테이블로 묶는다.
+- 리뷰 요청은 여러 코치에게 갈 수 있으므로 `review_request_coaches` 연결 테이블을 둔다.
+
+### 다음에 같이 결정할 것
+
+- 카테고리를 별도 테이블로 둘지, 문자열 컬럼으로 단순화할지
+- 기술 스택을 text로 둘지, 별도 테이블로 분리할지
+- 리뷰 요청 대상 구조를 nullable FK 방식으로 둘지, `target_type + target_id` 방식으로 둘지
+
+## 2026-06-11 Google OAuth 로그인 정책 확정
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/auth/Login.tsx` | 이메일/비밀번호 입력을 제거하고 Google 로그인 mock 버튼으로 변경 |
+| `frontend/src/app/routes.tsx` | `/signup` 라우트를 제거하고 `/login`만 남김 |
+| `docs/agent/db-design.md` | `users.password_hash` 제거, `google_sub`, `profile_image_url`, `last_login_at` 추가 |
+| `README.md` | 인증 흐름과 다음 작업 예정에 Google OAuth 반영 |
+| `docs/agent/log.md` | 5단계 이름과 진행 기록에 Google OAuth 반영 |
+
+### 인증 흐름
+
+```txt
+사용자가 Google로 로그인
+-> Google이 사용자 신원을 확인
+-> 백엔드가 google_sub로 users 조회
+-> 없으면 STUDENT role로 자동 가입
+-> 백엔드가 JungleLog용 JWT 발급
+-> 프론트는 JWT로 보호 API 요청
+```
+
+### Google OAuth와 JWT의 차이
+
+- Google OAuth는 "이 사람이 실제 Google 계정 주인인가"를 확인한다.
+- JWT는 "우리 서비스 API에 접근할 수 있는 로그인 사용자다"를 증명한다.
+- Google은 인증 제공자이고, JungleLog 서버는 role과 서비스 권한을 관리한다.
+
+### users 테이블이 바뀐 이유
+
+Google 로그인만 사용하면 자체 비밀번호를 저장하지 않는다.
+그래서 `password_hash` 대신 Google 계정의 고유 식별자인 `google_sub`를 저장한다.
+
+### 내가 이해해야 할 포인트
+
+- 이메일은 바뀔 가능성이 있으므로 Google 사용자의 진짜 고유 키는 `google_sub`다.
+- 첫 로그인 자동 가입은 `/signup` 화면이나 회원가입 API를 따로 호출하는 방식이 아니라 OAuth callback 처리 중 일어난다.
+- 학생/코치 구분은 Google이 해주는 것이 아니라 우리 DB의 `users.role`이 담당한다.
+- v1에서 관리자 승인 화면을 만들고, 코치 권한도 운영자가 승인 화면에서 지정한다.
+- 첫 관리자만 `ADMIN_EMAILS` 또는 seed script로 부트스트랩한다.
+
+### 백엔드 연결 후 구현 예정
+
+- Google OAuth client id/secret 설정
+- OAuth redirect URL과 callback endpoint
+- Google id token 검증
+- `google_sub` 기준 사용자 조회 또는 생성
+- JungleLog access token 발급
+- role 기반 API 보호
+
+## 2026-06-11 운영자 승인 구조 v1 반영
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/data/mockData.ts` | `ADMIN`, `approvalStatus`, 관리자 승인용 mock 사용자 목록 추가 |
+| `frontend/src/app/layouts/MainLayout.tsx` | role과 승인 상태 mock 전환, 역할별 사이드바 분기 |
+| `frontend/src/app/components/RoleGate.tsx` | role뿐 아니라 `approvalStatus === "승인 완료"`인지 함께 확인 |
+| `frontend/src/app/pages/auth/PendingApproval.tsx` | 승인 대기/거절/정지 상태 안내 화면 |
+| `frontend/src/app/pages/admin/AdminUsers.tsx` | 관리자 사용자 승인/거절/정지/role 변경 mock 화면 |
+| `frontend/src/app/pages/dashboard/Dashboard.tsx` | ADMIN은 대시보드 대신 `/admin/users`로 이동하도록 정리 |
+| `docs/agent/db-design.md` | `approval_status`, `approved_by`, `user_approval_logs`, `ADMIN_EMAILS` 설계 반영 |
+| `backend/.env.example` | 초기 관리자 이메일 예시 `ADMIN_EMAILS` 추가 |
+| `backend/app/core/config.py` | `settings.admin_emails` 설정 추가 |
+
+### 왜 운영자 승인이 필요한가
+
+JungleLog가 정글 내부 서비스라면 Google 계정으로 로그인했다는 사실만으로 서비스 접근을 허용하면 안 된다.
+Google OAuth는 신원 확인이고, JungleLog 사용 권한은 운영자가 승인해야 한다.
+
+### 최종 v1 인증/승인 흐름
+
+```txt
+Google 로그인
+-> google_sub로 사용자 조회
+-> 없으면 users 생성
+-> ADMIN_EMAILS에 포함된 이메일이면 ADMIN/승인 완료
+-> 일반 사용자는 STUDENT/승인 대기
+-> 운영자가 /admin/users에서 학생/코치/관리자 역할과 승인 완료 상태로 승인
+-> 승인 완료 사용자만 서비스 화면 접근
+```
+
+### 이번에 사용한 개념
+
+- authentication: 사용자가 누구인지 확인한다. 우리 프로젝트에서는 Google OAuth가 담당한다.
+- authorization: 사용자가 무엇을 할 수 있는지 결정한다. 우리 프로젝트에서는 role과 approval status가 담당한다.
+- role-based access control: STUDENT, COACH, ADMIN에 따라 접근 가능한 화면과 API를 나눈다.
+- approval workflow: 신규 사용자가 바로 서비스를 쓰지 않고 운영자의 승인을 기다리는 흐름이다.
+- seed/bootstrap admin: 첫 관리자를 만들기 위한 초기 설정 방식이다.
+
+### 내가 이해해야 할 포인트
+
+- `role`은 사용자의 종류이고, `approvalStatus`는 서비스 접근 가능 상태다.
+- `role=STUDENT`여도 `approvalStatus=승인 대기`이면 게시판에 접근할 수 없다.
+- 첫 관리자는 관리자 화면에서 만들 수 없기 때문에 `ADMIN_EMAILS` 같은 초기 부트스트랩 방식이 필요하다.
+- 승인/거절/정지 이력은 나중에 `user_approval_logs`에 저장해서 추적할 수 있다.
+
+## 2026-06-11 관리자 승인 UI 방향 정리
+
+### 이번에 정리한 정책
+
+- 화면의 role/승인상태 선택기는 개발용 mock 전환기다. 실제 서비스에서는 Google OAuth 로그인 결과와 DB의 `users.role`, `users.approval_status`로 결정되므로 사용자에게 보이지 않는다.
+- 관리자는 기본 메뉴에서 `사용자 승인`만 본다. 관리자의 핵심 역할은 학생/코치 계정을 승인하고 권한을 부여하는 것이다.
+- `승인 적용`은 현재 선택된 역할을 해당 사용자에게 적용하고 승인 상태를 `승인 완료`로 바꾼다는 뜻이다.
+- `거절`은 아직 서비스 접근을 허용하지 않는 상태이고, `정지`는 기존 접근 권한을 일시적으로 막는 상태다.
+- 학생은 코치/관리자 전용 화면에 접근할 수 없고, 코치는 학생/관리자 전용 화면에 접근할 수 없다.
+- 관리자는 운영자 역할이므로 직접 URL 접근 시 게시글, 포트폴리오, 코치 리뷰 요청을 확인할 수 있다. 다만 사이드바는 사용자 승인 중심으로 단순하게 유지한다.
+
+### 나중에 백엔드에서 구현할 부분
+
+- mock role 전환기를 제거하고 JWT payload 또는 /me API 응답으로 현재 사용자 role과 승인 상태를 가져온다.
+- /admin/users에서 선택한 role과 승인 상태를 실제 DB에 저장한다.
+- 승인/거절/정지 이력은 `user_approval_logs`에 남겨 누가 언제 권한을 바꿨는지 추적한다.
+
+## 2026-06-12 Google 로그인 / 관리자 승인 QA 정리
+
+### 확인한 목적
+
+- Google 로그인은 사용자의 신원 확인이고, JungleLog 접근 권한은 운영자 승인을 통과해야 한다.
+- 승인 상태 문제와 role 접근 권한 문제는 서로 다른 문제로 안내되어야 한다.
+- 관리자는 기본 메뉴에서 `사용자 승인`만 보지만, 운영자이므로 직접 URL 접근으로 전체 게시글과 리뷰 요청을 확인할 수 있다.
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/auth/Login.tsx` | Google mock 로그인 클릭 시 `STUDENT / 승인 대기`로 저장하고 `/pending-approval`로 이동 |
+| `frontend/src/app/components/RoleGate.tsx` | `isApproved`, `hasAllowedRole`을 분리해 승인 문제와 role 문제를 다른 문구로 안내 |
+| `frontend/src/app/pages/admin/AdminUsers.tsx` | 역할 선택값을 draft state로 관리하고 `승인 적용` 버튼에서 role과 `승인 완료`를 함께 적용 |
+| `frontend/src/app/routes.tsx` | 관리자 직접 URL 접근 허용 정책에 맞게 주석 정리 |
+
+### 이번 구현에서 이해할 개념
+
+- `localStorage`: mock 로그인 상태를 브라우저에 잠시 저장하기 위해 사용한다.
+- `useNavigate`: 버튼 클릭 후 `/pending-approval`로 이동할 때 사용한다.
+- derived permission: `approvalStatus === "승인 완료"`와 `allowedRoles.includes(role)`을 합쳐 실제 접근 가능 여부를 계산한다.
+- draft state: select에서 고른 값을 바로 DB 상태처럼 바꾸지 않고, `승인 적용` 버튼을 눌렀을 때 반영하도록 잠시 들고 있는 상태다.
+
+### 검증 결과
+
+- `npm run build` 성공.
+- `python -m compileall app` 성공.
+- Playwright 기반 브라우저 자동 QA는 프로젝트에 `playwright` 패키지가 없어 실행하지 못했다.
+- 라우트 권한은 `routes.tsx`와 `RoleGate.tsx` 기준으로 정적 확인했다.
+
+## 2026-06-12 DB 설계 v1 보정
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `docs/agent/db-design.md` | Google OAuth, 관리자 승인, 게시판, 포트폴리오, 코치 리뷰 요청을 포함한 ERD v1 확정 기준 정리 |
+| `README.md` | 현재 백엔드 상태와 다음 작업 예정에 DB 설계 반영 |
+| `docs/agent/log.md` | 4단계 진행 기록에 DB 설계 보정 내용 추가 |
+| `docs/agent/test.md` | ERD v1 검증 체크리스트 추가 |
+
+### 이번에 결정한 것
+
+- `role`과 `approval_status`는 분리한다.
+- `role`은 `STUDENT`, `COACH`, `ADMIN`을 가진다.
+- `approval_status`는 `승인 대기`, `승인 완료`, `거절`, `정지`를 가진다.
+- 첫 관리자 자동 생성은 아직 실행한 관리자가 없으므로 `user_approval_logs.actor_id`를 비워둘 수 있게 한다.
+- `user_approval_logs.action`으로 승인, 거절, 정지, role 변경, 초기 관리자 생성을 구분한다.
+- `rejected_reason`처럼 거절에만 맞는 이름 대신 `approval_note`로 거절/정지/승인 메모를 포괄한다.
+- v1에서는 `portfolio_projects.tech_stack`을 text로 두고, 기술 스택 테이블 분리는 v2로 미룬다.
+- 리뷰 요청 상태는 `대기 중`, `검토 중`, `수정 요청`, `피드백 완료`, `최종 확인`을 사용한다.
+
+### 이번 구현에서 이해할 개념
+
+- nullable: 값이 없을 수 있는 컬럼이다. 초기 관리자 자동 생성처럼 actor가 없는 경우에 필요하다.
+- audit log: 누가 언제 어떤 권한 변경을 했는지 추적하기 위한 이력 테이블이다.
+- status column: 현재 상태를 저장하는 컬럼이다. 상태값 목록을 미리 정하면 API와 UI가 흔들리지 않는다.
+- unique index: 같은 사용자가 같은 GitHub repo를 중복 등록하지 못하게 막는 규칙이다.
+- N:M 관계: 게시글-태그, 포트폴리오-게시글, 리뷰요청-코치처럼 양쪽 모두 여러 개로 연결되는 관계다.
+
+### 다음 코드 구현으로 이어지는 부분
+
+- `users`, `user_approval_logs`, `post_categories`부터 SQLAlchemy model로 옮긴다.
+- 모델을 만들 때 DB 문서의 컬럼명과 타입을 기준으로 한다.
+- 실제 enum을 Python enum으로 둘지, 우선 `String` 컬럼으로 둘지는 모델 작성 단계에서 결정한다.
+
+## 2026-06-12 DB 테이블과 화면 기능 연결 읽기
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `docs/agent/db-design.md` | 테이블별 필드 의미, 타입을 선택한 이유, 화면 기능과의 연결, ERD 그림 읽는 법 추가 |
+| `docs/agent/log.md` | DB 설계 학습 보강 진행 기록 추가 |
+| `docs/agent/test.md` | DB 문서 검증 체크리스트 보강 |
+
+### 이번에 이해해야 할 핵심
+
+- `users`는 학생/코치/관리자를 모두 담고, `role`과 `approval_status`로 화면 접근을 나눈다.
+- `post_categories`는 관계가 없는 테이블이 아니라 `posts.category_id`, `review_requests.category_id`가 참조하는 기준 테이블이다.
+- `posts`, `comments`, `tags`, `post_tags`는 기본 게시판 기능과 직접 연결된다.
+- `portfolio_projects`, `portfolio_project_posts`는 포트폴리오 관리 화면과 기록 연결하기 기능에 연결된다.
+- `review_requests`, `review_request_coaches`는 학생의 리뷰 요청과 코치 인박스 화면에 연결된다.
+- `notifications`는 상단 알림 드롭다운에 연결된다.
+
+### 타입을 읽는 방법
+
+- `bigint`: 주요 테이블의 id처럼 계속 늘어나는 값.
+- `int`: 카테고리처럼 개수가 적은 기준 테이블 id.
+- `varchar(n)`: 길이를 제한할 수 있는 짧은 문자열.
+- `text`: 게시글 본문, 피드백, 초안처럼 길어질 수 있는 문자열.
+- `boolean`: 공개 여부, 읽음 여부처럼 참/거짓만 필요한 값.
+- `timestamp`: 생성일, 수정일, 승인일처럼 시간이 필요한 값.
+
+### ERD 그림이 복잡해 보이는 이유
+
+`users`는 거의 모든 기능과 연결되므로 관계선이 많이 몰린다.
+dbdiagram.io의 자동 배치 때문에 `post_categories`가 관계가 없어 보이거나 `users` 주변을 가리는 것처럼 보일 수 있다.
+이 경우 테이블을 직접 드래그해서 `post_categories`는 `posts`와 `review_requests` 근처에, `user_approval_logs`는 `users` 근처에 두면 읽기 좋다.
+
+## 2026-06-12 DB 설계와 화면 기능 매핑 QA 학습
+
+### 이번에 확인한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `docs/agent/db-design.md` | ERD v1, DBML, 테이블/필드 설명을 관리한다. |
+| `frontend/src/app/data/mockData.ts` | 현재 React mock 화면에서 실제로 쓰는 데이터 구조를 정의한다. |
+| `frontend/src/app/routes.tsx` | 어떤 화면이 어떤 role에서 열리는지 확인한다. |
+| `docs/agent/test.md` | DB 설계와 화면 기능 매핑 QA 결과를 체크리스트로 남긴다. |
+
+### 이번 QA에서 배운 핵심
+
+DB 설계는 화면에 보이는 글자를 그대로 전부 컬럼으로 만드는 일이 아니다.
+어떤 값은 실제로 저장해야 하고, 어떤 값은 다른 테이블을 JOIN하거나 개수를 세어서 화면에서 만든다.
+
+예를 들어 `requesterName`은 `review_requests`에 이름 문자열을 저장하지 않는다.
+`review_requests.requester_id`로 `users.id`를 찾아서 `users.name`을 가져오면 된다.
+이렇게 하면 사용자가 이름을 바꿨을 때 리뷰 요청 화면에도 최신 이름을 보여줄 수 있다.
+
+`linkedRecordCount`도 따로 저장하지 않는다.
+`portfolio_project_posts`에서 특정 프로젝트에 연결된 게시글 개수를 count하면 된다.
+
+### 화면 필드와 DB 필드 연결 예시
+
+| 화면/mock 필드 | DB에서 가져오는 방식 |
+| --- | --- |
+| 게시글 제목 | `posts.title` |
+| 게시글 작성자 | `posts.author_id -> users.name` |
+| 게시글 카테고리 | `posts.category_id -> post_categories.label` |
+| 게시글 태그 | `posts.id -> post_tags -> tags.name` |
+| 댓글 목록 | `comments.post_id = posts.id` |
+| 연결 커밋 | `posts.related_commit` |
+| 프로젝트 GitHub URL | `portfolio_projects.github_url` |
+| 프로젝트 요약 | `portfolio_projects.summary` |
+| 연결된 학습 기록 | `portfolio_projects.id -> portfolio_project_posts -> posts` |
+| 코치 리뷰 담당 코치 | `review_requests.id -> review_request_coaches -> users` |
+| 코치 피드백 | `review_requests.feedback` |
+
+### 이번에 조정한 설계
+
+- `posts.related_commit text`를 추가했다.
+- `portfolio_projects.summary text`를 추가했다.
+- `contentSections`는 v1에서 별도 테이블로 나누지 않고 `posts.content`에 Markdown/본문 문자열로 저장하기로 했다.
+- AI/RAG/MCP/Agent 실행 로그는 v1 DB에 넣지 않고, 기본 CRUD가 붙은 뒤 v2에서 추가하기로 했다.
+
+### 알아야 하는 DB 개념
+
+- Primary Key: row 하나를 구분하는 고유 id다.
+- Foreign Key: 다른 테이블의 row를 가리키는 id다.
+- 1:N 관계: 사용자 1명이 게시글 여러 개를 쓰는 관계다.
+- N:M 관계: 게시글 여러 개가 태그 여러 개와 연결되는 관계다. 중간 테이블이 필요하다.
+- JOIN: id로 연결된 다른 테이블의 정보를 함께 가져오는 것이다.
+- Count: 댓글 수나 연결 기록 수처럼 저장하지 않고 계산할 수 있는 값을 만드는 방법이다.
+- 정규화: 같은 값을 여러 테이블에 중복 저장하지 않도록 나누는 설계 방식이다.
+- 비정규화: 조회 편의를 위해 일부 값을 중복 저장하는 방식이다. v1에서는 꼭 필요한 경우만 쓴다.
+
+### 다음에 모델 만들 때 볼 포인트
+
+SQLAlchemy model을 만들 때는 mock data 이름을 그대로 옮기는 것이 아니라 DB 컬럼 이름을 기준으로 만든다.
+예를 들어 React의 `categorySlug`는 DB에서 `post_categories.slug`이고, React의 `author`는 DB에서 `users.name`이다.
+프론트와 백엔드 사이 API 응답을 만들 때 이 둘을 다시 조합해서 프론트가 쓰기 좋은 형태로 내려주면 된다.
+
+## 2026-06-12 DB 필드별 선언 이유 읽기
+
+### 이번에 보강한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `docs/agent/db-design.md` | 모든 v1 테이블 필드가 왜 필요한지 학습표 추가 |
+| `docs/agent/test.md` | 필드별 설명이 있는지 QA 체크리스트 추가 |
+| `docs/agent/log.md` | 문서 보강 진행 기록 추가 |
+
+### 이번 학습에서 중요한 질문
+
+DB 필드를 볼 때는 아래 순서로 질문하면 된다.
+
+1. 이 값은 실제로 저장해야 하는가?
+2. 다른 테이블에서 JOIN으로 가져올 수 있는가?
+3. count 같은 계산으로 만들 수 있는가?
+4. 이 필드는 어떤 화면에서 쓰이는가?
+5. 이 필드가 없으면 어떤 기능이 불가능한가?
+
+### 예시
+
+`posts.author_id`는 저장해야 한다.
+게시글마다 작성자가 있어야 하고, 작성자를 기준으로 내 기록 화면을 만들 수 있기 때문이다.
+하지만 작성자 이름 자체는 `posts`에 저장하지 않는다.
+`posts.author_id -> users.name`으로 JOIN해서 가져오면 된다.
+
+`linkedRecordCount`는 저장하지 않는다.
+`portfolio_project_posts`에서 특정 프로젝트에 연결된 게시글 개수를 세면 되기 때문이다.
+
+`review_requests.feedback`은 저장해야 한다.
+코치가 작성한 피드백은 학생이 다시 확인해야 하는 실제 데이터이기 때문이다.
+
+### 다음 단계에서 연결될 개념
+
+- SQLAlchemy model: DB 테이블을 Python 클래스로 표현한다.
+- Column: 테이블의 필드를 코드로 선언한다.
+- ForeignKey: 다른 테이블과의 연결을 코드로 표현한다.
+- relationship: SQLAlchemy에서 연결된 객체를 쉽게 가져오기 위한 설정이다.
+- JOIN: 여러 테이블을 연결해서 화면에 필요한 응답을 만든다.
+- DTO/Schema: DB 모델을 그대로 노출하지 않고 프론트가 쓰기 좋은 응답 모양으로 바꾼다.
+
+## 2026-06-12 Google OAuth 이름과 서비스 표시 이름
+
+Google OAuth에서 `name`을 받아온다고 해서 그 값을 매번 우리 서비스 이름으로 덮어쓰면 안 된다.
+JungleLog 안에서 사용자가 이름을 바꿀 수 있어야 하기 때문이다.
+
+### 구분해야 하는 값
+
+| 값 | 의미 |
+| --- | --- |
+| `google_sub` | Google 계정의 고유 id. 로그인 사용자를 찾는 기준이다. |
+| `email` | Google 계정 이메일. 관리자 승인 목록과 계정 식별에 쓴다. |
+| Google `name` | Google 프로필 이름. 첫 로그인 때 서비스 표시 이름의 초기값으로 쓴다. |
+| `users.name` | JungleLog 안에서 보여줄 표시 이름. 사용자가 수정할 수 있다. |
+
+### 핵심 규칙
+
+- 첫 로그인 때는 Google `name`으로 `users.name`을 초기화한다.
+- 사용자가 설정에서 이름을 바꾸면 `users.name`을 수정한다.
+- 다음 Google 로그인 때 Google `name`으로 `users.name`을 다시 덮어쓰지 않는다.
+
+이 규칙을 지키면 Google 로그인과 서비스 내부 닉네임 변경을 함께 사용할 수 있다.
+
+## 2026-06-13 SQLAlchemy 모델 1차 구현 학습
+
+### 이번에 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/db/models/user.py` | `users` 테이블을 Python 클래스로 선언한다. |
+| `backend/app/db/models/post_category.py` | `post_categories` 테이블을 Python 클래스로 선언한다. |
+| `backend/app/db/models/post.py` | `posts` 테이블을 Python 클래스로 선언한다. |
+| `backend/app/db/models/__init__.py` | 모델들을 한 곳에서 import할 수 있게 모은다. |
+
+### SQLAlchemy 모델이란?
+
+SQLAlchemy 모델은 DB 테이블을 Python 클래스로 표현한 것이다.
+예를 들어 `users` 테이블은 `User` 클래스가 되고, `posts` 테이블은 `Post` 클래스가 된다.
+
+```txt
+DB 테이블 users
+-> Python class User
+
+DB 컬럼 email
+-> User.email
+```
+
+### 이번 코드에서 나온 개념
+
+- `Base`: 모든 SQLAlchemy 모델이 상속하는 기준 클래스다.
+- `__tablename__`: 실제 DB 테이블 이름이다.
+- `Mapped[...]`: 이 속성이 SQLAlchemy가 관리하는 필드라는 타입 표시다.
+- `mapped_column(...)`: 실제 DB 컬럼을 선언한다.
+- `primary_key=True`: 이 컬럼이 row 하나를 구분하는 PK라는 뜻이다.
+- `ForeignKey("users.id")`: 다른 테이블의 `id`를 참조한다는 뜻이다.
+- `relationship(...)`: 외래키로 연결된 객체를 Python 코드에서 쉽게 접근하게 해준다.
+- `server_default=func.now()`: DB 서버 기준으로 현재 시간을 기본값으로 넣는다.
+- `nullable=True`: 값이 없어도 되는 컬럼이다.
+- `unique=True`: 같은 값이 중복으로 들어갈 수 없는 컬럼이다.
+
+### User, PostCategory, Post 관계
+
+```txt
+User 1명
+-> 여러 Post 작성 가능
+
+PostCategory 1개
+-> 여러 Post가 속할 수 있음
+
+Post 1개
+-> 작성자 User 1명
+-> 카테고리 PostCategory 1개
+```
+
+코드에서는 이렇게 이어진다.
+
+```txt
+posts.author_id -> users.id
+posts.category_id -> post_categories.id
+```
+
+### 왜 이 3개부터 만들었나?
+
+게시판 API를 만들려면 최소한 아래 데이터가 필요하다.
+
+- 누가 썼는가: `users`
+- 어떤 카테고리인가: `post_categories`
+- 어떤 글인가: `posts`
+
+그래서 댓글, 태그, 포트폴리오보다 먼저 이 3개 모델을 만들었다.
+
+### 주의할 점
+
+검증할 때는 반드시 백엔드 가상환경 Python을 사용해야 한다.
+시스템 Python에는 `sqlalchemy`가 설치되어 있지 않을 수 있다.
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m compileall app
+```
+
+또는:
+
+```powershell
+.\.venv\Scripts\python.exe -m compileall app
+```
+
+### 다음에 이어질 내용
+
+- `Base.metadata.create_all()`이 테이블을 실제 DB에 만드는 방식
+- Alembic migration이 필요한 이유
+- seed 데이터가 무엇인지
+- SQLAlchemy model과 Pydantic schema의 차이
+
+## 2026-06-13 DB 테이블 생성과 seed 학습
+
+### 이번에 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/db/init_db.py` | 모델 기준으로 실제 테이블을 만들고 기본 카테고리 데이터를 넣는다. |
+
+### 모델 선언과 테이블 생성의 차이
+
+지난 단계에서 만든 `User`, `PostCategory`, `Post` 클래스는 Python 코드에 테이블 설계를 선언한 것이다.
+하지만 선언만으로 PostgreSQL 안에 실제 테이블이 생기지는 않는다.
+
+실제 DB에 테이블을 만들려면 아래 코드가 실행되어야 한다.
+
+```python
+Base.metadata.create_all(bind=engine)
+```
+
+의미는 이렇다.
+
+```txt
+Base.metadata
+-> SQLAlchemy가 알고 있는 모든 모델 테이블 정보
+
+create_all
+-> 아직 DB에 없는 테이블을 생성
+
+engine
+-> 어떤 DB에 연결할지 알려주는 객체
+```
+
+### seed란?
+
+seed는 서비스를 실행하기 전에 기본으로 들어가야 하는 데이터를 넣는 작업이다.
+이번에는 게시글 카테고리 5개를 seed로 넣었다.
+
+```txt
+learning-log      -> 학습 로그
+troubleshooting   -> 트러블슈팅
+retrospective     -> 프로젝트 회고
+interview         -> 면접 질문
+portfolio         -> 포트폴리오 관리
+```
+
+### 왜 중복 방지가 필요한가?
+
+초기화 명령은 개발 중에 여러 번 실행할 수 있다.
+그때마다 카테고리가 또 들어가면 같은 카테고리가 중복된다.
+
+그래서 먼저 DB에 있는 slug 목록을 조회한다.
+그리고 없는 slug만 새로 추가한다.
+
+```txt
+기존 slug 조회
+-> learning-log가 이미 있으면 건너뜀
+-> 없으면 추가
+```
+
+### 이번에 이해해야 할 코드 흐름
+
+```txt
+init_db()
+-> create_tables()
+   -> Base.metadata.create_all(bind=engine)
+-> seed_post_categories()
+   -> 기존 카테고리 slug 조회
+   -> 없는 카테고리만 add
+   -> commit
+```
+
+### create_all과 Alembic의 차이
+
+`create_all()`은 초보 학습과 초기 개발에 좋다.
+모델을 보고 없는 테이블을 바로 만들어주기 때문이다.
+
+하지만 운영 환경에서는 보통 Alembic migration을 쓴다.
+테이블을 처음 만드는 것뿐 아니라, 컬럼 추가/삭제/변경 이력을 관리해야 하기 때문이다.
+
+현재 단계에서는 DB 흐름을 이해하기 위해 `create_all()`을 먼저 사용한다.
+나중에 구조가 안정되면 Alembic으로 넘어간다.
