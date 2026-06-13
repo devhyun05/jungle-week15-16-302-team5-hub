@@ -6,6 +6,7 @@ import { PostDetailPage } from './pages/PostDetailPage'
 import { PostListPage } from './pages/PostListPage'
 import { PostCreatePage } from './pages/PostCreatePage'
 import { PostEditPage } from './pages/PostEditPage'
+import { SignupPage } from './pages/SignupPage'
 import './index.css'
 
 function App() {
@@ -35,7 +36,10 @@ function App() {
               Log out
             </button>
           ) : (
-          <Link to="/login">Log in</Link>
+            <>
+              <Link to="/signup">Sign up</Link>
+              <Link to="/login">Log in</Link>
+            </>
           )}
         </nav>
       </header>
@@ -46,6 +50,7 @@ function App() {
           path="/login"
           element={<LoginPage onLogin={(nextToken) => setToken(nextToken)} />}
         />
+        <Route path="/signup" element={<SignupPage />} />
         <Route path="/posts/:postId" element={<PostDetailPage />} />
         <Route path="/posts/new" element={<PostCreatePage />} />
         <Route path="/posts/:postId/edit" element={<PostEditPage />} />

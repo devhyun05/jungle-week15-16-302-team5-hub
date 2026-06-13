@@ -176,6 +176,13 @@ textarea {
   color: var(--text-h);
 }
 
+.top-bar nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .top-bar span {
   font-size: 14px;
 }
@@ -216,6 +223,10 @@ textarea {
   flex-direction: column;
   gap: 6px;
   color: var(--text-h);
+}
+
+.auth-switch {
+  margin-top: 18px;
 }
 
 .post-detail {
@@ -346,6 +357,7 @@ textarea {
 
 @media (max-width: 720px) {
   .top-bar,
+  .top-bar nav,
   .section-heading,
   .comment-meta {
     align-items: flex-start;
