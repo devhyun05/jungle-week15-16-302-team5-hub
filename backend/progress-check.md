@@ -61,8 +61,6 @@
 - 테스트 확인: `../.venv/bin/python -m pytest tests/test_health.py` (health baseline)로 마무리 체크.
 - 다음에 다시 말로 설명할 개념: `DeclarativeBase`와 `create_engine`의 역할 분리, `get_db`에서 `yield`로 세션을 요청 생명주기 단위로 빌려주고 반납하는 방식.
 - 다음 추천 행동: `Session 02` 진입 시 `models/user.py`, `models/refresh_token.py`, `schemas/auth.py` 오리엔테이션부터 시작.
-<<<<<<< HEAD
-=======
 
 ### 2026-06-13 / Session 02
 
@@ -87,4 +85,4 @@
 - 테스트 확인: `../.venv/bin/python -m pytest` 실행 결과 `24 passed, 1 warning`. Session 04 API 테스트는 `tests/test_auth_api.py` 기준 `8 passed`.
 - 다음에 다시 말로 설명할 개념: access token 만료 순간 자동 refresh가 아니라, 보호 API가 401을 반환했을 때 `/auth/refresh`를 시도한다는 점. 브라우저 refresh cookie 흐름에는 프론트 `credentials: "include"` 설정이 필요하다는 점.
 - 다음 추천 행동: Session 05 `Post, Comment, Tag 모델`에서 게시글, 댓글, 태그, `post_tags` 관계 모델 오리엔테이션부터 시작.
->>>>>>> f8acc2f (feat: implement auth API routes)
+
