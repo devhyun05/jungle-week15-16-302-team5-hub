@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useAuthStore } from '../stores/authStore'
 
 import { getPost, updatePost } from '../api/posts'
-import { getCurrentUserIdFromToken } from '../utils/authToken'
 import { TagInput } from '../components/TagInput'
 
 export function PostEditPage() {
     const { postId } = useParams()
     const navigate = useNavigate()
+    const token = useAuthStore((state) => state.token)
+    const currentUserId = useAuthStore((state) => state.currentUserId)
 
     const [title, setTitle] = useState('')
     const [body, setBody] = useState('')
@@ -31,7 +33,6 @@ export function PostEditPage() {
 
             try {
                 const result = await getPost(Number(postId))
-                const currentUserId = getCurrentUserIdFromToken()
 
                 if (currentUserId !== result.author_id) {
                     setLoadError('You are not authorized to edit this post.')
@@ -49,7 +50,7 @@ export function PostEditPage() {
         }
         
         loadPost()
-    }, [postId])
+    }, [postId, currentUserId])
 
     async function handleSubmit(event: React.FormEvent) {
         event.preventDefault()
@@ -58,8 +59,6 @@ export function PostEditPage() {
             setLoadError('Post id is missing.')
             return
         }
-
-        const token = localStorage.getItem('access_token')
 
         if (!token) {
             navigate('/login')

@@ -1,14 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '../stores/authStore'
 
 import { login } from '../api/auth'
 
-type LoginPageProps = {
-  onLogin: (token: string) => void
-}
 
-export function LoginPage({ onLogin }: LoginPageProps) {
+export function LoginPage() {
     const navigate = useNavigate()
+    const saveLogin = useAuthStore((state) => state.login)
 
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -27,10 +26,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 password,
             })
 
-            localStorage.setItem('access_token', result.access_token)
-            localStorage.setItem('current_user_id', String(result.user.id))
-            onLogin(result.access_token)
-
+            saveLogin(result.access_token, result.user.id)
             navigate('/')
         } catch {
             setError('failed to log in.')

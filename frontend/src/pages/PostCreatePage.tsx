@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuthStore } from '../stores/authStore'
 
 import { createPost } from '../api/posts'
 import { TagInput } from '../components/TagInput'
@@ -7,6 +8,7 @@ import { TagInput } from '../components/TagInput'
 
 export function PostCreatePage() {
     const navigate = useNavigate()
+    const token = useAuthStore((state) => state.token)
 
     const [title, setTitle] = useState('')
     const [body, setBody] = useState('')
@@ -16,8 +18,6 @@ export function PostCreatePage() {
 
     async function handleSubmit(event: React.FormEvent) {
         event.preventDefault()
-
-        const token = localStorage.getItem('access_token')
 
         if (!token) {
             navigate('/login')

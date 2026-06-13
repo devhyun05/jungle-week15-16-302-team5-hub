@@ -1,5 +1,5 @@
-import { useState } from 'react'
 import { Link, Route, Routes, useNavigate } from 'react-router-dom'
+import { useAuthStore } from './stores/authStore'
 
 import { LoginPage } from './pages/LoginPage'
 import { PostDetailPage } from './pages/PostDetailPage'
@@ -11,14 +11,11 @@ import './index.css'
 
 function App() {
   const navigate = useNavigate()
-  const [token, setToken] = useState<string | null>(() => 
-    localStorage.getItem('access_token'),
-  )
+  const token = useAuthStore((state) => state.token)
+  const logout = useAuthStore((state) => state.logout)
 
   function handleLogout() {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('current_user_id')
-    setToken(null)
+    logout()
     navigate('/')
   }
 
@@ -46,10 +43,7 @@ function App() {
 
       <Routes>
         <Route path="/" element={<PostListPage />} />
-        <Route
-          path="/login"
-          element={<LoginPage onLogin={(nextToken) => setToken(nextToken)} />}
-        />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/posts/:postId" element={<PostDetailPage />} />
         <Route path="/posts/new" element={<PostCreatePage />} />

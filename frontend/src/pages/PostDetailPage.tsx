@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useAuthStore } from '../stores/authStore'
 
-import { getMe } from '../api/auth'
 import {
     createComment,
     deleteComment,
@@ -11,7 +11,6 @@ import {
 import { deletePost, getPost } from '../api/posts'
 import type { Comment as BoardComment } from '../types/comment'
 import type { Post } from '../types/post'
-import { getCurrentUserIdFromToken } from '../utils/authToken'
 
 function formatDate(value: string) {
     return new Intl.DateTimeFormat('en', {
@@ -23,6 +22,9 @@ function formatDate(value: string) {
 export function PostDetailPage() {
     const navigate = useNavigate()
     const { postId } = useParams()
+    const token = useAuthStore((state) => state.token)
+    const currentUserId = useAuthStore((state) => state.currentUserId)
+    const isLoggedIn = Boolean(token)
 
     const [post, setPost] = useState<Post | null>(null)
     const [comments, setComments] = useState<BoardComment[]>([])
@@ -31,7 +33,6 @@ export function PostDetailPage() {
     const [error, setError] = useState<string | null>(null)
     const [commentsError, setCommentsError] = useState<string | null>(null)
     const [deleting, setDeleting] = useState(false)
-    const [currentUserId, setCurrentUserId] = useState<number | null>(null)
     const [newCommentBody, setNewCommentBody] = useState('')
     const [creatingComment, setCreatingComment] = useState(false)
     const [editingCommentId, setEditingCommentId] = useState<number | null>(null)
@@ -39,37 +40,6 @@ export function PostDetailPage() {
     const [updatingCommentId, setUpdatingCommentId] = useState<number | null>(null)
     const [deletingCommentId, setDeletingCommentId] = useState<number | null>(null)
     const [commentActionError, setCommentActionError] = useState<string | null>(null)
-
-    const isLoggedIn = Boolean(localStorage.getItem('access_token'))
-
-    useEffect(() => {
-        async function loadCurrentUser() {
-            const token = localStorage.getItem('access_token')
-            const storedUserId = localStorage.getItem('current_user_id')
-
-            if (!token) {
-                setCurrentUserId(null)
-                return
-            }
-
-            if (storedUserId) {
-                setCurrentUserId(Number(storedUserId))
-                return
-            }
-
-            try {
-                const user = await getMe(token)
-                localStorage.setItem('current_user_id', String(user.id))
-                setCurrentUserId(user.id)
-            } catch {
-                localStorage.removeItem('access_token')
-                localStorage.removeItem('current_user_id')
-                setCurrentUserId(null)
-            }
-        }
-
-        loadCurrentUser()
-    }, [])
 
     useEffect(() => {
         async function loadPost() {
@@ -116,8 +86,6 @@ export function PostDetailPage() {
             return
         }
 
-        const token = localStorage.getItem('access_token')
-
         if (!token) {
             navigate('/login')
             return
@@ -149,8 +117,6 @@ export function PostDetailPage() {
             return
         }
 
-        const token = localStorage.getItem('access_token')
-
         if (!token) {
             navigate('/login')
             return
@@ -169,8 +135,6 @@ export function PostDetailPage() {
             const createdComment = await createComment(post.id, { body }, token)
             setComments((prevComments) => [...prevComments, createdComment])
             setNewCommentBody('')
-            setCurrentUserId(createdComment.author_id)
-            localStorage.setItem('current_user_id', String(createdComment.author_id))
         } catch {
             setCommentActionError('Failed to create comment.')
         } finally {
@@ -192,8 +156,6 @@ export function PostDetailPage() {
 
     async function handleUpdateComment(event: React.FormEvent, commentId: number) {
         event.preventDefault()
-
-        const token = localStorage.getItem('access_token')
 
         if (!token) {
             navigate('/login')
@@ -225,8 +187,6 @@ export function PostDetailPage() {
     }
 
     async function handleDeleteComment(commentId: number) {
-        const token = localStorage.getItem('access_token')
-
         if (!token) {
             navigate('/login')
             return
@@ -279,7 +239,7 @@ export function PostDetailPage() {
         )
     }
 
-    const isAuthor = getCurrentUserIdFromToken() === post.author_id
+    const isAuthor = currentUserId === post.author_id
 
     return (
         <main className="page">
