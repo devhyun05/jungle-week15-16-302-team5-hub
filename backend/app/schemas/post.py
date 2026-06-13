@@ -27,3 +27,12 @@ class PostResponse(BaseModel):
     tags: list[TagResponse] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PostPageResponse(BaseModel):
+    items: list[PostResponse]
+    page: int
+    size: int
+    total: int
+    has_next: bool
+    has_prev: bool
