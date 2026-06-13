@@ -1,5 +1,58 @@
 # JungleLog Progress Log
 
+## 2026-06-13 댓글 작성 API와 프론트 연결
+
+상태: 완료
+
+목표: JWT/OAuth2 전 단계에서 게시글 상세 화면의 댓글 작성 버튼을 실제 백엔드 API와 연결한다.
+
+구현 파일:
+
+- `backend/app/schemas/comment.py`
+- `backend/app/repositories/comment_repository.py`
+- `backend/app/services/comment_service.py`
+- `backend/app/routers/comments.py`
+- `frontend/src/app/api/comments.ts`
+- `frontend/src/app/pages/posts/PostDetail.tsx`
+- `README.md`
+- `docs/agent/api-design.md`
+- `docs/agent/study.md`
+- `docs/agent/test.md`
+- `docs/agent/setup.md`
+- `docs/agent/back-keyword.md`
+- `docs/agent/troubleshooting.md`
+
+구현 내용:
+
+- `POST /posts/{post_id}/comments` API를 추가했다.
+- 댓글 작성 request body는 `content`만 받도록 했다.
+- JWT/OAuth2 전 단계라 작성자는 `demo.student@junglelog.local` seed user로 임시 처리했다.
+- 공백 댓글은 `400`, 없는 게시글은 `404`, demo user 누락은 `500`으로 구분했다.
+- 프론트 `PostDetail`에서 댓글 작성 버튼이 `createPostComment`를 호출하도록 연결했다.
+- 댓글 작성 성공 시 전체 목록을 다시 불러오지 않고, 생성된 댓글 응답만 현재 comments state에 추가한다.
+
+검증:
+
+- `backend`: `python -m compileall app` 성공
+- `frontend`: `npm run build` 성공
+- OpenAPI에서 `/posts/{post_id}/comments`에 `get`, `post` 메서드 등록 확인
+- `POST /posts/1/comments` 성공
+- `GET /posts/1/comments`에서 작성된 댓글 포함 확인
+- `POST /posts/999999/comments`가 `404` 반환 확인
+- `git diff --check` 통과. Windows CRLF 변환 경고만 있음
+
+커밋 추천 제목:
+
+```txt
+feat: 댓글 작성 API와 게시글 상세 연결
+```
+
+다음 후보 작업:
+
+1. 게시글 작성 API `POST /posts` 구현
+2. 게시글 수정/삭제 API 구현
+3. 프론트 게시글 목록/상세를 mock data가 아니라 API 응답 중심으로 교체
+
 이 문서는 JungleLog 프로젝트를 끝까지 진행하기 위한 작업 기록장이다.
 Trello의 전체 TODO 흐름을 기준으로, 각 단계가 완료되었는지 확인하고 다음 단계를 결정할 때 사용한다.
 

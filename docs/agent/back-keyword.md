@@ -1,5 +1,52 @@
 # Backend Keyword Map
 
+## 2026-06-13 댓글 작성 API에서 나온 키워드
+
+### REST API / POST
+
+댓글 작성은 새 리소스를 만드는 작업이므로 `POST /posts/{post_id}/comments`로 설계했다. URL은 “1번 게시글의 댓글들”이라는 collection을 가리키고, body에는 새 댓글에 필요한 `content`만 보낸다.
+
+### CRUD - Create
+
+이번 작업은 CRUD 중 Create에 해당한다.
+
+```txt
+Create: comments 테이블에 새 row INSERT
+Read: GET /posts/{post_id}/comments
+Update: 아직 미구현
+Delete: 아직 미구현
+```
+
+### HTTP 3xx / 4xx / 5xx
+
+이번 구현에서는 4xx/5xx를 직접 구분했다.
+
+- `201`: 댓글 생성 성공
+- `400`: 공백 댓글처럼 사용자가 잘못 보낸 요청
+- `404`: 댓글을 달 게시글이 없음
+- `500`: 서버 seed/demo user 문제
+
+### Transaction
+
+`comment_repository.create_comment()`에서 `db.add(comment)`, `db.commit()`, `db.refresh(comment)` 흐름을 사용했다.
+
+- `add`: SQLAlchemy session에 새 댓글 객체를 등록
+- `commit`: 실제 PostgreSQL에 INSERT 반영
+- `refresh`: DB가 만든 `id`, `created_at` 값을 다시 Python 객체에 채움
+
+### Layered Architecture / MVC
+
+이번 댓글 작성 흐름은 계층을 나눠서 구현했다.
+
+```txt
+router: HTTP 요청/응답, status code
+service: 게시글 존재 확인, 공백 검증, demo user 선택
+repository: SQLAlchemy DB 조회/저장
+schema: request/response JSON 모양
+```
+
+이 구조 덕분에 JWT/OAuth2를 붙일 때 router/service 일부만 바꾸고 DB 저장 함수는 대부분 유지할 수 있다.
+
 이 문서는 Trello에 정리한 백엔드/공용 학습 키워드를 JungleLog 구현과 연결해서 채운다.
 JWT 구현, DB 설계 문서, API 설계 문서는 팀원에게 공유해야 하는 공용 산출물로 따로 표시한다.
 

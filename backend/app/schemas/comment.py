@@ -9,6 +9,13 @@ class FrontendResponseModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
+class CommentCreateRequest(BaseModel):
+    # 댓글 작성 API의 request body다.
+    # 지금은 로그인/JWT 전 단계라 작성자 정보는 body로 받지 않고,
+    # 백엔드 service에서 demo user를 임시 작성자로 사용한다.
+    content: str = Field(min_length=1, max_length=2000)
+
+
 class CommentItemResponse(FrontendResponseModel):
     # 댓글 고유 id
     id: int

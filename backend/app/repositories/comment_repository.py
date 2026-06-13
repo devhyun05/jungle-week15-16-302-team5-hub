@@ -1,7 +1,10 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.db.models import Comment, Post
+from app.db.models import Comment, Post, User
+
+
+DEMO_COMMENT_AUTHOR_EMAIL = "demo.student@junglelog.local"
 
 
 def get_public_post_exists(db: Session, post_id: int) -> bool:
@@ -54,3 +57,47 @@ def list_comments_by_post_id(db: Session, post_id: int) -> list[Comment]:
     )
 
     return list(comments)
+
+
+def get_demo_comment_author(db: Session) -> User | None:
+    """
+    JWT/OAuth2 구현 전까지 댓글 작성에 사용할 임시 demo 사용자를 조회한다.
+
+    실제 로그인 기능이 들어오면 이 함수는 current_user dependency로 대체된다.
+    """
+
+    return db.scalar(
+        select(User).where(User.email == DEMO_COMMENT_AUTHOR_EMAIL)
+    )
+
+
+def create_comment(
+    db: Session,
+    post_id: int,
+    author_id: int,
+    content: str,
+) -> Comment:
+    """
+    comments 테이블에 댓글 row를 새로 저장한다.
+
+    Args:
+        db: SQLAlchemy session.
+        post_id: 댓글을 달 게시글 id.
+        author_id: 댓글 작성자 users.id.
+        content: 댓글 본문.
+
+    Returns:
+        DB에 저장되고 id/created_at이 채워진 Comment model.
+    """
+
+    comment = Comment(
+        post_id=post_id,
+        author_id=author_id,
+        content=content,
+    )
+
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+
+    return comment

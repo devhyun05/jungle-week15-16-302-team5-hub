@@ -1,5 +1,47 @@
 # JungleLog API Design
 
+## 2026-06-13 추가: POST /posts/{post_id}/comments
+
+댓글 작성 API가 구현되었습니다. JWT/OAuth2 전 단계이므로 request body에는 댓글 본문만 받고, 작성자는 백엔드에서 `demo.student@junglelog.local` seed 사용자로 임시 처리합니다.
+
+### Request
+
+```http
+POST /posts/1/comments
+Content-Type: application/json
+```
+
+```json
+{
+  "content": "댓글 내용"
+}
+```
+
+### Response 201
+
+```json
+{
+  "id": 1,
+  "postId": 1,
+  "author": "정글 학생",
+  "authorRole": "STUDENT",
+  "content": "댓글 내용",
+  "createdAt": "2026-06-13T15:02:09.995708Z",
+  "updatedAt": "2026-06-13T15:02:09.995708Z"
+}
+```
+
+### Error
+
+- `400`: 공백만 있는 댓글
+- `404`: 댓글을 달 게시글이 없음
+- `500`: JWT 전 단계에서 사용할 demo user가 seed 되어 있지 않음
+
+### JWT/OAuth2 후 변경 예정
+
+- 작성자 정보는 request body가 아니라 JWT token의 current user에서 가져옵니다.
+- 본인 댓글 삭제, 코치/관리자 권한 처리는 인증 구현 후 추가합니다.
+
 이 문서는 React mock UI를 실제 FastAPI API로 바꾸기 전에 프론트엔드와 백엔드가 공유할 API 계약을 정리한다.
 
 ## 1. API 설계의 목적

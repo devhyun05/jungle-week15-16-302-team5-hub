@@ -1,5 +1,32 @@
 # QA Checklist
 
+## 2026-06-13 댓글 작성 API QA
+
+이번 QA는 `POST /posts/{post_id}/comments`와 게시글 상세 프론트 연결을 검증한다.
+
+### Backend
+
+- [x] `python -m compileall app`가 성공한다.
+- [x] OpenAPI `/openapi.json`에서 `/posts/{post_id}/comments` 경로가 보인다.
+- [x] `/posts/{post_id}/comments` 경로에 `get`, `post` 메서드가 모두 등록되어 있다.
+- [x] `POST /posts/1/comments`가 `201 Created`로 댓글을 생성한다.
+- [x] `GET /posts/1/comments`가 방금 생성한 댓글을 포함한다.
+- [x] `POST /posts/999999/comments`가 `404`를 반환한다.
+- [x] 공백 댓글 `{"content":"   "}`가 `400`을 반환한다.
+
+### Frontend
+
+- [x] `npm run build`가 성공한다.
+- [x] `PostDetail.tsx`에서 댓글 작성 버튼이 local mock 추가가 아니라 `createPostComment`를 호출한다.
+- [x] 댓글 작성 중 버튼 문구가 `작성 중`으로 바뀔 수 있다.
+- [x] 댓글 작성 실패 시 사용자에게 에러 문구가 보인다.
+
+### 남은 QA
+
+- [ ] 브라우저에서 `/posts/1` 접속 후 댓글 작성 버튼을 직접 눌러 확인한다.
+- [ ] JWT/OAuth2 구현 후 댓글 작성자가 현재 로그인 사용자로 저장되는지 확인한다.
+- [ ] 댓글 삭제 API 구현 후 본인 댓글/관리자 권한을 확인한다.
+
 이 문서는 문제를 기록하는 문서가 아니라, Codex가 구현 후 스스로 반복 검증하기 위한 QA 체크리스트다.
 검증 중 실제 문제가 발견되면 원인과 해결 과정은 [troubleshooting.md](troubleshooting.md)에 기록한다.
 

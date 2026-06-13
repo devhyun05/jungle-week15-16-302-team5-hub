@@ -1,5 +1,57 @@
 # Study Notes
 
+## 2026-06-13 댓글 작성 API와 프론트 연결 학습
+
+이번 구현은 게시글 상세 화면의 댓글 작성 버튼을 실제 FastAPI POST API에 연결한 작업이다. JWT/OAuth2 전 단계라 작성자는 demo user로 임시 처리한다.
+
+### 수정한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/schemas/comment.py` | 프론트가 보내는 댓글 작성 request body와 백엔드가 돌려주는 response 모양을 정의한다. |
+| `backend/app/repositories/comment_repository.py` | SQLAlchemy로 demo user를 조회하고 comments 테이블에 새 댓글을 INSERT한다. |
+| `backend/app/services/comment_service.py` | 게시글 존재 확인, 공백 댓글 검증, demo user 선택, 응답 변환 흐름을 담당한다. |
+| `backend/app/routers/comments.py` | `POST /posts/{post_id}/comments` HTTP endpoint를 만들고 status code를 결정한다. |
+| `frontend/src/app/api/comments.ts` | 프론트에서 댓글 조회/작성 API를 호출하는 fetch 함수를 모아둔다. |
+| `frontend/src/app/pages/posts/PostDetail.tsx` | 댓글 입력값을 상태로 관리하고 작성 버튼 클릭 시 백엔드 API를 호출한다. |
+
+### 코드 읽는 순서
+
+```txt
+PostDetail.tsx 댓글 작성 버튼
+-> createPostComment(postId, content)
+-> POST /posts/{post_id}/comments
+-> routers/comments.py
+-> services/comment_service.py
+-> repositories/comment_repository.py
+-> comments 테이블 INSERT
+-> CommentItemResponse
+-> PostDetail comments state에 추가
+```
+
+### 이번 구현에서 나온 개념
+
+- `POST`: 서버에 새 데이터를 만들 때 쓰는 HTTP method다.
+- `201 Created`: 새 댓글 row가 DB에 만들어졌다는 응답이다.
+- `request body`: 프론트가 JSON으로 보내는 데이터다. 이번에는 `{ "content": "..." }`만 보낸다.
+- `Pydantic schema`: request/response의 모양을 검증하고 Swagger 문서에도 보여준다.
+- `repository`: DB query와 INSERT를 담당한다.
+- `service`: 게시글 존재 여부, 공백 댓글 여부, demo user 선택 같은 비즈니스 판단을 담당한다.
+- `router`: HTTP path, status code, 에러 응답을 담당한다.
+- `useState`: 댓글 입력값, 에러 문구, 작성 중 상태, 댓글 목록 상태를 저장한다.
+- `async/await`: 댓글 작성 API 응답을 기다린 뒤 화면 state를 갱신한다.
+
+### JWT/OAuth2 후 바뀔 부분
+
+지금은 댓글 작성자가 항상 `demo.student@junglelog.local`이다. 로그인 구현 후에는 router에서 `Depends(get_current_user)` 같은 의존성을 받아 현재 로그인 사용자를 가져오고, 그 사용자의 `id`를 `comments.author_id`에 저장해야 한다.
+
+즉 지금 구조는 아래처럼 바뀔 예정이다.
+
+```txt
+현재: demo user 조회 -> comments.author_id 저장
+나중: JWT token 해석 -> current_user.id 저장
+```
+
 ## 2026-06-06 React Mock UI 안정화와 프로젝트 구조 정리
 
 이번 작업은 백엔드 연결 전 React mock UI 단계에서 화면 흐름을 안정화하고, 프로젝트 폴더를 도메인별로 정리한 작업이다.

@@ -1,5 +1,18 @@
 # JungleLog
 
+## 2026-06-13 최신 구현: 댓글 작성 API와 프론트 연결
+
+댓글 조회 다음 단계로 `POST /posts/{post_id}/comments`를 구현하고 게시글 상세 화면의 댓글 작성 버튼을 백엔드 API에 연결했습니다.
+
+- `backend/app/schemas/comment.py`: `CommentCreateRequest`를 추가해 댓글 작성 요청 body를 검증합니다.
+- `backend/app/repositories/comment_repository.py`: demo 작성자 조회와 comments 테이블 INSERT 로직을 추가했습니다.
+- `backend/app/services/comment_service.py`: 게시글 존재 확인, 공백 댓글 검증, demo user 기반 댓글 작성 흐름을 담당합니다.
+- `backend/app/routers/comments.py`: `POST /posts/{post_id}/comments` endpoint를 추가하고 `201 Created`, `400`, `404`, `500` 응답을 구분합니다.
+- `frontend/src/app/api/comments.ts`: `createPostComment` API 함수를 추가했습니다.
+- `frontend/src/app/pages/posts/PostDetail.tsx`: 댓글 작성 버튼이 local mock이 아니라 백엔드 POST API를 호출하고, 성공한 댓글을 화면 state에 추가합니다.
+
+현재는 JWT/OAuth2 전 단계라 댓글 작성자는 `demo.student@junglelog.local` seed 사용자로 저장됩니다. 실제 로그인 사용자 기준 댓글 작성, 본인 댓글 삭제 권한, 코치/관리자 권한 처리는 JWT/OAuth2 구현 후 연결할 예정입니다.
+
 React, FastAPI, PostgreSQL 기반 게시판에 AI 응용 기능을 결합하는 개인 과제 프로젝트입니다.
 
 JungleLog는 정글 수강생이 학습 기록, 트러블슈팅, 프로젝트 회고, 면접 질문, 포트폴리오 자료를 관리하고 코치가 기록을 보고 피드백할 수 있는 AI 게시판을 목표로 합니다.

@@ -1,5 +1,35 @@
 # Troubleshooting
 
+## 2026-06-13 PowerShell API 테스트에서 한글 댓글이 깨져 보임
+
+### 증상
+
+PowerShell `Invoke-RestMethod`로 `POST /posts/1/comments`를 테스트할 때 한글 응답이 깨져 보였다.
+
+```txt
+author: ì ê¸ íì
+content: API ?? QA ?????
+```
+
+### 원인
+
+FastAPI/DB 로직 문제가 아니라 PowerShell 콘솔 출력 인코딩과 명령 문자열 전달 과정에서 한글이 깨진 것이다. 특히 Codex shell을 통해 PowerShell 명령을 전달할 때 한글 body를 직접 넣으면 깨져 저장될 수도 있다.
+
+### 해결 / 우회
+
+- API 기능 검증용 body는 `comment api test`처럼 ASCII 문자열을 쓰면 안전하다.
+- 한글 표시를 확인하고 싶으면 Swagger UI나 브라우저에서 직접 입력해 확인한다.
+- PowerShell에서 직접 작업할 때는 UTF-8 출력 설정을 먼저 확인한다.
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+```
+
+### 이번 결론
+
+댓글 작성 API 자체는 `201`, 목록 조회, `400`, `404` QA를 통과했다. 다만 PowerShell 테스트 데이터에 한글을 직접 넣을 때는 인코딩에 주의한다.
+
 이 문서는 JungleLog 구현 중 실제로 발견한 문제와 해결 과정을 기록한다.
 `test.md`는 반복 검증을 위한 QA 체크리스트로 사용하고, 이 문서는 검증 중 발견된 문제의 원인과 해결 내용을 남긴다.
 

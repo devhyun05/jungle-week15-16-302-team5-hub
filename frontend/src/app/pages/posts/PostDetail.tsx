@@ -5,7 +5,7 @@ import { FileText, Github, Globe, Lightbulb, Lock, MessageSquare, Trash2 } from 
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
-import { getPostComments } from "../../api/comments";
+import { createPostComment, getPostComments } from "../../api/comments";
 import { posts } from "../../data/mockData";
 import type { UserRole } from "../../data/mockData";
 import type { MainLayoutContext } from "../../layouts/MainLayout";
@@ -49,6 +49,7 @@ export function PostDetail() {
   const [commentError, setCommentError] = useState("");
   const [commentLoadError, setCommentLoadError] = useState("");
   const [isCommentLoading, setIsCommentLoading] = useState(false);
+  const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
   const [comments, setComments] = useState<CommentItem[]>([]);
 
   useEffect(() => {
@@ -125,26 +126,43 @@ export function PostDetail() {
     window.setTimeout(() => navigate("/posts"), 700);
   };
 
-  const addComment = () => {
-    if (!commentInput.trim()) {
+  const addComment = async () => {
+    const content = commentInput.trim();
+
+    if (!content) {
       setCommentError("댓글 내용을 입력해주세요.");
       return;
     }
 
-    // TODO backend: 실제 댓글 저장 API는 백엔드 연결 후 구현 예정.
-    // 지금은 현재 상세 화면의 comments state에만 댓글을 추가합니다.
-    setComments((prev) => [
-      ...prev,
-      {
-        id: `comment-local-${Date.now()}`,
-        author: role === "COACH" ? "이코치" : role === "ADMIN" ? "정글 운영자" : "김정글",
-        role,
-        createdAt: "방금 전",
-        content: commentInput.trim(),
-      },
-    ]);
-    setCommentInput("");
+    if (!id) {
+      setCommentError("게시글 id를 찾을 수 없습니다.");
+      return;
+    }
+
+    setIsCommentSubmitting(true);
     setCommentError("");
+
+    try {
+      const savedComment = await createPostComment(id, content);
+
+      // 백엔드 응답은 authorRole이고, 화면 state는 role 이름을 사용한다.
+      // 댓글 작성 직후에는 전체 목록을 다시 받지 않고 방금 저장된 댓글만 화면 state에 추가한다.
+      setComments((prev) => [
+        ...prev,
+        {
+          id: String(savedComment.id),
+          author: savedComment.author,
+          role: savedComment.authorRole,
+          createdAt: savedComment.createdAt,
+          content: savedComment.content,
+        },
+      ]);
+      setCommentInput("");
+    } catch {
+      setCommentError("댓글을 작성하지 못했습니다. 백엔드 서버와 API 상태를 확인해주세요.");
+    } finally {
+      setIsCommentSubmitting(false);
+    }
   };
 
   return (
@@ -341,9 +359,9 @@ export function PostDetail() {
                 />
                 {commentError && <p className="text-xs text-red-600">{commentError}</p>}
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs text-slate-400">실제 댓글 저장 API는 백엔드 연결 후 구현 예정입니다.</p>
-                  <Button type="button" size="sm" onClick={addComment}>
-                    댓글 작성
+                  <p className="text-xs text-slate-400">현재는 demo user로 저장되며 JWT 연결 후 로그인 사용자로 바뀝니다.</p>
+                  <Button type="button" size="sm" onClick={addComment} disabled={isCommentSubmitting}>
+                    {isCommentSubmitting ? "작성 중" : "댓글 작성"}
                   </Button>
                 </div>
               </div>

@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 # Session은 SQLAlchemy DB session 타입이다.
 from sqlalchemy.orm import Session
 
 # get_db는 요청마다 DB session을 열고 닫아주는 FastAPI dependency다.
 from app.db.session import get_db
 # response_model에 넣을 Pydantic schema다.
-from app.schemas.comment import CommentListResponse
+from app.schemas.comment import CommentCreateRequest, CommentItemResponse, CommentListResponse
 # router는 service를 호출하고, service가 실제 응답 조립을 맡는다.
 from app.services import comment_service
 
@@ -46,4 +46,41 @@ def get_comments(
         raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다.")
 
     return comments
+
+
+@router.post(
+    "/posts/{post_id}/comments",
+    response_model=CommentItemResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_comment(
+    # FastAPI가 URL의 {post_id} 값을 int로 변환해서 넣어준다.
+    post_id: int,
+    # POST request body의 JSON {"content": "..."}를 Pydantic schema로 검증한다.
+    request: CommentCreateRequest,
+    # DB INSERT가 필요하므로 SQLAlchemy session을 주입받는다.
+    db: Session = Depends(get_db),
+) -> CommentItemResponse:
+    """
+    특정 게시글에 댓글을 작성한다.
+
+    JWT/OAuth2 전 단계라서 작성자는 demo user로 저장한다.
+    인증 구현 후에는 request body가 아니라 JWT token에서 작성자를 꺼내야 한다.
+    """
+
+    try:
+        comment = comment_service.create_comment_for_post(
+            db=db,
+            post_id=post_id,
+            request=request,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except RuntimeError as error:
+        raise HTTPException(status_code=500, detail=str(error)) from error
+
+    if comment is None:
+        raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다.")
+
+    return comment
 

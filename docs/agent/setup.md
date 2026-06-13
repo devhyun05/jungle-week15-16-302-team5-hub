@@ -1,5 +1,57 @@
 # Setup Notes
 
+## 2026-06-13 댓글 작성 API 검증 명령어
+
+백엔드 서버가 켜져 있어야 한다.
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\Activate.ps1
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+OpenAPI에서 댓글 경로와 method 확인:
+
+```powershell
+$openapi = Invoke-RestMethod -Uri http://127.0.0.1:8000/openapi.json
+$openapi.paths.'/posts/{post_id}/comments'.PSObject.Properties.Name
+```
+
+댓글 작성:
+
+```powershell
+$body = @{ content = 'comment api test' } | ConvertTo-Json
+Invoke-RestMethod -Uri http://127.0.0.1:8000/posts/1/comments -Method Post -ContentType 'application/json' -Body $body
+```
+
+댓글 목록 조회:
+
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:8000/posts/1/comments | ConvertTo-Json -Depth 5
+```
+
+없는 게시글 댓글 작성 404 확인:
+
+```powershell
+try {
+  $body = @{ content = 'missing post test' } | ConvertTo-Json
+  Invoke-RestMethod -Uri http://127.0.0.1:8000/posts/999999/comments -Method Post -ContentType 'application/json' -Body $body
+} catch {
+  $_.Exception.Response.StatusCode.value__
+}
+```
+
+공백 댓글 400 확인:
+
+```powershell
+try {
+  $body = @{ content = '   ' } | ConvertTo-Json
+  Invoke-RestMethod -Uri http://127.0.0.1:8000/posts/1/comments -Method Post -ContentType 'application/json' -Body $body
+} catch {
+  $_.Exception.Response.StatusCode.value__
+}
+```
+
 이 문서는 JungleLog 프로젝트를 처음 세팅하거나 다른 컴퓨터에서 다시 실행할 때 필요한 명령어와 이유를 기록한다.
 README는 짧은 실행 방법을 담고, 이 문서는 세팅 과정과 확인 방법을 자세히 남긴다.
 
