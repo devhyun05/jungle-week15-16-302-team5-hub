@@ -15,12 +15,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    database_url: str="sqlite:///./board_db.db"
-    jwt_secret_key: str="dev-secret-change-me"
-    jwt_algorithm: str="HS512"
+    database_url: str
+    jwt_secret_key: str
+    jwt_algorithm: str
     access_token_expire_minutes: int=15
+    llm_api_key: str | None = None
     refresh_token_expire_days: int=14
-    refresh_token_cookie_name: str="dev-secret-change-me"
+    refresh_token_cookie_name: str="refresh_token"
     refresh_token_cookie_secure: bool=False
     cors_origins: list[str]=[
         "http://localhost:5173",
