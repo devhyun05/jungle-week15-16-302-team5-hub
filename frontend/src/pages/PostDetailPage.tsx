@@ -142,9 +142,9 @@ export default function PostDetailPage() {
   if (!post) {
     return (
       <section className={pageStack}>
-        <Link className="font-extrabold text-mint-dark" to="/posts">게시판으로 돌아가기</Link>
+        <Link className="text-base font-bold text-mint-dark" to="/posts">게시판으로 돌아가기</Link>
         <div className={surfaceCard}>
-          <p className="font-extrabold text-ink">게시글을 찾을 수 없습니다.</p>
+          <p className="font-bold text-ink">게시글을 찾을 수 없습니다.</p>
           {message && <p className={muted}>{message}</p>}
         </div>
       </section>
@@ -153,10 +153,10 @@ export default function PostDetailPage() {
 
   return (
     <section className={pageStack}>
-      <Link className="font-extrabold text-mint-dark" to="/posts">게시판으로 돌아가기</Link>
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <Link className="text-base font-bold text-mint-dark" to="/posts">게시판으로 돌아가기</Link>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div>
-          <article className="grid gap-[22px] rounded-lg border border-line bg-white p-6">
+          <article className="grid gap-6 rounded-md border border-line bg-white p-5 shadow-subtle md:p-8">
             <div className={pageHeader}>
               <div className="flex flex-wrap items-center gap-2.5">
                 <span className={category.className}>{category.label}</span>
@@ -165,14 +165,14 @@ export default function PostDetailPage() {
               <h1 className={articleH1}>{post.title}</h1>
               <div className="flex items-start gap-2.5">
                 <span className={cn(iconBase, iconTone.mint)}>{post.author.nickname.slice(0, 1)}</span>
-                <p className={meta}><strong>{post.author.nickname}</strong><br />{post.author.email}</p>
+                <p className={meta}><strong className="text-ink">{post.author.nickname}</strong><br />{post.author.email}</p>
               </div>
             </div>
             <div className={tagRow}>
               {post.tags.length ? post.tags.map((tag) => <TagBadge key={tag} label={tag} />) : <TagBadge label="태그없음" />}
             </div>
             {post.slime_type && <p className={muted}><strong>슬라임 종류</strong> {post.slime_type}</p>}
-            <div className="grid gap-4 whitespace-pre-wrap leading-[1.8] text-ink">
+            <div className="grid gap-4 whitespace-pre-wrap border-y border-line py-6 text-[18px] leading-8 text-ink">
               {post.content}
             </div>
             {post.is_owner && (
@@ -183,16 +183,16 @@ export default function PostDetailPage() {
             )}
           </article>
 
-          <section className="mt-[18px] grid gap-[22px] rounded-lg border border-line bg-white p-6">
+          <section className="mt-4 grid gap-5 rounded-md border border-line bg-white p-5 shadow-subtle md:p-6">
             <h2 className={h2}>댓글 {comments.length}개</h2>
-            {message && <p className="rounded-lg border border-coral/20 bg-coral/10 p-3 text-base font-bold text-coral">{message}</p>}
-            <div className="grid gap-[18px]">
+            {message && <p className="rounded-md border border-coral/20 bg-orange-50 p-3 text-base font-bold text-coral">{message}</p>}
+            <div className="grid gap-5">
               {comments.map((item, index) => (
-                <div className="flex items-start gap-2.5" key={item.id}>
+                <div className="flex items-start gap-3 border-b border-line pb-5 last:border-b-0 last:pb-0" key={item.id}>
                   <span className={cn(iconBase, index % 2 === 0 ? iconTone.lavender : iconTone.mint)}>
                     {item.author.nickname.slice(0, 1)}
                   </span>
-                  <div className="grid flex-1 gap-[8px]">
+                  <div className="grid flex-1 gap-2">
                     <p><strong>{item.author.nickname}</strong> <span className={meta}>{formatDate(item.created_at)}</span></p>
                     {editingCommentId === item.id ? (
                       <div className="grid gap-2">
@@ -208,7 +208,7 @@ export default function PostDetailPage() {
                     {item.is_owner && editingCommentId !== item.id && (
                       <div className="flex gap-2">
                         <button
-                          className={cn("font-extrabold", featureLinkTone.mint)}
+                          className={cn("text-base font-bold", featureLinkTone.mint)}
                           type="button"
                           onClick={() => {
                             setEditingCommentId(item.id);
@@ -217,7 +217,7 @@ export default function PostDetailPage() {
                         >
                           수정
                         </button>
-                        <button className={cn("font-extrabold", featureLinkTone.coral)} type="button" onClick={() => handleCommentDelete(item.id)}>
+                        <button className={cn("text-base font-bold", featureLinkTone.coral)} type="button" onClick={() => handleCommentDelete(item.id)}>
                           삭제
                         </button>
                       </div>
@@ -233,14 +233,14 @@ export default function PostDetailPage() {
           </section>
         </div>
 
-        <aside className={pageStack}>
-          <section className={cn(surfaceCard, pageStack)}>
+        <aside className="grid content-start gap-4 lg:sticky lg:top-24">
+          <section className={cn(surfaceCard, "grid gap-4")}>
             <div>
               <span className={cn(badgeBase, badgeTone.coral)}>AI Agent</span>
               <h3 className={cn(h3, "mt-2")}>진단 흐름</h3>
             </div>
             {["게시글 내용은 RAG 지식으로 활용됩니다.", "Agent가 비슷한 사례와 도구 결과를 함께 확인합니다.", "결과에서 해결 순서와 추천 태그를 확인합니다."].map((title) => (
-              <div className="flex items-center gap-2.5" key={title}>
+              <div className="flex items-start gap-2.5" key={title}>
                 <span className={cn(badgeBase, badgeTone.mint)}>흐름</span>
                 <p className={muted}>{title}</p>
               </div>

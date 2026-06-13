@@ -1,14 +1,14 @@
 # 말랑 연구소
 
-말랑 연구소는 슬라임 레시피와 실패 사례를 공유하는 커뮤니티입니다. 사용자는 게시글과 댓글로 제작 경험을 남기고, Agent 화면에서 내부 게시글 검색(RAG)과 슬라임 재료 구매처 검색(MCP)을 함께 확인할 수 있습니다.
+말랑 연구소는 슬라임 레시피, 실패 질문, 후기, 자유 글을 한곳에서 찾고 작성하는 커뮤니티 프로젝트입니다. 현재 프론트엔드는 게시판 중심 UI로 정리되어 있고, 백엔드는 `backend/00-learning-plan.md`의 학습 순서에 맞춰 직접 구현하는 상태입니다.
 
 ## 프로젝트 목표
 
 - 회원가입/로그인 기반 게시판을 구현합니다.
-- 사용자는 레시피, 실패 해결 질문, 완성 후기를 게시글로 작성합니다.
-- 게시글과 댓글은 RAG 검색을 위한 지식 베이스가 됩니다.
-- MCP Server는 슬라임 재료 상품 검색 도구를 제공합니다.
-- AI Agent는 사용자 요청을 보고 RAG, MCP, 또는 둘 다 사용하는 경로를 선택해 결과를 정리합니다.
+- 사용자는 레시피 공유, 실패 질문, 후기, 일반 글을 게시글로 작성합니다.
+- 게시글은 검색어, 카테고리, 여러 태그를 조합해 찾을 수 있습니다.
+- 글쓰기 화면에서는 추천 태그 선택과 직접 태그 추가/삭제를 모두 지원합니다.
+- AI Agent 화면은 내부 게시글 검색(RAG)과 상품 검색(MCP) 흐름을 한 화면에서 보여주는 확장 대상입니다.
 
 ## 사용 기술 스택
 
@@ -16,9 +16,9 @@
 | --- | --- |
 | Frontend | React, TypeScript, Vite, Tailwind CSS |
 | Backend | FastAPI, SQLAlchemy, Pydantic |
-| Database | PostgreSQL |
-| Vector Search | pgvector |
-| AI 기능 | RAG / MCP / AI Agent |
+| Database | PostgreSQL 목표, 학습 중 로컬 DB로 대체 가능 |
+| Vector Search | pgvector 후보 |
+| AI 기능 | RAG / MCP / AI Agent 확장 |
 | MCP Server | FastAPI JSON-RPC mock tool |
 
 ## 핵심 기능
@@ -26,18 +26,22 @@
 ### 기본 게시판 기능
 
 - 회원가입 / 로그인
+- access token + refresh token 기반 로그인 유지
 - 게시글 CRUD
 - 댓글 CRUD
-- 태그 목록 / 인기 태그 / 태그 필터
+- 태그 목록 / 인기 태그 / 다중 태그 필터
+- 글쓰기 태그 직접 추가 / 선택 태그 삭제
 - 키워드 검색
 - 페이징
-- 게시글 유형 구분: 레시피, 실패 해결, 후기, 일반 글
+- 게시글 유형 구분: 레시피 공유, 실패 질문, 후기, 일반
 
 ### AI 기능
 
 - RAG: 게시글, 댓글, 태그를 기반으로 비슷한 제작법이나 실패 사례를 검색합니다.
 - MCP: 슬라임 종류와 구매 요청을 바탕으로 필요한 재료, 검색 키워드, 예상 가격, 쇼핑 검색 링크를 반환합니다.
 - AI Agent: 사용자 입력을 분석해 `rag`, `mcp`, `rag+mcp` 중 필요한 도구 흐름을 선택하고 한 화면에 정리합니다.
+
+AI 기능은 프론트 데모 흐름과 API 계약을 먼저 맞춰두고, 백엔드 기본 게시판 구현이 끝난 뒤 확장합니다.
 
 ## 프로젝트 구조
 
@@ -46,8 +50,7 @@ my_board/
   frontend/              React 사용자 화면
   backend/               FastAPI 게시판 API 및 AI API
   mcp_server/            JSON-RPC 기반 상품 검색 MCP 도구 서버
-  db/                    DB 초기화 참고 SQL
-  docs/                  DB 설계, 데모 시나리오, 와이어프레임 문서
+  docs/                  DB 설계, 데모 시나리오, 프로젝트 구조 문서
   README.md              프로젝트 소개
 ```
 
@@ -59,11 +62,11 @@ my_board/
 [React Frontend]
   ↓ REST API
 [FastAPI Backend]
-  ├─ PostgreSQL
   ├─ 게시판 / 인증 API
-  ├─ RAG 검색 로직
-  ├─ AI Agent 라우팅
-  └─ MCP Client
+  ├─ 태그 / 댓글 API
+  ├─ RAG 검색 로직 (확장)
+  ├─ AI Agent 라우팅 (확장)
+  └─ MCP Client (확장)
        ↓ JSON-RPC
      [MCP Server]
        ↓
@@ -75,7 +78,7 @@ my_board/
 | 테이블 | 역할 |
 | --- | --- |
 | `users` | 회원 정보 |
-| `posts` | 레시피, 실패 해결, 후기, 일반 게시글 |
+| `posts` | 레시피 공유, 실패 질문, 후기, 일반 게시글 |
 | `comments` | 게시글 댓글 |
 | `tags` | 슬라임 종류, 증상, 질감, 난이도, 목적 태그 |
 | `post_tags` | 게시글과 태그의 다대다 관계 |
@@ -108,14 +111,16 @@ MCP 결과와 Agent 답변은 재조회 화면이 없으므로 DB에 저장하�
 
 ## 현재 구현 범위
 
-- FastAPI 인증/게시판/댓글/태그 API
-- React 홈, 게시글 목록, 상세, 작성/수정, 로그인, 회원가입, Agent 화면
+- React 게시판 메인(`/`, `/posts`), 상세, 작성/수정, 로그인, 회원가입, Agent 화면
+- 게시판 메인 통합 UI, 검색, 카테고리 탭, 다중 태그 필터, 인기 태그 최대 8개 표시
+- 글쓰기 추천 태그 선택, 직접 태그 추가, 선택 태그 삭제 UI
 - MCP 상품 검색 mock tool
-- Agent route API와 프론트 fallback demo 결과
-- 축소 DB 설계 문서와 ERD 이미지
+- 백엔드는 `/health` 중심의 학습용 골격이며, 구현은 `backend/00-learning-plan.md` 순서대로 진행
+- `backend/api-spec.md`는 현재 프론트와 맞춰야 할 API 계약 문서
 
 ## 한계점
 
+- 백엔드 게시판 API는 학습 계획에 따라 직접 구현하는 단계입니다.
 - MCP 상품 검색은 현재 mock 응답이며 실제 쇼핑 API 연동은 추후 확장 대상입니다.
 - RAG 검색은 데모 단계에서 텍스트 검색/fallback 결과를 포함할 수 있습니다.
 - Agent 답변은 참고용이며 실제 구매 가격이나 재고를 보장하지 않습니다.

@@ -187,10 +187,10 @@ export default function AgentDiagnosisPage() {
         <Link className={ghostButton} to="/posts">게시판 보기</Link>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <form className={cn(panelCard, "grid gap-4 p-5")} onSubmit={handleSubmit}>
           <label className="grid gap-2">
-            <span className="text-base font-extrabold text-ink">사용자 요청</span>
+            <span className="text-base font-bold text-ink">사용자 요청</span>
             <textarea
               className={textarea}
               value={message}
@@ -201,7 +201,7 @@ export default function AgentDiagnosisPage() {
           <div className="flex flex-wrap gap-2">
             {examples.map((item) => (
               <button
-                className={ghostButton}
+                className="rounded-md border border-line bg-white px-3 py-2 text-left text-base font-medium text-muted transition hover:border-mint/50 hover:bg-mint-soft hover:text-mint-dark"
                 type="button"
                 onClick={() => {
                   setMessage(item);
@@ -220,7 +220,7 @@ export default function AgentDiagnosisPage() {
 
         <aside className="grid content-start gap-4">
           {capabilities.map((item) => (
-            <section className={surfaceCard} key={item.badge}>
+            <section className={cn(surfaceCard, "p-4")} key={item.badge}>
               <span className={cn(badgeBase, badgeTone[item.tone])}>{item.badge}</span>
               <h2 className={cn(h3, "mt-3")}>{item.title}</h2>
               <p className={cn(cardCopy, "mt-2")}>{item.copy}</p>
@@ -229,11 +229,11 @@ export default function AgentDiagnosisPage() {
         </aside>
       </div>
 
-      {error && <p className="rounded-lg border border-coral/20 bg-coral/10 p-4 font-bold text-coral">{error}</p>}
+      {error && <p className="rounded-md border border-coral/20 bg-orange-50 p-4 text-base font-bold text-coral">{error}</p>}
 
       {result && (
         <>
-          <section className={cn(panelCard, "grid gap-4 border-coral/30 bg-coral/5 p-5")}>
+          <section className={cn(panelCard, "grid gap-4 p-5")}>
             <div className={sectionTitleRow}>
               <div>
                 <span className={cn(badgeBase, badgeTone[currentRoute.tone])}>선택된 경로</span>
@@ -246,7 +246,7 @@ export default function AgentDiagnosisPage() {
                 ))}
               </div>
             </div>
-            <p className="leading-[1.7] text-ink">{result.answer}</p>
+            <p className="leading-relaxed text-ink">{result.answer}</p>
             <div className={tagRow}>
               {result.recommended_tags.map((tag) => <TagBadge label={tag} key={tag} />)}
             </div>
@@ -264,7 +264,7 @@ export default function AgentDiagnosisPage() {
               {ragItems.length ? ragItems.map((item) => (
                 <article className="grid gap-2 border-b border-line pb-3 last:border-b-0 last:pb-0" key={`${item.title}-${item.score}`}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-extrabold text-ink">{item.title}</p>
+                    <p className="font-bold text-ink">{item.title}</p>
                     <span className={meta}>관련도 {item.score}%</span>
                   </div>
                   <p className={cardCopy}>{item.excerpt}</p>
@@ -285,10 +285,10 @@ export default function AgentDiagnosisPage() {
               </div>
               {productItems.length ? productItems.map((item) => (
                 <article className="grid gap-2 border-b border-line pb-3 last:border-b-0 last:pb-0" key={item.material}>
-                  <p className="font-extrabold text-ink">{item.material}</p>
+                  <p className="font-bold text-ink">{item.material}</p>
                   <p className={cardCopy}>{item.search_keyword}</p>
                   <p className={meta}>{item.estimated_price} · {item.source}</p>
-                  <a className="font-extrabold text-lavender" href={item.link} target="_blank" rel="noreferrer">
+                  <a className="text-base font-bold text-mint-dark" href={item.link} target="_blank" rel="noreferrer">
                     검색 링크 열기 →
                   </a>
                 </article>

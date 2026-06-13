@@ -4,6 +4,16 @@
 
 기준 API는 [`api-spec.md`](./api-spec.md)입니다. RAG, MCP, Agent는 아직 구현하지 않습니다. 기본 인증, 게시글, 댓글, 태그 API가 실제로 동작하고 테스트로 확인된 뒤 다음 단계에서 붙입니다.
 
+현재 프론트 변경 후 백엔드가 우선 맞춰야 할 흐름:
+
+- `/`와 `/posts`는 같은 게시판 메인 화면이므로 목록 API는 `GET /posts` 하나로 지원한다.
+- 게시글 목록은 검색어, 카테고리(`post_type`), 여러 태그를 함께 사용해 좁혀 본다.
+- 반복 `tags` query는 선택한 태그를 모두 포함하는 AND 조건이다.
+- 글쓰기 화면은 기존 태그 선택뿐 아니라 직접 입력한 태그를 `tag_names`로 보낸다.
+- 인기 태그 API는 사용 횟수 기준으로 정렬하고, 프론트는 최대 8개만 보여준다.
+- 인증은 access token + refresh token 방식으로 구현한다. access token은 짧게 만료되는 JWT, refresh token은 DB에 hash만 저장하는 긴 수명 opaque token이다.
+- refresh token은 재발급 요청마다 회전시키고, 로그아웃 또는 재사용 의심 시 폐기할 수 있게 설계한다.
+
 ## 세션 공통 규칙
 
 모든 세션은 오리엔테이션으로 시작합니다.
@@ -123,6 +133,7 @@ python -m pytest tests/test_health.py
 파일:
 
 - `app/models/user.py`
+- `app/models/refresh_token.py`
 - `app/models/__init__.py`
 - `app/schemas/auth.py`
 
@@ -134,10 +145,14 @@ python -m pytest tests/test_health.py
 
 - `users` 테이블 모델
 - email, password_hash, nickname, created_at
+- `refresh_tokens` 테이블 모델
+- token_hash, family_id, expires_at, revoked_at, replaced_by_token_id
 - `SignupRequest`
 - `LoginRequest`
 - `UserResponse`
 - `TokenResponse`
+- `TokenResponse`에는 access token, token type, 만료 초, user 정보를 담는다
+- refresh token은 response body가 아니라 HttpOnly cookie로 내려주는 흐름을 기준으로 한다
 
 구현 후 테스트:
 
@@ -153,16 +168,23 @@ python -m pytest tests/test_auth_schemas.py
 
 프론트 페이지 기능:
 
-- 로그인 페이지에서 입력한 비밀번호를 검증하고, 이후 요청에 붙일 토큰을 만든다.
+- 로그인 페이지에서 입력한 비밀번호를 검증하고, API 요청용 access token과 로그인 유지용 refresh token을 만든다.
 
 직접 구현할 것:
 
 - 비밀번호 해시
 - 비밀번호 검증
-- JWT access token 생성
+- 짧은 수명의 JWT access token 생성
+- 긴 수명의 opaque refresh token 생성
+- refresh token hash 저장
+- refresh token 검증
+- refresh token 회전
+- refresh token 폐기
 - 이메일로 사용자 찾기
 - `get_current_user`
 - `get_optional_current_user`
+- refresh token 원문과 hash를 구분해서 설명하기
+- 탈취된 refresh token 재사용 감지 시 같은 `family_id` 폐기 전략
 
 구현 후 테스트:
 
@@ -178,15 +200,21 @@ python -m pytest tests/test_auth_service.py
 
 프론트 페이지 기능:
 
-- `/signup`, `/login`, 로그인 상태 확인 흐름을 실제 API로 연결한다.
+- `/signup`, `/login`, `/refresh`, `/logout`, 로그인 상태 확인 흐름을 실제 API로 연결한다.
 
 직접 구현할 것:
 
 - `POST /auth/signup`
 - `POST /auth/login`
+- `POST /auth/refresh`
+- `POST /auth/logout`
 - `GET /auth/me`
 - 중복 이메일 예외
 - 로그인 실패 예외
+- refresh token cookie 설정
+- access token 만료 후 refresh로 재발급
+- refresh token 회전과 이전 token 폐기
+- 로그아웃 시 refresh token 폐기와 cookie 삭제
 - DB insert, commit, refresh
 
 구현 후 테스트:
@@ -235,7 +263,7 @@ python -m pytest tests/test_models.py
 
 프론트 페이지 기능:
 
-- 글쓰기 페이지의 태그 선택 버튼과 목록 페이지의 인기 태그 영역을 채운다.
+- 글쓰기 페이지의 태그 선택/직접 추가 UI와 게시판 메인의 인기 태그 영역을 채운다.
 
 직접 구현할 것:
 
@@ -244,6 +272,7 @@ python -m pytest tests/test_models.py
 - `GET /tags`
 - `GET /tags/popular`
 - 사용 횟수 count
+- 직접 입력 태그를 저장할 수 있도록 태그명 정규화 규칙 정리
 
 구현 후 테스트:
 
@@ -286,13 +315,14 @@ python -m pytest tests/test_post_schemas.py
 
 프론트 페이지 기능:
 
-- 홈/게시글 목록/게시글 상세 페이지가 DB 게시글을 읽어 화면에 보여준다.
+- 게시판 메인(`/`, `/posts`)과 게시글 상세 페이지가 DB 게시글을 읽어 화면에 보여준다.
 
 직접 구현할 것:
 
 - `GET /posts`
 - page, size
-- keyword, post_type, tag, slime_type 필터
+- keyword, post_type, tag, 반복 tags, slime_type 필터
+- 반복 tags는 모두 포함 조건으로 처리
 - 최신순 정렬
 - `GET /posts/{post_id}`
 - 404 처리
@@ -313,7 +343,7 @@ python -m pytest tests/test_posts_read_api.py
 
 프론트 페이지 기능:
 
-- 글쓰기 페이지에서 새 글을 저장하고, 상세 페이지에서 작성자가 수정/삭제할 수 있게 한다.
+- 글쓰기 페이지에서 새 글과 직접 입력 태그를 저장하고, 상세 페이지에서 작성자가 수정/삭제할 수 있게 한다.
 
 직접 구현할 것:
 
@@ -324,6 +354,8 @@ python -m pytest tests/test_posts_read_api.py
 - DB update
 - DB delete
 - 작성자 권한 확인
+- `tag_names` 정규화
+- 새 태그 생성
 - 태그 연결 교체
 
 구현 후 테스트:
@@ -368,14 +400,20 @@ python -m pytest tests/test_comments_api.py
 프론트 페이지 기능:
 
 - 회원가입, 로그인, 게시글 목록, 작성, 상세, 댓글, 태그 필터가 실제 백엔드와 이어지는지 확인한다.
+- `/`와 `/posts`가 같은 목록 API로 동작하는지 확인한다.
 
 직접 확인할 것:
 
 - CORS
 - access token header
+- refresh token cookie
+- `/auth/refresh` 재발급
+- refresh 실패 시 로그인 화면으로 보내는 프론트 처리
 - 204 응답
 - 에러 메시지
 - 프론트 타입과 백엔드 response field 일치
+- `/?tags=거품&tags=클리어슬라임`와 `/posts?tag=거품` 호환
+- 글쓰기에서 직접 추가한 태그가 상세/목록의 `tags` 응답에 포함되는지 확인
 
 구현 후 테스트:
 

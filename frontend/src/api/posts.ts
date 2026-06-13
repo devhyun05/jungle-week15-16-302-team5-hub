@@ -2,13 +2,19 @@ import { apiRequest } from "./client";
 import type { ApiPayload } from "../types";
 
 type QueryValue = string | number | boolean | null | undefined;
-type PostQueryParams = Record<string, QueryValue>;
+type PostQueryParams = Record<string, QueryValue | QueryValue[]>;
 
 function toSearchParams(params: PostQueryParams) {
   const query = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {
-    if (value !== null && value !== undefined) {
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        if (item !== null && item !== undefined) {
+          query.append(key, String(item));
+        }
+      });
+    } else if (value !== null && value !== undefined) {
       query.set(key, String(value));
     }
   });

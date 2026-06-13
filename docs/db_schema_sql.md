@@ -35,6 +35,38 @@ CREATE TABLE users (
 );
 
 
+-- REFRESH TOKENS
+CREATE TABLE refresh_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+
+    token_hash VARCHAR(255) NOT NULL,
+    family_id VARCHAR(64) NOT NULL,
+
+    user_agent TEXT,
+    ip_address VARCHAR(45),
+
+    expires_at TIMESTAMPTZ NOT NULL,
+    revoked_at TIMESTAMPTZ,
+    replaced_by_token_id BIGINT,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_used_at TIMESTAMPTZ,
+
+    CONSTRAINT uq_refresh_tokens_hash UNIQUE (token_hash),
+
+    CONSTRAINT fk_refresh_tokens_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_refresh_tokens_replaced_by
+        FOREIGN KEY (replaced_by_token_id)
+        REFERENCES refresh_tokens(id)
+        ON DELETE SET NULL
+);
+
+
 -- POSTS
 CREATE TABLE posts (
     id BIGSERIAL PRIMARY KEY,
@@ -97,7 +129,7 @@ CREATE TABLE comments (
 CREATE TABLE tags (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    tag_type VARCHAR(50) NOT NULL,
+    tag_type VARCHAR(50) NOT NULL DEFAULT 'custom',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT uq_tags_name UNIQUE (name)
@@ -204,7 +236,15 @@ CREATE INDEX idx_posts_slime_created ON posts(slime_type, created_at DESC);
 CREATE INDEX idx_comments_post_created ON comments(post_id, created_at ASC);
 CREATE INDEX idx_comments_user_id ON comments(user_id);
 
+CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+CREATE INDEX idx_refresh_tokens_family_id ON refresh_tokens(family_id);
+CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
+CREATE INDEX idx_refresh_tokens_active
+ON refresh_tokens(user_id, expires_at)
+WHERE revoked_at IS NULL;
+
 CREATE INDEX idx_tags_type ON tags(tag_type);
+CREATE INDEX idx_tags_name ON tags(name);
 
 CREATE INDEX idx_post_tags_tag_post ON post_tags(tag_id, post_id);
 

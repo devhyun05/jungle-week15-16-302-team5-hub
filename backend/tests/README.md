@@ -44,3 +44,12 @@ python -m pytest tests/test_health.py
 - DB에 insert/update/delete가 실제로 반영되는가
 - 로그인 필요한 API가 token 없을 때 401을 주는가
 - 작성자가 아닌 사용자가 수정/삭제할 때 403을 주는가
+- 로그인 성공 시 access token body와 refresh token HttpOnly cookie가 함께 내려오는가
+- access token 만료 상황에서 `/auth/refresh`가 새 access token을 발급하는가
+- refresh token 재발급 성공 시 기존 refresh token이 revoked되고 새 token으로 회전되는가
+- revoked되었거나 만료된 refresh token은 401을 반환하는가
+- 로그아웃 시 refresh token이 revoked되고 cookie 삭제 header가 내려오는가
+- `GET /posts?tags=...&tags=...`가 선택한 태그를 모두 포함한 글만 반환하는가
+- 기존 `GET /posts?tag=...` 단일 태그 URL도 계속 동작하는가
+- 글쓰기에서 보낸 `tag_names`가 새 태그 생성과 `post_tags` 연결로 이어지는가
+- `/tags/popular`가 사용 횟수 기준으로 정렬되고 프론트에서 최대 8개 노출하기 쉬운 형태인가

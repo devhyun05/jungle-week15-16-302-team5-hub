@@ -13,7 +13,7 @@
 
 - 현재 추천 세션: Session 00 `FastAPI 앱과 health check`
 - 다음 행동: `app/main.py`와 `tests/test_health.py` 오리엔테이션부터 시작하기
-- 마지막 업데이트: 2026-06-11 / 백엔드 학습 골격 세팅
+- 마지막 업데이트: 2026-06-13 / access token + refresh token 인증 계획 반영
 
 ## 세션별 체크표
 
@@ -21,16 +21,16 @@
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0 | FastAPI 앱과 health check | `app/main.py`, `tests/test_health.py` | 앱 생성, 라우터, 헬스체크, TestClient | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 1 | 설정과 DB 세션 | `core/config.py`, `db/base.py`, `db/session.py` | Settings, engine, SessionLocal, dependency | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
-| 2 | User 모델과 Auth 스키마 | `models/user.py`, `schemas/auth.py` | SQLAlchemy 모델, Pydantic schema | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
-| 3 | 인증 서비스 | `services/auth_service.py` | password hash, JWT, current_user | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
-| 4 | Auth API | `routers/auth.py` | signup, login, me, DB insert | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
+| 2 | User/Auth 모델과 스키마 | `models/user.py`, `models/refresh_token.py`, `schemas/auth.py` | User, RefreshToken, TokenResponse | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
+| 3 | 인증 서비스 | `services/auth_service.py` | password hash, access JWT, refresh hash/rotation/revoke, current_user | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
+| 4 | Auth API | `routers/auth.py` | signup, login, refresh, logout, me, cookie | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 5 | Post, Comment, Tag 모델 | `models/post.py`, `models/comment.py`, `models/tag.py` | 관계, ForeignKey, 다대다 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
-| 6 | Tag API와 seed | `schemas/tag.py`, `services/tag_service.py`, `routers/tags.py`, `seed.py` | seed, tag list, popular count | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
+| 6 | Tag API와 seed | `schemas/tag.py`, `services/tag_service.py`, `routers/tags.py`, `seed.py` | seed, tag list, popular count, 직접 입력 태그 정규화 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 7 | Post 스키마와 응답 변환 | `schemas/post.py`, `services/post_service.py` | create/update/response, summary | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
-| 8 | 게시글 목록과 상세 조회 | `routers/posts.py`, `services/post_service.py` | query, filter, paging, 404 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
-| 9 | 게시글 생성, 수정, 삭제 | `routers/posts.py`, `services/post_service.py`, `services/tag_service.py` | DB insert/update/delete, 권한 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
+| 8 | 게시글 목록과 상세 조회 | `routers/posts.py`, `services/post_service.py` | query, multi tags AND filter, paging, 404 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
+| 9 | 게시글 생성, 수정, 삭제 | `routers/posts.py`, `services/post_service.py`, `services/tag_service.py` | DB insert/update/delete, 권한, tag_names 저장 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 10 | 댓글 API | `schemas/comment.py`, `routers/comments.py` | 댓글 CRUD, 권한, nested path | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
-| 11 | 프론트 연동 점검 | `app/main.py`, `frontend/src/api/*` | CORS, token, 응답 필드 일치 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
+| 11 | 프론트 연동 점검 | `app/main.py`, `frontend/src/api/*` | CORS, token, 응답 필드, `/`/`/posts`, 다중 태그 URL 일치 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 
 ## 세션 종료 기록 양식
 

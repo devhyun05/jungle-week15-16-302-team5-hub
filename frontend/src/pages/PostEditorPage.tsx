@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { fetchTags } from "../api/tags";
 import { createPost, fetchPost, updatePost } from "../api/posts";
@@ -19,16 +19,16 @@ import {
   textarea,
 } from "../styles/ui";
 
-const chipBase =
-  "inline-flex min-h-8 items-center rounded-full border px-3.5 text-base font-bold leading-none transition";
-const chipNeutral = "border-line bg-white text-muted hover:border-mint/50 hover:text-mint-dark";
-const chipSelected = "border-mint bg-mint text-white";
+const categoryBase =
+  "grid min-h-[74px] content-center rounded-md border px-3 py-2 text-left transition";
+const categoryNeutral = "border-line bg-white text-muted hover:border-mint/50 hover:text-mint-dark";
+const categorySelected = "border-mint bg-mint-soft text-mint-dark";
 
-const postTypes: Array<{ label: string; value: PostType }> = [
-  { label: "레시피 공유", value: "recipe" },
-  { label: "실패 질문", value: "failure" },
-  { label: "후기", value: "review" },
-  { label: "일반", value: "general" },
+const postTypes: Array<{ label: string; description: string; value: PostType }> = [
+  { label: "레시피 공유", description: "직접 만든 느낌 좋은 레시피", value: "recipe" },
+  { label: "실패 질문", description: "만들다 실패한 이유 질문", value: "failure" },
+  { label: "후기", description: "구매하거나 따라 만든 후기", value: "review" },
+  { label: "일반", description: "그 외 자유 글", value: "general" },
 ];
 
 interface FormState {
@@ -53,12 +53,24 @@ export default function PostEditorPage() {
   const isEdit = Boolean(postId);
   const [form, setForm] = useState<FormState>(initialForm);
   const [tags, setTags] = useState<string[]>([]);
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const knownTags = useMemo(
+    () => Array.from(new Set([...customTags, ...tags])),
+    [customTags, tags],
+  );
+
   const slimeTypes = useMemo(
-    () => tags.filter((tag) => tag.includes("슬라임")).slice(0, 8),
-    [tags],
+    () => knownTags.filter((tag) => tag.includes("슬라임")).slice(0, 8),
+    [knownTags],
+  );
+
+  const suggestedTags = useMemo(
+    () => knownTags.filter((tag) => !form.tag_names.includes(tag)).slice(0, 24),
+    [form.tag_names, knownTags],
   );
 
   useEffect(() => {
@@ -118,6 +130,11 @@ export default function PostEditorPage() {
   function toggleTag(tag: string) {
     setForm((current) => {
       const exists = current.tag_names.includes(tag);
+      if (!exists && current.tag_names.length >= 8) {
+        setMessage("태그는 최대 8개까지 추가할 수 있어요.");
+        return current;
+      }
+      setMessage("");
       return {
         ...current,
         tag_names: exists
@@ -125,6 +142,50 @@ export default function PostEditorPage() {
           : [...current.tag_names, tag].slice(0, 8),
       };
     });
+  }
+
+  function removeTag(tag: string) {
+    setMessage("");
+    setForm((current) => ({
+      ...current,
+      tag_names: current.tag_names.filter((item) => item !== tag),
+    }));
+    if (!tags.includes(tag)) {
+      setCustomTags((current) => current.filter((item) => item !== tag));
+    }
+  }
+
+  function normalizeTag(value: string) {
+    return value.trim().replace(/^#+/, "").replace(/\s+/g, "");
+  }
+
+  function addTag() {
+    const nextTag = normalizeTag(tagInput);
+    if (!nextTag) {
+      return;
+    }
+    if (form.tag_names.includes(nextTag)) {
+      setMessage("");
+      setTagInput("");
+      return;
+    }
+    if (form.tag_names.length >= 8) {
+      setMessage("태그는 최대 8개까지 추가할 수 있어요.");
+      return;
+    }
+    setMessage("");
+    updateForm("tag_names", [...form.tag_names, nextTag]);
+    if (!knownTags.includes(nextTag)) {
+      setCustomTags((current) => [nextTag, ...current]);
+    }
+    setTagInput("");
+  }
+
+  function handleTagInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addTag();
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -149,25 +210,32 @@ export default function PostEditorPage() {
 
   return (
     <section className={pageStack}>
-      <div className={cn(pageHeader, "mx-auto text-center")}>
+      <div className={cn(pageHeader, "mx-auto w-full max-w-[820px]")}>
         <h1 className={h1}>{isEdit ? "게시글 수정" : "새 게시글 작성"}</h1>
-        <p className={muted}>필수 게시판 기능에 맞춰 제목, 본문, 유형, 태그를 저장합니다.</p>
+        <p className={muted}>제목, 본문, 유형, 태그를 정리해 다른 사용자가 빠르게 이해할 수 있게 작성하세요.</p>
       </div>
 
-      <form className="mx-auto grid w-full max-w-[760px] gap-6 rounded-lg border border-line bg-white p-7 shadow-subtle" onSubmit={handleSubmit}>
+      <form className="mx-auto grid w-full max-w-[820px] gap-6 rounded-md border border-line bg-white p-5 shadow-subtle md:p-7" onSubmit={handleSubmit}>
         <div className={formGroup}>
           <span className={formLabel}>카테고리</span>
-          <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
-            {postTypes.map((type) => (
-              <button
-                className={cn(chipBase, form.post_type === type.value ? chipSelected : chipNeutral)}
-                key={type.value}
-                type="button"
-                onClick={() => updateForm("post_type", type.value)}
-              >
-                {type.label}
-              </button>
-            ))}
+          <div className="grid gap-2 sm:grid-cols-2">
+            {postTypes.map((type) => {
+              const selected = form.post_type === type.value;
+              return (
+                <button
+                  aria-label={`${type.label}: ${type.description}`}
+                  className={cn(categoryBase, selected ? categorySelected : categoryNeutral)}
+                  key={type.value}
+                  type="button"
+                  onClick={() => updateForm("post_type", type.value)}
+                >
+                  <strong className={cn("text-base", selected ? "text-mint-dark" : "text-ink")}>
+                    {type.label}
+                  </strong>
+                  <span className="text-[15px] font-medium leading-relaxed">{type.description}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -209,17 +277,51 @@ export default function PostEditorPage() {
 
         <div className={formGroup}>
           <span className={formLabel}>태그</span>
-          <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
-            {tags.slice(0, 24).map((tag) => (
+          <div className="flex gap-2 max-md:flex-col">
+            <input
+              className={field}
+              aria-label="태그 직접 추가"
+              placeholder="태그를 직접 입력하세요"
+              value={tagInput}
+              onChange={(event) => setTagInput(event.target.value)}
+              onKeyDown={handleTagInputKeyDown}
+            />
+            <button className={cn(ghostButton, "shrink-0")} type="button" onClick={addTag}>태그 추가</button>
+          </div>
+          {form.tag_names.length > 0 && (
+            <div className="grid gap-2 rounded-md border border-line bg-page/70 p-3">
+              <span className={meta}>선택한 태그</span>
+              <div className="flex flex-wrap gap-2">
+                {form.tag_names.map((tag) => (
+                  <span
+                    className="inline-flex min-h-9 items-center rounded-md border border-mint bg-mint-soft px-3 text-base font-bold text-mint-dark"
+                    key={tag}
+                  >
+                    #{tag}
+                    <button
+                      aria-label={`${tag} 태그 삭제`}
+                      className="ml-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm font-black text-mint-dark transition hover:bg-mint hover:text-white"
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {suggestedTags.map((tag) => (
               <button type="button" onClick={() => toggleTag(tag)} key={tag}>
-                <TagBadge label={tag} selected={form.tag_names.includes(tag)} />
+                <TagBadge label={tag} />
               </button>
             ))}
           </div>
-          <span className={meta}>초기 태그 중 최대 8개까지 선택할 수 있어요.</span>
+          <span className={meta}>태그는 직접 추가하거나 선택할 수 있고, 선택한 태그는 옆의 × 버튼으로 삭제합니다.</span>
         </div>
 
-        {message && <p className="rounded-lg border border-coral/20 bg-coral/10 p-3 text-base font-bold text-coral">{message}</p>}
+        {message && <p className="rounded-md border border-coral/20 bg-orange-50 p-3 text-base font-bold text-coral">{message}</p>}
 
         <div className="flex items-center justify-center gap-3 max-md:flex-col max-md:items-stretch">
           <Link className={ghostButton} to={postId ? `/posts/${postId}` : "/posts"}>취소</Link>

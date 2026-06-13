@@ -3,9 +3,10 @@
 ## 1. 설계 기준
 
 - 현재 프로젝트는 기본 게시판 기능과 AI 보조 기능을 최소 범위로 구현한다.
-- DB 저장 대상은 `users`, `posts`, `comments`, `tags`, `post_tags`, `embeddings`다.
+- DB 저장 대상은 `users`, `refresh_tokens`, `posts`, `comments`, `tags`, `post_tags`, `embeddings`다.
 - MCP 상품 검색 결과와 Agent 답변은 DB에 저장하지 않고 요청 시 API 응답으로만 반환한다.
 - 별도 RAG 페이지와 별도 MCP 페이지는 없고, 프론트의 `/agent` 화면에서 AI API를 호출한다.
+- 프론트 라우트 `/`와 `/posts`는 같은 게시판 메인 화면이며, 둘 다 `GET /posts` 목록 API를 사용한다.
 
 ## 2. 공통 규칙
 
@@ -25,13 +26,23 @@ http://localhost:8000
 Content-Type: application/json
 ```
 
-### 인증 헤더
+### 인증 토큰
 
-로그인이 필요한 API는 JWT access token을 Bearer token으로 전달한다.
+로그인이 필요한 API는 짧게 만료되는 JWT access token을 Bearer token으로 전달한다.
 
 ```http
 Authorization: Bearer {access_token}
 ```
+
+로그인 유지에는 refresh token을 사용한다. refresh token은 긴 수명을 가지지만 원문을 DB에 저장하지 않고 해시만 저장한다. 브라우저에서는 HttpOnly cookie로 보관하는 방식을 목표로 한다.
+
+토큰 원칙:
+
+- access token: JWT, 짧은 만료 시간, API 요청 인증용
+- refresh token: 랜덤 opaque token, 긴 만료 시간, 재발급용
+- refresh token 원문은 한 번만 클라이언트 cookie로 전달하고 DB에는 hash만 저장
+- refresh 요청이 성공하면 기존 refresh token은 폐기하고 새 refresh token으로 회전한다
+- 로그아웃 시 현재 refresh token을 폐기하고 cookie를 삭제한다
 
 ### 공통 에러 응답
 
@@ -69,7 +80,7 @@ app/db/
   -> SQLAlchemy Base, engine, session dependency
 
 app/models/
-  -> users, posts, comments, tags, post_tags
+  -> users, refresh_tokens, posts, comments, tags, post_tags
   -> embeddings는 구현 단계에서 embedding.py에 추가
 
 app/schemas/
@@ -86,7 +97,7 @@ app/services/
 
 | 도메인 | 주요 DB | 설명 |
 | --- | --- | --- |
-| Auth | `users` | 회원가입, 로그인, 현재 사용자 조회 |
+| Auth | `users`, `refresh_tokens` | 회원가입, 로그인, 토큰 재발급, 로그아웃, 현재 사용자 조회 |
 | Posts | `posts`, `post_tags` | 게시글 CRUD, 검색, 페이징, 태그 연결 |
 | Comments | `comments` | 게시글 댓글 CRUD |
 | Tags | `tags`, `post_tags` | 태그 목록, 인기 태그 |
@@ -168,10 +179,13 @@ app/services/
 
 응답 `200 OK`
 
+응답 body:
+
 ```json
 {
   "access_token": "jwt.token.value",
   "token_type": "bearer",
+  "expires_in": 900,
   "user": {
     "id": 1,
     "email": "slime@example.com",
@@ -181,10 +195,89 @@ app/services/
 }
 ```
 
+응답 header:
+
+```http
+Set-Cookie: malang_refresh_token={refresh_token}; HttpOnly; Secure; SameSite=Lax; Path=/auth
+```
+
 구현 메모:
 
 - 이메일이 없거나 비밀번호 검증 실패 시 `401`
 - JWT `sub`에는 user id를 문자열로 저장
+- access token에는 인증에 필요한 최소 claim만 넣는다: `sub`, `exp`, `iat`, 선택적으로 `type=access`
+- refresh token은 JWT가 아니라 충분히 긴 랜덤 문자열로 생성한다
+- refresh token 원문은 저장하지 않고 SHA-256 또는 HMAC 기반 hash만 `refresh_tokens.token_hash`에 저장한다
+- 로그인할 때 refresh token row를 생성하고, user agent/ip 정보는 선택적으로 저장한다
+
+### POST `/auth/refresh`
+
+access token을 재발급한다.
+
+인증: refresh token cookie 필요
+
+요청 body: 없음
+
+요청 cookie:
+
+```http
+Cookie: malang_refresh_token={refresh_token}
+```
+
+응답 `200 OK`
+
+응답 body:
+
+```json
+{
+  "access_token": "new.jwt.token.value",
+  "token_type": "bearer",
+  "expires_in": 900,
+  "user": {
+    "id": 1,
+    "email": "slime@example.com",
+    "nickname": "말랑이",
+    "created_at": "2026-06-11T10:00:00Z"
+  }
+}
+```
+
+응답 header:
+
+```http
+Set-Cookie: malang_refresh_token={new_refresh_token}; HttpOnly; Secure; SameSite=Lax; Path=/auth
+```
+
+구현 메모:
+
+- cookie가 없으면 `401`
+- refresh token hash가 DB에 없으면 `401`
+- 만료됐거나 이미 revoked 상태면 `401`
+- 성공 시 기존 refresh token을 revoked 처리하고 새 refresh token row를 만든다
+- 기존 row의 `replaced_by_token_id`에 새 row id를 기록해 token rotation 추적이 가능하게 한다
+- 폐기된 refresh token이 다시 들어오면 재사용 공격 가능성으로 보고 같은 `family_id`의 refresh token을 모두 revoked 처리할 수 있다
+
+### POST `/auth/logout`
+
+현재 refresh token을 폐기하고 cookie를 삭제한다.
+
+인증: refresh token cookie 권장, access token은 선택
+
+요청 body: 없음
+
+응답 `204 No Content`
+
+응답 header:
+
+```http
+Set-Cookie: malang_refresh_token=; Max-Age=0; HttpOnly; Secure; SameSite=Lax; Path=/auth
+```
+
+구현 메모:
+
+- refresh token cookie가 있으면 해당 token row를 revoked 처리한다
+- cookie가 없더라도 클라이언트 cookie 삭제 header는 내려준다
+- 모든 기기 로그아웃은 추후 `POST /auth/logout-all`로 확장할 수 있다
 
 ### GET `/auth/me`
 
@@ -209,12 +302,12 @@ app/services/
 
 `post_type`은 아래 값 중 하나다.
 
-| 값 | 의미 | 주 사용 필드 |
+| 값 | 의미 | 설명 |
 | --- | --- | --- |
-| `recipe` | 레시피 | `ingredients`, `ratio`, `steps`, `texture_result`, `storage_tip` |
-| `failure` | 실패 해결 질문 | `symptom`, `attempted_solution`, `solved_status` |
-| `review` | 완성 후기 | `texture_result`, `difficulty`, `slime_type` |
-| `general` | 일반 글 | `title`, `content`, `tags` |
+| `recipe` | 레시피 공유 | 자기가 만든 느낌 좋은 슬라임 레시피를 공유하는 글 |
+| `failure` | 실패 질문 | 만들었는데 실패한 게시물에서 왜 실패했는지 물어보는 글 |
+| `review` | 후기 | 슬라임 마켓 구매 후기 또는 따라 만들어 본 후기 |
+| `general` | 일반 | 그 외의 자유 글 |
 
 ### GET `/posts`
 
@@ -230,8 +323,15 @@ Query
 | `size` | number | 아니오 | `10` | 페이지 크기, 최대 50 |
 | `keyword` | string | 아니오 | 없음 | 제목, 본문, 슬라임 타입, 증상, 태그명 검색 |
 | `post_type` | string | 아니오 | 없음 | `recipe`, `failure`, `review`, `general` |
-| `tag` | string | 아니오 | 없음 | 태그명 |
+| `tag` | string | 아니오 | 없음 | 태그명, 기존 단일 태그 필터 호환용 |
+| `tags` | string[] | 아니오 | 없음 | 반복 쿼리로 전달하는 태그명 목록. 모든 태그를 포함한 게시글만 조회 |
 | `slime_type` | string | 아니오 | 없음 | 슬라임 종류 |
+
+다중 태그 필터는 반복 쿼리로 전달한다. `tag`와 `tags`가 함께 전달되면 중복을 제거한 뒤 모두 포함 조건으로 처리한다.
+
+```http
+GET /posts?tags=클리어슬라임&tags=거품
+```
 
 응답 `200 OK`
 
@@ -314,7 +414,10 @@ Query
 구현 메모:
 
 - 작성자는 access token의 현재 사용자
-- `tag_names`는 최대 8개까지 정규화
+- `tag_names`는 추천 태그와 사용자가 직접 입력한 태그를 모두 포함할 수 있다
+- `tag_names`는 최대 8개까지 정규화한다
+- 태그 정규화는 앞의 `#`, 앞뒤 공백, 내부 공백을 제거하고 중복을 없앤다
+- 존재하지 않는 태그명은 `tags`에 새로 만들고 `post_tags`로 연결한다
 - 게시글 생성 후 RAG 구현 단계에서는 `embeddings` 생성 작업을 연결한다
 
 ### GET `/posts/{post_id}`
@@ -358,7 +461,8 @@ Query
 구현 메모:
 
 - partial update 방식
-- `tag_names`가 요청에 포함될 때만 태그 연결을 교체
+- `tag_names`가 요청에 포함될 때만 태그 연결을 교체한다
+- 직접 입력 태그가 포함되면 생성 후 연결한다
 - 게시글 수정 후 RAG 구현 단계에서는 관련 임베딩을 갱신한다
 
 ### DELETE `/posts/{post_id}`
@@ -484,7 +588,7 @@ Query
 
 | 이름 | 타입 | 필수 | 설명 |
 | --- | --- | --- | --- |
-| `tag_type` | string | 아니오 | `slime_type`, `symptom`, `texture`, `difficulty`, `purpose` |
+| `tag_type` | string | 아니오 | `slime_type`, `symptom`, `texture`, `difficulty`, `purpose`, `custom` |
 
 응답 `200 OK`
 
@@ -503,6 +607,7 @@ Query
 구현 메모:
 
 - 개발 단계에서는 startup 또는 최초 조회 시 초기 태그 seed를 보장한다
+- 직접 입력 태그는 `tag_type="custom"`으로 저장할 수 있다
 
 ### GET `/tags/popular`
 
@@ -530,6 +635,11 @@ Query
   ]
 }
 ```
+
+구현 메모:
+
+- 백엔드는 사용 횟수(`post_tags`)가 많은 순서와 태그명 순서로 안정적으로 정렬한다
+- 프론트 게시판 메인은 응답 중 최대 8개까지만 노출한다
 
 ## 10. AI API
 
@@ -677,10 +787,10 @@ MCP 상품 검색 도구를 호출해 슬라임 재료 구매 후보를 반환�
 ## 11. 구현 순서 제안
 
 1. `core/config.py`, `db/session.py`, `main.py`로 FastAPI 앱과 DB 연결을 확인한다.
-2. `users` 모델, Auth schema, Auth router/service를 구현한다.
+2. `users`, `refresh_tokens` 모델과 Auth schema, Auth router/service를 구현한다.
 3. `tags`, `post_tags` 모델과 초기 태그 seed를 구현한다.
 4. `posts` 모델, schema, CRUD API를 구현한다.
-5. 게시글 목록 검색, 태그 필터, 페이징을 구현한다.
+5. 게시판 메인 검색, 카테고리 필터, 다중 태그 필터, 페이징을 구현한다.
 6. `comments` 모델, schema, CRUD API를 구현한다.
 7. 게시글/댓글 생성 후 임베딩 생성 hook 위치를 잡는다.
 8. `embeddings` 모델과 `embedding_service`, `rag_service`를 구현한다.
@@ -696,7 +806,9 @@ MCP 상품 검색 도구를 호출해 슬라임 재료 구매 후보를 반환�
 | --- | --- |
 | 회원가입 | `POST /auth/signup` |
 | 로그인 | `POST /auth/login` |
-| 게시글 목록 | `GET /posts`, `GET /tags`, `GET /tags/popular` |
+| 토큰 재발급 | `POST /auth/refresh` |
+| 로그아웃 | `POST /auth/logout` |
+| 게시판 메인(`/`, `/posts`) | `GET /posts`, `GET /tags`, `GET /tags/popular` |
 | 게시글 작성 | `POST /posts` |
 | 게시글 상세 | `GET /posts/{post_id}`, `GET /posts/{post_id}/comments` |
 | 댓글 작성 | `POST /posts/{post_id}/comments` |

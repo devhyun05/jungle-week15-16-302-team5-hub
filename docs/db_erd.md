@@ -4,6 +4,7 @@
 
 - 구현 최소 요구사항을 만족하는 필수 테이블 중심 DB 설계다.
 - 기본 게시판 기능은 `users`, `posts`, `comments`, `tags`, `post_tags`로 처리한다.
+- 로그인 유지는 `refresh_tokens`로 처리하며, refresh token 원문은 저장하지 않고 hash만 저장한다.
 - RAG 검색은 `embeddings`에 게시글/댓글 벡터를 저장해서 처리한다.
 - MCP와 AI Agent 결과는 웹 페이지에서 재조회하지 않으므로 별도 저장 테이블을 두지 않고 API 응답으로 처리한다.
 - 레시피, 실패 사례, 후기 상세값은 별도 상세 테이블로 분리하지 않고 `posts`의 선택 컬럼으로 관리한다.
@@ -12,12 +13,12 @@
 
 | 요구사항 | DB 반영 | 설명 |
 | --- | --- | --- |
-| 회원가입 / 로그인 | `users` | 이메일, 비밀번호 해시, 닉네임 저장 |
+| 회원가입 / 로그인 | `users`, `refresh_tokens` | 이메일, 비밀번호 해시, 닉네임, refresh token hash 저장 |
 | 게시물 CRUD | `posts` | 게시글 생성, 조회, 수정, 삭제 |
 | 댓글 | `comments` | 게시글별 댓글 저장 |
-| 태그 | `tags`, `post_tags` | 태그 마스터와 게시글-태그 다대다 연결 |
+| 태그 | `tags`, `post_tags` | 태그 마스터와 게시글-태그 다대다 연결, 직접 입력 태그 저장 |
 | 페이징 | `posts.created_at`, `posts.id` 인덱스 | 최신순 목록 조회 기준 |
-| 검색 | `posts`, `tags` | 제목, 본문, 증상, 태그명 기반 키워드 검색 |
+| 검색 | `posts`, `tags` | 제목, 본문, 증상, 태그명 기반 키워드 검색과 다중 태그 AND 필터 |
 | RAG | `embeddings` | 게시글/댓글을 벡터화해 유사 사례 검색 |
 | MCP | 별도 테이블 없음 | MCP 도구 결과는 요청 시 즉시 반환 |
 | AI Agent | 별도 테이블 없음 | Agent 답변은 요청 시 즉시 생성해 반환 |
@@ -27,6 +28,7 @@
 | 테이블 | 역할 | 필수 기능 |
 | --- | --- | --- |
 | `users` | 회원 계정과 작성자 정보를 저장한다. | 인증, 작성자 표시 |
+| `refresh_tokens` | access token 재발급용 refresh token hash를 저장한다. | 로그인 유지, 로그아웃, 토큰 회전 |
 | `posts` | 레시피, 실패 질문, 후기, 일반 글을 한 테이블에서 관리한다. | 게시글 CRUD, 검색, 페이징 |
 | `comments` | 게시글의 댓글을 저장한다. | 댓글 |
 | `tags` | 슬라임 종류, 증상, 질감, 난이도, 목적 태그를 저장한다. | 태그, 검색 필터 |
@@ -39,6 +41,7 @@
 | --- | --- | --- |
 | `users` - `posts` | 1:N | 한 사용자는 여러 게시글을 작성할 수 있고, 게시글 하나는 작성자 한 명에 속한다. |
 | `users` - `comments` | 1:N | 한 사용자는 여러 댓글을 작성할 수 있고, 댓글 하나는 작성자 한 명에 속한다. |
+| `users` - `refresh_tokens` | 1:N | 한 사용자는 여러 로그인 세션을 가질 수 있고, refresh token 하나는 사용자 한 명에 속한다. |
 | `posts` - `comments` | 1:N | 한 게시글에는 여러 댓글이 달릴 수 있고, 댓글 하나는 게시글 하나에 속한다. |
 | `posts` - `post_tags` | 1:N | 게시글과 태그의 N:M 관계를 조인 테이블의 1:N 관계로 풀어낸다. |
 | `tags` - `post_tags` | 1:N | 태그와 게시글의 N:M 관계를 조인 테이블의 1:N 관계로 풀어낸다. |
@@ -69,6 +72,7 @@ AI 기능 흐름:
 erDiagram
     USERS ||--o{ POSTS : writes
     USERS ||--o{ COMMENTS : writes
+    USERS ||--o{ REFRESH_TOKENS : owns
     POSTS ||--o{ COMMENTS : has
     POSTS ||--o{ POST_TAGS : tagged_with
     TAGS ||--o{ POST_TAGS : assigned_to
@@ -82,6 +86,20 @@ erDiagram
       varchar nickname
       timestamptz created_at
       timestamptz updated_at
+    }
+
+    REFRESH_TOKENS {
+      bigint id PK
+      bigint user_id FK
+      varchar token_hash UK
+      varchar family_id
+      text user_agent
+      varchar ip_address
+      timestamptz expires_at
+      timestamptz revoked_at
+      bigint replaced_by_token_id FK
+      timestamptz created_at
+      timestamptz last_used_at
     }
 
     POSTS {
@@ -156,6 +174,31 @@ erDiagram
 | `created_at` | `timestamptz` | DEFAULT now | 가입 일시 |
 | `updated_at` | `timestamptz` | DEFAULT now, ON UPDATE | 수정 일시 |
 
+### `refresh_tokens`
+
+access token이 만료됐을 때 로그인 상태를 이어가기 위한 토큰 저장 테이블이다. refresh token 원문은 DB에 저장하지 않고, 해시만 저장한다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | `bigint` | PK | refresh token 식별자 |
+| `user_id` | `bigint` | FK, NOT NULL, INDEX | 토큰 소유 사용자 |
+| `token_hash` | `varchar(255)` | NOT NULL, UNIQUE | refresh token 원문을 해시한 값 |
+| `family_id` | `varchar(64)` | NOT NULL, INDEX | 같은 로그인 흐름에서 회전된 토큰 묶음 |
+| `user_agent` | `text` | NULL | 선택 저장: 로그인한 클라이언트 정보 |
+| `ip_address` | `varchar(45)` | NULL | 선택 저장: IPv4/IPv6 주소 |
+| `expires_at` | `timestamptz` | NOT NULL, INDEX | refresh token 만료 시각 |
+| `revoked_at` | `timestamptz` | NULL | 로그아웃, 회전, 탈취 의심으로 폐기된 시각 |
+| `replaced_by_token_id` | `bigint` | FK, NULL | 회전 후 새 refresh token id |
+| `created_at` | `timestamptz` | DEFAULT now | 생성 일시 |
+| `last_used_at` | `timestamptz` | NULL | 마지막 재발급 사용 시각 |
+
+운영 규칙:
+
+- 로그인 시 refresh token을 생성하고 hash만 저장한다.
+- `/auth/refresh` 성공 시 기존 refresh token을 `revoked_at` 처리하고 새 token으로 회전한다.
+- 이미 revoked된 refresh token이 다시 사용되면 재사용 공격 가능성으로 보고 같은 `family_id`의 토큰을 모두 폐기할 수 있다.
+- 로그아웃 시 현재 refresh token을 revoked 처리한다.
+
 ### `posts`
 
 게시글 CRUD, 목록 페이징, 키워드 검색의 중심 테이블이다. 게시글 유형별 상세 데이터는 nullable 컬럼으로 둔다.
@@ -204,18 +247,20 @@ erDiagram
 
 ### `tags`
 
-검색, 필터, 추천 태그 표시를 위한 태그 마스터 테이블이다.
+검색, 필터, 추천 태그 표시를 위한 태그 마스터 테이블이다. 글쓰기 화면에서 사용자가 직접 추가한 태그도 같은 테이블에 저장한다.
 
 | 컬럼 | 타입 | 제약 | 설명 |
 | --- | --- | --- | --- |
 | `id` | `bigint` | PK | 태그 식별자 |
 | `name` | `varchar(80)` | NOT NULL, INDEX | 태그명 |
-| `tag_type` | `varchar(40)` | NOT NULL, INDEX | `slime_type`, `symptom`, `texture`, `difficulty`, `purpose` |
+| `tag_type` | `varchar(40)` | NOT NULL, INDEX | `slime_type`, `symptom`, `texture`, `difficulty`, `purpose`, `custom` |
 | `created_at` | `timestamptz` | DEFAULT now | 생성 일시 |
 
 제약:
 
-- `UNIQUE(name, tag_type)`
+- `UNIQUE(name)`
+- 직접 입력 태그는 앞의 `#`와 공백을 제거해 정규화한 뒤 저장한다.
+- 인기 태그는 `post_tags` 사용 횟수 기준으로 계산한다.
 
 ### `post_tags`
 
@@ -262,6 +307,8 @@ RAG 검색을 위한 벡터 저장 테이블이다. 게시글과 댓글을 작�
 현재 기능에 필요한 인덱스:
 
 - `users(email)`
+- `refresh_tokens(token_hash)`
+- `refresh_tokens(user_id, expires_at) WHERE revoked_at IS NULL`
 - `posts(created_at DESC, id DESC)`
 - `posts(user_id, created_at DESC)`
 - `posts(post_type, created_at DESC)`

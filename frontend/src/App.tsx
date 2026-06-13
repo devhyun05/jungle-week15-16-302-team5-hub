@@ -1,6 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Header from "./components/Header";
-import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import PostListPage from "./pages/PostListPage";
@@ -12,9 +11,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <Header />
-      <main className="mx-auto max-w-[1200px] px-5 py-9 pb-[72px] md:px-12">
+      <main className="mx-auto w-full max-w-[1180px] px-4 py-7 pb-16 md:px-8">
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<PostListPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/posts" element={<PostListPage />} />

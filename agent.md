@@ -2,6 +2,10 @@
 
 - React 학습은 `frontend/react-hooks-practice` 폴더를 기준으로 진행한다.
 - 학습 진도는 `frontend/react-hooks-practice/progress-check.md`를 기준으로 확인한다.
+- 백엔드 학습은 `backend/00-learning-plan.md`와 `backend/progress-check.md`를 기준으로 진행한다.
+- 백엔드 구현 세션에서는 사용자가 직접 `backend/app` 코드를 작성한다. Codex는 먼저 진도 문서를 읽고, 오리엔테이션, Level 3 빈칸, 힌트, 피드백을 제공한다.
+- 사용자가 명시적으로 "백엔드 코드를 구현해줘"라고 요청하지 않는 한, Codex는 `backend/app` 구현 코드를 대신 채우지 않는다.
+- 프론트 변경에 맞춰 백엔드를 준비해야 할 때는 먼저 `backend/api-spec.md`, `backend/00-learning-plan.md`, `backend/progress-check.md`, `backend/tests/README.md`를 업데이트한다.
 - 별도 RAG/MCP 전용 페이지는 없고 `/agent` 화면에서 내부 검색과 상품 검색 흐름을 함께 다룬다.
 - 각 세션은 코드 작성 전에 오리엔테이션으로 시작한다.
 - 오리엔테이션에서는 구현 개념, 문법, 키워드, 변수명, 데이터 흐름을 충분히 자세히 설명한다.

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { PostCardData, PostType } from "../types";
-import { badgeBase, badgeTone, cardCopy, cn, h3, meta as metaText, panelCard, tagRow } from "../styles/ui";
+import { badgeBase, badgeTone, cardCopy, cn, h3, meta as metaText, tagRow } from "../styles/ui";
 import TagBadge from "./TagBadge";
 
 interface CategoryMeta {
@@ -23,24 +23,22 @@ export default function PostCard({ post }: PostCardProps) {
   const category = post?.type ? categoryMeta[post.type] : categoryMeta.failure;
 
   return (
-    <article className={cn(panelCard, "grid gap-[13px] p-5")}>
-      <div className="flex items-center gap-2.5">
+    <article className="grid gap-3 rounded-md border border-line bg-white p-5 transition hover:border-mint/60 hover:shadow-subtle">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className={category.className}>{category.label}</span>
+        <span className={metaText}>{post?.author || "연구원"} · {post?.time || "방금 전"}</span>
       </div>
       <Link to={`/posts/${post?.id || ""}`} aria-label={`${post?.title || "게시글"} 상세 보기`}>
-        <h3 className={h3}>{post?.title || "게시글 제목"}</h3>
+        <h3 className={cn(h3, "transition hover:text-mint-dark")}>{post?.title || "게시글 제목"}</h3>
       </Link>
       <p className={cardCopy}>{post?.summary || "게시글 요약과 작성자 정보를 표시할 영역입니다."}</p>
-      <div className={tagRow}>
-        {(post?.tags || ["실패해결"]).slice(0, 4).map((tag: string) => (
-          <TagBadge key={tag} label={tag} />
-        ))}
-      </div>
-      <footer className="flex items-center justify-between gap-2.5">
-        <span className={metaText}>{post?.author || "민트연구원"} · {post?.time || "2시간 전"}</span>
-        <span className="flex gap-3 text-base text-muted">
-          <span>댓글 {post?.comments ?? 0}</span>
-        </span>
+      <footer className="flex flex-wrap items-center justify-between gap-3">
+        <div className={tagRow}>
+          {(post?.tags || ["실패해결"]).slice(0, 4).map((tag: string) => (
+            <TagBadge key={tag} label={tag} />
+          ))}
+        </div>
+        <span className="text-base font-medium text-muted">댓글 {post?.comments ?? 0}</span>
       </footer>
     </article>
   );
