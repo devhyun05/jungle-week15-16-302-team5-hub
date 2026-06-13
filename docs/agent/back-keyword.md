@@ -67,7 +67,7 @@ JWT 구현, DB 설계 문서, API 설계 문서는 팀원에게 공유해야 하
 
 - 상태: 진행 중
 - 언제 나왔는가: FastAPI 서버와 `/health` API를 만들 때
-- 우리 프로젝트에서 어디에 쓰였는가: `/health`, `/health/db`, `/posts`, `/posts/{post_id}`
+- 우리 프로젝트에서 어디에 쓰였는가: `/health`, `/health/db`, `/posts`, `/posts/{post_id}`, `/posts/{post_id}/comments`
 - 핵심 개념: URL, HTTP method, status code로 서버 자원을 다루는 방식이다.
 - 관련 파일: `backend/app/routers/health.py`, `backend/app/routers/posts.py`
 - 팀 공유 필요: 예
@@ -87,9 +87,9 @@ JWT 구현, DB 설계 문서, API 설계 문서는 팀원에게 공유해야 하
 
 - 상태: 진행 중
 - 언제 나왔는가: DB 모델을 그대로 응답하지 않고 프론트가 필요한 JSON 모양으로 바꿀 때
-- 우리 프로젝트에서 어디에 쓰였는가: 게시글 목록/상세 응답에서 `categorySlug`, `isPublic`, `createdAt` 같은 화면 친화적 필드를 만든다.
+- 우리 프로젝트에서 어디에 쓰였는가: 게시글 목록/상세 응답과 댓글 응답에서 `categorySlug`, `isPublic`, `postId`, `authorRole`, `createdAt` 같은 화면 친화적 필드를 만든다.
 - 핵심 개념: DB model은 테이블 구조이고, Pydantic schema는 API 요청/응답 구조다.
-- 관련 파일: `backend/app/schemas/post.py`
+- 관련 파일: `backend/app/schemas/post.py`, `backend/app/schemas/comment.py`
 - 팀 공유 필요: 예
 - 다음에 다시 볼 시점: 게시글 작성 request body와 댓글 response schema를 만들 때
 

@@ -114,3 +114,56 @@ RuntimeError: The starlette.testclient module requires the httpx2 package to be 
 ### 이후 개선
 
 백엔드 테스트 단계를 시작할 때 `httpx` 또는 현재 Starlette 버전에 맞는 테스트 의존성을 명시적으로 추가하고, `pytest` 기반 API 테스트를 만든다.
+
+## 2026-06-13 댓글 API route 충돌과 프론트 fetch 대상 오류
+
+### 상황
+
+댓글 조회 API를 추가하고 프론트 게시글 상세 화면에서 호출하려고 했다.
+
+### 문제
+
+백엔드 comments router가 아래 구조로 작성되어 있었다.
+
+```python
+router = APIRouter(prefix="/posts/{post_id}", tags=["comments"])
+
+@router.get("")
+def get_comments(...):
+    ...
+```
+
+이렇게 하면 실제 endpoint가 `/posts/{post_id}`가 된다.
+이미 게시글 상세 API가 같은 경로를 사용하고 있어서 Swagger/OpenAPI에서 댓글 API가 별도 경로로 보이지 않았다.
+
+프론트에서도 댓글 조회 함수가 아래 경로를 호출하고 있었다.
+
+```txt
+GET /posts/{id}
+```
+
+이 경로는 댓글 API가 아니라 게시글 상세 API다.
+
+### 해결
+
+백엔드 route를 명확히 아래 경로로 수정했다.
+
+```txt
+GET /posts/{post_id}/comments
+```
+
+프론트는 `frontend/src/app/api/comments.ts`를 만들어 댓글 API 호출을 분리했다.
+`PostDetail.tsx`는 `getPostComments(id)`를 호출하고 응답의 `items`를 화면 state로 변환하도록 수정했다.
+
+### 추가로 고친 점
+
+`useEffect` dependency가 `[comments]`였는데, 댓글 state가 바뀔 때마다 다시 fetch될 수 있어 `[id]`로 수정했다.
+
+### 검증
+
+```txt
+GET /posts/1/comments -> 200, total=0
+GET /posts/999999/comments -> 404
+OpenAPI path -> /posts/{post_id}/comments 등록 확인
+npm run build -> 성공
+```

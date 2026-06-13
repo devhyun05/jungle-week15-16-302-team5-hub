@@ -10,6 +10,7 @@ from app.routers.health import router as health_router
 # posts_router는 /posts, /posts/{post_id} endpoint 묶음이다.
 from app.routers.posts import router as posts_router
 
+from app.routers.comments import router as comments_router
 # FastAPI 앱 인스턴스를 만든다.
 # title은 Swagger UI 상단에 보이는 API 이름이다.
 app = FastAPI(title=settings.app_name)
@@ -33,3 +34,5 @@ app.include_router(health_router)
 # posts router를 app에 등록한다.
 # 이 줄이 있어야 Swagger UI에 /posts가 보인다.
 app.include_router(posts_router)
+
+app.include_router(comments_router)

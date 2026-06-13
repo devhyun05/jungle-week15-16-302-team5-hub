@@ -260,6 +260,26 @@ user_approval_logs
 users
 ```
 
+## 2026-06-13 댓글 조회 API와 프론트 연결 QA
+
+목표: 게시글 상세 화면이 백엔드 댓글 조회 API를 호출하고, 댓글 API가 설계한 응답을 반환하는지 확인한다.
+
+- [x] `backend/app/schemas/comment.py`에 댓글 응답 schema가 있다.
+- [x] `backend/app/repositories/comment_repository.py`가 게시글 존재 확인과 댓글 목록 조회를 담당한다.
+- [x] `backend/app/services/comment_service.py`가 댓글 응답을 조립한다.
+- [x] `backend/app/routers/comments.py`가 `/posts/{post_id}/comments` endpoint를 등록한다.
+- [x] `backend/app/main.py`가 comments router를 include한다.
+- [x] OpenAPI path에 `/posts/{post_id}/comments`가 보인다.
+- [x] `GET /posts/1/comments`가 HTTP 200을 반환한다.
+- [x] 댓글이 없을 때 `items: []`, `total: 0` 형태를 반환한다.
+- [x] `GET /posts/999999/comments`가 HTTP 404를 반환한다.
+- [x] `frontend/src/app/api/comments.ts`가 댓글 API 호출을 담당한다.
+- [x] `PostDetail.tsx`가 댓글 API 응답을 comments state로 변환한다.
+- [x] `useEffect` dependency가 댓글 state가 아니라 게시글 id 기준이다.
+- [x] CORS 응답 header가 `http://localhost:5173`을 허용한다.
+- [x] `python -m compileall app`이 성공한다.
+- [x] `npm run build`가 성공한다.
+
 ## 2026-06-12 DB 설계와 현재 화면 매핑 QA
 
 목표: 현재 React mock 화면에서 쓰는 데이터가 ERD v1에 저장될 수 있는지 확인한다.

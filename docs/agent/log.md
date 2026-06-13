@@ -533,3 +533,73 @@ users
 
 - 이번에 추가한 DB 모델 관계를 학습한다.
 - 이후 댓글 API 또는 게시글 작성/수정/삭제 API로 이동한다.
+
+## 2026-06-13 구현 완료 후 커밋 안내 규칙 추가
+
+상태: 완료
+
+목표: 앞으로 기능 구현 단위가 끝날 때마다 커밋 시점과 추천 커밋 제목을 안내하도록 작업 규칙에 반영한다.
+
+수정한 파일:
+
+- `docs/agent/agent.md`
+- `docs/agent/code.md`
+- `docs/agent/log.md`
+
+반영한 규칙:
+
+- 구현 완료 후 커밋 가능한 시점을 알려준다.
+- 추천 커밋 제목을 함께 제안한다.
+- 코드 작성 시 학습용 주석을 남긴다.
+- 구현할 때마다 `docs/agent` 문서를 참고하고 필요한 문서를 업데이트한다.
+
+추천 커밋 제목:
+
+```txt
+docs: 작업 운영 규칙에 커밋 안내 추가
+```
+
+## 2026-06-13 댓글 조회 API와 프론트 연결 QA
+
+상태: 완료
+
+목표: 게시글 상세 화면에서 백엔드 댓글 조회 API를 호출하고, API 응답을 프론트 댓글 state에 반영한다.
+
+구현/수정한 파일:
+
+- `backend/app/schemas/comment.py`
+- `backend/app/repositories/comment_repository.py`
+- `backend/app/services/comment_service.py`
+- `backend/app/routers/comments.py`
+- `backend/app/main.py`
+- `frontend/src/app/api/comments.ts`
+- `frontend/src/app/pages/posts/PostDetail.tsx`
+
+확인 중 발견한 문제:
+
+- comments router가 `/posts/{post_id}`로 등록되어 기존 게시글 상세 API와 충돌할 수 있었다.
+- 프론트 `PostDetail`이 댓글 API가 아니라 `/posts/{id}` 게시글 상세 API를 fetch하고 있었다.
+- `useEffect` dependency가 `[comments]`라 댓글 state 변경 때마다 다시 호출될 수 있었다.
+
+수정:
+
+- 댓글 endpoint를 `GET /posts/{post_id}/comments`로 수정했다.
+- 게시글이 없으면 404를 반환하도록 router에서 `HTTPException` 처리했다.
+- 프론트 API 호출을 `frontend/src/app/api/comments.ts`로 분리했다.
+- `PostDetail`에서 댓글 API 응답을 화면 state로 변환하도록 수정했다.
+- 댓글 로딩, 실패, 빈 목록 UI를 추가했다.
+
+검증:
+
+- `python -m compileall app` 성공
+- OpenAPI path에 `/posts/{post_id}/comments` 등록 확인
+- `npm run build` 성공
+- `GET /posts/1/comments` -> 200, `total=0`
+- `GET /posts/999999/comments` -> 404
+- CORS header `access-control-allow-origin=http://localhost:5173` 확인
+
+추천 커밋 제목:
+
+```txt
+feat: 댓글 조회 API와 게시글 상세 연결
+```

@@ -581,3 +581,31 @@ tags
 user_approval_logs
 users
 ```
+
+## 2026-06-13 댓글 조회 API 확인 URL
+
+백엔드 서버를 켠 뒤 댓글 조회 API를 확인한다.
+
+```txt
+http://localhost:8000/posts/1/comments
+http://localhost:8000/posts/999999/comments
+http://localhost:8000/docs
+```
+
+정상 응답 예시:
+
+```json
+{
+  "postId": 1,
+  "items": [],
+  "total": 0
+}
+```
+
+없는 게시글 id:
+
+```json
+{
+  "detail": "게시글을 찾을 수 없습니다."
+}
+```

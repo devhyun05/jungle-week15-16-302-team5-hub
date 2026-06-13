@@ -203,7 +203,51 @@ HTTP 404
 
 게시글 댓글 목록을 조회한다.
 
-상태: 백엔드 연결 후 구현 예정
+상태: 구현 완료
+
+Request path:
+
+| 이름 | 타입 | 설명 |
+| --- | --- | --- |
+| post_id | int | 댓글을 조회할 게시글 id |
+
+Response:
+
+```json
+{
+  "postId": 1,
+  "items": [
+    {
+      "id": 1,
+      "postId": 1,
+      "author": "정글 학생",
+      "authorRole": "STUDENT",
+      "content": "댓글 내용",
+      "createdAt": "2026-06-13T00:00:00",
+      "updatedAt": "2026-06-13T00:00:00"
+    }
+  ],
+  "total": 1
+}
+```
+
+게시글은 존재하지만 댓글이 없으면 빈 배열을 반환한다.
+
+```json
+{
+  "postId": 1,
+  "items": [],
+  "total": 0
+}
+```
+
+없는 게시글 id이면 404를 반환한다.
+
+```json
+{
+  "detail": "게시글을 찾을 수 없습니다."
+}
+```
 
 ### POST /posts/{post_id}/comments
 

@@ -1,10 +1,11 @@
 ﻿
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router";
 import { FileText, Github, Globe, Lightbulb, Lock, MessageSquare, Trash2 } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
+import { getPostComments } from "../../api/comments";
 import { posts } from "../../data/mockData";
 import type { UserRole } from "../../data/mockData";
 import type { MainLayoutContext } from "../../layouts/MainLayout";
@@ -46,15 +47,60 @@ export function PostDetail() {
   const [deleteNotice, setDeleteNotice] = useState("");
   const [commentInput, setCommentInput] = useState("");
   const [commentError, setCommentError] = useState("");
-  const [comments, setComments] = useState<CommentItem[]>([
-    {
-      id: "comment-coach-1",
-      author: "이코치",
-      role: "COACH",
-      createdAt: "2026.06.05 15:00",
-      content: "문제 해결 과정과 배운 점을 더 구체적으로 작성하면 포트폴리오 자료로 쓰기 좋겠습니다.",
-    },
-  ]);
+  const [commentLoadError, setCommentLoadError] = useState("");
+  const [isCommentLoading, setIsCommentLoading] = useState(false);
+  const [comments, setComments] = useState<CommentItem[]>([]);
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    // useParams의 id는 타입상 string | undefined다.
+    // 위에서 undefined를 걸렀더라도, 중첩 async 함수 안에서는 에디터가 다시 의심할 수 있어서
+    // 확정된 string 값을 postId로 따로 잡아둔다.
+    const postId = id;
+    let isActive = true;
+
+    async function loadComments() {
+      setIsCommentLoading(true);
+      setCommentLoadError("");
+
+      try {
+        const data = await getPostComments(postId);
+
+        if (!isActive) {
+          return;
+        }
+
+        // 백엔드 응답은 authorRole이고, 화면 state는 role 이름을 사용한다.
+        // 여기서 API 응답 모양을 화면에서 쓰는 CommentItem 모양으로 변환한다.
+        setComments(
+          data.items.map((comment) => ({
+            id: String(comment.id),
+            author: comment.author,
+            role: comment.authorRole,
+            createdAt: comment.createdAt,
+            content: comment.content,
+          }))
+        );
+      } catch {
+        if (isActive) {
+          setCommentLoadError("댓글을 불러오지 못했습니다. 백엔드 서버와 API 경로를 확인해주세요.");
+        }
+      } finally {
+        if (isActive) {
+          setIsCommentLoading(false);
+        }
+      }
+    }
+
+    void loadComments();
+
+    return () => {
+      isActive = false;
+    };
+  }, [id]);
 
   if (!post) {
     // URL id와 맞는 mock 게시글이 없을 때 보여주는 안전 화면입니다.
@@ -245,6 +291,18 @@ export function PostDetail() {
         </div>
 
         <div className="divide-y divide-slate-100">
+          {isCommentLoading && (
+            <div className="p-6 text-sm text-slate-500">댓글을 불러오는 중입니다.</div>
+          )}
+
+          {commentLoadError && (
+            <div className="bg-red-50 p-6 text-sm text-red-700">{commentLoadError}</div>
+          )}
+
+          {!isCommentLoading && !commentLoadError && comments.length === 0 && (
+            <div className="p-6 text-sm text-slate-500">아직 등록된 댓글이 없습니다.</div>
+          )}
+
           {comments.map((comment) => (
             <div key={comment.id} className={comment.role === "COACH" ? "bg-indigo-50/30 p-6" : "bg-white p-6"}>
               <div className="mb-2 flex items-center gap-2">

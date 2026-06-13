@@ -109,9 +109,11 @@ frontend/src/app/
 - `GET /health/db` API가 PostgreSQL에 `SELECT 1`을 실행해 DB 연결 상태를 확인합니다.
 - `GET /posts` API가 공개 게시글 목록을 페이지네이션 응답으로 반환합니다.
 - `GET /posts/{post_id}` API가 id에 맞는 공개 게시글 상세를 반환합니다.
+- `GET /posts/{post_id}/comments` API가 게시글 댓글 목록을 반환합니다.
 - `/docs` Swagger 문서에서 `HealthResponse` schema를 확인할 수 있습니다.
 - `/docs` Swagger 문서에서 `DatabaseHealthResponse` schema와 `/health/db` endpoint를 확인할 수 있습니다.
 - `/docs` Swagger 문서에서 `PostListResponse`, `PostDetailResponse` schema와 posts endpoint를 확인할 수 있습니다.
+- `/docs` Swagger 문서에서 `CommentListResponse` schema와 comments endpoint를 확인할 수 있습니다.
 - `.env`, `config.py`, `.env.example` 기반으로 앱 이름, CORS origin, `DATABASE_URL` 설정을 분리했습니다.
 - Docker Compose로 PostgreSQL 16 컨테이너 `junglelog-postgres`를 실행했습니다.
 - SQLAlchemy / psycopg 기반 DB engine, session, `get_db()` 의존성 함수를 구성했습니다.
@@ -127,7 +129,7 @@ frontend/src/app/
 - 초기 관리자 `ADMIN_EMAILS` 처리
 - 사용자 승인 / 거절 / 정지 / role 변경 API
 - 게시글 작성 / 수정 / 삭제 API
-- 댓글 조회 / 저장 / 삭제 API
+- 댓글 저장 / 삭제 API
 - 태그 API
 - 페이징 API
 - DB full-text search
@@ -189,8 +191,8 @@ uvicorn app.main:app --reload
 ## 다음 작업 예정
 
 1. `GET /posts`, `GET /posts/{post_id}` API Swagger와 실제 응답 QA
-2. 댓글 조회 API 설계와 구현
-3. 게시글 작성 / 수정 / 삭제 API 설계와 구현
+2. 게시글 작성 / 수정 / 삭제 API 설계와 구현
+3. 댓글 작성 / 삭제 API 설계와 구현
 4. Google OAuth 로그인 / 자동 가입 / JWT 발급 구현
 5. 사용자 승인 / role 변경 API 구현
 6. 프론트 mock data를 실제 API 응답으로 교체
@@ -263,3 +265,13 @@ uvicorn app.main:app --reload
   - `notifications`
 - `User`, `Post`, `PostCategory` 모델에 포트폴리오, 코치 리뷰, 알림, 승인 이력 관계를 연결했습니다.
 - `init_db()` 실행 후 실제 PostgreSQL 테이블 12개 생성을 확인했습니다.
+
+## 최근 댓글 조회 API와 프론트 연결
+
+- `backend/app/schemas/comment.py`에 댓글 목록 응답 schema를 추가했습니다.
+- `backend/app/repositories/comment_repository.py`에 게시글 존재 확인과 댓글 목록 조회 로직을 추가했습니다.
+- `backend/app/services/comment_service.py`에 댓글 DB model을 API 응답으로 변환하는 흐름을 추가했습니다.
+- `backend/app/routers/comments.py`에 `GET /posts/{post_id}/comments` endpoint를 추가했습니다.
+- `frontend/src/app/api/comments.ts`에 댓글 조회 API 호출 함수를 추가했습니다.
+- `PostDetail` 화면에서 백엔드 댓글 API를 호출해 댓글 목록 state에 반영하도록 연결했습니다.
+- 댓글 조회 API는 실제 저장/작성 API 전 단계이며, 현재 댓글 작성 버튼은 아직 화면 local state mock 동작입니다.

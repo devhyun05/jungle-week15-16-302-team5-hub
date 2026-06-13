@@ -1569,3 +1569,80 @@ review_requests
 - UniqueConstraint
 - configure_mappers
 - N:M relationship
+
+## 2026-06-13 댓글 조회 API와 프론트 연결
+
+이번 작업은 `GET /posts/{post_id}/comments` API를 만들고, 게시글 상세 화면에서 그 API를 호출하도록 연결한 작업이다.
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/schemas/comment.py` | 댓글 목록 응답 JSON 모양 정의 |
+| `backend/app/repositories/comment_repository.py` | 게시글 존재 확인, 댓글 DB 조회 |
+| `backend/app/services/comment_service.py` | Comment model을 API 응답 schema로 변환 |
+| `backend/app/routers/comments.py` | `GET /posts/{post_id}/comments` endpoint |
+| `backend/app/main.py` | comments router 등록 |
+| `frontend/src/app/api/comments.ts` | 프론트에서 댓글 API를 호출하는 함수 |
+| `frontend/src/app/pages/posts/PostDetail.tsx` | 게시글 상세 화면에서 댓글 API 호출 |
+
+### 요청 흐름
+
+```txt
+PostDetail.tsx
+-> getPostComments(postId)
+-> GET http://localhost:8000/posts/{post_id}/comments
+-> routers/comments.py
+-> comment_service.py
+-> comment_repository.py
+-> comments + users 조회
+-> CommentListResponse
+-> PostDetail comments state 반영
+```
+
+### 이번에 발견한 문제
+
+처음 구현에서는 comments router가 `prefix="/posts/{post_id}"`, `@router.get("")` 구조였다.
+이렇게 쓰면 실제 경로가 `/posts/{post_id}`가 되어 기존 게시글 상세 API와 충돌한다.
+
+수정 후 경로:
+
+```txt
+GET /posts/{post_id}/comments
+```
+
+프론트에서도 처음에는 `fetch("/posts/{id}")`로 게시글 상세 API를 다시 호출하고 있었다.
+댓글 API를 호출하려면 아래 경로를 사용해야 한다.
+
+```txt
+GET /posts/{id}/comments
+```
+
+### useEffect dependency
+
+처음에는 `useEffect(..., [comments])` 형태였다.
+댓글 state가 바뀔 때마다 다시 댓글을 불러오게 되므로 흐름이 꼬일 수 있다.
+댓글 조회는 게시글 id가 바뀔 때만 다시 실행하면 되므로 dependency는 `[id]`가 맞다.
+
+### 지금 구현된 것과 아직 아닌 것
+
+구현됨:
+
+- 댓글 목록 조회
+- 게시글이 없을 때 404
+- 프론트 상세 화면에서 댓글 API 호출
+- 댓글 로딩/에러/빈 목록 UI
+
+아직 mock:
+
+- 댓글 작성
+- 댓글 삭제
+- 로그인 사용자 기준 댓글 작성자 저장
+
+### 추가로 공부할 키워드
+
+- nested resource route
+- useEffect dependency
+- fetch error handling
+- CORS response header
+- backend response DTO와 frontend state 변환
