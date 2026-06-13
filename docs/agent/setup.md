@@ -1,5 +1,33 @@
 # Setup Notes
 
+## 2026-06-14 게시글 목록/상세 화면 확인 URL
+
+프론트와 백엔드 서버가 모두 켜져 있어야 한다.
+
+```powershell
+# frontend
+cd C:\junhee\WEEK15_AI_BOARD\frontend
+npm run dev
+
+# backend
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\Activate.ps1
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+브라우저 확인 URL:
+
+```txt
+http://localhost:5173/posts
+http://localhost:5173/posts/4
+```
+
+기대 결과:
+
+- `/posts`에서 백엔드 `GET /posts` 응답 목록이 보인다.
+- `/posts/4`에서 `post create api test` 상세가 보인다.
+- 화면에 `Unexpected Application Error`가 없어야 한다.
+
 ## 2026-06-14 게시글 작성 API 검증 명령어
 
 백엔드 서버가 켜져 있어야 한다.

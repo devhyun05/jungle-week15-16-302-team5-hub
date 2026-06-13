@@ -1,5 +1,62 @@
 # Study Notes
 
+## 2026-06-14 게시글 목록/상세 API 전환 학습
+
+이번 구현은 React 화면이 `mockData.ts`만 보던 상태에서 백엔드 `GET /posts`, `GET /posts/{post_id}` 응답을 직접 보도록 바꾼 작업이다.
+
+### 수정한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/api/posts.ts` | 게시글 작성뿐 아니라 목록/상세 조회 API 호출 함수를 모아둔다. |
+| `frontend/src/app/pages/posts/Posts.tsx` | 검색어와 카테고리를 백엔드 query string으로 보내고 API 응답 목록을 렌더링한다. |
+| `frontend/src/app/pages/posts/PostDetail.tsx` | URL id를 읽어 백엔드 상세 API를 호출하고, 댓글 API와 함께 화면을 구성한다. |
+| `frontend/src/app/pages/posts/PostEdit.tsx` | 게시글 생성 후 API가 돌려준 id를 이용해 상세 페이지로 이동한다. |
+
+### 목록 화면 흐름
+
+```txt
+Posts.tsx
+-> selectedCategory, keyword state 변경
+-> useEffect 실행
+-> getPosts({ category, keyword, page, size })
+-> GET /posts?category=...&keyword=...
+-> postItems state에 API 응답 저장
+-> 카드 목록 렌더링
+```
+
+### 상세 화면 흐름
+
+```txt
+PostDetail.tsx
+-> useParams로 id 읽기
+-> useEffect 실행
+-> getPostDetail(id)
+-> GET /posts/{id}
+-> post state에 API 응답 저장
+-> content, tags, relatedCommit 렌더링
+-> 별도 useEffect로 댓글 목록도 GET /posts/{id}/comments 호출
+```
+
+### 이번 구현에서 나온 React Hook
+
+- `useEffect`: 화면이 처음 열리거나 `keyword`, `selectedCategory`, `id`가 바뀔 때 API를 다시 호출한다.
+- `useState`: API 응답 목록, 로딩 상태, 에러 상태를 저장한다.
+- `useSearchParams`: 카테고리 탭 상태를 URL query string에 저장한다.
+- `useParams`: 상세 화면에서 URL id를 읽는다.
+
+### mock data에서 API data로 넘어갈 때 달라진 점
+
+- 예전에는 `posts.filter(...)`로 브라우저 안에서 필터링했다.
+- 지금은 `GET /posts?category=...&keyword=...`로 백엔드에 조건을 보내고, DB 조회 결과를 받는다.
+- 새 글 작성 후 DB에 저장된 id를 이용해 `/posts/{id}` 상세로 바로 이동할 수 있다.
+
+### 아직 남은 부분
+
+- 게시글 수정/삭제는 아직 mock이다.
+- AI 추천 관련 기록은 아직 mock data를 참고한다.
+- 실제 로그인 사용자 기준 작성자/권한 처리는 JWT/OAuth2 후 연결한다.
+
 ## 2026-06-14 게시글 작성 API와 글쓰기 화면 연결 학습
 
 이번 구현은 `/posts/new` 화면의 발행 버튼을 실제 `POST /posts` API에 연결한 작업이다. JWT/OAuth2 전 단계라 작성자는 demo user로 임시 처리한다.

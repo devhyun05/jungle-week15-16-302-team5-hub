@@ -1,5 +1,16 @@
 # JungleLog
 
+## 2026-06-14 최신 구현: 게시글 목록/상세 API 전환
+
+게시글 목록과 상세 화면을 mock data 중심에서 백엔드 API 응답 중심으로 전환했습니다.
+
+- `frontend/src/app/api/posts.ts`: `getPosts`, `getPostDetail` 조회 함수를 추가했습니다.
+- `frontend/src/app/pages/posts/Posts.tsx`: 카테고리/검색어를 `GET /posts` query string으로 전달하고 API 응답 목록을 렌더링합니다.
+- `frontend/src/app/pages/posts/PostDetail.tsx`: URL의 id로 `GET /posts/{post_id}`를 호출해 상세 데이터를 렌더링합니다.
+- `frontend/src/app/pages/posts/PostEdit.tsx`: 새 글 발행 성공 후 생성된 상세 페이지 `/posts/{id}`로 이동합니다.
+
+이제 `POST /posts`로 생성된 게시글이 `/posts` 목록에 보이고, `/posts/{id}` 상세 화면에서도 열립니다. 게시글 수정/삭제는 아직 mock이며 다음 CRUD 단계에서 `PATCH /posts/{id}`, `DELETE /posts/{id}`로 연결할 예정입니다.
+
 ## 2026-06-14 최신 구현: 게시글 작성 API와 글쓰기 화면 연결
 
 `POST /posts`를 구현하고 `/posts/new`의 발행 버튼을 백엔드 API에 연결했습니다.

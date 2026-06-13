@@ -1,5 +1,31 @@
 # QA Checklist
 
+## 2026-06-14 게시글 목록/상세 API 전환 QA
+
+이번 QA는 프론트 `/posts`, `/posts/{id}` 화면이 백엔드 조회 API 응답을 기준으로 렌더링되는지 검증한다.
+
+### Backend API
+
+- [x] `GET /posts?size=5`가 게시글 목록을 반환한다.
+- [x] `GET /posts?size=5` 응답에 생성된 게시글 id `4`가 포함된다.
+- [x] `GET /posts/4`가 상세 응답을 반환한다.
+- [x] `GET /posts/4` 응답에 `post create api content`가 포함된다.
+
+### Frontend
+
+- [x] `npm run build`가 성공한다.
+- [x] `/posts` 화면이 `GET /posts` 응답을 렌더링한다.
+- [x] `/posts` 화면에서 `post create api test`가 보인다.
+- [x] `/posts/4` 화면이 `GET /posts/4` 응답을 렌더링한다.
+- [x] `/posts/4` 화면에서 `post create api content`가 보인다.
+- [x] 화면에 `Unexpected Application Error`가 없다.
+
+### 남은 QA
+
+- [ ] 검색창 입력을 브라우저에서 직접 조작해 백엔드 keyword query가 반영되는지 확인한다.
+- [ ] 카테고리 탭 클릭을 브라우저에서 직접 조작해 category query가 반영되는지 확인한다.
+- [ ] 게시글 수정/삭제 API 구현 후 상세 화면의 수정/삭제 버튼을 다시 검증한다.
+
 ## 2026-06-14 게시글 작성 API QA
 
 이번 QA는 `POST /posts`와 `/posts/new` 프론트 연결을 검증한다.

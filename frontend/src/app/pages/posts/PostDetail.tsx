@@ -6,6 +6,7 @@ import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import { createPostComment, getPostComments } from "../../api/comments";
+import { getPostDetail, type PostDetailApiResponse } from "../../api/posts";
 import { posts } from "../../data/mockData";
 import type { UserRole } from "../../data/mockData";
 import type { MainLayoutContext } from "../../layouts/MainLayout";
@@ -35,14 +36,20 @@ function categoryVariant(category: string) {
   return "secondary";
 }
 
+function formatDate(dateText: string) {
+  return new Date(dateText).toLocaleDateString("ko-KR");
+}
+
 export function PostDetail() {
-  // /posts/:id의 id 값을 읽어서 mock posts 중 해당 글을 찾습니다.
+  // /posts/:id의 id 값을 읽어서 백엔드 상세 API에 전달합니다.
   const { id } = useParams();
   const navigate = useNavigate();
   const { role } = useOutletContext<MainLayoutContext>();
-  const post = posts.find((item) => String(item.id) === id);
 
-  // 삭제 확인, 안내 문구, 댓글 입력은 아직 서버가 아닌 local state로만 관리합니다.
+  const [post, setPost] = useState<PostDetailApiResponse | null>(null);
+  const [isPostLoading, setIsPostLoading] = useState(true);
+  const [postLoadError, setPostLoadError] = useState("");
+  // 삭제 확인과 삭제 안내는 아직 서버가 아닌 local state로만 관리합니다.
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deleteNotice, setDeleteNotice] = useState("");
   const [commentInput, setCommentInput] = useState("");
@@ -51,6 +58,47 @@ export function PostDetail() {
   const [isCommentLoading, setIsCommentLoading] = useState(false);
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
   const [comments, setComments] = useState<CommentItem[]>([]);
+
+  useEffect(() => {
+    if (!id) {
+      setIsPostLoading(false);
+      setPostLoadError("게시글 id를 찾을 수 없습니다.");
+      return;
+    }
+
+    const postId = id;
+    let isActive = true;
+
+    async function loadPostDetail() {
+      setIsPostLoading(true);
+      setPostLoadError("");
+
+      try {
+        const data = await getPostDetail(postId);
+
+        if (!isActive) {
+          return;
+        }
+
+        setPost(data);
+      } catch {
+        if (isActive) {
+          setPost(null);
+          setPostLoadError("게시글을 찾을 수 없습니다. 백엔드 서버와 API 경로를 확인해주세요.");
+        }
+      } finally {
+        if (isActive) {
+          setIsPostLoading(false);
+        }
+      }
+    }
+
+    void loadPostDetail();
+
+    return () => {
+      isActive = false;
+    };
+  }, [id]);
 
   useEffect(() => {
     if (!id) {
@@ -103,14 +151,27 @@ export function PostDetail() {
     };
   }, [id]);
 
+  if (isPostLoading) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-xl items-center justify-center">
+        <Card className="w-full">
+          <CardContent className="p-8 text-center">
+            <h1 className="text-xl font-bold text-slate-900">게시글을 불러오는 중입니다</h1>
+            <p className="mt-2 text-sm text-slate-500">백엔드 게시글 상세 API 응답을 기다리고 있습니다.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!post) {
-    // URL id와 맞는 mock 게시글이 없을 때 보여주는 안전 화면입니다.
+    // URL id와 맞는 백엔드 게시글이 없을 때 보여주는 안전 화면입니다.
     return (
       <div className="mx-auto flex min-h-[60vh] max-w-xl items-center justify-center">
         <Card className="w-full">
           <CardContent className="p-8 text-center">
             <h1 className="text-xl font-bold text-slate-900">게시글을 찾을 수 없습니다</h1>
-            <p className="mt-2 text-sm text-slate-500">요청한 id에 해당하는 mock 게시글이 없습니다.</p>
+            <p className="mt-2 text-sm text-slate-500">{postLoadError || "요청한 id에 해당하는 게시글이 없습니다."}</p>
             <Button asChild className="mt-5">
               <Link to="/posts">전체 게시글로 이동</Link>
             </Button>
@@ -230,7 +291,7 @@ export function PostDetail() {
               {post.author}
             </div>
             <span>·</span>
-            <span>{post.createdAt}</span>
+            <span>{formatDate(post.createdAt)}</span>
           </div>
           <div className="text-xs text-slate-400">
             조회 {post.views} · 댓글 {comments.length}
@@ -240,17 +301,7 @@ export function PostDetail() {
         <p className="mt-6 rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-700">{post.summary}</p>
 
         <div className="prose prose-slate max-w-none py-6">
-          {post.contentSections.map((section) => (
-            <section key={section.heading}>
-              <h3>{section.heading}</h3>
-              <p>{section.body}</p>
-              {section.code && (
-                <pre className="overflow-x-auto rounded-md bg-slate-900 p-4 text-sm text-slate-50">
-                  <code>{section.code}</code>
-                </pre>
-              )}
-            </section>
-          ))}
+          <div className="whitespace-pre-line text-sm leading-7 text-slate-700">{post.content}</div>
         </div>
 
         <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-6">

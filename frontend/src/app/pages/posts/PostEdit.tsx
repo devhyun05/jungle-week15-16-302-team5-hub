@@ -101,9 +101,8 @@ export function PostEdit() {
       });
 
       setNotice(`백엔드에 게시글이 발행되었습니다. 생성된 게시글 id: ${createdPost.id}`);
-      // 현재 목록/상세 화면은 아직 mock data 중심이라 새 글이 바로 보이지 않는다.
-      // 다음 단계에서 목록/상세 조회를 API 응답으로 교체하면 생성된 글도 자연스럽게 보인다.
-      window.setTimeout(() => navigate("/posts"), 900);
+      // 목록/상세 화면이 API 응답 중심으로 바뀌었기 때문에 생성된 상세 화면으로 바로 이동할 수 있다.
+      window.setTimeout(() => navigate(`/posts/${createdPost.id}`), 900);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "게시글을 저장하지 못했습니다.");
     } finally {

@@ -1,5 +1,60 @@
 # Frontend Keyword Map
 
+## 2026-06-14 게시글 목록/상세 API 전환에서 나온 키워드
+
+### useEffect
+
+`Posts.tsx`와 `PostDetail.tsx`에서 API 호출을 위해 `useEffect`를 사용했다. 화면이 처음 열리거나 의존성 값이 바뀌면 다시 실행된다.
+
+```txt
+Posts.tsx 의존성: keyword, selectedCategory
+PostDetail.tsx 의존성: id
+```
+
+### Loading / Error State
+
+API는 즉시 응답하지 않을 수 있으므로 로딩과 에러 상태를 따로 둔다.
+
+```txt
+isLoading: 목록을 불러오는 중인지
+loadError: 목록 조회 실패 메시지
+isPostLoading: 상세를 불러오는 중인지
+postLoadError: 상세 조회 실패 메시지
+```
+
+### API Response State
+
+mock data를 직접 import해서 쓰는 대신, API 응답을 state에 저장한다.
+
+```txt
+postItems: GET /posts 응답 items
+post: GET /posts/{id} 응답
+```
+
+### useSearchParams
+
+카테고리 탭 상태는 URL query string으로 관리한다.
+
+```txt
+/posts?category=learning-log
+```
+
+프론트는 이 값을 읽어서 백엔드 `GET /posts?category=learning-log`로 다시 전달한다.
+
+### useParams
+
+상세 화면은 URL path의 id를 읽는다.
+
+```txt
+/posts/4
+-> id = "4"
+-> GET /posts/4
+```
+
+### mock data와 API data의 차이
+
+mock data는 브라우저 안에 이미 있는 배열이라 `filter`만 하면 됐다. API data는 서버에서 받아와야 하므로 `fetch`, `loading`, `error`, `useEffect` 흐름이 필요하다.
+
 이 문서는 JungleLog 프론트엔드 구현 과정에서 나온 키워드를 정리한다.
 단순 암기가 아니라, 실제 코드에서 어떤 문제를 해결할 때 등장했는지 연결해서 기록한다.
 

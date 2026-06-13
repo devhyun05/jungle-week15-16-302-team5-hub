@@ -1,5 +1,51 @@
 # JungleLog Progress Log
 
+## 2026-06-14 게시글 목록/상세 API 전환
+
+상태: 완료
+
+목표: `POST /posts`로 생성된 게시글이 프론트 목록과 상세 화면에서 실제로 보이도록 `GET /posts`, `GET /posts/{post_id}`를 React 화면에 연결한다.
+
+구현 파일:
+
+- `frontend/src/app/api/posts.ts`
+- `frontend/src/app/pages/posts/Posts.tsx`
+- `frontend/src/app/pages/posts/PostDetail.tsx`
+- `frontend/src/app/pages/posts/PostEdit.tsx`
+- `README.md`
+- `docs/agent/study.md`
+- `docs/agent/test.md`
+- `docs/agent/front-keyword.md`
+
+구현 내용:
+
+- `getPosts`, `getPostDetail` 프론트 API 함수를 추가했다.
+- 전체 게시글 화면이 mock data 필터링 대신 `GET /posts` 응답을 렌더링하도록 변경했다.
+- 카테고리와 검색어를 백엔드 query string으로 전달한다.
+- 게시글 상세 화면이 `GET /posts/{post_id}` 응답을 렌더링하도록 변경했다.
+- 새 글 발행 성공 후 `/posts/{createdPost.id}` 상세 화면으로 이동하도록 바꿨다.
+
+검증:
+
+- `npm run build` 성공
+- `python -m compileall app` 성공
+- `GET /posts?size=5`에서 생성된 게시글 id `4` 포함 확인
+- `GET /posts/4` 상세 응답 확인
+- 브라우저에서 `/posts` 목록에 `post create api test`가 보이는 것 확인
+- 브라우저에서 `/posts/4` 상세에 `post create api content`가 보이는 것 확인
+
+커밋 추천 제목:
+
+```txt
+feat: 게시글 목록과 상세 화면 API 연결
+```
+
+다음 후보 작업:
+
+1. 게시글 수정 API `PATCH /posts/{post_id}` 구현 및 수정 화면 연결
+2. 게시글 삭제 API `DELETE /posts/{post_id}` 구현 및 상세 화면 연결
+3. 내 기록 화면을 API 기반으로 전환
+
 ## 2026-06-14 게시글 작성 API와 글쓰기 화면 연결
 
 상태: 완료

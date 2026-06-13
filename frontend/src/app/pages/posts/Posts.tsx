@@ -1,10 +1,11 @@
 ﻿
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Eye, Lock, MessageCircle, Search } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Input } from "../../components/ui/Input";
-import { categories, posts, type CategorySlug } from "../../data/mockData";
+import { getPosts, type PostListApiItem } from "../../api/posts";
+import { categories, type CategorySlug } from "../../data/mockData";
 
 const categoryTabs = [{ slug: "all", label: "전체" }, ...categories] as const;
 
@@ -19,27 +20,50 @@ export function Posts() {
   // category는 URL query string에 저장해서 /posts?category=... 형태로 공유할 수 있게 합니다.
   const [searchParams, setSearchParams] = useSearchParams();
   const [keyword, setKeyword] = useState("");
+  const [postItems, setPostItems] = useState<PostListApiItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const selectedCategory = searchParams.get("category") ?? "all";
 
-  // mock posts 배열에서 현재 카테고리와 검색어에 맞는 글만 계산합니다.
-  const filteredPosts = useMemo(
-    () =>
-      posts.filter((post) => {
-        const categoryMatch = selectedCategory === "all" || post.categorySlug === selectedCategory;
-        const query = keyword.trim().toLowerCase();
-        const keywordMatch =
-          !query ||
-          post.title.toLowerCase().includes(query) ||
-          post.summary.toLowerCase().includes(query) ||
-          post.category.toLowerCase().includes(query) ||
-          post.author.toLowerCase().includes(query) ||
-          post.tags.some((tag) => tag.toLowerCase().includes(query)) ||
-          post.contentSections.some((section) => section.body.toLowerCase().includes(query));
+  useEffect(() => {
+    let isActive = true;
 
-        return categoryMatch && keywordMatch;
-      }),
-    [keyword, selectedCategory],
-  );
+    async function loadPosts() {
+      setIsLoading(true);
+      setLoadError("");
+
+      try {
+        const data = await getPosts({
+          category: selectedCategory === "all" ? undefined : selectedCategory,
+          keyword: keyword.trim() || undefined,
+          page: 1,
+          size: 50,
+        });
+
+        if (!isActive) {
+          return;
+        }
+
+        setPostItems(data.items);
+        setTotal(data.total);
+      } catch {
+        if (isActive) {
+          setLoadError("게시글 목록을 불러오지 못했습니다. 백엔드 서버와 API 상태를 확인해주세요.");
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadPosts();
+
+    return () => {
+      isActive = false;
+    };
+  }, [keyword, selectedCategory]);
 
   const selectCategory = (slug: "all" | CategorySlug) => {
     // 탭을 누르면 state가 아니라 URL query string을 바꿔서 필터 상태를 표현합니다.
@@ -85,12 +109,22 @@ export function Posts() {
         })}
       </div>
 
-      <p className="text-xs text-slate-400">
-        현재 검색은 mock data 기준입니다. 실제 full-text search와 DB 검색 API는 백엔드 연결 후 구현 예정입니다.
-      </p>
+      <p className="text-xs text-slate-400">현재 목록과 검색은 백엔드 `GET /posts` API 응답 기준으로 동작합니다.</p>
 
       <div className="space-y-3">
-        {filteredPosts.map((post) => (
+        {isLoading && (
+          <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
+            게시글 목록을 불러오는 중입니다.
+          </div>
+        )}
+
+        {loadError && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-10 text-center text-sm text-red-700">
+            {loadError}
+          </div>
+        )}
+
+        {!isLoading && !loadError && postItems.map((post) => (
           <Link
             key={post.id}
             to={`/posts/${post.id}`}
@@ -106,7 +140,7 @@ export function Posts() {
                   </Badge>
                 )}
               </div>
-              <span className="text-xs text-slate-400">{post.date}</span>
+              <span className="text-xs text-slate-400">{new Date(post.createdAt).toLocaleDateString("ko-KR")}</span>
             </div>
             <h2 className="text-lg font-bold text-slate-900">{post.title}</h2>
             <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{post.summary}</p>
@@ -133,12 +167,16 @@ export function Posts() {
           </Link>
         ))}
 
-        {filteredPosts.length === 0 && (
+        {!isLoading && !loadError && postItems.length === 0 && (
           <div className="rounded-xl border border-dashed border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
             조건에 맞는 게시글이 없습니다.
           </div>
         )}
       </div>
+
+      {!isLoading && !loadError && postItems.length > 0 && (
+        <p className="text-right text-xs text-slate-400">총 {total}개의 게시글을 불러왔습니다.</p>
+      )}
     </div>
   );
 }
