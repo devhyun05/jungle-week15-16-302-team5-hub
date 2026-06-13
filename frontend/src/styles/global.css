@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color: theme("colors.ink");
+    background: theme("colors.page");
+    font-family: theme("fontFamily.sans");
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply min-h-screen bg-page text-[17px] text-ink;
+    margin: 0;
+  }
+
+  a {
+    @apply text-inherit no-underline;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button {
+    @apply cursor-pointer border-0 bg-transparent p-0;
+  }
+
+  h1,
+  h2,
+  h3 {
+    word-break: keep-all;
+  }
+
+  h1,
+  h2,
+  h3,
+  p {
+    @apply m-0;
+  }
+}

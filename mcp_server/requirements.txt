@@ -1,0 +1,6 @@
+# MCP server dependencies to install later.
+fastapi
+uvicorn[standard]
+httpx
+python-dotenv
+pydantic-settings
