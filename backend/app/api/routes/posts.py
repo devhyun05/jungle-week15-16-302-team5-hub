@@ -24,11 +24,12 @@ def create_post_endpoint(
 def list_posts_endpoint(
     q: str | None = Query(None),
     tag: str | None = Query(None),
+    tags: list[str] | None = Query(None),
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db),
 ):
-    return list_posts(db, q=q, tag=tag, page=page, size=size)
+    return list_posts(db, q=q, tag=tag, tags=tags, page=page, size=size)
 
 
 @router.get("/{post_id}", response_model=PostResponse)

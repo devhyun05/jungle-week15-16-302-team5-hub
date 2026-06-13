@@ -297,6 +297,15 @@ export function PostDetailPage() {
                         <Link to={`/posts/${post.id}/edit`}>Edit</Link>
                     </div>
                 )}
+                {post.tags.length > 0 && (
+                    <div className="tag-list">
+                        {post.tags.map((tag) => (
+                            <span key={tag.id} className="tag-badge">
+                                {tag.display_name}
+                            </span>
+                        ))}
+                    </div>
+                )}
             </article>
 
             <section className="comments-section" aria-labelledby="comments-title">

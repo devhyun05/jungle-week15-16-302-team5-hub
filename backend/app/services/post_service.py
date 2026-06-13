@@ -33,6 +33,7 @@ def list_posts(
     db: Session,
     q: str | None = None,
     tag: str | None = None,
+    tags: list[str] | None = None,
     page: int = 1,
     size: int = 10,
 ) -> PostPageResponse:
@@ -49,14 +50,20 @@ def list_posts(
             )
         )
 
-    tag_name = normalize_tag_name(tag) if tag else None
+    tag_names: list[str] = []
 
-    if tag_name:
-        query = (
-            query
-            .join(Post.tags)
-            .filter(Tag.normalized_name == tag_name)
-        )
+    if tag:
+        tag_name = normalize_tag_name(tag)
+        if tag_name:
+            tag_names.append(tag_name)
+
+    for raw_tag in tags or []:
+        tag_name = normalize_tag_name(raw_tag)
+        if tag_name and tag_name not in tag_names:
+            tag_names.append(tag_name)
+
+    for tag_name in tag_names:
+        query = query.filter(Post.tags.any(Tag.normalized_name == tag_name))
 
     total = query.count()
     offset = (page - 1) * size

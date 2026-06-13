@@ -300,6 +300,50 @@ textarea {
   font-size: 14px;
 }
 
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.75rem 0;
+}
+
+.tag-badge {
+    border: 1px solid #d6d3d1;
+    border-radius: 999px;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.8rem;
+    color: #57534e;
+    background: #fafaf9;
+}
+
+.tag-input-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  background: var(--bg);
+}
+
+.tag-input-box input {
+  flex: 1;
+  min-width: 140px;
+  border: 0;
+  padding: 4px;
+}
+
+.tag-input-box input:focus {
+  outline: none;
+}
+
+.tag-chip {
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
 @media (max-width: 720px) {
   .top-bar,
   .section-heading,

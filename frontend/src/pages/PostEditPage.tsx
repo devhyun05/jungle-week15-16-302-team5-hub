@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { getPost, updatePost } from '../api/posts'
 import { getCurrentUserIdFromToken } from '../utils/authToken'
+import { TagInput } from '../components/TagInput'
 
 export function PostEditPage() {
     const { postId } = useParams()
@@ -10,10 +11,12 @@ export function PostEditPage() {
 
     const [title, setTitle] = useState('')
     const [body, setBody] = useState('')
+    const [tagNames, setTagNames] = useState<string[]>([])
     const [loading, setLoading] = useState(false)
     const [saving, setSaving] = useState(false)
     const [loadError, setLoadError] = useState<string | null>(null)
     const [saveError, setSaveError] = useState<string | null>(null)
+
 
     useEffect(() => {
         async function loadPost() {
@@ -37,6 +40,7 @@ export function PostEditPage() {
 
                 setTitle(result.title)
                 setBody(result.body)
+                setTagNames(result.tags.map((tag) => tag.display_name))
             } catch {
                 setLoadError('Failed to load post.')
             } finally {
@@ -71,6 +75,7 @@ export function PostEditPage() {
                 {
                     title,
                     body,
+                    tag_names: tagNames,
                 },
                 token,
             )
@@ -121,6 +126,14 @@ export function PostEditPage() {
                         <textarea
                             value={body}
                             onChange={(event) => setBody(event.target.value)}
+                        />
+                    </label>
+
+                    <label>
+                        Tags
+                        <TagInput
+                            value={tagNames}
+                            onChange={setTagNames}
                         />
                     </label>
 
