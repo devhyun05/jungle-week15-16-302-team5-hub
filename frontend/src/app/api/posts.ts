@@ -42,6 +42,10 @@ export type PostCreatePayload = {
 
 export type PostCreateResponse = PostDetailApiResponse;
 
+export type PostUpdatePayload = PostCreatePayload;
+
+export type PostUpdateResponse = PostDetailApiResponse;
+
 export type GetPostsParams = {
   category?: string;
   keyword?: string;
@@ -92,6 +96,25 @@ export async function createPost(payload: PostCreatePayload): Promise<PostCreate
   // JWT/OAuth2 전 단계라 프론트는 작성자를 보내지 않고, 백엔드 demo user가 작성자로 저장된다.
   const response = await fetch(`${API_BASE_URL}/posts`, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response);
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function updatePost(postId: string | number, payload: PostUpdatePayload): Promise<PostUpdateResponse> {
+  // 게시글 수정은 PATCH /posts/{post_id}로 보낸다.
+  // 작성 화면과 수정 화면의 입력 필드가 같아서 create payload 타입을 그대로 재사용한다.
+  const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+    method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },

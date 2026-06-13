@@ -1,5 +1,18 @@
 # JungleLog
 
+## 2026-06-14 최신 구현: 게시글 수정 API와 수정 화면 연결
+
+`PATCH /posts/{post_id}`를 구현하고 `/posts/:id/edit` 화면을 백엔드 API에 연결했습니다.
+
+- `backend/app/schemas/post.py`: 수정 요청 body인 `PostUpdateRequest`를 추가했습니다.
+- `backend/app/repositories/post_repository.py`: 수정 대상 게시글 조회와 posts/post_tags 갱신 로직을 추가했습니다.
+- `backend/app/services/post_service.py`: 제목/본문 검증, 카테고리 확인, 태그 정리, 상세 응답 변환 흐름을 추가했습니다.
+- `backend/app/routers/posts.py`: `PATCH /posts/{post_id}` endpoint를 추가했습니다.
+- `frontend/src/app/api/posts.ts`: `updatePost` API 호출 함수를 추가했습니다.
+- `frontend/src/app/pages/posts/PostEdit.tsx`: 수정 화면에서 기존 글을 API로 불러오고, 수정 완료 시 PATCH API를 호출하도록 변경했습니다.
+
+현재 게시글 CRUD 중 생성/조회/수정은 API와 화면이 연결되어 있습니다. 삭제는 다음 단계에서 `DELETE /posts/{post_id}`와 상세 화면의 삭제 버튼을 연결할 예정입니다.
+
 ## 2026-06-14 최신 구현: 게시글 목록/상세 API 전환
 
 게시글 목록과 상세 화면을 mock data 중심에서 백엔드 API 응답 중심으로 전환했습니다.
@@ -146,6 +159,7 @@ frontend/src/app/
 - `GET /health/db` API가 PostgreSQL에 `SELECT 1`을 실행해 DB 연결 상태를 확인합니다.
 - `GET /posts` API가 공개 게시글 목록을 페이지네이션 응답으로 반환합니다.
 - `GET /posts/{post_id}` API가 id에 맞는 공개 게시글 상세를 반환합니다.
+- `PATCH /posts/{post_id}` API가 게시글 제목/본문/카테고리/태그/공개 여부를 수정합니다.
 - `GET /posts/{post_id}/comments` API가 게시글 댓글 목록을 반환합니다.
 - `/docs` Swagger 문서에서 `HealthResponse` schema를 확인할 수 있습니다.
 - `/docs` Swagger 문서에서 `DatabaseHealthResponse` schema와 `/health/db` endpoint를 확인할 수 있습니다.
@@ -165,7 +179,7 @@ frontend/src/app/
 - 운영자 승인 상태 기반 API 접근 제한
 - 초기 관리자 `ADMIN_EMAILS` 처리
 - 사용자 승인 / 거절 / 정지 / role 변경 API
-- 게시글 작성 / 수정 / 삭제 API
+- 게시글 삭제 API
 - 댓글 저장 / 삭제 API
 - 태그 API
 - 페이징 API

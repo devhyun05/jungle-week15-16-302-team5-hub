@@ -6,7 +6,7 @@ from app.db.models import Post
 # repository는 실제 DB query를 담당한다.
 from app.repositories import post_repository
 # schema는 API로 내보낼 JSON 모양을 담당한다.
-from app.schemas.post import PostCreateRequest, PostDetailResponse, PostListItemResponse, PostListResponse
+from app.schemas.post import PostCreateRequest, PostDetailResponse, PostListItemResponse, PostListResponse, PostUpdateRequest
 
 
 def build_summary_from_content(content: str) -> str:
@@ -100,12 +100,64 @@ def create_post(db: Session, request: PostCreateRequest) -> PostDetailResponse |
         related_commit=related_commit,
     )
 
-    return PostDetailResponse(
-        **build_post_list_item(post=post, comment_count=0).model_dump(),
-        content=post.content,
-        related_commit=post.related_commit,
-        updated_at=post.updated_at,
+    return build_post_detail_response(post=post, comment_count=0)
+
+
+def update_post(db: Session, post_id: int, request: PostUpdateRequest) -> PostDetailResponse | None:
+    """
+    게시글 수정 API의 비즈니스 흐름을 처리한다.
+
+    Args:
+        db: SQLAlchemy session.
+        post_id: URL path에서 받은 수정 대상 게시글 id.
+        request: 프론트엔드 수정 폼에서 보낸 request body.
+
+    Returns:
+        수정된 게시글 상세 응답. 게시글 또는 카테고리가 없으면 None.
+
+    Raises:
+        ValueError: 제목이나 본문이 공백이면 발생한다.
+    """
+
+    title = request.title.strip()
+    content = request.content.strip()
+
+    if not title or not content:
+        raise ValueError("제목과 본문을 입력해주세요.")
+
+    post = post_repository.get_post_for_update(db=db, post_id=post_id)
+
+    if post is None:
+        return None
+
+    # TODO auth: JWT/OAuth2 연결 후에는 post.author_id와 current_user.id를 비교해서 본인 글만 수정하게 한다.
+    category = post_repository.get_category_by_slug(
+        db=db,
+        category_slug=request.category_slug,
     )
+
+    if category is None:
+        return None
+
+    summary = request.summary.strip() if request.summary else build_summary_from_content(content)
+    related_commit = request.related_commit.strip() if request.related_commit else None
+    tag_names = normalize_tag_names(request.tags)
+
+    updated_post = post_repository.update_post(
+        db=db,
+        post=post,
+        category=category,
+        title=title,
+        summary=summary,
+        content=content,
+        tag_names=tag_names,
+        is_public=request.is_public,
+        related_commit=related_commit,
+    )
+
+    comment_count = post_repository.get_comment_counts(db, [updated_post.id]).get(updated_post.id, 0)
+
+    return build_post_detail_response(post=updated_post, comment_count=comment_count)
 
 
 def get_posts(
@@ -179,15 +231,24 @@ def get_post_detail(db: Session, post_id: int) -> PostDetailResponse | None:
     if post is None:
         return None
 
+    return build_post_detail_response(post=post, comment_count=comment_count)
+
+
+def build_post_detail_response(post: Post, comment_count: int) -> PostDetailResponse:
+    """
+    SQLAlchemy Post model을 게시글 상세 API 응답으로 바꾼다.
+
+    create/detail/update API가 모두 같은 상세 응답을 반환해야 프론트엔드가 같은 타입으로 처리할 수 있다.
+    그래서 공통 변환 로직을 이 함수 하나로 모았다.
+    """
+
     # 상세 응답도 목록 응답과 공통 필드가 많다.
-    # 그래서 먼저 목록 item 형태로 공통 필드를 만든다.
+    # 그래서 먼저 목록 item 형태로 공통 필드를 만든 뒤 상세 전용 필드를 추가한다.
     list_item = build_post_list_item(
         post=post,
         comment_count=comment_count,
     )
 
-    # list_item.model_dump()로 공통 필드를 dict로 풀고,
-    # 상세에만 필요한 content, related_commit, updated_at을 추가한다.
     return PostDetailResponse(
         **list_item.model_dump(),
         content=post.content,

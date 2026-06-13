@@ -1,7 +1,7 @@
 # func는 count 같은 SQL 함수를 쓸 때 필요하다.
 # or_는 여러 검색 조건 중 하나라도 맞으면 조회되게 만든다.
 # select는 SQL SELECT 문을 Python 코드로 만드는 SQLAlchemy 함수다.
-from sqlalchemy import func, or_, select
+from sqlalchemy import delete, func, or_, select
 # Session은 DB 연결 작업 단위 타입이다.
 # selectinload는 관계 데이터를 미리 가져와서 반복 조회를 줄인다.
 from sqlalchemy.orm import Session, selectinload
@@ -115,6 +115,70 @@ def create_post(
         tag = get_or_create_tag(db, tag_name)
         post.post_tags.append(PostTag(tag=tag))
 
+    db.commit()
+    db.refresh(post)
+
+    return post
+
+
+def get_post_for_update(db: Session, post_id: int) -> Post | None:
+    """
+    수정할 게시글을 id로 조회한다.
+
+    상세 조회 API는 공개 글만 보여주지만, 수정 API는 나중에 작성자 본인의 비공개 글도 수정해야 한다.
+    그래서 여기서는 is_public 조건을 걸지 않고 deleted_at만 확인한다.
+    """
+
+    return db.scalar(
+        select(Post)
+        .options(
+            selectinload(Post.author),
+            selectinload(Post.category),
+        )
+        .where(
+            Post.id == post_id,
+            Post.deleted_at.is_(None),
+        )
+    )
+
+
+def update_post(
+    db: Session,
+    post: Post,
+    category: PostCategory,
+    title: str,
+    summary: str | None,
+    content: str,
+    tag_names: list[str],
+    is_public: bool,
+    related_commit: str | None,
+) -> Post:
+    """
+    posts 테이블의 본문 정보와 post_tags 연결 테이블의 태그 관계를 함께 수정한다.
+
+    태그는 posts와 tags 사이의 N:M 관계라서 게시글 row 하나만 바꾸는 것으로 끝나지 않는다.
+    현재 방식은 이해하기 쉽게 기존 post_tags 연결을 지우고, 화면에서 넘어온 태그 목록으로 다시 연결한다.
+    """
+
+    # posts 테이블에 직접 들어가는 컬럼들을 수정한다.
+    post.category = category
+    post.title = title
+    post.summary = summary
+    post.content = content
+    post.is_public = is_public
+    post.related_commit = related_commit
+
+    # 기존 태그 연결을 먼저 삭제한다. delete(PostTag)는 post_tags 테이블에 DELETE SQL을 보낸다.
+    db.execute(delete(PostTag).where(PostTag.post_id == post.id))
+    db.flush()
+
+    # 새 태그 이름 목록을 tags 테이블에 준비하고 post_tags 연결 row를 다시 만든다.
+    for tag_name in tag_names:
+        tag = get_or_create_tag(db, tag_name)
+        db.add(PostTag(post_id=post.id, tag=tag))
+
+    # commit 전까지는 위 변경이 하나의 transaction 안에 묶인다.
+    # 중간에 에러가 나면 FastAPI dependency의 session 정리 과정에서 rollback된다.
     db.commit()
     db.refresh(post)
 

@@ -1,5 +1,38 @@
 # QA Checklist
 
+## 2026-06-14 게시글 수정 API와 수정 화면 연결 QA
+
+이번 QA는 `PATCH /posts/{post_id}`와 `/posts/:id/edit` 화면이 실제 API 흐름으로 연결되는지 검증한다.
+
+### Backend
+
+- [x] `python -m compileall app`가 성공한다.
+- [x] `PATCH /posts/{post_id}` endpoint가 추가되어 있다.
+- [x] `POST /posts`로 테스트 게시글을 생성할 수 있다.
+- [x] 생성한 게시글을 `PATCH /posts/{id}`로 수정할 수 있다.
+- [x] 수정 응답의 `title`, `content`, `categorySlug`, `tags`가 수정 payload를 반영한다.
+- [x] `GET /posts/{id}`로 다시 조회했을 때 수정된 값이 유지된다.
+- [x] 없는 게시글 id를 수정하면 `404`를 반환한다.
+- [x] 공백 제목으로 수정하면 `400`을 반환한다.
+- [x] 게시글 수정 시 기존 `post_tags` 연결이 새 태그 목록으로 교체된다.
+
+### Frontend
+
+- [x] `npm run build`가 성공한다.
+- [x] `/posts/:id/edit`가 `GET /posts/{id}` 응답으로 form state를 채운다.
+- [x] 수정 화면 제목이 `게시글 수정`으로 보인다.
+- [x] 제목 input에 API 응답 제목이 들어간다.
+- [x] 본문 textarea에 API 응답 content가 들어간다.
+- [x] 카테고리 select가 API 응답 category label을 반영한다.
+- [x] 수정 완료 버튼이 `updatePost()`를 호출하도록 연결되어 있다.
+- [x] 화면에 `Unexpected Application Error`가 없다.
+
+### 남은 QA
+
+- [ ] 브라우저에서 직접 수정 완료 버튼을 눌러 상세 화면으로 이동하는 흐름을 수동 확인한다.
+- [ ] 삭제 API 구현 후 상세 화면의 삭제 버튼과 함께 CRUD 전체 흐름을 다시 확인한다.
+- [ ] JWT/OAuth2 구현 후 작성자 본인/관리자만 수정 가능한지 확인한다.
+
 ## 2026-06-14 게시글 목록/상세 API 전환 QA
 
 이번 QA는 프론트 `/posts`, `/posts/{id}` 화면이 백엔드 조회 API 응답을 기준으로 렌더링되는지 검증한다.

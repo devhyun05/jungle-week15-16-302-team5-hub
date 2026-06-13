@@ -1,5 +1,37 @@
 # Troubleshooting
 
+## 2026-06-14 FastAPI TestClient 실행 시 httpx/httpx2 의존성 오류
+
+### 증상
+
+게시글 수정 API QA를 FastAPI `TestClient`로 실행하려고 했을 때 아래 오류가 발생했다.
+
+```txt
+RuntimeError: The starlette.testclient module requires the httpx2 package to be installed.
+```
+
+### 원인
+
+현재 `backend/.venv`에 Starlette/FastAPI 테스트 클라이언트가 요구하는 HTTP 테스트 의존성이 설치되어 있지 않았다. 기능 코드 문제라기보다는 자동 테스트 도구를 실행하기 위한 패키지 준비가 부족한 상태다.
+
+### 해결 / 우회
+
+이번 단계에서는 새 패키지를 설치하지 않고, 실행 중인 로컬 FastAPI 서버에 `Invoke-RestMethod`로 실제 HTTP 요청을 보내 검증했다.
+
+검증한 흐름:
+
+```txt
+POST /posts
+-> PATCH /posts/{created_id}
+-> GET /posts/{created_id}
+-> PATCH /posts/999999999 404 확인
+-> 공백 제목 PATCH 400 확인
+```
+
+### 나중에 다시 볼 부분
+
+자동화 테스트를 본격적으로 도입할 때 `httpx` 또는 현재 Starlette 버전에 맞는 테스트 의존성을 `requirements.txt`에 추가할지 결정한다.
+
 ## 2026-06-13 PowerShell API 테스트에서 한글 댓글이 깨져 보임
 
 ### 증상

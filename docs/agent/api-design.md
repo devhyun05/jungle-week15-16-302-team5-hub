@@ -1,5 +1,62 @@
 # JungleLog API Design
 
+## 2026-06-14 추가: PATCH /posts/{post_id}
+
+게시글 수정 API가 구현되었습니다. 현재는 JWT/OAuth2 전 단계라 작성자 권한 검사는 아직 붙지 않았고, 화면에서 전달한 전체 수정 폼 값을 받아 게시글을 갱신합니다.
+
+### Request
+
+```http
+PATCH /posts/5
+Content-Type: application/json
+```
+
+```json
+{
+  "title": "api patch flow updated",
+  "summary": "updated summary",
+  "content": "updated content",
+  "categorySlug": "troubleshooting",
+  "tags": ["FastAPI", "UpdateAPI"],
+  "isPublic": true,
+  "relatedCommit": "updated-commit"
+}
+```
+
+### Response 200
+
+```json
+{
+  "id": 5,
+  "title": "api patch flow updated",
+  "summary": "updated summary",
+  "category": "트러블슈팅",
+  "categorySlug": "troubleshooting",
+  "tags": ["FastAPI", "UpdateAPI"],
+  "author": "정글 학생",
+  "authorRole": "STUDENT",
+  "isPublic": true,
+  "views": 0,
+  "comments": 0,
+  "createdAt": "2026-06-14T00:00:00Z",
+  "content": "updated content",
+  "relatedCommit": "updated-commit",
+  "updatedAt": "2026-06-14T00:00:00Z"
+}
+```
+
+### Error
+
+- `400`: 제목이나 본문이 공백
+- `404`: 게시글 id가 없거나 `categorySlug`에 맞는 카테고리가 없음
+- `422`: request body 타입 또는 필수 필드 검증 실패
+
+### JWT/OAuth2 후 변경 예정
+
+- 현재는 demo user 단계라 수정 권한 검사를 하지 않습니다.
+- 인증 구현 후에는 `post.author_id == current_user.id` 또는 `current_user.role == ADMIN`인 경우에만 수정 가능하게 바꿉니다.
+- 비공개 글 수정은 작성자 본인/관리자에게만 허용합니다.
+
 ## 2026-06-14 추가: POST /posts
 
 게시글 작성 API가 구현되었습니다. JWT/OAuth2 전 단계이므로 request body에는 작성자 id를 받지 않고, 백엔드에서 `demo.student@junglelog.local` seed 사용자를 임시 작성자로 사용합니다.
@@ -280,12 +337,14 @@ HTTP 404
 
 게시글을 수정한다.
 
-상태: 백엔드 연결 후 구현 예정
+상태: 구현 완료
 
 필요한 인증:
 
 - 작성자 본인
 - ADMIN
+
+현재 인증 전 단계에서는 demo 흐름으로 동작하며, 실제 작성자/관리자 권한 검사는 JWT/OAuth2 이후 추가한다.
 
 ### DELETE /posts/{post_id}
 

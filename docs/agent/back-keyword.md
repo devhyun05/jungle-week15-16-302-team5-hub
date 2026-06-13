@@ -1,5 +1,54 @@
 # Backend Keyword Map
 
+## 2026-06-14 게시글 수정 API에서 나온 키워드
+
+### CRUD - Update
+
+이번 구현은 게시글 CRUD 중 Update에 해당한다.
+
+```txt
+Create: POST /posts
+Read: GET /posts, GET /posts/{post_id}
+Update: PATCH /posts/{post_id}
+Delete: DELETE /posts/{post_id} 예정
+```
+
+Update는 이미 존재하는 row를 바꾸는 작업이다. JungleLog에서는 `posts.title`, `posts.summary`, `posts.content`, `posts.category_id`, `posts.is_public`, `posts.related_commit`을 수정한다.
+
+### PATCH
+
+`PATCH /posts/{post_id}`는 특정 게시글 하나를 수정한다는 REST 표현이다. 현재 화면은 수정 폼 전체 값을 다시 보내므로 실질적으로 full-form update처럼 동작한다.
+
+### N:M Relationship Update
+
+게시글과 태그는 N:M 관계다.
+
+```txt
+posts
+-> post_tags
+-> tags
+```
+
+수정할 때 태그 목록이 바뀔 수 있으므로 기존 `post_tags` 연결을 삭제하고, 새 태그 목록으로 다시 연결했다. 이 방식은 초반 구현에서 이해하기 쉽고, 중복 연결을 피하기 좋다.
+
+### Transaction
+
+게시글 수정은 한 번에 여러 DB 작업을 수행한다.
+
+```txt
+posts UPDATE
+post_tags DELETE
+tags SELECT 또는 INSERT
+post_tags INSERT
+commit
+```
+
+이 작업들은 하나의 transaction으로 묶여야 한다. 중간에 실패했는데 일부만 저장되면 게시글과 태그 연결이 어긋날 수 있기 때문이다.
+
+### Authorization
+
+현재는 JWT/OAuth2 전 단계라 수정 권한 검사를 하지 않는다. 나중에는 `post.author_id`와 `current_user.id`를 비교해서 작성자 본인만 수정하게 하고, `ADMIN`은 예외적으로 수정 가능하게 만든다.
+
 ## 2026-06-14 게시글 작성 API에서 나온 키워드
 
 ### REST API / Resource

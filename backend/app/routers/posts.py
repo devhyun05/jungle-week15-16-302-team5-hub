@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 # get_db는 요청마다 DB session을 열고 닫아주는 FastAPI dependency다.
 from app.db.session import get_db
 # response_model에 넣을 Pydantic schema다.
-from app.schemas.post import PostCreateRequest, PostDetailResponse, PostListResponse
+from app.schemas.post import PostCreateRequest, PostDetailResponse, PostListResponse, PostUpdateRequest
 # router는 service를 호출하고, service가 실제 응답 조립을 맡는다.
 from app.services import post_service
 
@@ -81,6 +81,33 @@ def create_post(
 
     if post is None:
         raise HTTPException(status_code=404, detail="카테고리를 찾을 수 없습니다.")
+
+    return post
+
+
+@router.patch("/{post_id}", response_model=PostDetailResponse)
+def update_post(
+    # URL path의 post_id로 어떤 게시글을 수정할지 결정한다. 예: PATCH /posts/4
+    post_id: int,
+    # request body에는 수정 폼의 제목/본문/카테고리/태그/공개 여부가 들어온다.
+    request: PostUpdateRequest,
+    # 수정은 DB UPDATE/DELETE/INSERT가 함께 일어나므로 session이 필요하다.
+    db: Session = Depends(get_db),
+) -> PostDetailResponse:
+    """
+    게시글을 수정한다.
+
+    현재는 JWT/OAuth2 전 단계라 demo user 권한 흐름으로만 동작한다.
+    실제 서비스에서는 작성자 본인 또는 관리자만 수정 가능하게 권한 검사를 추가해야 한다.
+    """
+
+    try:
+        post = post_service.update_post(db=db, post_id=post_id, request=request)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+    if post is None:
+        raise HTTPException(status_code=404, detail="게시글 또는 카테고리를 찾을 수 없습니다.")
 
     return post
 

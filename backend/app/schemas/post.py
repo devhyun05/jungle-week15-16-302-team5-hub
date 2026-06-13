@@ -26,6 +26,12 @@ class PostCreateRequest(FrontendResponseModel):
     related_commit: str | None = Field(default=None, alias="relatedCommit", max_length=500)
 
 
+class PostUpdateRequest(PostCreateRequest):
+    # 현재 수정 화면은 제목/본문/카테고리/태그/공개 여부를 한 번에 다시 보내는 full-form PATCH 방식이다.
+    # TODO auth: JWT/OAuth2 연결 후에는 작성자 본인 또는 관리자만 수정할 수 있게 권한 검사를 추가한다.
+    pass
+
+
 class PostListItemResponse(FrontendResponseModel):
     # 게시글 고유 id다. 프론트에서 상세 페이지 /posts/:id로 이동할 때 쓴다.
     id: int

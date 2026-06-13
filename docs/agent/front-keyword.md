@@ -1,5 +1,46 @@
 # Frontend Keyword Map
 
+## 2026-06-14 게시글 수정 화면 연결에서 나온 키워드
+
+### useEffect로 기존 데이터 불러오기
+
+`/posts/:id/edit` 화면은 처음 렌더링될 때 URL의 id로 기존 게시글을 불러와야 한다. API 호출은 렌더링 중에 바로 실행하지 않고 `useEffect` 안에서 실행한다.
+
+```txt
+useParams로 id 읽기
+-> useEffect 실행
+-> getPostDetail(id)
+-> 응답을 form state에 저장
+```
+
+### Controlled Input Prefill
+
+수정 화면의 input, textarea, select는 모두 React state와 연결되어 있다. API 응답을 받은 뒤 `setTitle`, `setBody`, `setCategory`, `setTags`를 호출하면 화면 입력칸이 기존 게시글 값으로 채워진다.
+
+### useParams
+
+`useParams`는 URL path 안의 동적 값을 읽는다.
+
+```txt
+/posts/5/edit
+-> id = "5"
+```
+
+이 id를 백엔드 API 경로에 붙여 `GET /posts/5`, `PATCH /posts/5`를 호출한다.
+
+### useNavigate
+
+수정 성공 후 사용자를 상세 화면으로 이동시킬 때 쓴다.
+
+```txt
+PATCH 성공
+-> navigate(`/posts/${updatedPost.id}`)
+```
+
+### Loading / Error State
+
+수정 화면은 기존 게시글을 불러오는 시간이 필요하므로 `isPostLoading`이 필요하다. 실패하면 `error` state로 사용자에게 안내한다.
+
 ## 2026-06-14 게시글 목록/상세 API 전환에서 나온 키워드
 
 ### useEffect

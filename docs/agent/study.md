@@ -1,5 +1,64 @@
 # Study Notes
 
+## 2026-06-14 게시글 수정 API와 수정 화면 연결 학습
+
+이번 구현은 `/posts/:id/edit` 화면에서 기존 게시글을 불러오고, 수정 완료 버튼을 누르면 `PATCH /posts/{post_id}`로 DB를 갱신하는 작업이다.
+
+### 수정한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/schemas/post.py` | `PostUpdateRequest`를 추가해서 수정 API request body 모양을 정의한다. |
+| `backend/app/repositories/post_repository.py` | 수정 대상 게시글을 찾고, posts 테이블과 post_tags 연결 테이블을 실제로 갱신한다. |
+| `backend/app/services/post_service.py` | 제목/본문 공백 검증, 카테고리 확인, 태그 정리, 응답 변환을 담당한다. |
+| `backend/app/routers/posts.py` | `PATCH /posts/{post_id}` HTTP endpoint를 만든다. |
+| `frontend/src/app/api/posts.ts` | 프론트에서 호출할 `updatePost()` fetch 함수를 제공한다. |
+| `frontend/src/app/pages/posts/PostEdit.tsx` | 수정 모드에서 기존 글을 불러와 form state에 채우고, 저장 시 update API를 호출한다. |
+
+### 코드 흐름
+
+```txt
+/posts/5/edit 접속
+-> PostEdit.tsx
+-> useParams로 id = "5" 읽기
+-> useEffect에서 getPostDetail(5) 호출
+-> GET /posts/5 응답을 title/body/category/tags state에 채움
+-> 수정 완료 클릭
+-> updatePost(5, payload)
+-> PATCH /posts/5
+-> routers/posts.py
+-> services/post_service.py
+-> repositories/post_repository.py
+-> posts row 수정 + 기존 post_tags 삭제 + 새 post_tags 생성
+-> PostDetailResponse 반환
+-> /posts/5 상세 화면으로 이동
+```
+
+### 이번 구현에서 나온 React 개념
+
+- `useParams`: URL의 `:id` 값을 읽는다.
+- `useEffect`: 수정 화면이 열린 뒤 API를 호출해서 기존 글을 form state에 채운다.
+- controlled input: `title`, `body`, `category`, `tags`, `isPublic` 값을 React state로 관리한다.
+- loading/error state: 기존 글을 불러오는 동안 `isPostLoading`, 실패 시 `error`를 보여준다.
+- `useNavigate`: 수정 성공 후 상세 화면으로 이동한다.
+
+### 이번 구현에서 나온 백엔드 개념
+
+- `PATCH`: 기존 resource 일부 또는 전체를 수정할 때 쓰는 HTTP method다.
+- `PostUpdateRequest`: 프론트가 보내는 수정 요청 body의 DTO다.
+- repository: SQLAlchemy로 실제 DB row를 수정한다.
+- service: request 검증과 응답 변환 흐름을 관리한다.
+- transaction: posts 수정, post_tags 삭제, post_tags 재생성을 하나의 commit으로 묶는다.
+- N:M 관계 갱신: 게시글-태그는 `post_tags` 연결 테이블을 지우고 다시 만드는 방식으로 처리했다.
+
+### 아직 백엔드 연결 후 보완할 부분
+
+- 실제 로그인 사용자 기준 작성자 권한 검사
+- 관리자 수정 권한 처리
+- 비공개 글 상세/수정 권한 분리
+- 수정 이력 또는 감사 로그 저장 여부 결정
+- 자동화 테스트 도입 시 `httpx` 또는 적절한 FastAPI test dependency 정리
+
 ## 2026-06-14 게시글 목록/상세 API 전환 학습
 
 이번 구현은 React 화면이 `mockData.ts`만 보던 상태에서 백엔드 `GET /posts`, `GET /posts/{post_id}` 응답을 직접 보도록 바꾼 작업이다.

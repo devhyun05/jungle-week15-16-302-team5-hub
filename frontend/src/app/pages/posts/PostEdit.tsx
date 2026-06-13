@@ -1,5 +1,5 @@
 ﻿
-import { type FormEvent, type KeyboardEvent, useState } from "react";
+import { type FormEvent, type KeyboardEvent, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { Lightbulb, Link as LinkIcon, Save, Send, Sparkles } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
@@ -7,21 +7,8 @@ import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
-import { createPost } from "../../api/posts";
+import { createPost, getPostDetail, updatePost } from "../../api/posts";
 import { categories, posts } from "../../data/mockData";
-
-function bodyFromPost(postId?: string) {
-  // 수정 화면에서는 기존 mock 게시글의 section들을 하나의 textarea 본문으로 합칩니다.
-  const post = posts.find((item) => String(item.id) === postId);
-  if (!post) return "";
-
-  return post.contentSections
-    .map((section) => {
-      const code = section.code ? `\n\n\`\`\`\n${section.code}\n\`\`\`` : "";
-      return `## ${section.heading}\n${section.body}${code}`;
-    })
-    .join("\n\n");
-}
 
 function buildSummary(content: string) {
   // 목록 카드에 보여줄 짧은 요약을 본문 앞부분으로 만든다.
@@ -35,19 +22,62 @@ export function PostEdit() {
   const location = useLocation();
   const navigate = useNavigate();
   const isEditMode = location.pathname.includes("/edit");
-  const existingPost = posts.find((post) => String(post.id) === id);
 
   // 아래 state들은 입력값을 React가 직접 관리하는 controlled input 값입니다.
-  const [title, setTitle] = useState(isEditMode ? existingPost?.title ?? "" : "");
-  const [category, setCategory] = useState(isEditMode ? existingPost?.category ?? categories[0].label : categories[0].label);
-  const [isPublic, setIsPublic] = useState(isEditMode ? existingPost?.isPublic ?? true : true);
-  const [tags, setTags] = useState<string[]>(isEditMode ? existingPost?.tags ?? ["FastAPI", "JWT"] : []);
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState(categories[0].label);
+  const [isPublic, setIsPublic] = useState(true);
+  const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [body, setBody] = useState(isEditMode ? bodyFromPost(id) : "");
-  const [githubUrl, setGithubUrl] = useState(isEditMode ? existingPost?.relatedCommit ?? "" : "");
+  const [body, setBody] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [isPostLoading, setIsPostLoading] = useState(isEditMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    // 수정 화면은 URL의 id를 기준으로 백엔드에서 기존 게시글을 가져와 form state에 채운다.
+    // useEffect를 쓰는 이유는 API 호출이 렌더링 이후에 일어나는 side effect이기 때문이다.
+    if (!isEditMode) {
+      return;
+    }
+
+    if (!id) {
+      setError("수정할 게시글 id를 찾을 수 없습니다.");
+      setIsPostLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    setIsPostLoading(true);
+    setError("");
+
+    getPostDetail(id)
+      .then((post) => {
+        if (!isMounted) return;
+
+        setTitle(post.title);
+        setCategory(post.category);
+        setIsPublic(post.isPublic);
+        setTags(post.tags);
+        setBody(post.content);
+        setGithubUrl(post.relatedCommit ?? "");
+      })
+      .catch((loadError) => {
+        if (!isMounted) return;
+        setError(loadError instanceof Error ? loadError.message : "게시글을 불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (!isMounted) return;
+        setIsPostLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id, isEditMode]);
 
   const handleAddTag = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter" && tagInput.trim()) {
@@ -69,14 +99,6 @@ export function PostEdit() {
       return;
     }
 
-    if (isEditMode) {
-      // TODO backend: 게시글 수정 PATCH API는 다음 CRUD 단계에서 구현 예정.
-      setError("");
-      setNotice("mock으로 수정되었습니다. 상세 화면으로 이동합니다.");
-      window.setTimeout(() => navigate(`/posts/${id ?? existingPost?.id ?? 1}`), 700);
-      return;
-    }
-
     const selectedCategory = categories.find((item) => item.label === category);
 
     if (!selectedCategory) {
@@ -85,20 +107,34 @@ export function PostEdit() {
       return;
     }
 
+    const payload = {
+      title: trimmedTitle,
+      summary: buildSummary(trimmedBody),
+      content: trimmedBody,
+      categorySlug: selectedCategory.slug,
+      tags,
+      isPublic,
+      relatedCommit: githubUrl.trim() || undefined,
+    };
+
     setIsSubmitting(true);
     setError("");
     setNotice("");
 
     try {
-      const createdPost = await createPost({
-        title: trimmedTitle,
-        summary: buildSummary(trimmedBody),
-        content: trimmedBody,
-        categorySlug: selectedCategory.slug,
-        tags,
-        isPublic,
-        relatedCommit: githubUrl.trim() || undefined,
-      });
+      if (isEditMode) {
+        if (!id) {
+          throw new Error("수정할 게시글 id를 찾을 수 없습니다.");
+        }
+
+        const updatedPost = await updatePost(id, payload);
+
+        setNotice("백엔드에 게시글이 수정되었습니다. 상세 화면으로 이동합니다.");
+        window.setTimeout(() => navigate(`/posts/${updatedPost.id}`), 900);
+        return;
+      }
+
+      const createdPost = await createPost(payload);
 
       setNotice(`백엔드에 게시글이 발행되었습니다. 생성된 게시글 id: ${createdPost.id}`);
       // 목록/상세 화면이 API 응답 중심으로 바뀌었기 때문에 생성된 상세 화면으로 바로 이동할 수 있다.
@@ -123,7 +159,7 @@ export function PostEdit() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">{isEditMode ? "게시글 수정" : "새 게시글 작성"}</h1>
             <p className="mt-1 text-sm text-slate-500">
-              새 글 발행은 백엔드 API에 저장되고, 수정/임시저장은 아직 mock 단계입니다.
+              새 글 발행과 수정은 백엔드 API에 저장되고, 임시저장은 아직 mock 단계입니다.
             </p>
           </div>
           <div className="flex gap-2">
@@ -131,12 +167,18 @@ export function PostEdit() {
               <Save className="mr-2 h-4 w-4" />
               임시저장
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || isPostLoading}>
               <Send className="mr-2 h-4 w-4" />
-              {isSubmitting ? "발행 중" : isEditMode ? "수정 완료" : "발행하기"}
+              {isSubmitting ? (isEditMode ? "수정 중" : "발행 중") : isEditMode ? "수정 완료" : "발행하기"}
             </Button>
           </div>
         </div>
+
+        {isPostLoading && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            기존 게시글을 불러오는 중입니다.
+          </div>
+        )}
 
         {(error || notice) && (
           <div

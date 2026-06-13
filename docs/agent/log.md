@@ -1,5 +1,65 @@
 # JungleLog Progress Log
 
+## 2026-06-14 게시글 수정 API와 수정 화면 연결
+
+상태: 완료
+
+목표: `/posts/:id/edit` 수정 화면이 mock data가 아니라 백엔드 API를 통해 기존 게시글을 불러오고, 수정 완료 시 `PATCH /posts/{post_id}`로 실제 DB를 갱신하게 만든다.
+
+구현 파일:
+
+- `backend/app/schemas/post.py`
+- `backend/app/repositories/post_repository.py`
+- `backend/app/services/post_service.py`
+- `backend/app/routers/posts.py`
+- `frontend/src/app/api/posts.ts`
+- `frontend/src/app/pages/posts/PostEdit.tsx`
+- `README.md`
+- `docs/agent/api-design.md`
+- `docs/agent/study.md`
+- `docs/agent/test.md`
+- `docs/agent/setup.md`
+- `docs/agent/back-keyword.md`
+- `docs/agent/front-keyword.md`
+- `docs/agent/troubleshooting.md`
+
+구현 내용:
+
+- `PATCH /posts/{post_id}` endpoint를 추가했다.
+- 수정 request body는 `PostUpdateRequest`로 검증한다.
+- 수정할 게시글은 `deleted_at is null` 조건으로 조회하고, 인증 전 단계라 `is_public` 조건은 걸지 않았다.
+- posts 테이블의 제목/요약/본문/카테고리/공개 여부/관련 커밋 값을 갱신한다.
+- 태그는 N:M 관계라 기존 `post_tags` 연결을 삭제한 뒤 새 태그 목록으로 다시 연결한다.
+- `/posts/:id/edit` 화면은 `useParams`의 id로 `GET /posts/{id}`를 호출해 form state를 채운다.
+- 수정 완료 버튼은 `updatePost(id, payload)`를 호출하고 성공 시 상세 화면으로 이동한다.
+
+검증:
+
+- `backend`: `python -m compileall app` 성공
+- `frontend`: `npm run build` 성공
+- HTTP QA: `POST /posts`로 테스트 글 생성 후 `PATCH /posts/{id}` 수정 성공
+- HTTP QA: 수정된 글을 `GET /posts/{id}`로 다시 조회했을 때 제목/본문/카테고리 변경 확인
+- HTTP QA: 없는 게시글 수정 시 `404` 확인
+- HTTP QA: 공백 제목 수정 시 `400` 확인
+- Browser QA: `/posts/5/edit`에서 API 값이 제목/본문/카테고리 form에 채워지는 것 확인
+
+주의:
+
+- FastAPI `TestClient`를 쓰려 했지만 현재 가상환경에 `httpx/httpx2` 테스트 의존성이 없어 HTTP QA 방식으로 검증했다.
+- 실제 작성자/관리자 권한 검사는 JWT/OAuth2 구현 후 추가한다.
+
+커밋 추천 제목:
+
+```txt
+feat: 게시글 수정 API와 수정 화면 연결
+```
+
+다음 후보 작업:
+
+1. `DELETE /posts/{post_id}` 게시글 삭제 API 구현 및 상세 화면 삭제 버튼 연결
+2. 내 기록 화면을 API 기반으로 전환
+3. 게시글 수정/삭제 권한을 JWT 구현 후 현재 사용자 기준으로 보호
+
 ## 2026-06-14 게시글 목록/상세 API 전환
 
 상태: 완료

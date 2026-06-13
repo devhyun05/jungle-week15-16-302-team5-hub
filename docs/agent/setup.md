@@ -1,5 +1,64 @@
 # Setup Notes
 
+## 2026-06-14 게시글 수정 API 검증 명령과 확인 URL
+
+백엔드 서버와 프론트엔드 서버가 모두 켜져 있어야 한다.
+
+```powershell
+# backend
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\Activate.ps1
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
+# frontend
+cd C:\junhee\WEEK15_AI_BOARD\frontend
+npm run dev
+```
+
+게시글 생성 후 수정 API를 검증하는 PowerShell 흐름:
+
+```powershell
+$createPayload = @{
+  title = "api patch flow seed"
+  summary = "seed summary"
+  content = "seed content"
+  categorySlug = "learning-log"
+  tags = @("FastAPI", "PatchSeed")
+  isPublic = $true
+  relatedCommit = "seed-commit"
+} | ConvertTo-Json
+
+$created = Invoke-RestMethod -Uri "http://localhost:8000/posts" -Method Post -ContentType "application/json" -Body $createPayload
+$postId = $created.id
+
+$updatePayload = @{
+  title = "api patch flow updated"
+  summary = "updated summary"
+  content = "updated content"
+  categorySlug = "troubleshooting"
+  tags = @("FastAPI", "UpdateAPI")
+  isPublic = $true
+  relatedCommit = "updated-commit"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:8000/posts/$postId" -Method Patch -ContentType "application/json" -Body $updatePayload
+Invoke-RestMethod -Uri "http://localhost:8000/posts/$postId" -Method Get
+```
+
+브라우저 확인 URL:
+
+```txt
+http://localhost:5173/posts/{postId}/edit
+```
+
+확인할 것:
+
+- 수정 화면 제목이 `게시글 수정`으로 보인다.
+- 제목 input에 수정된 제목이 들어간다.
+- 본문 textarea에 수정된 content가 들어간다.
+- 카테고리 select가 수정된 카테고리를 보여준다.
+- 수정 완료 버튼을 누르면 `PATCH /posts/{postId}`가 호출될 준비가 되어 있다.
+
 ## 2026-06-14 게시글 목록/상세 화면 확인 URL
 
 프론트와 백엔드 서버가 모두 켜져 있어야 한다.
