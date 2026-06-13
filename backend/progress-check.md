@@ -11,9 +11,9 @@
 
 ## 현재 위치
 
-- 현재 추천 세션: Session 04 `Auth API`
-- 다음 행동: `routers/auth.py` 오리엔테이션부터 시작하기
-- 마지막 업데이트: 2026-06-14 / Session 03 마무리, `../.venv/bin/python -m pytest tests/test_auth_schemas.py tests/test_auth_service.py` 통과 확인
+- 현재 추천 세션: Session 05 `Post, Comment, Tag 모델`
+- 다음 행동: `models/post.py`, `models/comment.py`, `models/tag.py` 오리엔테이션부터 시작하기
+- 마지막 업데이트: 2026-06-14 / Session 04 마무리, `../.venv/bin/python -m pytest` 전체 24개 테스트 통과 확인
 
 ## 세션별 체크표
 
@@ -23,7 +23,7 @@
 | 1 | 설정과 DB 세션 | `core/config.py`, `db/base.py`, `db/session.py` | Settings, engine, SessionLocal, dependency | 완료 | [x] | [x] | [x] | [x] | [x] | `BaseSettings`, `DeclarativeBase`, `create_engine`, `sessionmaker`, `get_db` 연결 완료 |
 | 2 | User/Auth 모델과 스키마 | `models/user.py`, `models/refresh_token.py`, `schemas/auth.py` | User, RefreshToken, TokenResponse | 완료 | [x] | [x] | [x] | [x] | [x] | `User`, `RefreshToken`, Auth schema 구현 및 테스트 통과 |
 | 3 | 인증 서비스 | `services/auth_service.py`, `tests/test_auth_service.py` | password hash, access JWT, refresh hash/rotation/revoke, current_user | 완료 | [x] | [x] | [x] | [x] | [x] | 비밀번호 hash/검증, access JWT, refresh token hash 저장/검증/회전/폐기, current_user 테스트 통과 |
-| 4 | Auth API | `routers/auth.py` | signup, login, refresh, logout, me, cookie | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
+| 4 | Auth API | `routers/auth.py` | signup, login, refresh, logout, me, cookie | 완료 | [x] | [x] | [x] | [x] | [x] | 회원가입/로그인/refresh/logout/me API 구현, cookie/access token 흐름 설명, 테스트 통과 |
 | 5 | Post, Comment, Tag 모델 | `models/post.py`, `models/comment.py`, `models/tag.py` | 관계, ForeignKey, 다대다 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 6 | Tag API와 seed | `schemas/tag.py`, `services/tag_service.py`, `routers/tags.py`, `seed.py` | seed, tag list, popular count, 직접 입력 태그 정규화 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 7 | Post 스키마와 응답 변환 | `schemas/post.py`, `services/post_service.py` | create/update/response, summary | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
@@ -77,3 +77,11 @@
 - 테스트 확인: `../.venv/bin/python -m pytest tests/test_auth_schemas.py tests/test_auth_service.py` 실행 결과 `15 passed`. Session 03 단독 테스트는 `tests/test_auth_service.py` 기준 `8 passed`.
 - 다음에 다시 말로 설명할 개념: refresh token은 cookie에 원문으로 있고 DB에는 hash만 저장한다는 점, `/auth/refresh`는 기존 refresh token을 검증한 뒤 폐기하고 새 access/refresh token을 발급한다는 점.
 - 다음 추천 행동: Session 04 `Auth API`에서 `routers/auth.py`에 signup, login, refresh, logout, me API와 cookie 설정/삭제 흐름 구현하기.
+
+### 2026-06-14 / Session 04
+
+- 한 줄 요약: `routers/auth.py`에 회원가입, 로그인, refresh, logout, me API를 연결하고 access token body 응답과 refresh token HttpOnly cookie 흐름을 완성함.
+- 막힌 지점: `Bearer` 인증 방식의 의미, `Depends`가 값을 주입하는 흐름, `main.py`의 `prefix="/auth"`와 `auth.py` 경로 조합, cookie `path="/auth"`와 프론트 라우터 경로의 차이.
+- 테스트 확인: `../.venv/bin/python -m pytest` 실행 결과 `24 passed, 1 warning`. Session 04 API 테스트는 `tests/test_auth_api.py` 기준 `8 passed`.
+- 다음에 다시 말로 설명할 개념: access token 만료 순간 자동 refresh가 아니라, 보호 API가 401을 반환했을 때 `/auth/refresh`를 시도한다는 점. 브라우저 refresh cookie 흐름에는 프론트 `credentials: "include"` 설정이 필요하다는 점.
+- 다음 추천 행동: Session 05 `Post, Comment, Tag 모델`에서 게시글, 댓글, 태그, `post_tags` 관계 모델 오리엔테이션부터 시작.
