@@ -11,9 +11,9 @@
 
 ## 현재 위치
 
-- 현재 추천 세션: Session 02 `User/Auth 모델과 스키마`
-- 다음 행동: `models/user.py`, `models/refresh_token.py`, `schemas/auth.py` 오리엔테이션부터 시작하기
-- 마지막 업데이트: 2026-06-13 / Session 01 마무리, `../.venv/bin/python -m pytest tests/test_health.py` 통과 확인
+- 현재 추천 세션: Session 03 `인증 서비스`
+- 다음 행동: `services/auth_service.py` 오리엔테이션부터 시작하기
+- 마지막 업데이트: 2026-06-13 / Session 02 마무리, `../.venv/bin/python -m pytest tests/test_auth_schemas.py` 통과 확인
 
 ## 세션별 체크표
 
@@ -21,7 +21,7 @@
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0 | FastAPI 앱과 health check | `app/main.py`, `tests/test_health.py` | 앱 생성, 라우터, 헬스체크, TestClient | 완료 | [x] | [x] | [x] | [x] | [x] | `/health`, CORS, 공통 API, pytest 결과 해석 완료 |
 | 1 | 설정과 DB 세션 | `core/config.py`, `db/base.py`, `db/session.py` | Settings, engine, SessionLocal, dependency | 완료 | [x] | [x] | [x] | [x] | [x] | `BaseSettings`, `DeclarativeBase`, `create_engine`, `sessionmaker`, `get_db` 연결 완료 |
-| 2 | User/Auth 모델과 스키마 | `models/user.py`, `models/refresh_token.py`, `schemas/auth.py` | User, RefreshToken, TokenResponse | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
+| 2 | User/Auth 모델과 스키마 | `models/user.py`, `models/refresh_token.py`, `schemas/auth.py` | User, RefreshToken, TokenResponse | 완료 | [x] | [x] | [x] | [x] | [x] | `User`, `RefreshToken`, Auth schema 구현 및 테스트 통과 |
 | 3 | 인증 서비스 | `services/auth_service.py` | password hash, access JWT, refresh hash/rotation/revoke, current_user | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 4 | Auth API | `routers/auth.py` | signup, login, refresh, logout, me, cookie | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 5 | Post, Comment, Tag 모델 | `models/post.py`, `models/comment.py`, `models/tag.py` | 관계, ForeignKey, 다대다 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
@@ -61,3 +61,11 @@
 - 테스트 확인: `../.venv/bin/python -m pytest tests/test_health.py` (health baseline)로 마무리 체크.
 - 다음에 다시 말로 설명할 개념: `DeclarativeBase`와 `create_engine`의 역할 분리, `get_db`에서 `yield`로 세션을 요청 생명주기 단위로 빌려주고 반납하는 방식.
 - 다음 추천 행동: `Session 02` 진입 시 `models/user.py`, `models/refresh_token.py`, `schemas/auth.py` 오리엔테이션부터 시작.
+
+### 2026-06-13 / Session 02
+
+- 한 줄 요약: `User`, `RefreshToken` SQLAlchemy 모델과 Auth 요청/응답 Pydantic 스키마를 구현해 회원가입/로그인 데이터 계약을 완성함.
+- 막힌 지점: 모델이 실제 테이블 생성 코드인지 설계도인지, refresh token cookie 이름과 실제 token 값의 차이, 원문 token과 hash 저장 방식, DB 모델과 응답 스키마의 필드 차이를 구분하는 부분.
+- 테스트 확인: `../.venv/bin/python -m pytest tests/test_auth_schemas.py` 실행 결과 `7 passed`. `EmailStr` 검증을 위해 `email-validator` 의존성을 추가함.
+- 다음에 다시 말로 설명할 개념: `models/*.py`는 SQLAlchemy DB 저장 구조, `schemas/*.py`는 Pydantic 요청/응답 JSON 구조라는 구분. refresh token 원문은 cookie에, hash는 DB에 저장한다는 흐름.
+- 다음 추천 행동: Session 03 `인증 서비스`에서 비밀번호 해시, access token 생성, refresh token 생성/hash/검증/회전 로직을 구현하기.
