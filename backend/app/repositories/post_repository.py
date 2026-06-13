@@ -10,6 +10,117 @@ from sqlalchemy.orm import Session, selectinload
 from app.db.models import Comment, Post, PostCategory, PostTag, Tag, User
 
 
+DEMO_POST_AUTHOR_EMAIL = "demo.student@junglelog.local"
+
+
+def build_tag_slug(tag_name: str) -> str:
+    """
+    화면에서 입력한 태그 이름을 DB에서 중복 판단에 쓰기 쉬운 slug로 바꾼다.
+
+    Args:
+        tag_name: 사용자가 입력한 태그 이름.
+
+    Returns:
+        소문자와 하이픈 중심의 tag slug.
+    """
+
+    return tag_name.strip().lower().replace(" ", "-")[:50]
+
+
+def get_demo_post_author(db: Session) -> User | None:
+    """
+    JWT/OAuth2 구현 전까지 게시글 작성에 사용할 demo 사용자를 조회한다.
+
+    실제 인증이 붙으면 이 함수는 current_user dependency로 대체된다.
+    """
+
+    return db.scalar(
+        select(User).where(User.email == DEMO_POST_AUTHOR_EMAIL)
+    )
+
+
+def get_category_by_slug(db: Session, category_slug: str) -> PostCategory | None:
+    """
+    프론트에서 보낸 categorySlug에 맞는 기준 카테고리를 찾는다.
+    """
+
+    return db.scalar(
+        select(PostCategory).where(PostCategory.slug == category_slug)
+    )
+
+
+def get_or_create_tag(db: Session, tag_name: str) -> Tag:
+    """
+    태그가 이미 있으면 재사용하고, 없으면 새로 만든다.
+
+    게시글과 태그는 N:M 관계라 tags 테이블에 기준 태그를 만들고,
+    post_tags 연결 테이블로 게시글과 이어준다.
+    """
+
+    normalized_name = tag_name.strip()[:50]
+    tag_slug = build_tag_slug(normalized_name)
+    tag = db.scalar(select(Tag).where(Tag.slug == tag_slug))
+
+    if tag is not None:
+        return tag
+
+    tag = Tag(name=normalized_name, slug=tag_slug)
+    db.add(tag)
+    db.flush()
+
+    return tag
+
+
+def create_post(
+    db: Session,
+    author: User,
+    category: PostCategory,
+    title: str,
+    summary: str | None,
+    content: str,
+    tag_names: list[str],
+    is_public: bool,
+    related_commit: str | None,
+) -> Post:
+    """
+    posts, tags, post_tags 테이블에 게시글 작성 결과를 저장한다.
+
+    Args:
+        db: SQLAlchemy session.
+        author: 게시글 작성자 User model.
+        category: 게시글 카테고리 PostCategory model.
+        title: 게시글 제목.
+        summary: 목록에 보여줄 요약.
+        content: 게시글 본문.
+        tag_names: 연결할 태그 이름 목록.
+        is_public: 공개 여부.
+        related_commit: GitHub URL 또는 커밋 메모.
+
+    Returns:
+        DB에 저장된 Post model.
+    """
+
+    post = Post(
+        author=author,
+        category=category,
+        title=title,
+        summary=summary,
+        content=content,
+        is_public=is_public,
+        related_commit=related_commit,
+    )
+    db.add(post)
+
+    for tag_name in tag_names:
+        tag = get_or_create_tag(db, tag_name)
+        post.post_tags.append(PostTag(tag=tag))
+
+    db.commit()
+    db.refresh(post)
+
+    return post
+
+
 def list_posts(
     db: Session,
     category: str | None,

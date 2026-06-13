@@ -13,6 +13,19 @@ class FrontendResponseModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
+class PostCreateRequest(FrontendResponseModel):
+    # 게시글 작성 API의 request body다.
+    # JWT/OAuth2 전 단계라 author_id는 프론트에서 받지 않는다.
+    # 나중에는 JWT token에서 current user를 꺼내 author_id로 사용한다.
+    title: str = Field(min_length=1, max_length=200)
+    summary: str | None = Field(default=None, max_length=500)
+    content: str = Field(min_length=1)
+    category_slug: str = Field(alias="categorySlug", min_length=1, max_length=50)
+    tags: list[str] = Field(default_factory=list, max_length=10)
+    is_public: bool = Field(default=True, alias="isPublic")
+    related_commit: str | None = Field(default=None, alias="relatedCommit", max_length=500)
+
+
 class PostListItemResponse(FrontendResponseModel):
     # 게시글 고유 id다. 프론트에서 상세 페이지 /posts/:id로 이동할 때 쓴다.
     id: int

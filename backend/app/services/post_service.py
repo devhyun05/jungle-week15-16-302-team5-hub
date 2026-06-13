@@ -6,7 +6,106 @@ from app.db.models import Post
 # repository는 실제 DB query를 담당한다.
 from app.repositories import post_repository
 # schema는 API로 내보낼 JSON 모양을 담당한다.
-from app.schemas.post import PostDetailResponse, PostListItemResponse, PostListResponse
+from app.schemas.post import PostCreateRequest, PostDetailResponse, PostListItemResponse, PostListResponse
+
+
+def build_summary_from_content(content: str) -> str:
+    """
+    프론트에서 summary를 보내지 않았을 때 본문 앞부분으로 목록 요약을 만든다.
+    """
+
+    return " ".join(content.split())[:150]
+
+
+def normalize_tag_names(tags: list[str]) -> list[str]:
+    """
+    태그 입력값에서 공백, 빈 값, 중복을 정리한다.
+
+    Args:
+        tags: 프론트에서 보낸 태그 이름 목록.
+
+    Returns:
+        DB에 연결할 태그 이름 목록.
+    """
+
+    normalized_tags: list[str] = []
+    seen_slugs: set[str] = set()
+
+    for tag in tags:
+        tag_name = tag.strip()
+
+        if not tag_name:
+            continue
+
+        tag_slug = tag_name.lower().replace(" ", "-")
+
+        if tag_slug in seen_slugs:
+            continue
+
+        normalized_tags.append(tag_name[:50])
+        seen_slugs.add(tag_slug)
+
+    return normalized_tags
+
+
+def create_post(db: Session, request: PostCreateRequest) -> PostDetailResponse | None:
+    """
+    게시글 작성 API의 비즈니스 흐름을 처리한다.
+
+    Args:
+        db: SQLAlchemy session.
+        request: 프론트에서 보낸 게시글 작성 request body.
+
+    Returns:
+        카테고리가 있으면 생성된 게시글 상세 응답, 카테고리가 없으면 None.
+
+    Raises:
+        ValueError: 제목이나 본문이 공백이면 발생한다.
+        RuntimeError: JWT 전 단계에서 사용할 demo user가 없으면 발생한다.
+    """
+
+    title = request.title.strip()
+    content = request.content.strip()
+
+    if not title or not content:
+        raise ValueError("제목과 본문을 입력해주세요.")
+
+    category = post_repository.get_category_by_slug(
+        db=db,
+        category_slug=request.category_slug,
+    )
+
+    if category is None:
+        return None
+
+    # TODO auth: JWT/OAuth2 구현 후에는 demo user 대신 get_current_user() 결과를 사용한다.
+    author = post_repository.get_demo_post_author(db)
+
+    if author is None:
+        raise RuntimeError("게시글 작성용 demo 사용자를 찾을 수 없습니다.")
+
+    summary = request.summary.strip() if request.summary else build_summary_from_content(content)
+    related_commit = request.related_commit.strip() if request.related_commit else None
+    tag_names = normalize_tag_names(request.tags)
+
+    post = post_repository.create_post(
+        db=db,
+        author=author,
+        category=category,
+        title=title,
+        summary=summary,
+        content=content,
+        tag_names=tag_names,
+        is_public=request.is_public,
+        related_commit=related_commit,
+    )
+
+    return PostDetailResponse(
+        **build_post_list_item(post=post, comment_count=0).model_dump(),
+        content=post.content,
+        related_commit=post.related_commit,
+        updated_at=post.updated_at,
+    )
 
 
 def get_posts(

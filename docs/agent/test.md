@@ -1,5 +1,32 @@
 # QA Checklist
 
+## 2026-06-14 게시글 작성 API QA
+
+이번 QA는 `POST /posts`와 `/posts/new` 프론트 연결을 검증한다.
+
+### Backend
+
+- [x] `python -m compileall app`가 성공한다.
+- [x] OpenAPI `/openapi.json`에서 `/posts` 경로에 `get`, `post` 메서드가 모두 보인다.
+- [x] `POST /posts`가 `201 Created`로 게시글을 생성한다.
+- [x] 생성된 게시글이 `GET /posts?keyword=...`에서 조회된다.
+- [x] 없는 `categorySlug`로 작성하면 `404`를 반환한다.
+- [x] 공백 제목/본문으로 작성하면 `400`을 반환한다.
+
+### Frontend
+
+- [x] `npm run build`가 성공한다.
+- [x] `/posts/new` 발행 버튼이 `createPost` API를 호출한다.
+- [x] 발행 중에는 버튼 문구가 `발행 중`으로 바뀔 수 있다.
+- [x] 작성 성공 시 생성된 게시글 id가 notice에 표시된다.
+- [x] 수정 모드는 아직 mock으로 남아 있음을 코드와 문서에 구분했다.
+
+### 남은 QA
+
+- [ ] 브라우저에서 `/posts/new`를 열고 실제 발행 버튼을 눌러 확인한다.
+- [ ] 목록/상세 화면을 API로 전환한 뒤 생성된 글이 UI에 보이는지 확인한다.
+- [ ] JWT/OAuth2 구현 후 작성자가 현재 로그인 사용자로 저장되는지 확인한다.
+
 ## 2026-06-13 댓글 작성 API QA
 
 이번 QA는 `POST /posts/{post_id}/comments`와 게시글 상세 프론트 연결을 검증한다.

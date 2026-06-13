@@ -1,5 +1,80 @@
 # Setup Notes
 
+## 2026-06-14 게시글 작성 API 검증 명령어
+
+백엔드 서버가 켜져 있어야 한다.
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\Activate.ps1
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+OpenAPI에서 `/posts` method 확인:
+
+```powershell
+$openapi = Invoke-RestMethod -Uri http://127.0.0.1:8000/openapi.json
+$openapi.paths.'/posts'.PSObject.Properties.Name
+```
+
+게시글 작성:
+
+```powershell
+$body = @{
+  title = 'post create api test'
+  summary = 'post create api summary'
+  content = 'post create api content'
+  categorySlug = 'learning-log'
+  tags = @('FastAPI', 'CreateAPI')
+  isPublic = $true
+  relatedCommit = 'api-create-post-test'
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri http://127.0.0.1:8000/posts -Method Post -ContentType 'application/json' -Body $body
+```
+
+생성된 글 목록 조회:
+
+```powershell
+Invoke-RestMethod -Uri 'http://127.0.0.1:8000/posts?keyword=post%20create%20api%20test' | ConvertTo-Json -Depth 5
+```
+
+없는 카테고리 404 확인:
+
+```powershell
+try {
+  $body = @{
+    title = 'bad category test'
+    content = 'bad category content'
+    categorySlug = 'missing-category'
+    tags = @()
+    isPublic = $true
+  } | ConvertTo-Json
+
+  Invoke-RestMethod -Uri http://127.0.0.1:8000/posts -Method Post -ContentType 'application/json' -Body $body
+} catch {
+  $_.Exception.Response.StatusCode.value__
+}
+```
+
+공백 제목/본문 400 확인:
+
+```powershell
+try {
+  $body = @{
+    title = ' '
+    content = ' '
+    categorySlug = 'learning-log'
+    tags = @()
+    isPublic = $true
+  } | ConvertTo-Json
+
+  Invoke-RestMethod -Uri http://127.0.0.1:8000/posts -Method Post -ContentType 'application/json' -Body $body
+} catch {
+  $_.Exception.Response.StatusCode.value__
+}
+```
+
 ## 2026-06-13 댓글 작성 API 검증 명령어
 
 백엔드 서버가 켜져 있어야 한다.

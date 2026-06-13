@@ -1,5 +1,49 @@
 # Study Notes
 
+## 2026-06-14 게시글 작성 API와 글쓰기 화면 연결 학습
+
+이번 구현은 `/posts/new` 화면의 발행 버튼을 실제 `POST /posts` API에 연결한 작업이다. JWT/OAuth2 전 단계라 작성자는 demo user로 임시 처리한다.
+
+### 수정한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/schemas/post.py` | 게시글 작성 request body인 `PostCreateRequest`와 게시글 응답 schema를 정의한다. |
+| `backend/app/repositories/post_repository.py` | demo 작성자 조회, 카테고리 조회, 태그 생성/재사용, 게시글 저장을 담당한다. |
+| `backend/app/services/post_service.py` | 제목/본문 검증, summary 생성, 태그 정리, repository 호출, 응답 변환을 담당한다. |
+| `backend/app/routers/posts.py` | `POST /posts` endpoint와 HTTP status code를 담당한다. |
+| `frontend/src/app/api/posts.ts` | 프론트에서 게시글 작성 API를 호출하는 fetch 함수를 둔다. |
+| `frontend/src/app/pages/posts/PostEdit.tsx` | 글쓰기 form state를 API payload로 바꿔 `createPost`를 호출한다. |
+
+### 코드 읽는 순서
+
+```txt
+PostEdit.tsx 발행하기 버튼
+-> createPost(payload)
+-> POST /posts
+-> routers/posts.py
+-> services/post_service.py
+-> repositories/post_repository.py
+-> posts, tags, post_tags 테이블 저장
+-> PostDetailResponse
+-> PostEdit notice 표시 후 /posts 이동
+```
+
+### 이번 구현에서 나온 개념
+
+- `POST /posts`: 게시글 collection에 새 게시글을 만든다는 REST 표현이다.
+- `categorySlug`: 프론트는 카테고리 label이 아니라 slug를 백엔드에 보낸다.
+- `tags`와 `post_tags`: 태그 기준 데이터와 게시글-태그 연결 데이터는 분리된다.
+- `summary`: 프론트가 보내지 않으면 service에서 본문 앞부분으로 만든다.
+- `db.commit()`: posts, tags, post_tags 변경을 하나의 transaction으로 확정한다.
+- `response_model`: Swagger와 실제 응답 모양을 `PostDetailResponse`로 맞춘다.
+
+### 지금 한계
+
+- 새 글은 DB에 저장되지만, `/posts`와 `/posts/:id` 화면은 아직 mock data 중심이라 생성된 글이 화면 목록/상세에 바로 자연스럽게 보이지 않는다.
+- 다음 단계에서 게시글 목록/상세 화면을 API 응답 중심으로 바꾸면 생성된 글도 화면에서 확인할 수 있다.
+- 수정/삭제는 아직 mock이며, `PATCH /posts/{id}`, `DELETE /posts/{id}` 단계에서 구현한다.
+
 ## 2026-06-13 댓글 작성 API와 프론트 연결 학습
 
 이번 구현은 게시글 상세 화면의 댓글 작성 버튼을 실제 FastAPI POST API에 연결한 작업이다. JWT/OAuth2 전 단계라 작성자는 demo user로 임시 처리한다.

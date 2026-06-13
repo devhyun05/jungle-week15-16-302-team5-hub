@@ -2,14 +2,14 @@
 # Depends는 get_db 같은 의존성을 API 함수에 주입한다.
 # HTTPException은 404 같은 HTTP 오류를 직접 반환할 때 쓴다.
 # Query는 query string의 기본값과 검증 조건을 정한다.
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 # Session은 SQLAlchemy DB session 타입이다.
 from sqlalchemy.orm import Session
 
 # get_db는 요청마다 DB session을 열고 닫아주는 FastAPI dependency다.
 from app.db.session import get_db
 # response_model에 넣을 Pydantic schema다.
-from app.schemas.post import PostDetailResponse, PostListResponse
+from app.schemas.post import PostCreateRequest, PostDetailResponse, PostListResponse
 # router는 service를 호출하고, service가 실제 응답 조립을 맡는다.
 from app.services import post_service
 
@@ -56,6 +56,33 @@ def get_posts(
         page=page,
         size=size,
     )
+
+
+@router.post("", response_model=PostDetailResponse, status_code=status.HTTP_201_CREATED)
+def create_post(
+    # POST request body의 JSON을 Pydantic schema로 검증한다.
+    request: PostCreateRequest,
+    # 게시글 작성은 DB INSERT가 필요하므로 SQLAlchemy session을 주입받는다.
+    db: Session = Depends(get_db),
+) -> PostDetailResponse:
+    """
+    게시글을 새로 작성한다.
+
+    JWT/OAuth2 전 단계라서 작성자는 demo user로 저장한다.
+    인증 구현 후에는 request body가 아니라 JWT token에서 작성자를 꺼내야 한다.
+    """
+
+    try:
+        post = post_service.create_post(db=db, request=request)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except RuntimeError as error:
+        raise HTTPException(status_code=500, detail=str(error)) from error
+
+    if post is None:
+        raise HTTPException(status_code=404, detail="카테고리를 찾을 수 없습니다.")
+
+    return post
 
 
 # GET /posts/{post_id} endpoint다.

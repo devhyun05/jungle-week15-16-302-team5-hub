@@ -1,5 +1,61 @@
 # JungleLog API Design
 
+## 2026-06-14 추가: POST /posts
+
+게시글 작성 API가 구현되었습니다. JWT/OAuth2 전 단계이므로 request body에는 작성자 id를 받지 않고, 백엔드에서 `demo.student@junglelog.local` seed 사용자를 임시 작성자로 사용합니다.
+
+### Request
+
+```http
+POST /posts
+Content-Type: application/json
+```
+
+```json
+{
+  "title": "post create api test",
+  "summary": "post create api summary",
+  "content": "post create api content",
+  "categorySlug": "learning-log",
+  "tags": ["FastAPI", "CreateAPI"],
+  "isPublic": true,
+  "relatedCommit": "api-create-post-test"
+}
+```
+
+### Response 201
+
+```json
+{
+  "id": 4,
+  "title": "post create api test",
+  "summary": "post create api summary",
+  "category": "학습 로그",
+  "categorySlug": "learning-log",
+  "tags": ["FastAPI", "CreateAPI"],
+  "author": "정글 학생",
+  "authorRole": "STUDENT",
+  "isPublic": true,
+  "views": 0,
+  "comments": 0,
+  "createdAt": "2026-06-13T15:22:22.516377Z",
+  "content": "post create api content",
+  "relatedCommit": "api-create-post-test",
+  "updatedAt": "2026-06-13T15:22:22.516377Z"
+}
+```
+
+### Error
+
+- `400`: 제목이나 본문이 공백
+- `404`: `categorySlug`에 맞는 카테고리가 없음
+- `500`: JWT 전 단계에서 사용할 demo user가 seed 되어 있지 않음
+
+### JWT/OAuth2 후 변경 예정
+
+- 작성자 정보는 request body가 아니라 JWT token의 current user에서 가져옵니다.
+- 비공개 글 조회 권한, 작성자 본인 수정/삭제 권한은 인증 구현 후 연결합니다.
+
 ## 2026-06-13 추가: POST /posts/{post_id}/comments
 
 댓글 작성 API가 구현되었습니다. JWT/OAuth2 전 단계이므로 request body에는 댓글 본문만 받고, 작성자는 백엔드에서 `demo.student@junglelog.local` seed 사용자로 임시 처리합니다.

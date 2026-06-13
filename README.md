@@ -1,5 +1,18 @@
 # JungleLog
 
+## 2026-06-14 최신 구현: 게시글 작성 API와 글쓰기 화면 연결
+
+`POST /posts`를 구현하고 `/posts/new`의 발행 버튼을 백엔드 API에 연결했습니다.
+
+- `backend/app/schemas/post.py`: `PostCreateRequest`를 추가해 게시글 작성 request body를 검증합니다.
+- `backend/app/repositories/post_repository.py`: demo 작성자 조회, 카테고리 조회, 태그 생성/재사용, 게시글 INSERT 로직을 추가했습니다.
+- `backend/app/services/post_service.py`: 제목/본문 공백 검증, summary 자동 생성, 태그 중복 제거, 응답 변환을 담당합니다.
+- `backend/app/routers/posts.py`: `POST /posts` endpoint를 추가하고 `201 Created`, `400`, `404`, `500` 응답을 구분합니다.
+- `frontend/src/app/api/posts.ts`: 게시글 작성 API 호출 함수를 추가했습니다.
+- `frontend/src/app/pages/posts/PostEdit.tsx`: 새 글 발행 버튼이 백엔드 API를 호출하도록 연결했습니다.
+
+현재는 JWT/OAuth2 전 단계라 게시글 작성자는 `demo.student@junglelog.local` seed 사용자로 저장됩니다. 수정/삭제 API와 목록/상세 화면의 완전한 API 전환은 다음 CRUD 단계에서 진행합니다.
+
 ## 2026-06-13 최신 구현: 댓글 작성 API와 프론트 연결
 
 댓글 조회 다음 단계로 `POST /posts/{post_id}/comments`를 구현하고 게시글 상세 화면의 댓글 작성 버튼을 백엔드 API에 연결했습니다.

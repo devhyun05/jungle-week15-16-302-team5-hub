@@ -7,6 +7,7 @@ import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
+import { createPost } from "../../api/posts";
 import { categories, posts } from "../../data/mockData";
 
 function bodyFromPost(postId?: string) {
@@ -20,6 +21,12 @@ function bodyFromPost(postId?: string) {
       return `## ${section.heading}\n${section.body}${code}`;
     })
     .join("\n\n");
+}
+
+function buildSummary(content: string) {
+  // 목록 카드에 보여줄 짧은 요약을 본문 앞부분으로 만든다.
+  // 나중에 백엔드/AI 요약 기능이 붙으면 이 로직은 서버 응답으로 대체될 수 있다.
+  return content.replace(/\s+/g, " ").trim().slice(0, 150);
 }
 
 export function PostEdit() {
@@ -40,6 +47,7 @@ export function PostEdit() {
   const [githubUrl, setGithubUrl] = useState(isEditMode ? existingPost?.relatedCommit ?? "" : "");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleAddTag = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter" && tagInput.trim()) {
@@ -49,20 +57,58 @@ export function PostEdit() {
     }
   };
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
-    if (!title.trim() || !body.trim()) {
+    const trimmedTitle = title.trim();
+    const trimmedBody = body.trim();
+
+    if (!trimmedTitle || !trimmedBody) {
       setError("제목과 본문을 입력해주세요.");
       setNotice("");
       return;
     }
 
-    // TODO backend: 실제 게시글 작성/수정 저장 API는 백엔드 연결 후 구현 예정.
-    // 지금은 검증 문구와 라우트 이동만으로 작성/수정 흐름을 확인합니다.
+    if (isEditMode) {
+      // TODO backend: 게시글 수정 PATCH API는 다음 CRUD 단계에서 구현 예정.
+      setError("");
+      setNotice("mock으로 수정되었습니다. 상세 화면으로 이동합니다.");
+      window.setTimeout(() => navigate(`/posts/${id ?? existingPost?.id ?? 1}`), 700);
+      return;
+    }
+
+    const selectedCategory = categories.find((item) => item.label === category);
+
+    if (!selectedCategory) {
+      setError("카테고리를 찾을 수 없습니다.");
+      setNotice("");
+      return;
+    }
+
+    setIsSubmitting(true);
     setError("");
-    setNotice(isEditMode ? "mock으로 수정되었습니다. 상세 화면으로 이동합니다." : "mock으로 게시글이 발행되었습니다. 목록으로 이동합니다.");
-    window.setTimeout(() => navigate(isEditMode ? `/posts/${id ?? existingPost?.id ?? 1}` : "/posts"), 700);
+    setNotice("");
+
+    try {
+      const createdPost = await createPost({
+        title: trimmedTitle,
+        summary: buildSummary(trimmedBody),
+        content: trimmedBody,
+        categorySlug: selectedCategory.slug,
+        tags,
+        isPublic,
+        relatedCommit: githubUrl.trim() || undefined,
+      });
+
+      setNotice(`백엔드에 게시글이 발행되었습니다. 생성된 게시글 id: ${createdPost.id}`);
+      // 현재 목록/상세 화면은 아직 mock data 중심이라 새 글이 바로 보이지 않는다.
+      // 다음 단계에서 목록/상세 조회를 API 응답으로 교체하면 생성된 글도 자연스럽게 보인다.
+      window.setTimeout(() => navigate("/posts"), 900);
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "게시글을 저장하지 못했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const saveDraft = () => {
@@ -77,16 +123,18 @@ export function PostEdit() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">{isEditMode ? "게시글 수정" : "새 게시글 작성"}</h1>
-            <p className="mt-1 text-sm text-slate-500">현재는 mock UI 단계라 서버에 저장하지 않고 화면 동작만 확인합니다.</p>
+            <p className="mt-1 text-sm text-slate-500">
+              새 글 발행은 백엔드 API에 저장되고, 수정/임시저장은 아직 mock 단계입니다.
+            </p>
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" className="text-slate-600" onClick={saveDraft}>
               <Save className="mr-2 h-4 w-4" />
               임시저장
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={isSubmitting}>
               <Send className="mr-2 h-4 w-4" />
-              {isEditMode ? "수정 완료" : "발행하기"}
+              {isSubmitting ? "발행 중" : isEditMode ? "수정 완료" : "발행하기"}
             </Button>
           </div>
         </div>

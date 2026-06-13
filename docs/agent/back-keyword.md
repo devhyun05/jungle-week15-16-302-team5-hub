@@ -1,5 +1,55 @@
 # Backend Keyword Map
 
+## 2026-06-14 게시글 작성 API에서 나온 키워드
+
+### REST API / Resource
+
+`POST /posts`는 posts collection에 새 게시글 resource를 만드는 API다. 댓글 작성의 `POST /posts/{post_id}/comments`와 비교하면, 게시글은 최상위 resource이고 댓글은 게시글 아래의 하위 resource다.
+
+### CRUD - Create
+
+이번 구현은 게시글 CRUD 중 Create다.
+
+```txt
+Create: POST /posts
+Read: GET /posts, GET /posts/{post_id}
+Update: PATCH /posts/{post_id} 예정
+Delete: DELETE /posts/{post_id} 예정
+```
+
+### Primary Key / Foreign Key
+
+새 게시글을 저장할 때 `posts.author_id`는 `users.id`, `posts.category_id`는 `post_categories.id`를 참조한다. 즉 화면에서 author 이름이나 category label을 직접 저장하지 않고 FK로 연결한다.
+
+### N:M / Join Table
+
+게시글과 태그는 N:M 관계다.
+
+```txt
+posts
+-> post_tags
+-> tags
+```
+
+태그 이름이 이미 있으면 `tags` row를 재사용하고, 새 태그면 만든 뒤 `post_tags`에 연결한다.
+
+### Transaction
+
+게시글 작성은 `posts`, `tags`, `post_tags`가 함께 바뀔 수 있다. 그래서 repository에서 하나의 session 안에서 처리하고 마지막에 `db.commit()`으로 확정한다.
+
+### Layered Architecture
+
+이번 구현에서도 계층을 나눴다.
+
+```txt
+schema: PostCreateRequest, PostDetailResponse
+router: POST /posts, status code
+service: 검증, summary 생성, tag 정리
+repository: DB 조회/INSERT
+frontend api: fetch 호출
+page: form state와 사용자 이벤트
+```
+
 ## 2026-06-13 댓글 작성 API에서 나온 키워드
 
 ### REST API / POST

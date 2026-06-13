@@ -1,5 +1,57 @@
 # JungleLog Progress Log
 
+## 2026-06-14 게시글 작성 API와 글쓰기 화면 연결
+
+상태: 완료
+
+목표: JWT/OAuth2 전 단계에서 `/posts/new`의 발행 버튼을 실제 백엔드 `POST /posts` API에 연결한다.
+
+구현 파일:
+
+- `backend/app/schemas/post.py`
+- `backend/app/repositories/post_repository.py`
+- `backend/app/services/post_service.py`
+- `backend/app/routers/posts.py`
+- `frontend/src/app/api/posts.ts`
+- `frontend/src/app/pages/posts/PostEdit.tsx`
+- `README.md`
+- `docs/agent/api-design.md`
+- `docs/agent/study.md`
+- `docs/agent/test.md`
+- `docs/agent/setup.md`
+- `docs/agent/back-keyword.md`
+
+구현 내용:
+
+- `POST /posts` API를 추가했다.
+- request body는 `title`, `summary`, `content`, `categorySlug`, `tags`, `isPublic`, `relatedCommit`을 받는다.
+- JWT/OAuth2 전 단계라 작성자는 `demo.student@junglelog.local` seed user로 임시 처리했다.
+- 태그가 없으면 새로 만들고, 이미 있으면 재사용한 뒤 `post_tags`로 연결한다.
+- 프론트 `PostEdit`에서 새 글 발행 시 `createPost` API를 호출하도록 연결했다.
+- 수정 모드는 아직 `PATCH /posts/{id}`가 없어 mock 흐름을 유지했다.
+
+검증:
+
+- `backend`: `python -m compileall app` 성공
+- `frontend`: `npm run build` 성공
+- OpenAPI에서 `/posts`에 `get`, `post` 메서드 등록 확인
+- `POST /posts` 성공, 생성된 게시글 id `4` 확인
+- `GET /posts?keyword=post%20create%20api%20test`에서 생성된 글 조회 확인
+- 없는 카테고리 요청이 `404` 반환 확인
+- 공백 제목/본문 요청이 `400` 반환 확인
+
+커밋 추천 제목:
+
+```txt
+feat: 게시글 작성 API와 글쓰기 화면 연결
+```
+
+다음 후보 작업:
+
+1. 게시글 목록/상세 화면을 mock data에서 API 응답으로 전환
+2. 게시글 수정 API `PATCH /posts/{post_id}` 구현
+3. 게시글 삭제 API `DELETE /posts/{post_id}` 구현
+
 ## 2026-06-13 댓글 작성 API와 프론트 연결
 
 상태: 완료
