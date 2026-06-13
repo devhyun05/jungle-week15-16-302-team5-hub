@@ -1,6 +1,6 @@
-"""Tags router practice target.
+"""태그 라우터 연습 대상.
 
-Session 06 will implement:
+세션 06에서 구현할 것:
 - `GET /tags`
 - `GET /tags/popular`
 """

@@ -1,1 +1,1 @@
-"""FastAPI backend package for Malang Lab."""
+"""말랑 연구소 FastAPI 백엔드 패키지."""

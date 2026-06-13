@@ -1,5 +1,5 @@
-"""Post schema practice target.
+"""게시글 스키마 연습 대상.
 
-Session 07 will implement post create/update/list/detail schemas from
-`api-spec.md` and the frontend `Post` / `PostListResponse` types.
+세션 07에서 `api-spec.md`와 프론트 `Post` / `PostListResponse` 타입 기준으로
+게시글 생성/수정/목록/상세 스키마를 구현한다.
 """

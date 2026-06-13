@@ -1,7 +1,6 @@
-"""Future AI router target.
+"""나중에 구현할 AI 라우터 대상.
 
-RAG, MCP, and Agent endpoints are intentionally left out of the basic backend
-implementation sessions.
+기본 백엔드 구현 세션에서는 RAG, MCP, 에이전트 엔드포인트를 의도적으로 제외한다.
 """
 
 from fastapi import APIRouter

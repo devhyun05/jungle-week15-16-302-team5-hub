@@ -1,6 +1,6 @@
-"""Auth router practice target.
+"""인증 라우터 연습 대상.
 
-Session 04 will implement:
+세션 04에서 구현할 것:
 - `POST /auth/signup`
 - `POST /auth/login`
 - `GET /auth/me`

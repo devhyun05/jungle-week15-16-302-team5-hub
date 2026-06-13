@@ -1,7 +1,7 @@
-"""Tag and post-tag relation practice target.
+"""태그와 게시글-태그 관계 연습 대상.
 
-Session 05 will implement:
+세션 05에서 구현할 것:
 - `tags`
 - `post_tags`
-- many-to-many relationship between posts and tags
+- 게시글과 태그의 다대다 관계
 """

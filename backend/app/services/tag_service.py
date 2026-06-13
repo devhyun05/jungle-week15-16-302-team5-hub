@@ -1,4 +1,4 @@
-"""Tag service practice target.
+"""태그 서비스 연습 대상.
 
-Sessions 06 and 09 will implement initial tags and post-tag replacement.
+세션 06, 09에서 초기 태그와 게시글-태그 교체를 구현한다.
 """

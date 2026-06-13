@@ -11,16 +11,16 @@
 
 ## 현재 위치
 
-- 현재 추천 세션: Session 00 `FastAPI 앱과 health check`
-- 다음 행동: `app/main.py`와 `tests/test_health.py` 오리엔테이션부터 시작하기
-- 마지막 업데이트: 2026-06-13 / access token + refresh token 인증 계획 반영
+- 현재 추천 세션: Session 02 `User/Auth 모델과 스키마`
+- 다음 행동: `models/user.py`, `models/refresh_token.py`, `schemas/auth.py` 오리엔테이션부터 시작하기
+- 마지막 업데이트: 2026-06-13 / Session 01 마무리, `../.venv/bin/python -m pytest tests/test_health.py` 통과 확인
 
 ## 세션별 체크표
 
 | 순서 | 세션 | 주요 파일 | 핵심 개념 | 상태 | 오리엔테이션 | Level 3 1회차 | 피드백 반영 | 테스트 확인 | 말로 설명 | 메모 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 0 | FastAPI 앱과 health check | `app/main.py`, `tests/test_health.py` | 앱 생성, 라우터, 헬스체크, TestClient | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
-| 1 | 설정과 DB 세션 | `core/config.py`, `db/base.py`, `db/session.py` | Settings, engine, SessionLocal, dependency | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
+| 0 | FastAPI 앱과 health check | `app/main.py`, `tests/test_health.py` | 앱 생성, 라우터, 헬스체크, TestClient | 완료 | [x] | [x] | [x] | [x] | [x] | `/health`, CORS, 공통 API, pytest 결과 해석 완료 |
+| 1 | 설정과 DB 세션 | `core/config.py`, `db/base.py`, `db/session.py` | Settings, engine, SessionLocal, dependency | 완료 | [x] | [x] | [x] | [x] | [x] | `BaseSettings`, `DeclarativeBase`, `create_engine`, `sessionmaker`, `get_db` 연결 완료 |
 | 2 | User/Auth 모델과 스키마 | `models/user.py`, `models/refresh_token.py`, `schemas/auth.py` | User, RefreshToken, TokenResponse | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 3 | 인증 서비스 | `services/auth_service.py` | password hash, access JWT, refresh hash/rotation/revoke, current_user | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 4 | Auth API | `routers/auth.py` | signup, login, refresh, logout, me, cookie | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
@@ -45,3 +45,19 @@
 - 다음에 다시 말로 설명할 개념:
 - 다음 추천 행동:
 ```
+
+### 2026-06-13 / Session 00
+
+- 한 줄 요약: FastAPI 앱 입구인 `main.py`, CORS, 라우터 등록, `/health`의 역할을 이해하고 health test를 통과시킴.
+- 막힌 지점: `main.py`가 실제 기능 로직인지, `/health`가 모든 라우터에 붙는 경로인지, `tests/README.md`가 무엇을 의미하는지 헷갈렸음.
+- 테스트 확인: `python -m pytest tests/test_health.py` 실행 결과 `1 passed, 1 warning`; `GET /health`가 `200`과 `{"status": "ok"}`를 반환함.
+- 다음에 다시 말로 설명할 개념: CORS가 브라우저의 다른 origin 요청 허용 규칙이라는 점, `tests/`는 기능 구현이 아니라 검증용 안전장치라는 점.
+- 다음 추천 행동: Session 01 `설정과 DB 세션`에서 `Settings`, `DATABASE_URL`, SQLAlchemy `engine`, `SessionLocal`, `get_db` 흐름 이해하기.
+
+### 2026-06-13 / Session 01
+
+- 한 줄 요약: `core/config.py`와 `db/base.py`, `db/session.py`로 설정 기반 DB 연결 공통 구조를 구성하고 import/타입 흐름을 정리해 세션 01 공통 인프라를 완성함.
+- 막힌 지점: `SessionLocal`의 생성 대상/옵션 오해(`Session` vs `sessionmaker`), `settings` 생성 방식(`Settings` 직접 생성 vs `get_settings` 캐시), `get_db` 반환 타입/`yield` 위치였습니다.
+- 테스트 확인: `../.venv/bin/python -m pytest tests/test_health.py` (health baseline)로 마무리 체크.
+- 다음에 다시 말로 설명할 개념: `DeclarativeBase`와 `create_engine`의 역할 분리, `get_db`에서 `yield`로 세션을 요청 생명주기 단위로 빌려주고 반납하는 방식.
+- 다음 추천 행동: `Session 02` 진입 시 `models/user.py`, `models/refresh_token.py`, `schemas/auth.py` 오리엔테이션부터 시작.

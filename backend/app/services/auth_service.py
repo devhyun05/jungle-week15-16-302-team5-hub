@@ -1,5 +1,4 @@
-"""Authentication service practice target.
+"""인증 서비스 연습 대상.
 
-Session 03 will implement password hashing, JWT creation, and current-user
-dependencies.
+세션 03에서 비밀번호 해시, JWT 생성, 현재 사용자 의존성을 구현한다.
 """

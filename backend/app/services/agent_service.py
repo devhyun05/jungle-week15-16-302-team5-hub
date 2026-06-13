@@ -1,4 +1,4 @@
-"""Future Agent service target.
+"""나중에 구현할 에이전트 서비스 대상.
 
-Do not implement this during the basic backend sessions.
+기본 백엔드 세션에서는 이것을 구현하지 않는다.
 """

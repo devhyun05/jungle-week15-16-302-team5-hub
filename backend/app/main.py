@@ -1,9 +1,9 @@
-"""FastAPI application entry point.
+"""FastAPI 애플리케이션 진입점.
 
-Session 00 target:
-- Explain what backend feature this unlocks for the frontend.
-- Rebuild the app factory, CORS middleware, router registration, and health check.
-- Verify it with `tests/test_health.py`.
+세션 00 목표:
+- 이 백엔드 기능이 프론트의 어떤 연결을 열어 주는지 설명한다.
+- 앱 생성 함수, CORS 미들웨어, 라우터 등록, 상태 확인 API를 다시 만든다.
+- `tests/test_health.py`로 확인한다.
 """
 
 from fastapi import FastAPI

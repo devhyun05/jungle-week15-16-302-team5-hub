@@ -1,4 +1,4 @@
-"""Future MCP client target.
+"""나중에 구현할 MCP 클라이언트 대상.
 
-Do not implement product search during the basic backend sessions.
+기본 백엔드 세션에서는 상품 검색을 구현하지 않는다.
 """

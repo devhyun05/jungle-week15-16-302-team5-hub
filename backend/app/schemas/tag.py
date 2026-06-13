@@ -1,4 +1,4 @@
-"""Tag schema practice target.
+"""태그 스키마 연습 대상.
 
-Session 06 will implement tag list and popular tag response schemas.
+세션 06에서 태그 목록과 인기 태그 응답 스키마를 구현한다.
 """

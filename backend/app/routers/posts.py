@@ -1,6 +1,6 @@
-"""Posts router practice target.
+"""게시글 라우터 연습 대상.
 
-Sessions 08 and 09 will implement:
+세션 08, 09에서 구현할 것:
 - `GET /posts`
 - `POST /posts`
 - `GET /posts/{post_id}`

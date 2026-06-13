@@ -1,4 +1,4 @@
-"""Comment model practice target.
+"""댓글 모델 연습 대상.
 
-Session 05 will implement the `comments` table linked to posts and users.
+세션 05에서 게시글과 사용자에 연결되는 `comments` 테이블을 구현한다.
 """

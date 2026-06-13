@@ -1,4 +1,4 @@
-"""Comment schema practice target.
+"""댓글 스키마 연습 대상.
 
-Session 10 will implement comment request/response schemas.
+세션 10에서 댓글 요청/응답 스키마를 구현한다.
 """

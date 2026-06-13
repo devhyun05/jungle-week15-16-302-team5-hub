@@ -1,4 +1,4 @@
-"""Future AI schema target.
+"""나중에 구현할 AI 스키마 대상.
 
-Do not implement RAG, MCP, or Agent schemas during the basic backend sessions.
+기본 백엔드 세션에서는 RAG, MCP, 에이전트 스키마를 구현하지 않는다.
 """

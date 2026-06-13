@@ -1,5 +1,4 @@
-"""User model practice target.
+"""사용자 모델 연습 대상.
 
-Session 02 will implement the `users` table model used by signup, login, posts,
-and comments.
+세션 02에서 회원가입, 로그인, 게시글, 댓글에 쓰이는 `users` 테이블 모델을 구현한다.
 """

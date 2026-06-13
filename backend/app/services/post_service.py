@@ -1,5 +1,4 @@
-"""Post service practice target.
+"""게시글 서비스 연습 대상.
 
-Sessions 07, 08, and 09 will implement response mapping, search/paging, and
-write helpers for posts.
+세션 07, 08, 09에서 응답 변환, 검색/페이징, 게시글 쓰기 도우미를 구현한다.
 """

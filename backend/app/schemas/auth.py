@@ -1,5 +1,5 @@
-"""Auth schema practice target.
+"""인증 스키마 연습 대상.
 
-Session 02 will implement signup/login request schemas and user/token response
-schemas from `api-spec.md`.
+세션 02에서 `api-spec.md` 기준으로 회원가입/로그인 요청 스키마와
+사용자/토큰 응답 스키마를 구현한다.
 """

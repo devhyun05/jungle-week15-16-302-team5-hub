@@ -1,5 +1,5 @@
-"""Post model practice target.
+"""게시글 모델 연습 대상.
 
-Session 05 will implement the `posts` table. The MVP keeps recipe, failure,
-review, and general post fields in this one table.
+세션 05에서 `posts` 테이블을 구현한다. 최소 기능 범위에서는 레시피, 실패담, 후기,
+자유글 필드를 이 한 테이블에 둔다.
 """

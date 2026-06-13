@@ -1,4 +1,4 @@
-"""SQLAlchemy model exports practice target.
+"""SQLAlchemy 모델 내보내기 연습 대상.
 
-Sessions 02 and 05 will export models here after each model is implemented.
+세션 02, 05에서 각 모델을 구현한 뒤 이곳에서 내보낸다.
 """

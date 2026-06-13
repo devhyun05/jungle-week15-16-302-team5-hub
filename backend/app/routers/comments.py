@@ -1,6 +1,6 @@
-"""Comments router practice target.
+"""댓글 라우터 연습 대상.
 
-Session 10 will implement:
+세션 10에서 구현할 것:
 - `GET /posts/{post_id}/comments`
 - `POST /posts/{post_id}/comments`
 - `PATCH /comments/{comment_id}`

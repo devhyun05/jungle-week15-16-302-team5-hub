@@ -1,4 +1,4 @@
-"""Future embedding model target.
+"""나중에 구현할 임베딩 모델 대상.
 
-Do not implement this during the basic backend sessions. RAG is added later.
+기본 백엔드 세션에서는 이것을 구현하지 않는다. RAG는 나중에 추가한다.
 """

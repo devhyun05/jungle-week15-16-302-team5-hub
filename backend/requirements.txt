@@ -1,4 +1,4 @@
-# FastAPI backend dependencies to install later.
+# 이후 설치할 FastAPI 백엔드 의존성
 fastapi
 uvicorn[standard]
 sqlalchemy
