@@ -80,6 +80,14 @@
 
 ## Backend QA
 
+### API Design
+
+- [ ] `docs/agent/api-design.md`에 현재 구현할 endpoint가 먼저 정리되어 있다.
+- [ ] 각 endpoint의 method, path, query, response가 설명되어 있다.
+- [ ] 없는 데이터, 권한 없음, 인증 필요 같은 실패 케이스가 status code로 구분되어 있다.
+- [ ] API 문서의 응답 필드와 Pydantic schema 필드가 일치한다.
+- [ ] DB 컬럼 이름과 프론트 응답 이름이 다를 때 변환 기준이 문서화되어 있다.
+
 ### FastAPI 서버 기본
 
 - [ ] `.venv`가 활성화된 상태에서 명령을 실행하고 있다.
@@ -136,6 +144,23 @@
 - [ ] `/docs` 또는 `/openapi.json`에 `/health/db` endpoint가 보인다.
 - [ ] `python -m compileall app` 또는 동일한 백엔드 import 검증이 성공한다.
 
+### Posts Read API
+
+- [ ] `docs/agent/api-design.md`에 `GET /posts`가 정리되어 있다.
+- [ ] `docs/agent/api-design.md`에 `GET /posts/{post_id}`가 정리되어 있다.
+- [ ] `backend/app/schemas/post.py`에 게시글 목록/상세 response schema가 있다.
+- [ ] `backend/app/repositories/post_repository.py`가 게시글 DB 조회를 담당한다.
+- [ ] `backend/app/services/post_service.py`가 DB 모델을 API 응답 schema로 변환한다.
+- [ ] `backend/app/routers/posts.py`가 `/posts` router를 등록한다.
+- [ ] `backend/app/main.py`가 posts router를 include한다.
+- [ ] `GET /posts`가 HTTP 200을 반환한다.
+- [ ] `GET /posts` 응답에 `items`, `total`, `page`, `size`가 있다.
+- [ ] `GET /posts?category=learning-log`가 카테고리 필터를 적용한다.
+- [ ] `GET /posts?keyword=JWT`가 검색어 필터를 적용한다.
+- [ ] `GET /posts/{post_id}`가 id에 맞는 게시글 상세를 반환한다.
+- [ ] 없는 게시글 id는 HTTP 404를 반환한다.
+- [ ] `/docs`에서 posts endpoint와 schema가 보인다.
+
 ### DB Design
 
 - [ ] `docs/agent/db-design.md`에 ERD v1 테이블 목록이 있다.
@@ -157,6 +182,83 @@
 - [ ] `front-keyword.md` 또는 `back-keyword.md`에 새 키워드가 연결되어 있다.
 - [ ] 실제 발견한 문제는 `troubleshooting.md`에 기록되어 있다.
 - [ ] README의 실행 방법과 현재 구현 상태가 오래되지 않았다.
+
+## 2026-06-13 API 설계와 게시글 조회 API QA
+
+목표: 4단계 1차로 API 설계 문서를 만들고 게시글 목록/상세 조회 API가 설계와 일치하는지 확인한다.
+
+- [x] `docs/agent/api-design.md`가 있다.
+- [x] `GET /posts` 설계가 query와 response 예시를 포함한다.
+- [x] `GET /posts/{post_id}` 설계가 404 케이스를 포함한다.
+- [x] `backend/app/schemas/post.py`가 있다.
+- [x] `backend/app/routers/posts.py`가 있다.
+- [x] `backend/app/main.py`에서 posts router를 등록한다.
+- [x] 개발용 seed 실행 후 `GET /posts`가 demo 게시글을 반환한다.
+- [x] 카테고리 필터가 동작한다.
+- [x] 검색어 필터가 동작한다.
+- [x] 없는 id 조회가 404를 반환한다.
+- [x] OpenAPI schema에 `/posts`, `/posts/{post_id}`가 등록되어 있다.
+- [x] `python -m compileall app`이 성공한다.
+- [x] `npm run build`가 성공한다.
+
+검증 결과:
+
+```txt
+GET /posts -> 200, total=3
+GET /posts/{first_id} -> 200
+GET /posts?category=learning-log -> 200, total=1
+GET /posts?keyword=JWT -> 200, total=1
+GET /posts/999999 -> 404
+```
+
+## 2026-06-13 게시글 조회 API 주석 추가 QA
+
+목표: 학습용 주석 추가 후 기능이 깨지지 않았는지 확인한다.
+
+- [x] `backend/app/main.py`에 router 등록 흐름 설명이 있다.
+- [x] `backend/app/routers/posts.py`에 query/path parameter 설명이 있다.
+- [x] `backend/app/services/post_service.py`에 service 역할과 응답 조립 흐름 설명이 있다.
+- [x] `backend/app/repositories/post_repository.py`에 SQLAlchemy query 흐름 설명이 있다.
+- [x] `backend/app/schemas/post.py`에 Pydantic schema와 alias 설명이 있다.
+- [x] `backend/app/db/init_db.py`에 create_all과 seed 흐름 설명이 있다.
+- [x] `python -m compileall app`이 성공한다.
+- [x] `npm run build`가 성공한다.
+
+## 2026-06-13 ERD v1 12개 모델 QA
+
+목표: DB 설계 문서의 v1 테이블 12개가 SQLAlchemy 모델과 실제 PostgreSQL 테이블로 모두 반영됐는지 확인한다.
+
+- [x] `backend/app/db/models/user_approval_log.py`가 있다.
+- [x] `backend/app/db/models/portfolio_project.py`가 있다.
+- [x] `backend/app/db/models/portfolio_project_post.py`가 있다.
+- [x] `backend/app/db/models/review_request.py`가 있다.
+- [x] `backend/app/db/models/review_request_coach.py`가 있다.
+- [x] `backend/app/db/models/notification.py`가 있다.
+- [x] `backend/app/db/models/__init__.py`에서 새 모델 6개를 import한다.
+- [x] `User` 모델에 승인 이력, 포트폴리오 프로젝트, 리뷰 요청, 알림 관계가 있다.
+- [x] `Post` 모델에 포트폴리오 연결, 리뷰 요청 관계가 있다.
+- [x] `PostCategory` 모델에 리뷰 요청 관계가 있다.
+- [x] `python -m compileall app`이 성공한다.
+- [x] SQLAlchemy `configure_mappers()`가 성공한다.
+- [x] `init_db()` 실행이 성공한다.
+- [x] 실제 PostgreSQL 테이블 개수가 12개다.
+
+확인한 테이블:
+
+```txt
+comments
+notifications
+portfolio_project_posts
+portfolio_projects
+post_categories
+post_tags
+posts
+review_request_coaches
+review_requests
+tags
+user_approval_logs
+users
+```
 
 ## 2026-06-12 DB 설계와 현재 화면 매핑 QA
 
@@ -312,3 +414,32 @@
 ```
 
 주의: 이 단계는 학습용 초기 테이블 생성 방식이다. 실제 운영/협업 환경에서는 Alembic migration을 도입해 변경 이력을 관리한다.
+
+## 2026-06-13 댓글/태그 모델 QA
+
+목표: 게시글 상세 댓글과 게시글 태그 기능을 위한 DB 모델이 선언되고 실제 PostgreSQL 테이블로 생성됐는지 확인한다.
+
+- [x] `backend/app/db/models/comment.py`에 `Comment` 모델이 있다.
+- [x] `Comment.__tablename__`은 `comments`다.
+- [x] `Comment.post_id`는 `posts.id`를 참조한다.
+- [x] `Comment.author_id`는 `users.id`를 참조한다.
+- [x] `Comment` 모델에 `content`, `created_at`, `updated_at`, `deleted_at`이 있다.
+- [x] `backend/app/db/models/tag.py`에 `Tag` 모델이 있다.
+- [x] `Tag.__tablename__`은 `tags`다.
+- [x] `Tag` 모델에 `name`, `slug`가 있다.
+- [x] `backend/app/db/models/post_tag.py`에 `PostTag` 모델이 있다.
+- [x] `PostTag.__tablename__`은 `post_tags`다.
+- [x] `PostTag.post_id + PostTag.tag_id`가 복합 primary key다.
+- [x] `User.comments`, `Post.comments` 관계가 선언되어 있다.
+- [x] `Post.post_tags`, `Tag.post_tags`, `PostTag.post`, `PostTag.tag` 관계가 선언되어 있다.
+- [x] `backend/app/db/models/__init__.py`에서 `Comment`, `Tag`, `PostTag`를 import한다.
+- [x] `Base.metadata.tables`에 `comments`, `tags`, `post_tags`가 등록된다.
+- [x] 실제 PostgreSQL 테이블 목록에 `comments`, `tags`, `post_tags`가 있다.
+- [x] 새 테이블들은 쿼리 가능하며 현재 count는 0이다.
+
+검증 명령:
+
+```powershell
+.\.venv\Scripts\python.exe -c "from app.db.base import Base; import app.db.models; print(sorted(Base.metadata.tables.keys()))"
+.\.venv\Scripts\python.exe -c "from app.db.init_db import init_db; init_db(); print('init_db done')"
+```

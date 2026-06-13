@@ -6,7 +6,7 @@ JungleLog는 정글 수강생이 학습 기록, 트러블슈팅, 프로젝트 �
 
 ## 현재 구현 상태
 
-React mock UI 1차 구현을 마치고, 현재는 **FastAPI 백엔드와 PostgreSQL 연결 단계**를 진행 중입니다.
+React mock UI 1차 구현을 마치고, 현재는 **게시글 조회 API 설계와 구현 단계**를 진행 중입니다.
 프론트엔드는 아직 실제 API 저장 없이 `mockData`와 `useState`로 화면 흐름을 확인하며, 백엔드는 기본 health API와 DB 연결 확인 API까지 구현했습니다.
 
 구현된 화면/기능:
@@ -107,8 +107,11 @@ frontend/src/app/
 - FastAPI / Uvicorn 기반 백엔드 가상환경을 구성했습니다.
 - `GET /health` API가 `status`, `service` 응답을 반환합니다.
 - `GET /health/db` API가 PostgreSQL에 `SELECT 1`을 실행해 DB 연결 상태를 확인합니다.
+- `GET /posts` API가 공개 게시글 목록을 페이지네이션 응답으로 반환합니다.
+- `GET /posts/{post_id}` API가 id에 맞는 공개 게시글 상세를 반환합니다.
 - `/docs` Swagger 문서에서 `HealthResponse` schema를 확인할 수 있습니다.
 - `/docs` Swagger 문서에서 `DatabaseHealthResponse` schema와 `/health/db` endpoint를 확인할 수 있습니다.
+- `/docs` Swagger 문서에서 `PostListResponse`, `PostDetailResponse` schema와 posts endpoint를 확인할 수 있습니다.
 - `.env`, `config.py`, `.env.example` 기반으로 앱 이름, CORS origin, `DATABASE_URL` 설정을 분리했습니다.
 - Docker Compose로 PostgreSQL 16 컨테이너 `junglelog-postgres`를 실행했습니다.
 - SQLAlchemy / psycopg 기반 DB engine, session, `get_db()` 의존성 함수를 구성했습니다.
@@ -123,8 +126,8 @@ frontend/src/app/
 - 운영자 승인 상태 기반 API 접근 제한
 - 초기 관리자 `ADMIN_EMAILS` 처리
 - 사용자 승인 / 거절 / 정지 / role 변경 API
-- 게시글 CRUD API
-- 댓글 저장 / 삭제 API
+- 게시글 작성 / 수정 / 삭제 API
+- 댓글 조회 / 저장 / 삭제 API
 - 태그 API
 - 페이징 API
 - DB full-text search
@@ -185,14 +188,13 @@ uvicorn app.main:app --reload
 
 ## 다음 작업 예정
 
-1. `comments`, `tags`, `post_tags` SQLAlchemy 모델 추가
-2. 게시글 목록/상세 조회용 Pydantic schema 작성
-3. 게시글 조회 repository/service/router 작성
-4. `GET /posts`, `GET /posts/{post_id}` API 구현
-5. Google OAuth 로그인 / 자동 가입 / JWT 발급 구현
-6. 사용자 승인 / role 변경 API 구현
-7. 프론트 mock data를 실제 API 응답으로 교체
-8. GitHub MCP, RAG, AI Agent 기능 순차 연결
+1. `GET /posts`, `GET /posts/{post_id}` API Swagger와 실제 응답 QA
+2. 댓글 조회 API 설계와 구현
+3. 게시글 작성 / 수정 / 삭제 API 설계와 구현
+4. Google OAuth 로그인 / 자동 가입 / JWT 발급 구현
+5. 사용자 승인 / role 변경 API 구현
+6. 프론트 mock data를 실제 API 응답으로 교체
+7. GitHub MCP, RAG, AI Agent 기능 순차 연결
 
 ## 최근 DB 설계 QA
 
@@ -229,3 +231,35 @@ uvicorn app.main:app --reload
   - `interview`: 면접 질문
   - `portfolio`: 포트폴리오 관리
 - seed 명령을 여러 번 실행해도 카테고리가 중복 생성되지 않도록 처리했습니다.
+
+## 최근 게시판 모델 확장
+
+- `comments`, `tags`, `post_tags` SQLAlchemy 모델을 추가했습니다.
+- `User.comments`, `Post.comments` 관계를 추가했습니다.
+- `Post.post_tags`, `Tag.post_tags`, `PostTag.post`, `PostTag.tag` 관계를 추가했습니다.
+- 실제 PostgreSQL에 `comments`, `tags`, `post_tags` 테이블 생성을 확인했습니다.
+- 현재 실제 테이블 목록은 `users`, `post_categories`, `posts`, `comments`, `tags`, `post_tags`입니다.
+
+## 최근 API 설계와 게시글 조회 구현
+
+- [docs/agent/api-design.md](docs/agent/api-design.md)에 JungleLog API 설계 v1을 추가했습니다.
+- 4단계 1차 범위는 게시글 목록/상세 조회 API로 제한했습니다.
+- `backend/app/schemas/post.py`에 게시글 응답 Pydantic schema를 추가했습니다.
+- `backend/app/repositories/post_repository.py`에 DB 조회 로직을 분리했습니다.
+- `backend/app/services/post_service.py`에 DB 모델을 프론트 친화적인 응답 schema로 바꾸는 로직을 분리했습니다.
+- `backend/app/routers/posts.py`에 `GET /posts`, `GET /posts/{post_id}` endpoint를 추가했습니다.
+- `backend/app/db/init_db.py`에 개발용 demo 사용자/게시글/태그 seed를 추가했습니다.
+- 게시글 조회 API 학습을 위해 router, service, repository, schema, init_db 흐름에 자세한 학습용 주석을 추가했습니다.
+
+## 최근 DB 모델 완성
+
+- ERD v1의 12개 테이블을 SQLAlchemy 모델로 모두 반영했습니다.
+- 기존 6개 테이블 `users`, `post_categories`, `posts`, `comments`, `tags`, `post_tags`에 이어 아래 6개 모델을 추가했습니다.
+  - `user_approval_logs`
+  - `portfolio_projects`
+  - `portfolio_project_posts`
+  - `review_requests`
+  - `review_request_coaches`
+  - `notifications`
+- `User`, `Post`, `PostCategory` 모델에 포트폴리오, 코치 리뷰, 알림, 승인 이력 관계를 연결했습니다.
+- `init_db()` 실행 후 실제 PostgreSQL 테이블 12개 생성을 확인했습니다.

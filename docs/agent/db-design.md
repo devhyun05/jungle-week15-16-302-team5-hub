@@ -88,8 +88,6 @@ Google OAuth로 로그인한 사용자 계정이다.
 | `profile_image_url` | `varchar(500)` | Google 프로필 이미지 | URL은 길 수 있어서 500자로 넉넉하게 잡는다. |
 | `role` | `varchar(20)` | STUDENT/COACH/ADMIN 화면 분기 | 값 종류가 짧고 제한적이라 20자 문자열이면 충분하다. |
 | `approval_status` | `varchar(20)` | 승인 대기/승인 완료/거절/정지 | 승인 상태도 짧은 상태값이라 20자 문자열로 둔다. |
-| `track` | `varchar(100)` | 학생 트랙 정보 | Backend, Frontend 같은 짧은 분류값이다. |
-| `coach_field` | `varchar(100)` | 코치 전문 분야 | Portfolio, Backend 같은 짧은 분야명이다. |
 | `last_login_at` | `timestamp` | 마지막 로그인 기록 | 로그인 시점을 날짜와 시간으로 저장한다. |
 | `approved_by` | `bigint` | 누가 승인했는지 | 승인한 관리자도 `users.id`를 가리키므로 FK용 정수다. |
 | `approved_at` | `timestamp` | 언제 승인됐는지 | 승인 시점을 저장한다. |
@@ -330,8 +328,6 @@ Table users {
   profile_image_url varchar(500)
   role varchar(20) [not null, default: 'STUDENT', note: 'STUDENT, COACH, or ADMIN']
   approval_status varchar(20) [not null, default: '승인 대기', note: '승인 대기, 승인 완료, 거절, 정지']
-  track varchar(100)
-  coach_field varchar(100)
   last_login_at timestamp
   approved_by bigint
   approved_at timestamp
@@ -639,8 +635,6 @@ OAuth callback에서 로그인한 이메일이 `ADMIN_EMAILS`에 포함되어 �
 | `profile_image_url` | Google 프로필 이미지를 저장하려고 선언했다. | 나중에 헤더, 프로필, 댓글 UI에서 아바타를 보여줄 수 있다. |
 | `role` | 사용자 역할을 저장하려고 선언했다. | STUDENT, COACH, ADMIN에 따라 접근 가능한 화면과 API가 달라진다. |
 | `approval_status` | 서비스 사용 승인 상태를 저장하려고 선언했다. | 정글 내부 서비스라 Google 로그인만으로는 부족하고 운영자 승인이 필요하다. |
-| `track` | 학생의 과정/트랙 정보를 저장하려고 선언했다. | 관리자 승인 화면이나 학생 프로필에서 백엔드/프론트엔드 같은 분류를 보여줄 수 있다. |
-| `coach_field` | 코치의 전문 분야를 저장하려고 선언했다. | 학생이 리뷰 요청을 보낼 코치를 고를 때 참고 정보가 된다. |
 | `last_login_at` | 마지막 로그인 시간을 저장하려고 선언했다. | 사용자가 최근에 서비스를 사용했는지 운영자가 확인할 수 있다. |
 | `approved_by` | 누가 승인했는지 저장하려고 선언했다. | 운영자 승인 책임자를 추적하기 위해 `users.id`를 다시 참조한다. |
 | `approved_at` | 언제 승인됐는지 저장하려고 선언했다. | 승인 처리 시점을 기록하고 관리자 화면에서 보여줄 수 있다. |

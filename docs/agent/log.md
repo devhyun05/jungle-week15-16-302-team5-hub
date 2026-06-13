@@ -360,3 +360,176 @@ QA 결과:
 
 - `comments`, `tags`, `post_tags` 모델을 추가한다.
 - 그다음 게시글 조회 API에서 `posts`, `users`, `post_categories`를 JOIN해 프론트 응답 모양으로 내려주는 흐름을 만든다.
+
+## 2026-06-13 댓글/태그 모델 추가
+
+상태: 완료
+
+목표: 게시글 상세 댓글과 게시글 태그 표시/검색을 위해 `comments`, `tags`, `post_tags` 모델을 추가했다.
+
+구현한 파일:
+
+- `backend/app/db/models/comment.py`
+- `backend/app/db/models/tag.py`
+- `backend/app/db/models/post_tag.py`
+- `backend/app/db/models/user.py`
+- `backend/app/db/models/post.py`
+- `backend/app/db/models/__init__.py`
+
+구현 내용:
+
+- `Comment` 모델을 추가했다.
+  - `post_id -> posts.id`
+  - `author_id -> users.id`
+  - `content`, `created_at`, `updated_at`, `deleted_at`
+- `Tag` 모델을 추가했다.
+  - `name`, `slug`, `created_at`, `updated_at`
+- `PostTag` 모델을 추가했다.
+  - `post_id + tag_id`를 복합 primary key로 사용한다.
+  - 게시글과 태그의 N:M 관계를 연결한다.
+- `User.comments`, `Post.comments` 관계를 추가했다.
+- `Post.post_tags`, `Tag.post_tags`, `PostTag.post`, `PostTag.tag` 관계를 추가했다.
+
+검증:
+
+- 가상환경 Python 기준 `python -m compileall app` 성공.
+- `Base.metadata.tables`에 `comments`, `tags`, `post_tags`가 등록되는 것을 확인했다.
+- `init_db()` 실행 후 실제 PostgreSQL 테이블 목록에 `comments`, `tags`, `post_tags`가 추가됐다.
+- 새 테이블들은 아직 seed 데이터가 없어 count가 0인 상태다.
+
+다음 작업:
+
+- 게시글 조회 API 응답 형태를 위한 Pydantic schema를 작성한다.
+- 이후 repository/service/router 흐름으로 `GET /posts`, `GET /posts/{post_id}`를 만든다.
+
+## 2026-06-13 4단계 API 설계와 게시글 조회 API 시작
+
+상태: 1차 완료
+
+목표: 프론트 mock data를 실제 API 응답으로 바꾸기 전에 API 계약을 먼저 문서화하고, 가장 작은 범위로 게시글 목록/상세 조회 API를 구현한다.
+
+구현한 파일:
+
+- `docs/agent/api-design.md`
+- `backend/app/schemas/post.py`
+- `backend/app/repositories/post_repository.py`
+- `backend/app/services/post_service.py`
+- `backend/app/routers/posts.py`
+- `backend/app/main.py`
+- `backend/app/db/init_db.py`
+
+구현 내용:
+
+- `docs/agent/api-design.md`에 JungleLog API 설계 v1을 추가했다.
+- 4단계 1차 구현 범위를 `GET /posts`, `GET /posts/{post_id}`로 정했다.
+- 게시글 목록 응답은 `items`, `total`, `page`, `size` 구조로 설계했다.
+- DB 컬럼 이름과 프론트 응답 이름이 다를 수 있음을 명시했다.
+- `PostListResponse`, `PostDetailResponse` Pydantic schema를 만들었다.
+- DB 조회는 repository, 응답 조립은 service, HTTP endpoint는 router로 분리했다.
+- 개발용 demo 사용자/게시글/태그 seed를 추가했다.
+
+검증 결과:
+
+- `init_db()`를 다시 실행해 demo 게시글 seed가 정상 동작함을 확인했다.
+- `GET /posts`가 HTTP 200과 demo 게시글 3개를 반환했다.
+- `GET /posts?category=learning-log`가 HTTP 200과 1개 결과를 반환했다.
+- `GET /posts?keyword=JWT`가 HTTP 200과 1개 결과를 반환했다.
+- `GET /posts/999999`가 HTTP 404를 반환했다.
+- OpenAPI schema에 `/posts`, `/posts/{post_id}`가 등록되어 있음을 확인했다.
+- `python -m compileall app`이 성공했다.
+- `npm run build`가 성공했다.
+
+다음 작업:
+
+- 게시글 조회 API 코드를 파일별로 학습한다.
+- 댓글 조회 API 설계를 시작한다.
+- 이후 게시글 작성/수정/삭제 API로 확장한다.
+
+## 2026-06-13 게시글 조회 API 학습용 주석 추가
+
+상태: 완료
+
+목표: 초보자가 4단계 게시글 조회 API 구현 흐름을 파일별로 따라갈 수 있도록 학습용 주석을 촘촘히 추가한다.
+
+수정한 파일:
+
+- `backend/app/main.py`
+- `backend/app/routers/posts.py`
+- `backend/app/services/post_service.py`
+- `backend/app/repositories/post_repository.py`
+- `backend/app/schemas/post.py`
+- `backend/app/db/init_db.py`
+- `docs/agent/study.md`
+
+검증:
+
+- `python -m compileall app` 성공
+- `npm run build` 성공
+
+다음 작업:
+
+- 주석을 기준으로 게시글 조회 API 흐름을 학습한다.
+- 그다음 댓글 조회 API 또는 남은 SQLAlchemy 모델 6개 추가 중 하나를 선택한다.
+
+## 2026-06-13 ERD v1 남은 6개 SQLAlchemy 모델 추가
+
+상태: 완료
+
+목표: DB 설계 문서의 v1 테이블 12개를 모두 SQLAlchemy 모델과 실제 PostgreSQL 테이블로 반영한다.
+
+추가한 모델 파일:
+
+- `backend/app/db/models/user_approval_log.py`
+- `backend/app/db/models/portfolio_project.py`
+- `backend/app/db/models/portfolio_project_post.py`
+- `backend/app/db/models/review_request.py`
+- `backend/app/db/models/review_request_coach.py`
+- `backend/app/db/models/notification.py`
+
+수정한 파일:
+
+- `backend/app/db/models/user.py`
+- `backend/app/db/models/post.py`
+- `backend/app/db/models/post_category.py`
+- `backend/app/db/models/__init__.py`
+
+구현 내용:
+
+- 관리자 승인 이력 저장용 `user_approval_logs` 모델을 추가했다.
+- GitHub repo 기반 포트폴리오 프로젝트 저장용 `portfolio_projects` 모델을 추가했다.
+- 포트폴리오 프로젝트와 게시글 N:M 연결용 `portfolio_project_posts` 모델을 추가했다.
+- 학생이 코치에게 보내는 리뷰 요청용 `review_requests` 모델을 추가했다.
+- 리뷰 요청과 코치 N:M 연결용 `review_request_coaches` 모델을 추가했다.
+- 사용자별 알림용 `notifications` 모델을 추가했다.
+- `users`, `posts`, `post_categories`와 새 모델들의 `relationship`을 연결했다.
+- `models/__init__.py`에 새 모델을 등록해 `Base.metadata.create_all()`이 인식하도록 했다.
+
+검증:
+
+- `python -m compileall app` 성공
+- SQLAlchemy `configure_mappers()` 성공
+- `init_db()` 실행 성공
+- 실제 PostgreSQL 테이블 12개 확인
+- `npm run build` 예정
+
+현재 실제 테이블:
+
+```txt
+comments
+notifications
+portfolio_project_posts
+portfolio_projects
+post_categories
+post_tags
+posts
+review_request_coaches
+review_requests
+tags
+user_approval_logs
+users
+```
+
+다음 작업:
+
+- 이번에 추가한 DB 모델 관계를 학습한다.
+- 이후 댓글 API 또는 게시글 작성/수정/삭제 API로 이동한다.

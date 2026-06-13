@@ -1215,3 +1215,357 @@ init_db()
 
 현재 단계에서는 DB 흐름을 이해하기 위해 `create_all()`을 먼저 사용한다.
 나중에 구조가 안정되면 Alembic으로 넘어간다.
+
+## 2026-06-13 댓글/태그 모델 학습
+
+### 이번에 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/db/models/comment.py` | 게시글 댓글 테이블을 Python 모델로 선언한다. |
+| `backend/app/db/models/tag.py` | 태그 기준 테이블을 Python 모델로 선언한다. |
+| `backend/app/db/models/post_tag.py` | 게시글과 태그의 N:M 연결 테이블을 선언한다. |
+| `backend/app/db/models/user.py` | 사용자가 작성한 댓글 관계를 추가한다. |
+| `backend/app/db/models/post.py` | 게시글의 댓글과 태그 연결 관계를 추가한다. |
+| `backend/app/db/models/__init__.py` | 새 모델들을 import해서 metadata에 등록한다. |
+
+### Comment 모델
+
+댓글은 게시글에 속하고, 작성자도 가진다.
+
+```txt
+comments.post_id -> posts.id
+comments.author_id -> users.id
+```
+
+그래서 댓글 하나는 아래 두 질문에 답할 수 있어야 한다.
+
+- 어떤 게시글에 달린 댓글인가?
+- 누가 쓴 댓글인가?
+
+### Tag 모델
+
+태그는 게시글 검색/분류를 돕는 기준 데이터다.
+`name`은 화면에 보이는 값이고, `slug`는 코드나 URL에서 쓰기 좋은 값이다.
+
+```txt
+name: FastAPI
+slug: fastapi
+```
+
+### PostTag 모델
+
+게시글과 태그는 N:M 관계다.
+
+```txt
+게시글 하나 -> 태그 여러 개
+태그 하나 -> 게시글 여러 개
+```
+
+이런 관계는 한쪽 테이블에 컬럼 하나만 추가해서 표현하기 어렵다.
+그래서 중간 연결 테이블 `post_tags`를 둔다.
+
+```txt
+post_tags.post_id
+post_tags.tag_id
+```
+
+`post_id + tag_id`를 primary key로 두면 같은 게시글에 같은 태그가 중복으로 붙는 것을 막을 수 있다.
+
+### relationship 복습
+
+이번에 추가한 관계는 아래와 같다.
+
+```txt
+User.comments
+Post.comments
+Post.post_tags
+Tag.post_tags
+PostTag.post
+PostTag.tag
+```
+
+DB에서 실제 관계를 만드는 것은 `ForeignKey`다.
+`relationship`은 Python 코드에서 연결된 객체를 더 편하게 쓰기 위한 통로다.
+
+### 이번 단계 후 실제 DB 상태
+
+실제 PostgreSQL 테이블은 이제 6개다.
+
+```txt
+users
+post_categories
+posts
+comments
+tags
+post_tags
+```
+
+댓글과 태그 데이터는 아직 넣지 않았다.
+게시글 seed 또는 게시글 작성 API가 생긴 뒤에 실제 데이터가 들어간다.
+## 2026-06-13 4단계 API 설계와 게시글 조회 API
+
+이번 구현은 React mock data를 실제 FastAPI 응답으로 바꾸기 위한 첫 단계다.
+중요한 포인트는 코드를 바로 만들기 전에 API 계약을 먼저 문서화했다는 점이다.
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `docs/agent/api-design.md` | 프론트와 백엔드가 공유할 API 계약 문서 |
+| `backend/app/schemas/post.py` | 게시글 목록/상세 응답 JSON 모양을 정의하는 Pydantic schema |
+| `backend/app/repositories/post_repository.py` | SQLAlchemy로 DB에서 게시글을 조회하는 계층 |
+| `backend/app/services/post_service.py` | DB 모델을 프론트 친화적인 응답 schema로 변환하는 계층 |
+| `backend/app/routers/posts.py` | HTTP 요청을 받는 FastAPI router |
+| `backend/app/main.py` | posts router를 FastAPI 앱에 등록 |
+| `backend/app/db/init_db.py` | 개발용 demo 사용자/게시글/태그 seed 추가 |
+
+### API 설계가 먼저인 이유
+
+프론트엔드는 화면을 만들 때 이런 데이터를 기대한다.
+
+```txt
+title
+categorySlug
+tags
+author
+isPublic
+views
+comments
+createdAt
+```
+
+하지만 DB에는 이렇게 저장되어 있다.
+
+```txt
+posts.title
+posts.category_id
+post_categories.slug
+post_tags + tags
+posts.author_id
+posts.is_public
+posts.view_count
+comments count
+posts.created_at
+```
+
+그래서 API 설계는 DB 그대로를 노출하는 일이 아니라, 화면에 필요한 JSON 모양으로 변환하는 약속을 정하는 일이다.
+
+### DB Model과 Pydantic Schema 차이
+
+DB model은 테이블 설계에 가깝다.
+
+```txt
+Post.is_public
+Post.view_count
+Post.created_at
+```
+
+Pydantic schema는 API 응답 설계에 가깝다.
+
+```txt
+isPublic
+views
+createdAt
+```
+
+즉, 같은 게시글이라도 DB에 저장되는 모양과 프론트에 내려주는 모양은 다를 수 있다.
+
+### Repository / Service / Router 흐름
+
+이번 게시글 조회 API는 세 계층으로 나눴다.
+
+```txt
+router
+  HTTP 요청을 받는다.
+  Query parameter를 검증한다.
+  404 같은 HTTP 오류를 반환한다.
+
+service
+  DB model을 API response schema로 바꾼다.
+  화면에 필요한 tags, comments count 같은 값을 조립한다.
+
+repository
+  SQLAlchemy로 실제 DB query를 실행한다.
+  category, keyword, page, size 조건을 적용한다.
+```
+
+이렇게 나누면 나중에 게시글 작성/수정/삭제를 만들 때도 구조를 유지하기 쉽다.
+
+### 이번에 사용한 FastAPI 개념
+
+- `APIRouter`: endpoint를 파일 단위로 나누기 위한 객체
+- `Depends(get_db)`: API 함수에 DB session을 주입
+- `Query`: query string의 기본값과 validation 조건 설정
+- `HTTPException`: 404 같은 HTTP 오류 응답 반환
+- `response_model`: API 응답이 어떤 schema인지 Swagger에 표시하고 검증
+
+### 이번에 사용한 SQLAlchemy 개념
+
+- `select(Post)`: posts 테이블 조회
+- `join(Post.category)`: 게시글과 카테고리를 연결해서 조회
+- `selectinload`: 관계 데이터를 추가 query로 미리 가져와 N+1 문제를 줄임
+- `func.count`: 댓글 수와 전체 게시글 수 계산
+- `or_`: 여러 검색 조건 중 하나라도 맞으면 조회
+- `ilike`: 대소문자를 크게 구분하지 않는 검색
+
+### 이번에 이해해야 할 핵심 포인트
+
+1. API 설계는 DB 설계와 다르다.
+2. Pydantic schema는 프론트에 내려줄 JSON 모양이다.
+3. repository는 DB 조회를 담당한다.
+4. service는 응답 조립을 담당한다.
+5. router는 HTTP 요청/응답을 담당한다.
+6. `GET /posts`는 목록이라 pagination이 필요하다.
+7. `GET /posts/{post_id}`는 없는 id일 때 404가 필요하다.
+
+### 나중에 백엔드와 더 연결될 부분
+
+- JWT가 붙으면 비공개 글은 작성자 본인과 관리자만 볼 수 있게 해야 한다.
+- `GET /me/posts` 또는 `GET /posts?mine=true`로 내 기록 API를 분리해야 한다.
+- 게시글 작성 API에서는 posts, tags, post_tags를 transaction으로 함께 저장해야 한다.
+- 검색이 커지면 PostgreSQL full-text search 또는 인덱스를 검토해야 한다.
+
+### 추가로 공부할 키워드
+
+- REST API
+- API contract
+- Pydantic response model
+- DTO
+- Query parameter
+- HTTP 404
+- Repository pattern
+- Service layer
+- SQLAlchemy select
+- SQLAlchemy relationship loading
+- Pagination
+- N+1 query
+## 2026-06-13 게시글 조회 API 학습용 주석 추가
+
+이번 작업은 기능 추가가 아니라 4단계 게시글 조회 API 코드를 읽고 이해하기 위한 학습용 주석 보강이다.
+
+### 주석을 추가한 파일
+
+| 파일 | 주석으로 설명한 핵심 |
+| --- | --- |
+| `backend/app/main.py` | FastAPI app 생성, CORS, router 등록 |
+| `backend/app/routers/posts.py` | Swagger에 보이는 `/posts` endpoint와 query/path parameter |
+| `backend/app/services/post_service.py` | repository 결과를 Pydantic 응답 schema로 바꾸는 흐름 |
+| `backend/app/repositories/post_repository.py` | SQLAlchemy select, filter, join, pagination, 댓글 count |
+| `backend/app/schemas/post.py` | Pydantic schema, alias, 프론트 응답 필드 |
+| `backend/app/db/init_db.py` | create_all, seed category, demo post/tag 연결 |
+
+### 이번 주석을 읽는 순서
+
+1. `backend/app/main.py`
+2. `backend/app/routers/posts.py`
+3. `backend/app/services/post_service.py`
+4. `backend/app/repositories/post_repository.py`
+5. `backend/app/schemas/post.py`
+6. `backend/app/db/init_db.py`
+
+### 이해해야 할 흐름
+
+```txt
+브라우저/Swagger
+-> GET /posts 요청
+-> routers/posts.py
+-> services/post_service.py
+-> repositories/post_repository.py
+-> PostgreSQL
+-> SQLAlchemy Post model
+-> Pydantic PostListResponse
+-> JSON 응답
+```
+
+### 주의할 점
+
+이번 주석은 학습용으로 평소보다 자세히 달았다.
+실무 코드에서는 너무 당연한 주석은 줄이고, 복잡한 의도나 설계 이유만 남기는 편이 좋다.
+
+## 2026-06-13 ERD v1 남은 6개 SQLAlchemy 모델 추가
+
+이번 작업은 새로운 API를 만든 것이 아니라, DB 설계 문서에 있던 남은 6개 테이블을 SQLAlchemy 모델 코드와 실제 PostgreSQL 테이블로 반영한 작업이다.
+
+### 추가한 테이블
+
+| 테이블 | 모델 파일 | 역할 |
+| --- | --- | --- |
+| `user_approval_logs` | `user_approval_log.py` | 관리자 승인/거절/정지/role 변경 이력 |
+| `portfolio_projects` | `portfolio_project.py` | GitHub repo 기반 포트폴리오 프로젝트 |
+| `portfolio_project_posts` | `portfolio_project_post.py` | 포트폴리오 프로젝트와 게시글 N:M 연결 |
+| `review_requests` | `review_request.py` | 학생이 코치에게 보내는 리뷰 요청 |
+| `review_request_coaches` | `review_request_coach.py` | 리뷰 요청과 코치 N:M 연결 |
+| `notifications` | `notification.py` | 사용자별 알림 |
+
+### 이번에 이해해야 할 관계
+
+```txt
+users 1:N portfolio_projects
+portfolio_projects N:M posts
+
+users 1:N review_requests
+review_requests N:M users(coach)
+
+users 1:N notifications
+users 1:N user_approval_logs(user)
+users 1:N user_approval_logs(actor)
+```
+
+### N:M 연결 테이블
+
+N:M 관계는 양쪽이 서로 여러 개를 가질 수 있는 관계다.
+
+포트폴리오 프로젝트와 게시글:
+
+```txt
+portfolio_projects
+  -> portfolio_project_posts
+  -> posts
+```
+
+리뷰 요청과 코치:
+
+```txt
+review_requests
+  -> review_request_coaches
+  -> users(coach)
+```
+
+연결 테이블은 보통 양쪽 id를 묶어서 primary key로 둔다.
+그래야 같은 연결이 중복으로 저장되는 것을 막을 수 있다.
+
+### actor_id가 nullable인 이유
+
+`user_approval_logs.actor_id`는 변경을 실행한 관리자 id다.
+하지만 첫 관리자 자동 생성처럼 아직 실행한 관리자가 없는 시스템 bootstrap 상황이 있을 수 있다.
+그래서 `actor_id`는 null을 허용한다.
+
+### 모델 등록이 중요한 이유
+
+새 모델 파일을 만들기만 해서는 `create_all()`이 모를 수 있다.
+그래서 `backend/app/db/models/__init__.py`에서 새 모델을 import해야 한다.
+
+```txt
+모델 파일 생성
+-> models/__init__.py에 import
+-> import app.db.models
+-> Base.metadata에 테이블 등록
+-> create_all()로 실제 DB 테이블 생성
+```
+
+### 이번 검증에서 배운 것
+
+- `compileall`은 Python 문법/import 오류를 확인한다.
+- `configure_mappers()`는 SQLAlchemy relationship 설정 오류를 확인한다.
+- `inspect(engine).get_table_names()`는 실제 PostgreSQL에 만들어진 테이블 목록을 확인한다.
+
+### 추가로 공부할 키워드
+
+- SQLAlchemy relationship
+- ForeignKey
+- nullable FK
+- composite primary key
+- UniqueConstraint
+- configure_mappers
+- N:M relationship

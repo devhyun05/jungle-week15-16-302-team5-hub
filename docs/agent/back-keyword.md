@@ -43,23 +43,23 @@ JWT 구현, DB 설계 문서, API 설계 문서는 팀원에게 공유해야 하
 
 ### API 설계 문서 작성
 
-- 상태: 예정
+- 상태: 진행 중
 - 언제 나왔는가: 프론트 mock UI를 실제 API로 바꾸기 전에
-- 우리 프로젝트에서 어디에 쓰였는가: endpoint, request body, response, error status 정리
+- 우리 프로젝트에서 어디에 쓰였는가: `GET /posts`, `GET /posts/{post_id}` endpoint, request query, response, error status 정리
 - 핵심 개념: 프론트와 백엔드가 같은 계약을 보고 개발하도록 API 모양을 문서화한다.
-- 관련 파일: 예정 `docs/api-design.md`
+- 관련 파일: `docs/agent/api-design.md`, `backend/app/schemas/post.py`, `backend/app/routers/posts.py`
 - 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 게시글 CRUD API를 만들기 전
+- 다음에 다시 볼 시점: 게시글 작성/수정/삭제 API를 만들기 전
 
 ## API / 인증 / 실시간
 
 ### HTTP 3xx / 4xx / 5xx
 
-- 상태: 예정
+- 상태: 진행 중
 - 언제 나왔는가: API 응답과 에러 처리를 설계할 때
-- 우리 프로젝트에서 어디에 쓰였는가: 로그인 실패, 권한 없음, 게시글 없음, 서버 오류 응답
+- 우리 프로젝트에서 어디에 쓰였는가: 없는 게시글 id 조회 시 404 응답, 이후 로그인 실패/권한 없음/서버 오류 응답
 - 핵심 개념: 3xx는 리다이렉트, 4xx는 클라이언트 요청 문제, 5xx는 서버 문제다.
-- 관련 파일: 예정 `backend/app/core/exceptions.py`
+- 관련 파일: `docs/agent/api-design.md`, `backend/app/routers/posts.py`, 예정 `backend/app/core/exceptions.py`
 - 팀 공유 필요: 예
 - 다음에 다시 볼 시점: 공통 예외 처리 구현 시
 
@@ -67,21 +67,41 @@ JWT 구현, DB 설계 문서, API 설계 문서는 팀원에게 공유해야 하
 
 - 상태: 진행 중
 - 언제 나왔는가: FastAPI 서버와 `/health` API를 만들 때
-- 우리 프로젝트에서 어디에 쓰였는가: `/posts`, `/comments`, `/auth/login`, `/review-requests`
+- 우리 프로젝트에서 어디에 쓰였는가: `/health`, `/health/db`, `/posts`, `/posts/{post_id}`
 - 핵심 개념: URL, HTTP method, status code로 서버 자원을 다루는 방식이다.
-- 관련 파일: 예정 `backend/app/routers`
+- 관련 파일: `backend/app/routers/health.py`, `backend/app/routers/posts.py`
 - 팀 공유 필요: 예
-- 다음에 다시 볼 시점: `/health` API 작성 시
+- 다음에 다시 볼 시점: 게시글 작성/수정/삭제 API 작성 시
 
 ### API Design
 
 - 상태: 진행 중
 - 언제 나왔는가: 어떤 endpoint를 먼저 만들지 정할 때
-- 우리 프로젝트에서 어디에 쓰였는가: `/health`부터 만들고 이후 posts/auth API로 확장
+- 우리 프로젝트에서 어디에 쓰였는가: 게시글 목록/상세 API를 만들기 전에 query, response, 404 응답을 먼저 정했다.
 - 핵심 개념: API 이름, method, 요청/응답, 에러 모양을 일관되게 정하는 일이다.
-- 관련 파일: 예정 `docs/api-design.md`
+- 관련 파일: `docs/agent/api-design.md`
 - 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 게시글 CRUD API 설계 전
+- 다음에 다시 볼 시점: 댓글 API와 게시글 CRUD API 설계 전
+
+### Pydantic Schema / DTO
+
+- 상태: 진행 중
+- 언제 나왔는가: DB 모델을 그대로 응답하지 않고 프론트가 필요한 JSON 모양으로 바꿀 때
+- 우리 프로젝트에서 어디에 쓰였는가: 게시글 목록/상세 응답에서 `categorySlug`, `isPublic`, `createdAt` 같은 화면 친화적 필드를 만든다.
+- 핵심 개념: DB model은 테이블 구조이고, Pydantic schema는 API 요청/응답 구조다.
+- 관련 파일: `backend/app/schemas/post.py`
+- 팀 공유 필요: 예
+- 다음에 다시 볼 시점: 게시글 작성 request body와 댓글 response schema를 만들 때
+
+### Repository / Service / Router
+
+- 상태: 진행 중
+- 언제 나왔는가: 게시글 조회 API에서 DB 조회, 응답 변환, HTTP endpoint 역할을 나눌 때
+- 우리 프로젝트에서 어디에 쓰였는가: `post_repository.py`는 DB query, `post_service.py`는 응답 조립, `posts.py` router는 HTTP 요청 처리를 담당한다.
+- 핵심 개념: 한 파일이 모든 일을 하지 않게 역할을 나누는 layered architecture 방식이다.
+- 관련 파일: `backend/app/repositories/post_repository.py`, `backend/app/services/post_service.py`, `backend/app/routers/posts.py`
+- 팀 공유 필요: 예
+- 다음에 다시 볼 시점: 게시글 작성/수정/삭제 API에서 transaction을 다룰 때
 
 ### Session / JWT
 
@@ -229,13 +249,13 @@ JWT 구현, DB 설계 문서, API 설계 문서는 팀원에게 공유해야 하
 
 ### Primary Key / Foreign Key
 
-- 상태: 예정
+- 상태: 진행 중
 - 언제 나왔는가: 테이블 관계를 설계할 때
-- 우리 프로젝트에서 어디에 쓰였는가: user와 post, post와 comment, review_request와 coach 관계
+- 우리 프로젝트에서 어디에 쓰였는가: user와 post, post와 comment, portfolio_project와 post, review_request와 coach 관계
 - 핵심 개념: PK는 행의 고유 식별자, FK는 다른 테이블 행을 가리키는 연결 키다.
-- 관련 파일: 예정 `backend/app/db/models`
+- 관련 파일: `backend/app/db/models`
 - 팀 공유 필요: 예
-- 다음에 다시 볼 시점: DB 모델 설계 시
+- 다음에 다시 볼 시점: 게시글/포트폴리오/코치 리뷰 API에서 JOIN을 작성할 때
 
 ### Join - Inner / Outer
 
@@ -415,3 +435,32 @@ JWT 구현, DB 설계 문서, API 설계 문서는 팀원에게 공유해야 하
   - `users`, `post_categories`, `posts` 테이블 생성
   - `learning-log`, `troubleshooting`, `retrospective`, `interview`, `portfolio` 카테고리 삽입
 - 다음에 다시 볼 시점: Alembic migration 도입, 테스트 DB 초기화, 배포 환경 DB 초기화
+
+### N:M Relationship / Junction Table
+
+- 상태: 진행 중
+- 언제 소화되는가: 게시글과 태그처럼 양쪽 모두 여러 개로 연결될 수 있는 데이터를 모델링할 때
+- 우리 프로젝트에서 어디에 쓰이는가: `post_tag.py`, `portfolio_project_post.py`, `review_request_coach.py`
+- 핵심 개념:
+  - N:M 관계는 테이블 두 개만으로 표현하기 어렵다.
+  - 중간 연결 테이블을 만들어 양쪽 id를 저장한다.
+  - `post_tags.post_id`는 게시글을 가리킨다.
+  - `post_tags.tag_id`는 태그를 가리킨다.
+  - `post_id + tag_id`를 primary key로 두면 중복 연결을 막을 수 있다.
+- 이번 구현 예시:
+  - `posts` N:M `tags`
+  - 연결 테이블: `post_tags`
+  - `portfolio_projects` N:M `posts`
+  - 연결 테이블: `portfolio_project_posts`
+  - `review_requests` N:M `users(coach)`
+  - 연결 테이블: `review_request_coaches`
+- 다음에 다시 볼 시점: 게시글 목록 API에서 태그 배열을 응답으로 만들 때
+
+### UniqueConstraint
+
+- 상태: 진행 중
+- 언제 소화되는가: 같은 학생이 같은 GitHub repo를 중복 등록하지 못하게 막을 때
+- 우리 프로젝트에서 어디에 쓰이는가: `backend/app/db/models/portfolio_project.py`
+- 핵심 개념: 여러 컬럼 조합이 중복되지 않도록 DB 차원에서 제한한다.
+- 이번 구현 예시: `portfolio_projects.owner_id + repo_full_name`
+- 다음에 다시 볼 시점: 포트폴리오 프로젝트 등록 API 구현 시

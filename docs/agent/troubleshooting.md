@@ -80,3 +80,37 @@
 - 해결: `posts.related_commit text`, `portfolio_projects.summary text`를 DBML에 추가했다. `contentSections`는 v1에서 `posts.content text`에 Markdown/본문 문자열로 저장하기로 문서화했다.
 - 다시 확인할 것: SQLAlchemy model 작성 시 위 두 컬럼이 빠지지 않는지 확인한다. `comments` 수, `linkedRecordCount`, `requesterName`, `coachNames`, `targetTitle`은 컬럼으로 만들지 않고 JOIN/count로 만드는지 확인한다.
 - 관련 파일: `docs/agent/db-design.md`, `docs/agent/test.md`, `frontend/src/app/data/mockData.ts`
+## 2026-06-13 FastAPI TestClient 실행 실패
+
+### 상황
+
+4단계 게시글 조회 API를 검증하기 위해 `fastapi.testclient.TestClient`를 사용하려고 했다.
+
+### 에러
+
+```txt
+RuntimeError: The starlette.testclient module requires the httpx2 package to be installed.
+```
+
+현재 백엔드 가상환경에는 `httpx` 또는 `httpx2` 테스트 의존성이 설치되어 있지 않았다.
+
+### 원인
+
+`TestClient`는 내부적으로 HTTP client 패키지를 필요로 한다.
+현재 프로젝트는 실제 서버 실행에 필요한 FastAPI/Uvicorn 중심으로 설치되어 있고, 테스트 클라이언트 의존성은 아직 추가하지 않았다.
+
+### 임시 해결
+
+테스트 의존성을 바로 늘리지 않고, 임시 uvicorn 서버를 `127.0.0.1:8010`에 띄운 뒤 PowerShell `Invoke-RestMethod`로 실제 HTTP 요청을 보내 검증했다.
+
+확인한 항목:
+
+- `GET /posts`
+- `GET /posts/{post_id}`
+- `GET /posts?category=learning-log`
+- `GET /posts?keyword=JWT`
+- `GET /posts/999999`
+
+### 이후 개선
+
+백엔드 테스트 단계를 시작할 때 `httpx` 또는 현재 Starlette 버전에 맞는 테스트 의존성을 명시적으로 추가하고, `pytest` 기반 API 테스트를 만든다.

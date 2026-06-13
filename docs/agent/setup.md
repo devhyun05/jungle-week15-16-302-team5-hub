@@ -492,3 +492,92 @@ cd C:\junhee\WEEK15_AI_BOARD\backend
 
 주의: PowerShell에서 시스템 Python을 쓰면 `sqlalchemy`가 없을 수 있다.
 반드시 `backend\.venv\Scripts\python.exe`를 사용하거나 가상환경을 활성화한 뒤 실행한다.
+
+## 2026-06-13 댓글/태그 테이블 생성 확인
+
+댓글/태그 모델을 추가한 뒤 기존 DB 초기화 명령을 다시 실행한다.
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -c "from app.db.init_db import init_db; init_db(); print('init_db done')"
+```
+
+실제 테이블 목록에 `comments`, `tags`, `post_tags`가 있는지 확인한다.
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -c "from sqlalchemy import inspect; from app.db.session import engine; print(sorted(inspect(engine).get_table_names()))"
+```
+
+새 테이블 count를 확인한다.
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -c "from sqlalchemy import func, select; from app.db.models import Comment, PostTag, Tag; from app.db.session import SessionLocal; db = SessionLocal(); print(db.scalar(select(func.count()).select_from(Comment))); print(db.scalar(select(func.count()).select_from(Tag))); print(db.scalar(select(func.count()).select_from(PostTag))); db.close()"
+```
+## 2026-06-13 게시글 조회 API seed와 검증 명령
+
+4단계 게시글 조회 API를 확인하기 위해 개발용 demo 사용자/게시글/태그 seed를 추가했다.
+
+### DB 테이블 생성과 seed 실행
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -c "from app.db.init_db import init_db; init_db(); print('init_db done')"
+```
+
+### 백엔드 import 검증
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -m compileall app
+```
+
+### posts API 수동 확인
+
+서버를 켠 뒤 아래 주소를 확인한다.
+
+```txt
+http://127.0.0.1:8000/posts
+http://127.0.0.1:8000/posts?category=learning-log
+http://127.0.0.1:8000/posts?keyword=JWT
+http://127.0.0.1:8000/posts/1
+http://127.0.0.1:8000/docs
+```
+
+주의: 실제 id는 DB seed 상태에 따라 달라질 수 있다. 먼저 `/posts`에서 첫 번째 게시글의 `id`를 확인한 뒤 상세 API를 호출한다.
+
+## 2026-06-13 실제 PostgreSQL 테이블 목록 확인
+
+SQLAlchemy 모델을 추가한 뒤 실제 PostgreSQL에 테이블이 만들어졌는지 확인할 때 사용한다.
+
+### init_db 실행
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -c "from app.db.init_db import init_db; init_db(); print('init_db done')"
+```
+
+### SQLAlchemy inspect로 테이블 목록 확인
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -c "from sqlalchemy import inspect; from app.db.session import engine; tables=inspect(engine).get_table_names(); print(len(tables)); print(sorted(tables))"
+```
+
+정상 결과는 12개 테이블이다.
+
+```txt
+comments
+notifications
+portfolio_project_posts
+portfolio_projects
+post_categories
+post_tags
+posts
+review_request_coaches
+review_requests
+tags
+user_approval_logs
+users
+```
