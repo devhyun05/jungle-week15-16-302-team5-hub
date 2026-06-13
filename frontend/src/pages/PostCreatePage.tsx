@@ -2,12 +2,15 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { createPost } from '../api/posts'
+import { TagInput } from '../components/TagInput'
+
 
 export function PostCreatePage() {
     const navigate = useNavigate()
 
     const [title, setTitle] = useState('')
     const [body, setBody] = useState('')
+    const [tagNames, setTagNames] = useState<string[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -29,6 +32,7 @@ export function PostCreatePage() {
                 {
                     title,
                     body,
+                    tag_names: tagNames,
                 },
                 token,
             )
@@ -65,6 +69,14 @@ export function PostCreatePage() {
                         <textarea
                             value={body}
                             onChange={(event) => setBody(event.target.value)}
+                        />
+                    </label>
+
+                    <label>
+                        Tags
+                        <TagInput
+                            value={tagNames}
+                            onChange={setTagNames}
                         />
                     </label>
 

@@ -249,3 +249,41 @@ def test_blank_tag_filter_is_ignored(client: TestClient):
     page = response.json()
     assert page["total"] == 2
     assert len(page["items"]) == 2
+
+
+def test_list_posts_filters_by_multiple_tags_with_and(client: TestClient):
+    token = signup_and_login(
+        client,
+        email="author@example.com",
+        display_name="Author",
+    )
+    create_post(
+        client,
+        token,
+        title="Summer sunscreen",
+        body="Body",
+        tag_names=["summer", "sunscreen"],
+    )
+    create_post(
+        client,
+        token,
+        title="Summer lip tint",
+        body="Body",
+        tag_names=["summer", "makeup"],
+    )
+    create_post(
+        client,
+        token,
+        title="Daily sunscreen",
+        body="Body",
+        tag_names=["sunscreen", "skincare"],
+    )
+
+    response = client.get("/api/posts/?tags=summer&tags=sunscreen&page=1&size=10")
+
+    assert response.status_code == 200
+
+    page = response.json()
+    assert page["total"] == 1
+    assert len(page["items"]) == 1
+    assert page["items"][0]["title"] == "Summer sunscreen"
