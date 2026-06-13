@@ -1,5 +1,42 @@
 # Backend Keyword Map
 
+## 2026-06-14 키워드: CRUD Delete, Soft Delete, 204 No Content
+
+### CRUD Delete
+
+CRUD에서 Delete는 데이터를 삭제하는 기능이다. JungleLog에서는 `DELETE /posts/{post_id}`가 게시글 삭제 API다.
+
+### Soft Delete
+
+soft delete는 실제 DB row를 없애지 않고 `deleted_at`에 삭제 시각을 기록하는 방식이다.
+
+이번 구현에서 soft delete를 사용한 이유:
+
+- 댓글, 코치 리뷰, 포트폴리오 연결 이력을 보존하기 위해서
+- 나중에 관리자 복구나 감사 로그를 만들 여지를 남기기 위해서
+- 목록/상세 조회에서 `deleted_at is null` 조건으로 쉽게 숨길 수 있기 때문에
+
+### 204 No Content
+
+`204 No Content`는 요청은 성공했지만 응답 body가 없다는 뜻이다. 삭제 API처럼 성공했다는 사실만 알려주면 되는 경우에 자주 사용한다.
+
+이번 흐름:
+
+```txt
+DELETE /posts/8
+-> 204 No Content
+-> GET /posts/8
+-> 404 Not Found
+```
+
+### 나중에 JWT와 연결될 부분
+
+삭제는 위험한 작업이므로 로그인 후에는 다음 권한 검사가 필요하다.
+
+```txt
+작성자 본인 또는 ADMIN만 삭제 가능
+```
+
 ## 2026-06-14 게시글 수정 API에서 나온 키워드
 
 ### CRUD - Update

@@ -1,5 +1,65 @@
 # JungleLog Progress Log
 
+## 2026-06-14 게시글 삭제 API와 상세 화면 연결
+
+상태: 완료
+
+목표: 게시글 상세 화면의 삭제 버튼을 mock 안내가 아니라 실제 백엔드 `DELETE /posts/{post_id}` API에 연결한다.
+
+구현 파일:
+
+- `backend/app/repositories/post_repository.py`
+- `backend/app/services/post_service.py`
+- `backend/app/routers/posts.py`
+- `frontend/src/app/api/posts.ts`
+- `frontend/src/app/pages/posts/PostDetail.tsx`
+- `README.md`
+- `docs/agent/api-design.md`
+- `docs/agent/study.md`
+- `docs/agent/test.md`
+- `docs/agent/setup.md`
+- `docs/agent/back-keyword.md`
+- `docs/agent/front-keyword.md`
+- `docs/agent/troubleshooting.md`
+
+구현 내용:
+
+- `DELETE /posts/{post_id}` endpoint를 추가했다.
+- 삭제는 hard delete가 아니라 `posts.deleted_at`을 채우는 soft delete로 처리했다.
+- 삭제된 게시글은 목록, 상세, 댓글 조회에서 보이지 않는다.
+- 프론트 상세 화면의 삭제 확인 버튼이 `deletePost(id)`를 호출하도록 연결했다.
+- 삭제 성공 후 `/posts` 목록으로 이동한다.
+- 실제 작성자/관리자 권한 검사는 JWT/OAuth2 구현 후 붙일 TODO로 남겼다.
+
+검증:
+
+- `backend`: `python -m compileall app` 성공
+- `frontend`: `npm run build` 성공
+- HTTP QA: 테스트 게시글 생성 후 `DELETE /posts/{id}`가 `204` 반환
+- HTTP QA: 삭제 후 `GET /posts/{id}`가 `404` 반환
+- HTTP QA: 삭제 후 `GET /posts?keyword=테스트제목` 결과가 0건
+- HTTP QA: 없는 게시글 삭제 시 `404` 반환
+- HTTP QA: 삭제된 게시글의 댓글 조회가 `404` 반환
+- Browser QA: `/posts/8` 상세 화면에서 삭제 확인 UI가 열리고, 삭제 확인 후 `/posts`로 이동
+- Browser QA: 삭제 후 화면에 `Unexpected Application Error` 없음
+
+주의:
+
+- PowerShell `Invoke-WebRequest`가 `204 No Content` 응답에서 내부 예외를 낸 사례가 있어, 최종 상태 코드는 `curl.exe`로 확인했다.
+- 실제 서비스에서는 삭제 권한 검사를 반드시 JWT/OAuth2 이후 추가해야 한다.
+
+커밋 추천 제목:
+
+```txt
+feat: 게시글 삭제 API와 상세 화면 연결
+```
+
+다음 후보 작업:
+
+1. 댓글 삭제 API 구현 및 상세 화면 댓글 삭제 버튼 연결
+2. 내 기록 화면을 실제 API 기반으로 전환
+3. 게시글/댓글 권한 검사를 위한 JWT/OAuth2 구현 준비
+
 ## 2026-06-14 게시글 수정 API와 수정 화면 연결
 
 상태: 완료

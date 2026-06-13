@@ -1,5 +1,40 @@
 # JungleLog API Design
 
+## 2026-06-14 추가: DELETE /posts/{post_id}
+
+게시글 삭제 API가 구현되었습니다. 현재는 JWT/OAuth2 연결 전이므로 작성자 권한 검사는 아직 붙이지 않았고, 존재하는 게시글을 soft delete 처리합니다.
+
+### Request
+
+```http
+DELETE /posts/8
+```
+
+### Response 204
+
+성공 시 응답 본문이 없습니다.
+
+```txt
+HTTP 204 No Content
+```
+
+### Error
+
+- `404`: 게시글 id가 없거나 이미 삭제되어 조회 대상이 아님
+- `422`: `post_id`가 정수가 아닌 경우 FastAPI path parameter 검증 실패
+
+### 동작 기준
+
+- 실제 row를 지우는 hard delete가 아니라 `posts.deleted_at`에 삭제 시각을 기록합니다.
+- `GET /posts`, `GET /posts/{post_id}`, `GET /posts/{post_id}/comments`는 `deleted_at is null` 조건을 사용하므로 삭제된 글은 사용자에게 보이지 않습니다.
+- 댓글, 코치 리뷰 요청, 포트폴리오 연결 이력을 보존하기 위해 v1에서는 soft delete를 사용합니다.
+
+### JWT/OAuth2 후 변경 예정
+
+- `current_user.id == post.author_id` 또는 `current_user.role == ADMIN`일 때만 삭제 가능하게 바꿉니다.
+- 삭제 권한이 없으면 `403 Forbidden`을 반환합니다.
+- 삭제 이력 감사 로그를 남길지 검토합니다.
+
 ## 2026-06-14 추가: PATCH /posts/{post_id}
 
 게시글 수정 API가 구현되었습니다. 현재는 JWT/OAuth2 전 단계라 작성자 권한 검사는 아직 붙지 않았고, 화면에서 전달한 전체 수정 폼 값을 받아 게시글을 갱신합니다.

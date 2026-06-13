@@ -1,5 +1,38 @@
 # Frontend Keyword Map
 
+## 2026-06-14 키워드: 삭제 확인 UI와 API 호출 분리
+
+### 삭제 확인 UI
+
+사용자가 `삭제` 버튼을 눌렀다고 바로 API를 호출하지 않고, 한 번 더 `삭제 확인` 버튼을 보여준다. 삭제는 되돌리기 어려운 작업이라 실수 방지가 필요하기 때문이다.
+
+이번 화면 흐름:
+
+```txt
+삭제 클릭
+-> 확인 박스 표시
+-> 삭제 확인 클릭
+-> deletePost(id)
+-> 성공 후 /posts 이동
+```
+
+### API 함수 분리
+
+`PostDetail.tsx`에서 직접 `fetch`를 쓰지 않고 `frontend/src/app/api/posts.ts`의 `deletePost` 함수를 호출한다.
+
+이렇게 나누는 이유:
+
+- 화면 컴포넌트는 UI 상태에 집중할 수 있다.
+- API 주소, method, 에러 처리 로직은 한 곳에서 관리할 수 있다.
+- 나중에 JWT header를 붙일 때 모든 화면을 고치지 않아도 된다.
+
+### useState로 관리한 값
+
+- `isDeleteConfirmOpen`: 삭제 확인 박스를 열지 말지
+- `isDeleting`: 삭제 API 호출 중인지
+- `deleteNotice`: 삭제 성공 안내
+- `deleteError`: 삭제 실패 안내
+
 ## 2026-06-14 게시글 수정 화면 연결에서 나온 키워드
 
 ### useEffect로 기존 데이터 불러오기

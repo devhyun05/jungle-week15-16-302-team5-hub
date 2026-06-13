@@ -112,6 +112,26 @@ def update_post(
     return post
 
 
+@router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(
+    # URL path의 post_id로 어떤 게시글을 삭제 처리할지 결정한다. 예: DELETE /posts/4
+    post_id: int,
+    # 삭제는 posts.deleted_at 값을 바꾸는 DB UPDATE 작업이므로 session이 필요하다.
+    db: Session = Depends(get_db),
+) -> None:
+    """
+    게시글을 soft delete 처리한다.
+
+    실제 row를 삭제하지 않고 `deleted_at`을 채운다.
+    목록/상세/댓글 조회는 이미 `deleted_at is null` 조건을 사용하므로 삭제된 글은 사용자에게 보이지 않는다.
+    """
+
+    deleted = post_service.delete_post(db=db, post_id=post_id)
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다.")
+
+
 # GET /posts/{post_id} endpoint다.
 # {post_id}는 URL path에서 숫자 id를 받는 자리다. 예: /posts/1
 @router.get("/{post_id}", response_model=PostDetailResponse)

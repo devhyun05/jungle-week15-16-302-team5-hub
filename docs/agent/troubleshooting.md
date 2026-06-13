@@ -1,5 +1,35 @@
 # Troubleshooting
 
+## 2026-06-14 PowerShell Invoke-WebRequest와 204 No Content
+
+### 상황
+
+삭제 API QA 중 `DELETE /posts/{id}`를 `Invoke-WebRequest`로 호출했을 때 게시글은 실제로 삭제되었지만 PowerShell에서 아래 형태의 내부 예외가 발생했다.
+
+```txt
+Object reference not set to an instance of an object.
+```
+
+### 원인 판단
+
+`DELETE /posts/{id}`는 성공 시 `204 No Content`를 반환한다. 이 응답은 body가 비어 있는 것이 정상이다. 현재 환경의 `Invoke-WebRequest`가 빈 본문 응답을 처리하는 과정에서 예외를 낸 것으로 보인다.
+
+API 자체 문제는 아니었다. 삭제 후 `GET /posts/{id}`가 `404`였고, `curl.exe`로 확인했을 때 삭제 요청 상태 코드가 `204`였다.
+
+### 해결 방법
+
+204 상태 코드를 확인할 때는 아래처럼 `curl.exe`를 사용했다.
+
+```powershell
+curl.exe -s -o NUL -w "%{http_code}" -X DELETE "http://localhost:8000/posts/{post_id}"
+```
+
+### 배운 점
+
+- 204는 응답 body가 없는 것이 정상이다.
+- QA 도구가 204를 이상하게 처리할 수 있으므로 API 문제와 도구 문제를 분리해서 봐야 한다.
+- 삭제 검증은 삭제 요청 상태 코드뿐 아니라 삭제 후 상세 조회가 404인지도 같이 확인하는 것이 좋다.
+
 ## 2026-06-14 FastAPI TestClient 실행 시 httpx/httpx2 의존성 오류
 
 ### 증상

@@ -1,6 +1,8 @@
 # func는 count 같은 SQL 함수를 쓸 때 필요하다.
 # or_는 여러 검색 조건 중 하나라도 맞으면 조회되게 만든다.
 # select는 SQL SELECT 문을 Python 코드로 만드는 SQLAlchemy 함수다.
+from datetime import datetime, timezone
+
 from sqlalchemy import delete, func, or_, select
 # Session은 DB 연결 작업 단위 타입이다.
 # selectinload는 관계 데이터를 미리 가져와서 반복 조회를 줄인다.
@@ -183,6 +185,18 @@ def update_post(
     db.refresh(post)
 
     return post
+
+
+def soft_delete_post(db: Session, post: Post) -> None:
+    """
+    게시글을 실제로 지우지 않고 deleted_at만 채워 삭제 처리한다.
+
+    hard delete로 row를 없애면 댓글, 코치 리뷰 요청, 포트폴리오 연결 같은 관련 데이터가 갑자기 끊길 수 있다.
+    그래서 v1에서는 soft delete로 숨김 처리하고, 목록/상세 조회는 deleted_at이 비어 있는 글만 보여준다.
+    """
+
+    post.deleted_at = datetime.now(timezone.utc)
+    db.commit()
 
 
 def list_posts(

@@ -1,5 +1,17 @@
 # JungleLog
 
+## 2026-06-14 최신 구현: 게시글 삭제 API와 상세 화면 연결
+
+`DELETE /posts/{post_id}`를 구현하고 게시글 상세 화면의 삭제 버튼을 백엔드 API에 연결했습니다.
+
+- `backend/app/repositories/post_repository.py`: `deleted_at`을 채우는 `soft_delete_post`를 추가했습니다.
+- `backend/app/services/post_service.py`: 삭제 대상 게시글 조회와 soft delete 흐름을 담당하는 `delete_post`를 추가했습니다.
+- `backend/app/routers/posts.py`: `DELETE /posts/{post_id}` endpoint를 추가했고 성공 시 `204 No Content`를 반환합니다.
+- `frontend/src/app/api/posts.ts`: `deletePost` fetch 함수를 추가했습니다.
+- `frontend/src/app/pages/posts/PostDetail.tsx`: 삭제 확인 UI에서 API를 호출하고 성공 시 `/posts`로 이동하도록 연결했습니다.
+
+현재 게시글 CRUD는 생성, 목록 조회, 상세 조회, 수정, 삭제까지 API와 화면이 연결되었습니다. 삭제는 실제 row를 지우지 않고 `deleted_at`만 채우는 soft delete 방식이며, 목록/상세/댓글 조회에서는 삭제된 글이 보이지 않습니다.
+
 ## 2026-06-14 최신 구현: 게시글 수정 API와 수정 화면 연결
 
 `PATCH /posts/{post_id}`를 구현하고 `/posts/:id/edit` 화면을 백엔드 API에 연결했습니다.

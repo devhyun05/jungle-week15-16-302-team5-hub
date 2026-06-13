@@ -6,7 +6,7 @@ import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import { createPostComment, getPostComments } from "../../api/comments";
-import { getPostDetail, type PostDetailApiResponse } from "../../api/posts";
+import { deletePost, getPostDetail, type PostDetailApiResponse } from "../../api/posts";
 import { posts } from "../../data/mockData";
 import type { UserRole } from "../../data/mockData";
 import type { MainLayoutContext } from "../../layouts/MainLayout";
@@ -49,9 +49,11 @@ export function PostDetail() {
   const [post, setPost] = useState<PostDetailApiResponse | null>(null);
   const [isPostLoading, setIsPostLoading] = useState(true);
   const [postLoadError, setPostLoadError] = useState("");
-  // 삭제 확인과 삭제 안내는 아직 서버가 아닌 local state로만 관리합니다.
+  // 삭제 확인 UI는 local state로 관리하고, 실제 삭제 처리는 DELETE /posts/{id} API가 담당합니다.
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deleteNotice, setDeleteNotice] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   const [commentInput, setCommentInput] = useState("");
   const [commentError, setCommentError] = useState("");
   const [commentLoadError, setCommentLoadError] = useState("");
@@ -181,10 +183,25 @@ export function PostDetail() {
     );
   }
 
-  const handleDelete = () => {
-    // TODO backend: 실제 게시글 삭제 API는 백엔드 연결 후 구현 예정.
-    setDeleteNotice("mock으로 삭제되었습니다. 게시글 목록으로 이동합니다.");
-    window.setTimeout(() => navigate("/posts"), 700);
+  const handleDelete = async () => {
+    if (!id) {
+      setDeleteError("삭제할 게시글 id를 찾을 수 없습니다.");
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError("");
+    setDeleteNotice("");
+
+    try {
+      await deletePost(id);
+      setDeleteNotice("백엔드에서 게시글이 삭제 처리되었습니다. 게시글 목록으로 이동합니다.");
+      window.setTimeout(() => navigate("/posts"), 700);
+    } catch {
+      setDeleteError("게시글을 삭제하지 못했습니다. 백엔드 서버와 API 상태를 확인해주세요.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const addComment = async () => {
@@ -243,7 +260,16 @@ export function PostDetail() {
               <Button variant="outline" size="sm" asChild>
                 <Link to={`/posts/${post.id}/edit`}>수정</Link>
               </Button>
-              <Button type="button" variant="outline" size="sm" className="text-red-600 hover:bg-red-50" onClick={() => setIsDeleteConfirmOpen(true)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-red-600 hover:bg-red-50"
+                onClick={() => {
+                  setDeleteError("");
+                  setIsDeleteConfirmOpen(true);
+                }}
+              >
                 <Trash2 className="mr-1 h-3 w-3" />
                 삭제
               </Button>
@@ -262,12 +288,13 @@ export function PostDetail() {
         {isDeleteConfirmOpen && (
           <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4">
             <p className="text-sm font-semibold text-red-700">이 게시글을 삭제할까요?</p>
-            <p className="mt-1 text-xs text-red-600">현재는 mock 삭제라 실제 데이터는 지워지지 않습니다.</p>
+            <p className="mt-1 text-xs text-red-600">실제 row를 없애지 않고 deleted_at을 채우는 soft delete로 처리합니다.</p>
+            {deleteError && <p className="mt-2 text-xs font-medium text-red-700">{deleteError}</p>}
             <div className="mt-3 flex gap-2">
-              <Button type="button" variant="destructive" size="sm" onClick={handleDelete}>
-                삭제 확인
+              <Button type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={isDeleting}>
+                {isDeleting ? "삭제 중" : "삭제 확인"}
               </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsDeleteConfirmOpen(false)}>
+              <Button type="button" variant="outline" size="sm" onClick={() => setIsDeleteConfirmOpen(false)} disabled={isDeleting}>
                 취소
               </Button>
             </div>

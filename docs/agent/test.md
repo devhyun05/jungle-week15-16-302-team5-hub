@@ -1,5 +1,38 @@
 # QA Checklist
 
+## 2026-06-14 QA: 게시글 삭제 API와 상세 화면 연결
+
+### 확인 목표
+
+- `DELETE /posts/{post_id}`가 soft delete 방식으로 동작한다.
+- 삭제된 게시글은 목록, 상세, 댓글 조회에서 보이지 않는다.
+- 상세 화면 삭제 버튼이 API와 연결되어 있고 삭제 후 목록으로 이동한다.
+
+### 실행한 검증
+
+- [x] `backend`: `python -m compileall app`
+- [x] `frontend`: `npm run build`
+- [x] `POST /posts`로 테스트 게시글 생성
+- [x] `DELETE /posts/{created_id}`가 `204` 반환
+- [x] 삭제 후 `GET /posts/{created_id}`가 `404` 반환
+- [x] 삭제 후 `GET /posts?keyword=테스트제목`이 `total=0` 반환
+- [x] `DELETE /posts/999999999`가 `404` 반환
+- [x] 삭제된 게시글의 `GET /posts/{id}/comments`가 `404` 반환
+- [x] 브라우저에서 상세 화면 삭제 확인 UI 표시
+- [x] 브라우저에서 삭제 확인 후 `/posts`로 이동
+- [x] 브라우저에서 `Unexpected Application Error` 없음
+
+### 자체 QA에서 발견한 점
+
+- `Invoke-WebRequest`는 `204 No Content` 응답을 받을 때 PowerShell 환경에서 내부 예외를 낼 수 있다.
+- API 자체는 `curl.exe -w "%{http_code}"`로 `204`가 확인되었다.
+
+### 다음 QA 후보
+
+- 댓글 삭제 API 구현 후 `DELETE /comments/{comment_id}` 검증
+- JWT/OAuth2 후 작성자/관리자 삭제 권한 검증
+- 삭제된 게시글이 포트폴리오 연결, 코치 리뷰 요청에서 어떻게 보일지 정책 검토
+
 ## 2026-06-14 게시글 수정 API와 수정 화면 연결 QA
 
 이번 QA는 `PATCH /posts/{post_id}`와 `/posts/:id/edit` 화면이 실제 API 흐름으로 연결되는지 검증한다.

@@ -129,6 +129,19 @@ export async function updatePost(postId: string | number, payload: PostUpdatePay
   return response.json();
 }
 
+export async function deletePost(postId: string | number): Promise<void> {
+  // 게시글 삭제는 DELETE /posts/{post_id}로 보낸다.
+  // 백엔드는 실제 row를 없애지 않고 deleted_at을 채우는 soft delete로 처리한다.
+  const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response);
+    throw new Error(message);
+  }
+}
+
 async function getErrorMessage(response: Response): Promise<string> {
   try {
     const data = (await response.json()) as { detail?: string };

@@ -160,6 +160,25 @@ def update_post(db: Session, post_id: int, request: PostUpdateRequest) -> PostDe
     return build_post_detail_response(post=updated_post, comment_count=comment_count)
 
 
+def delete_post(db: Session, post_id: int) -> bool:
+    """
+    게시글 삭제 API의 비즈니스 흐름을 처리한다.
+
+    실제 DB row를 없애는 hard delete가 아니라 deleted_at을 채우는 soft delete를 사용한다.
+    이렇게 하면 관련 댓글/리뷰/포트폴리오 연결 이력을 나중에 추적할 수 있다.
+    """
+
+    post = post_repository.get_post_for_update(db=db, post_id=post_id)
+
+    if post is None:
+        return False
+
+    # TODO auth: JWT/OAuth2 연결 후에는 작성자 본인 또는 ADMIN만 삭제 가능하게 검사한다.
+    post_repository.soft_delete_post(db=db, post=post)
+
+    return True
+
+
 def get_posts(
     db: Session,
     category: str | None,

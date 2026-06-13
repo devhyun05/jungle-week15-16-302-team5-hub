@@ -1,5 +1,47 @@
 # Setup Notes
 
+## 2026-06-14 삭제 API QA에 사용한 명령어
+
+### 백엔드 문법 검증
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -m compileall app
+```
+
+### 프론트 빌드 검증
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\frontend
+npm run build
+```
+
+### 삭제 API 상태 코드 확인
+
+PowerShell `Invoke-WebRequest`가 `204 No Content`에서 내부 예외를 낼 수 있어서 상태 코드 확인에는 `curl.exe`를 사용했다.
+
+```powershell
+curl.exe -s -o NUL -w "%{http_code}" -X DELETE "http://localhost:8000/posts/{post_id}"
+```
+
+기대 결과:
+
+```txt
+204
+```
+
+### 삭제 후 상세 조회 확인
+
+```powershell
+curl.exe -s -o NUL -w "%{http_code}" "http://localhost:8000/posts/{post_id}"
+```
+
+기대 결과:
+
+```txt
+404
+```
+
 ## 2026-06-14 게시글 수정 API 검증 명령과 확인 URL
 
 백엔드 서버와 프론트엔드 서버가 모두 켜져 있어야 한다.

@@ -1,5 +1,72 @@
 # Study Notes
 
+## 2026-06-14 게시글 삭제 API와 상세 화면 연결 학습
+
+이번 구현은 게시글 상세 화면에서 `삭제` 버튼을 눌렀을 때 `DELETE /posts/{post_id}` API를 호출하고, 백엔드에서 해당 게시글을 soft delete 처리하는 작업이다.
+
+### 이번에 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/repositories/post_repository.py` | DB의 `posts.deleted_at` 값을 실제로 업데이트한다. |
+| `backend/app/services/post_service.py` | 삭제할 게시글을 찾고, 없으면 실패로 판단하는 비즈니스 흐름을 담당한다. |
+| `backend/app/routers/posts.py` | `DELETE /posts/{post_id}` HTTP endpoint를 만든다. |
+| `frontend/src/app/api/posts.ts` | 프론트에서 삭제 API를 호출하는 `deletePost` 함수를 제공한다. |
+| `frontend/src/app/pages/posts/PostDetail.tsx` | 삭제 확인 UI, 삭제 중 상태, 삭제 성공 후 `/posts` 이동을 담당한다. |
+
+### 코드 흐름
+
+```txt
+PostDetail.tsx 삭제 확인 클릭
+-> deletePost(id)
+-> DELETE /posts/{id}
+-> routers/posts.py
+-> post_service.delete_post()
+-> post_repository.get_post_for_update()
+-> post_repository.soft_delete_post()
+-> posts.deleted_at 업데이트
+-> 204 No Content
+-> 프론트에서 /posts로 이동
+```
+
+### soft delete란?
+
+soft delete는 DB row를 실제로 지우지 않고 `deleted_at` 같은 컬럼에 삭제 시각을 기록하는 방식이다.
+
+JungleLog에서 soft delete를 쓰는 이유:
+
+- 댓글, 코치 리뷰 요청, 포트폴리오 연결 이력이 갑자기 끊기지 않는다.
+- 나중에 관리자 감사 로그나 복구 기능을 만들 수 있다.
+- 목록과 상세 조회에서 `deleted_at is null` 조건만 추가하면 사용자에게는 삭제된 것처럼 보인다.
+
+### 이번에 나온 백엔드 개념
+
+- `DELETE`: REST에서 리소스를 삭제할 때 쓰는 HTTP method다.
+- `204 No Content`: 성공했지만 응답 body가 필요 없는 경우에 쓰는 상태 코드다.
+- `404 Not Found`: 삭제하려는 게시글이 없거나 이미 삭제된 경우 반환한다.
+- repository: 실제 DB 업데이트를 담당한다.
+- service: 삭제 가능한 대상인지 확인하고 전체 흐름을 결정한다.
+- router: HTTP 요청과 응답 코드를 정의한다.
+
+### 이번에 나온 React 개념
+
+- `useState`: 삭제 확인 UI, 삭제 중 상태, 삭제 에러 메시지를 관리한다.
+- `useNavigate`: 삭제 성공 후 `/posts`로 이동한다.
+- 조건부 렌더링: `isDeleteConfirmOpen`이 true일 때만 삭제 확인 박스를 보여준다.
+- API 함수 분리: 화면 컴포넌트가 `fetch` 세부 구현을 직접 알지 않게 `api/posts.ts`에 모아둔다.
+
+### JWT/OAuth2 후 바뀔 부분
+
+지금은 인증 전 단계라 아무 사용자나 API를 호출할 수 있는 구조다. 나중에는 다음 검사가 들어간다.
+
+```txt
+현재 로그인 사용자 == 게시글 작성자
+또는
+현재 로그인 사용자 role == ADMIN
+```
+
+이 조건이 아니면 삭제 API는 `403 Forbidden`을 반환해야 한다.
+
 ## 2026-06-14 게시글 수정 API와 수정 화면 연결 학습
 
 이번 구현은 `/posts/:id/edit` 화면에서 기존 게시글을 불러오고, 수정 완료 버튼을 누르면 `PATCH /posts/{post_id}`로 DB를 갱신하는 작업이다.
