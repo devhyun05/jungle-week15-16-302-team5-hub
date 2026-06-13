@@ -1,10 +1,12 @@
 from fastapi import HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.post import Post
 from app.models.user import User
-from app.schemas.post import PostCreateRequest, PostResponse, PostUpdateRequest
-from app.services.tag_service import resolve_tags
+from app.models.tag import Tag
+from app.schemas.post import PostCreateRequest, PostPageResponse, PostUpdateRequest
+from app.services.tag_service import resolve_tags, normalize_tag_name
 
 def create_post(
     db: Session,
@@ -27,16 +29,60 @@ def create_post(
     return post
 
 
-def list_posts(db: Session) -> list[Post]:
-    return (
-        db.query(Post)
+def list_posts(
+    db: Session,
+    q: str | None = None,
+    tag: str | None = None,
+    page: int = 1,
+    size: int = 10,
+) -> PostPageResponse:
+    query = db.query(Post)
+
+    search_text = q.strip() if q else None
+
+    if search_text:
+        keyword = f"%{search_text}%"
+        query = query.filter(
+            or_(
+                Post.title.ilike(keyword),
+                Post.body.ilike(keyword),
+            )
+        )
+
+    tag_name = normalize_tag_name(tag) if tag else None
+
+    if tag_name:
+        query = (
+            query
+            .join(Post.tags)
+            .filter(Tag.normalized_name == tag_name)
+        )
+
+    total = query.count()
+    offset = (page - 1) * size
+
+    items = (
+        query
         .order_by(Post.created_at.desc())
+        .offset(offset)
+        .limit(size)
         .all()
     )
 
+    return PostPageResponse(
+        items=items,
+        page=page,
+        size=size,
+        total=total,
+        has_next=offset + len(items) < total,
+        has_prev=page > 1,
+    )
 
-def get_post(db: Session,
-             post_id: int) -> Post:
+
+def get_post(
+        db: Session,
+        post_id: int,
+) -> Post:
     post = (
         db.query(Post)
         .filter(Post.id == post_id)
@@ -104,6 +150,3 @@ def delete_post(db: Session,
     
     db.delete(post)
     db.commit()
-
-
-
