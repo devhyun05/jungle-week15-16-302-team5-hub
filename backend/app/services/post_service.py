@@ -3,8 +3,15 @@
 세션 07, 08, 09에서 응답 변환, 검색/페이징, 게시글 쓰기 도우미를 구현한다.
 """
 
+from math import ceil
+
+from sqlalchemy import or_
+from sqlalchemy.orm import Session
+
 from app.models import Post
-from app.schemas.post import PostAuthorResponse, PostResponse
+from app.models.tag import Tag
+from app.schemas.post import PostAuthorResponse, PostListResponse, PostResponse
+from app.services.tag_service import normalize_tag_name
 
 
 SUMMARY_MAX_LENGTH = 80
@@ -41,3 +48,103 @@ def post_to_response(
         created_at=post.created_at,
         updated_at=post.updated_at,
     )
+
+
+# `tag=레시피`와 `tags=레시피&tags=클리어슬라임`을 하나의 필터 목록으로 합친다.
+# 태그명은 저장 규칙과 맞게 정규화하고, 같은 태그가 두 번 들어오면 한 번만 남긴다.
+def build_tag_filters(
+    tag: str | None = None,
+    tags: list[str] | None = None,
+) -> list[str]:
+    raw_tag_names: list[str] = []
+
+    if tag is not None:
+        raw_tag_names.append(tag)
+
+    if tags is not None:
+        raw_tag_names.extend(tags)
+
+    normalized_tag_names: list[str] = []
+
+    for raw_tag_name in raw_tag_names:
+        normalized_tag_name = normalize_tag_name(raw_tag_name)
+
+        if normalized_tag_name and normalized_tag_name not in normalized_tag_names:
+            normalized_tag_names.append(normalized_tag_name)
+
+    return normalized_tag_names
+
+
+# 게시판 메인 목록을 만든다.
+# query 조건을 차례로 얹고, 최종 개수와 현재 페이지 items를 PostListResponse로 변환한다.
+def list_posts(
+    db: Session,
+    page: int = 1,
+    size: int = 10,
+    keyword: str | None = None,
+    post_type: str | None = None,
+    tag: str | None = None,
+    tags: list[str] | None = None,
+    slime_type: str | None = None,
+    current_user_id: int | None = None,
+) -> PostListResponse:
+    query = db.query(Post)
+
+    if keyword is not None and keyword.strip():
+        keyword_like = f"%{keyword.strip()}%"
+
+        # 제목, 본문, 슬라임 타입, 태그명 중 하나라도 검색어를 포함하면 목록에 남긴다.
+        # 태그 검색 때문에 tags 테이블을 outer join하고, 같은 글이 중복되지 않게 distinct를 붙인다.
+        query = (
+            query
+            .outerjoin(Post.tags)
+            .filter(
+                or_(
+                    Post.title.ilike(keyword_like),
+                    Post.content.ilike(keyword_like),
+                    Post.slime_type.ilike(keyword_like),
+                    Tag.name.ilike(keyword_like),
+                )
+            )
+            .distinct()
+        )
+
+    if post_type is not None:
+        query = query.filter(Post.post_type == post_type)
+
+    if slime_type is not None:
+        query = query.filter(Post.slime_type == slime_type)
+
+    # tag 단일 query와 tags 반복 query를 합친 뒤, 태그마다 any 조건을 추가한다.
+    # filter가 여러 번 붙기 때문에 "이 태그도 있고 저 태그도 있는 글"이라는 AND 조건이 된다.
+    tag_names = build_tag_filters(tag=tag, tags=tags)
+    for tag_name in tag_names:
+        query = query.filter(Post.tags.any(Tag.name == tag_name))
+
+    total = query.count()
+    total_pages = ceil(total / size) if total > 0 else 0
+
+    posts = (
+        query
+        .order_by(Post.created_at.desc(), Post.id.desc())
+        .offset((page - 1) * size)
+        .limit(size)
+        .all()
+    )
+
+    return PostListResponse(
+        items=[
+            post_to_response(post, current_user_id=current_user_id)
+            for post in posts
+        ],
+        page=page,
+        size=size,
+        total=total,
+        total_pages=total_pages,
+    )
+
+
+# 상세 페이지에서 사용할 게시글 하나를 찾는다.
+# 없는 글인지 판단하고 404로 바꾸는 일은 HTTP 계층인 router에서 담당한다.
+def get_post_by_id(db: Session, post_id: int) -> Post | None:
+    return db.query(Post).filter(Post.id == post_id).first()

@@ -11,9 +11,9 @@
 
 ## 현재 위치
 
-- 현재 추천 세션: Session 08 `게시글 목록과 상세 조회`
-- 다음 행동: `routers/posts.py`, `services/post_service.py` 오리엔테이션부터 시작하기
-- 마지막 업데이트: 2026-06-15 / Session 07 마무리, `../.venv/bin/python -m pytest` 전체 40개 테스트 통과 확인
+- 현재 추천 세션: Session 09 `게시글 생성, 수정, 삭제`
+- 다음 행동: `routers/posts.py`, `services/post_service.py`, `services/tag_service.py` 오리엔테이션부터 시작하기
+- 마지막 업데이트: 2026-06-15 / Session 08 마무리, `../.venv/bin/python -m pytest` 전체 45개 테스트 통과 확인
 
 ## 세션별 체크표
 
@@ -27,7 +27,7 @@
 | 5 | Post, Comment, Tag 모델 | `models/post.py`, `models/comment.py`, `models/tag.py` | 관계, ForeignKey, 다대다 | 완료 | [x] | [x] | [x] | [x] | [x] | 현재 프론트 폼 기준 최소 Post 필드, 댓글/태그 관계, post_tags 구현 |
 | 6 | Tag API와 seed | `schemas/tag.py`, `services/tag_service.py`, `routers/tags.py`, `seed.py` | seed, tag list, popular count, 직접 입력 태그 정규화 | 완료 | [x] | [x] | [x] | [x] | [x] | 초기 태그 seed, `/tags`, `/tags/popular`, 태그 정규화 구현 및 테스트 통과 |
 | 7 | Post 스키마와 응답 변환 | `schemas/post.py`, `services/post_service.py` | create/update/response, summary | 완료 | [x] | [x] | [x] | [x] | [x] | `PostCreate`, `PostUpdate`, `PostResponse`, `PostListResponse`, `post_to_response` 구현 및 테스트 통과 |
-| 8 | 게시글 목록과 상세 조회 | `routers/posts.py`, `services/post_service.py` | query, multi tags AND filter, paging, 404 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
+| 8 | 게시글 목록과 상세 조회 | `routers/posts.py`, `services/post_service.py` | query, multi tags AND filter, paging, 404 | 완료 | [x] | [x] | [x] | [x] | [x] | `GET /posts`, `GET /posts/{post_id}`, keyword/post_type/slime_type/tag/tags AND 필터 구현 |
 | 9 | 게시글 생성, 수정, 삭제 | `routers/posts.py`, `services/post_service.py`, `services/tag_service.py` | DB insert/update/delete, 권한, tag_names 저장 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 10 | 댓글 API | `schemas/comment.py`, `routers/comments.py` | 댓글 CRUD, 권한, nested path | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 11 | 프론트 연동 점검 | `app/main.py`, `frontend/src/api/*` | CORS, token, 응답 필드, `/`/`/posts`, 다중 태그 URL 일치 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
@@ -109,3 +109,11 @@
 - 테스트 확인: `../.venv/bin/python -m pytest tests/test_post_schemas.py` 실행 결과 `6 passed`; 전체 `../.venv/bin/python -m pytest` 실행 결과 `40 passed, 1 warning`.
 - 다음에 다시 말로 설명할 개념: Pydantic 요청/응답 스키마와 SQLAlchemy 모델의 차이, `post_to_response`가 관계 객체에서 태그/댓글/작성자를 읽어 프론트 응답으로 바꾸는 흐름.
 - 다음 추천 행동: Session 08 `게시글 목록과 상세 조회`에서 `GET /posts`, 필터/페이징, `GET /posts/{post_id}`와 404 처리를 구현하기.
+
+### 2026-06-15 / Session 08
+
+- 한 줄 요약: `GET /posts` 목록 조회와 `GET /posts/{post_id}` 상세 조회를 구현하고, 검색/글 타입/슬라임 타입/단일 태그/반복 태그 AND 필터와 페이징을 연결함.
+- 막힌 지점: 사용자가 직접 채우는 흐름 대신 Codex가 전체 구현을 채우고, 각 함수 위 주석으로 동작 흐름을 설명하는 방식으로 진행함.
+- 테스트 확인: `../.venv/bin/python -m pytest tests/test_posts_read_api.py` 실행 결과 `5 passed`; 전체 `../.venv/bin/python -m pytest` 실행 결과 `45 passed, 1 warning`.
+- 다음에 다시 말로 설명할 개념: `outerjoin`과 `or_`로 keyword 검색을 만드는 방식, `Post.tags.any(...)`를 태그마다 반복해서 AND 필터를 만드는 방식, `Depends(get_optional_current_user)`가 선택 인증을 처리하는 흐름.
+- 다음 추천 행동: Session 09 `게시글 생성, 수정, 삭제`에서 `POST /posts`, `PATCH /posts/{post_id}`, `DELETE /posts/{post_id}`와 작성자 권한/태그 연결 교체를 구현하기.
