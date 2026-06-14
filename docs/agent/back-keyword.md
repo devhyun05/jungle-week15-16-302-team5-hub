@@ -1,5 +1,47 @@
 # Backend Keyword Map
 
+## 2026-06-14 키워드: /me API와 Current User
+
+### /me API
+
+`/me`는 현재 로그인한 사용자 자신을 의미하는 API prefix로 자주 쓴다.
+
+JungleLog에서는 다음처럼 역할을 나눴다.
+
+```txt
+GET /posts      -> 공개 게시글 전체 목록
+GET /me/posts   -> 내가 쓴 게시글 목록
+```
+
+### Current User
+
+실제 서비스에서는 JWT access token을 해석해서 현재 사용자를 알아낸다.
+
+현재 단계:
+
+```txt
+demo.student@junglelog.local
+```
+
+JWT 이후:
+
+```txt
+Authorization header
+-> JWT 검증
+-> current_user
+-> current_user.id로 /me/posts 조회
+```
+
+### Visibility Filter
+
+내 기록은 공개 글과 비공개 글을 모두 다룬다.
+
+```txt
+visibility=all      -> 공개/비공개 모두
+visibility=public   -> is_public = true
+visibility=private  -> is_public = false
+```
+
 ## 2026-06-14 키워드: Nested Resource와 댓글 Delete
 
 ### Nested Resource

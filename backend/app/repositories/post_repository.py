@@ -305,6 +305,79 @@ def list_posts(
     return posts, total, comment_counts
 
 
+def list_posts_by_author(
+    db: Session,
+    author_id: int,
+    category: str | None,
+    keyword: str | None,
+    visibility: str,
+    page: int,
+    size: int,
+) -> tuple[list[Post], int, dict[int, int]]:
+    """
+    특정 작성자가 쓴 게시글 목록을 조회한다.
+
+    `GET /posts`는 공개 글만 보여주는 공용 목록이고, `GET /me/posts`는 내 기록 화면용 목록이다.
+    그래서 이 함수는 `is_public=True`로 고정하지 않고 visibility query에 따라 공개/비공개를 나눠 조회한다.
+    """
+
+    filters = [
+        Post.deleted_at.is_(None),
+        Post.author_id == author_id,
+    ]
+
+    if visibility == "public":
+        filters.append(Post.is_public.is_(True))
+
+    if visibility == "private":
+        filters.append(Post.is_public.is_(False))
+
+    if category:
+        filters.append(PostCategory.slug == category)
+
+    if keyword:
+        keyword_like = f"%{keyword}%"
+        filters.append(
+            or_(
+                Post.title.ilike(keyword_like),
+                Post.summary.ilike(keyword_like),
+                Post.content.ilike(keyword_like),
+                Post.related_commit.ilike(keyword_like),
+                Post.category.has(PostCategory.label.ilike(keyword_like)),
+                Post.category.has(PostCategory.slug.ilike(keyword_like)),
+                Post.post_tags.any(PostTag.tag.has(Tag.name.ilike(keyword_like))),
+                Post.post_tags.any(PostTag.tag.has(Tag.slug.ilike(keyword_like))),
+            )
+        )
+
+    total = db.scalar(
+        select(func.count())
+        .select_from(Post)
+        .join(Post.category)
+        .where(*filters)
+    ) or 0
+
+    posts = list(
+        db.scalars(
+            select(Post)
+            .join(Post.category)
+            .options(
+                selectinload(Post.author),
+                selectinload(Post.category),
+                selectinload(Post.post_tags).selectinload(PostTag.tag),
+            )
+            .where(*filters)
+            .order_by(Post.created_at.desc())
+            .offset((page - 1) * size)
+            .limit(size)
+        )
+    )
+
+    comment_counts = get_comment_counts(db, [post.id for post in posts])
+
+    return posts, total, comment_counts
+
+
 def get_post_by_id(db: Session, post_id: int) -> tuple[Post | None, int]:
     """
     id에 맞는 공개 게시글 하나와 댓글 수를 조회한다.

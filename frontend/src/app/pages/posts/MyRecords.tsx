@@ -1,11 +1,12 @@
 ﻿
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { BookOpen, FolderGit2, Globe, Lock, MessageSquare, Search, Wrench } from "lucide-react";
+import { getMyPosts, type PostListApiItem } from "../../api/posts";
 import { Badge } from "../../components/ui/Badge";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
-import { categories, posts, type CategorySlug } from "../../data/mockData";
+import { categories, type CategorySlug } from "../../data/mockData";
 
 type CategoryFilter = "all" | CategorySlug;
 type VisibilityFilter = "all" | "public" | "private";
@@ -22,31 +23,78 @@ export function MyRecords() {
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>("all");
   const [keyword, setKeyword] = useState("");
+  const [allRecords, setAllRecords] = useState<PostListApiItem[]>([]);
+  const [records, setRecords] = useState<PostListApiItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
-  // 전체 mock posts 중 현재 필터 조건에 맞는 기록만 화면에 보여줍니다.
-  const filteredRecords = useMemo(
-    () =>
-      posts.filter((post) => {
-        const categoryMatch = categoryFilter === "all" || post.categorySlug === categoryFilter;
-        const visibilityMatch =
-          visibilityFilter === "all" || (visibilityFilter === "public" ? post.isPublic : !post.isPublic);
-        const query = keyword.trim().toLowerCase();
-        const keywordMatch =
-          !query ||
-          post.title.toLowerCase().includes(query) ||
-          post.summary.toLowerCase().includes(query) ||
-          post.tags.some((tag) => tag.toLowerCase().includes(query));
+  useEffect(() => {
+    let isActive = true;
 
-        return categoryMatch && visibilityMatch && keywordMatch;
-      }),
-    [categoryFilter, keyword, visibilityFilter],
-  );
+    async function loadAllRecords() {
+      try {
+        const data = await getMyPosts({ page: 1, size: 50, visibility: "all" });
+
+        if (isActive) {
+          setAllRecords(data.items);
+        }
+      } catch {
+        if (isActive) {
+          setLoadError("내 기록 통계를 불러오지 못했습니다. 백엔드 서버와 /me/posts API를 확인해주세요.");
+        }
+      }
+    }
+
+    void loadAllRecords();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadRecords() {
+      setIsLoading(true);
+      setLoadError("");
+
+      try {
+        const data = await getMyPosts({
+          category: categoryFilter === "all" ? undefined : categoryFilter,
+          keyword: keyword.trim() || undefined,
+          visibility: visibilityFilter,
+          page: 1,
+          size: 50,
+        });
+
+        if (isActive) {
+          setRecords(data.items);
+        }
+      } catch {
+        if (isActive) {
+          setRecords([]);
+          setLoadError("내 기록 목록을 불러오지 못했습니다. 백엔드 서버와 /me/posts API를 확인해주세요.");
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadRecords();
+
+    return () => {
+      isActive = false;
+    };
+  }, [categoryFilter, keyword, visibilityFilter]);
 
   const statCards = [
-    { label: "전체 기록", value: posts.length, icon: BookOpen, color: "text-blue-500" },
-    { label: "트러블슈팅", value: posts.filter((post) => post.categorySlug === "troubleshooting").length, icon: Wrench, color: "text-orange-500" },
-    { label: "회고/면접", value: posts.filter((post) => ["retrospective", "interview"].includes(post.categorySlug)).length, icon: MessageSquare, color: "text-purple-500" },
-    { label: "포트폴리오", value: posts.filter((post) => post.categorySlug === "portfolio").length, icon: FolderGit2, color: "text-emerald-500" },
+    { label: "전체 기록", value: allRecords.length, icon: BookOpen, color: "text-blue-500" },
+    { label: "트러블슈팅", value: allRecords.filter((post) => post.categorySlug === "troubleshooting").length, icon: Wrench, color: "text-orange-500" },
+    { label: "회고/면접", value: allRecords.filter((post) => ["retrospective", "interview"].includes(post.categorySlug)).length, icon: MessageSquare, color: "text-purple-500" },
+    { label: "포트폴리오", value: allRecords.filter((post) => post.categorySlug === "portfolio").length, icon: FolderGit2, color: "text-emerald-500" },
   ];
 
   return (
@@ -117,12 +165,30 @@ export function MyRecords() {
               </button>
             ))}
           </div>
-          <p className="text-xs text-slate-400">실제 내 기록 조회와 검색 API는 백엔드 연결 후 구현 예정입니다.</p>
+          <p className="text-xs text-slate-400">현재는 demo student 기준으로 조회하며, JWT 연결 후 실제 로그인 사용자 기준으로 바뀝니다.</p>
         </CardContent>
       </Card>
 
       <div className="space-y-3">
-        {filteredRecords.map((post) => (
+        {isLoading && (
+          <Card>
+            <CardContent className="p-6 text-sm text-slate-500">내 기록을 불러오는 중입니다.</CardContent>
+          </Card>
+        )}
+
+        {loadError && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-6 text-sm text-red-700">{loadError}</CardContent>
+          </Card>
+        )}
+
+        {!isLoading && !loadError && records.length === 0 && (
+          <Card>
+            <CardContent className="p-6 text-sm text-slate-500">조건에 맞는 내 기록이 없습니다.</CardContent>
+          </Card>
+        )}
+
+        {!isLoading && !loadError && records.map((post) => (
           <Link key={post.id} to={`/posts/${post.id}`} className="block rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-emerald-200">
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <Badge variant={categoryVariant(post.category)}>{post.category}</Badge>
@@ -133,6 +199,7 @@ export function MyRecords() {
             </div>
             <h2 className="text-lg font-bold text-slate-900">{post.title}</h2>
             <p className="mt-2 line-clamp-2 text-sm text-slate-600">{post.summary}</p>
+            <p className="mt-2 text-xs text-slate-400">댓글 {post.comments} · 조회 {post.views}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {post.tags.map((tag) => (
                 <span key={tag} className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">

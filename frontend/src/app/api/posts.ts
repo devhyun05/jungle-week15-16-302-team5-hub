@@ -53,6 +53,10 @@ export type GetPostsParams = {
   size?: number;
 };
 
+export type GetMyPostsParams = GetPostsParams & {
+  visibility?: "all" | "public" | "private";
+};
+
 export async function getPosts(params: GetPostsParams = {}): Promise<PostListApiResponse> {
   // 게시글 목록은 백엔드 GET /posts에서 가져온다.
   // category, keyword, page, size는 query string으로 전달한다.
@@ -70,6 +74,33 @@ export async function getPosts(params: GetPostsParams = {}): Promise<PostListApi
   searchParams.set("size", String(params.size ?? 50));
 
   const response = await fetch(`${API_BASE_URL}/posts?${searchParams.toString()}`);
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response);
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function getMyPosts(params: GetMyPostsParams = {}): Promise<PostListApiResponse> {
+  // 내 기록 목록은 GET /me/posts에서 가져온다.
+  // JWT/OAuth2 연결 전에는 백엔드가 demo student를 현재 사용자처럼 사용한다.
+  const searchParams = new URLSearchParams();
+
+  if (params.category) {
+    searchParams.set("category", params.category);
+  }
+
+  if (params.keyword) {
+    searchParams.set("keyword", params.keyword);
+  }
+
+  searchParams.set("visibility", params.visibility ?? "all");
+  searchParams.set("page", String(params.page ?? 1));
+  searchParams.set("size", String(params.size ?? 50));
+
+  const response = await fetch(`${API_BASE_URL}/me/posts?${searchParams.toString()}`);
 
   if (!response.ok) {
     const message = await getErrorMessage(response);

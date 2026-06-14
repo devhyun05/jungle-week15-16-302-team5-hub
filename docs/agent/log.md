@@ -1,5 +1,62 @@
 # JungleLog Progress Log
 
+## 2026-06-14 내 기록 화면 API 전환
+
+상태: 완료
+
+목표: `/my-records` 화면을 mock data 필터링에서 백엔드 `GET /me/posts` API 기반으로 전환한다.
+
+구현 파일:
+
+- `backend/app/routers/me.py`
+- `backend/app/repositories/post_repository.py`
+- `backend/app/services/post_service.py`
+- `backend/app/main.py`
+- `frontend/src/app/api/posts.ts`
+- `frontend/src/app/pages/posts/MyRecords.tsx`
+- `README.md`
+- `docs/agent/api-design.md`
+- `docs/agent/study.md`
+- `docs/agent/test.md`
+- `docs/agent/setup.md`
+- `docs/agent/back-keyword.md`
+- `docs/agent/front-keyword.md`
+- `docs/agent/troubleshooting.md`
+
+구현 내용:
+
+- `GET /me/posts` endpoint를 추가했다.
+- 현재는 JWT/OAuth2 전이라 demo student를 현재 사용자처럼 사용한다.
+- 작성자 id, 카테고리, 검색어, 공개 범위, 페이지 조건으로 게시글을 조회한다.
+- `/my-records`의 목록과 통계를 API 응답 기준으로 렌더링한다.
+- 카테고리, 공개 범위, 검색어 변경 시 `useEffect`가 다시 API를 호출한다.
+
+검증:
+
+- `backend`: `python -m compileall app` 성공
+- `frontend`: `npm run build` 성공
+- OpenAPI: `/me/posts` `get` 등록 확인
+- HTTP QA: `/me/posts?visibility=all`, `/me/posts?visibility=public`, `/me/posts?category=learning-log` 응답 확인
+- HTTP QA: 임시 비공개 글 생성 후 `visibility=private`에 잡히는 것 확인
+- Browser QA: `/my-records` 화면에 API 기반 기록 목록 표시, `Unexpected Application Error` 없음
+
+주의:
+
+- 한글 keyword를 PowerShell에서 URI 조합해 검증할 때 기대와 다른 결과가 나올 수 있어, 필터 검증은 영어 keyword와 visibility 조건을 분리해서 확인했다.
+- 비공개 글 상세 조회 권한 처리는 JWT/OAuth2 후 별도 API 또는 권한 기반 상세 조회로 보완해야 한다.
+
+커밋 추천 제목:
+
+```txt
+feat: 내 기록 화면을 API 기반으로 전환
+```
+
+다음 후보 작업:
+
+1. JWT/OAuth2 구현 준비
+2. 내 비공개 글 상세 조회 권한 흐름 설계
+3. 태그/카테고리 API 분리
+
 ## 2026-06-14 댓글 삭제 API와 상세 화면 연결
 
 상태: 완료

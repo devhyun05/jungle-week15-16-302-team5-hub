@@ -1,5 +1,33 @@
 # Frontend Keyword Map
 
+## 2026-06-14 키워드: useEffect 기반 API 목록 조회
+
+### 필터가 바뀔 때 API 다시 호출
+
+`MyRecords.tsx`는 카테고리, 공개 범위, 검색어 state가 바뀔 때마다 `useEffect`로 `getMyPosts()`를 다시 호출한다.
+
+```txt
+categoryFilter 변경
+visibilityFilter 변경
+keyword 변경
+-> useEffect 실행
+-> GET /me/posts query 변경
+-> records state 업데이트
+```
+
+### API 응답 state
+
+- `allRecords`: 통계 카드 계산용 전체 내 기록
+- `records`: 현재 필터/검색 조건에 맞는 목록
+- `isLoading`: 목록을 불러오는 중인지
+- `loadError`: API 호출 실패 메시지
+
+### mock data와 API 응답의 차이
+
+이전에는 `mockData.ts`의 `posts.filter(...)`로 브라우저 안에서 필터링했다.
+
+지금은 필터 조건을 query string으로 백엔드에 보내고, 백엔드가 DB 조회 결과를 반환한다.
+
 ## 2026-06-14 키워드: 리스트 항목 삭제와 state 갱신
 
 ### 리스트 항목 삭제

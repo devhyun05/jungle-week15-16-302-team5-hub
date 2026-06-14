@@ -1,5 +1,61 @@
 # JungleLog API Design
 
+## 2026-06-14 추가: GET /me/posts
+
+내 기록 화면용 게시글 목록 API가 구현되었습니다. `GET /posts`는 공개 게시글 전체 목록이고, `GET /me/posts`는 현재 로그인 사용자가 작성한 글 목록입니다.
+
+현재는 JWT/OAuth2 연결 전이므로 백엔드가 `demo.student@junglelog.local` 사용자를 현재 사용자처럼 사용합니다.
+
+### Request
+
+```http
+GET /me/posts?category=learning-log&keyword=JWT&visibility=all&page=1&size=50
+```
+
+### Query
+
+| 이름 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| `category` | string | 아니오 | `learning-log`, `troubleshooting` 같은 카테고리 slug |
+| `keyword` | string | 아니오 | 제목, 요약, 본문, 태그, 카테고리 검색어 |
+| `visibility` | `all` \| `public` \| `private` | 아니오 | 공개/비공개 필터. 기본값은 `all` |
+| `page` | int | 아니오 | 1부터 시작 |
+| `size` | int | 아니오 | 1~50 |
+
+### Response 200
+
+`PostListResponse`와 같은 구조를 사용합니다.
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "title": "FastAPI JWT 인증 구현 기록",
+      "summary": "Google OAuth 이후 자체 JWT를 발급하는 흐름",
+      "category": "학습 로그",
+      "categorySlug": "learning-log",
+      "tags": ["FastAPI", "JWT"],
+      "author": "정글 학생",
+      "authorRole": "STUDENT",
+      "isPublic": true,
+      "views": 12,
+      "comments": 2,
+      "createdAt": "2026-06-13T00:00:00"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "size": 50
+}
+```
+
+### JWT/OAuth2 후 변경 예정
+
+- demo user 조회를 제거하고 JWT에서 얻은 `current_user.id`로 조회합니다.
+- 비공개 글 상세 조회는 작성자 본인 또는 ADMIN만 가능하게 보호합니다.
+- `/my-records`에서 비공개 글 클릭 시 내 글 상세 API 또는 권한 기반 상세 API로 연결합니다.
+
 ## 2026-06-14 추가: DELETE /comments/{comment_id}
 
 댓글 삭제 API가 구현되었습니다. 현재는 JWT/OAuth2 연결 전이므로 작성자 권한 검사는 아직 붙이지 않았고, 존재하는 댓글을 soft delete 처리합니다.

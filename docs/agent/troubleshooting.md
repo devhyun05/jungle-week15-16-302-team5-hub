@@ -1,5 +1,27 @@
 # Troubleshooting
 
+## 2026-06-14 PowerShell 한글 keyword QA 주의
+
+### 상황
+
+`GET /me/posts`의 `visibility=private` 필터를 검증하는 과정에서 한글 제목을 keyword로 넣은 첫 QA 결과가 0건으로 나왔다.
+
+### 확인
+
+같은 API를 영어 제목과 `visibility=private` 조건으로 다시 검증했을 때는 정상적으로 1건이 조회되었다.
+
+DB에서도 임시 게시글이 `is_public = false`로 저장된 것을 확인했다.
+
+### 판단
+
+API의 공개 범위 필터 문제라기보다 PowerShell에서 한글 문자열을 URI에 조합하는 과정의 인코딩/이스케이프 영향으로 판단했다.
+
+### 대응
+
+- visibility 필터는 keyword 없이 먼저 검증한다.
+- keyword 검색은 영어 검색어와 프론트 실제 입력 기준으로 한 번 더 확인한다.
+- 프론트는 `URLSearchParams`를 사용하므로 브라우저 입력 기반 검색에서는 인코딩 처리가 더 안정적이다.
+
 ## 2026-06-14 PowerShell Invoke-WebRequest와 204 No Content
 
 ### 상황

@@ -1,5 +1,18 @@
 # JungleLog
 
+## 2026-06-14 최신 구현: 내 기록 화면 API 전환
+
+`/my-records` 화면을 mock data 필터링에서 백엔드 `GET /me/posts` API 기반으로 전환했습니다.
+
+- `backend/app/routers/me.py`: 현재 사용자 기준 API 묶음을 만들고 `GET /me/posts` endpoint를 추가했습니다.
+- `backend/app/repositories/post_repository.py`: 작성자 id, 카테고리, 검색어, 공개 범위 조건으로 게시글을 조회하는 `list_posts_by_author`를 추가했습니다.
+- `backend/app/services/post_service.py`: demo student를 현재 사용자처럼 사용해 내 기록 목록 응답을 만드는 `get_my_posts`를 추가했습니다.
+- `backend/app/main.py`: `me_router`를 FastAPI 앱에 등록했습니다.
+- `frontend/src/app/api/posts.ts`: `getMyPosts` API 호출 함수를 추가했습니다.
+- `frontend/src/app/pages/posts/MyRecords.tsx`: 내 기록 목록, 통계, 카테고리/공개범위/검색 필터를 `GET /me/posts` 응답 기준으로 렌더링하도록 변경했습니다.
+
+현재는 JWT/OAuth2 연결 전이므로 `demo.student@junglelog.local` 사용자를 현재 로그인 사용자처럼 사용합니다. 실제 로그인 후에는 JWT에서 꺼낸 current user 기준으로 `/me/posts`가 동작하도록 바꿀 예정입니다.
+
 ## 2026-06-14 최신 구현: 댓글 삭제 API와 상세 화면 연결
 
 `DELETE /comments/{comment_id}`를 구현하고 게시글 상세 화면의 댓글 삭제 버튼을 백엔드 API에 연결했습니다.

@@ -1,5 +1,72 @@
 # Study Notes
 
+## 2026-06-14 내 기록 화면 API 전환 학습
+
+이번 구현은 `/my-records` 화면이 `mockData.ts`의 posts를 직접 필터링하던 구조에서 백엔드 `GET /me/posts` API를 호출하는 구조로 바뀐 작업이다.
+
+### 이번에 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/routers/me.py` | `/me/posts` endpoint를 정의한다. |
+| `backend/app/repositories/post_repository.py` | 작성자 id, 카테고리, 검색어, 공개 범위 조건으로 DB 게시글을 조회한다. |
+| `backend/app/services/post_service.py` | demo user 기준 내 기록 목록 응답을 만든다. |
+| `backend/app/main.py` | `me_router`를 FastAPI app에 등록한다. |
+| `frontend/src/app/api/posts.ts` | `getMyPosts()` API 호출 함수를 제공한다. |
+| `frontend/src/app/pages/posts/MyRecords.tsx` | 내 기록 목록과 통계를 API 응답 기준으로 렌더링한다. |
+
+### 코드 흐름
+
+```txt
+MyRecords.tsx
+-> categoryFilter, visibilityFilter, keyword state 변경
+-> useEffect 실행
+-> getMyPosts({ category, keyword, visibility })
+-> GET /me/posts
+-> routers/me.py
+-> post_service.get_my_posts()
+-> post_repository.list_posts_by_author()
+-> PostgreSQL posts 조회
+-> PostListResponse
+-> records state 업데이트
+-> 화면 렌더링
+```
+
+### 왜 `/posts`가 아니라 `/me/posts`인가?
+
+`GET /posts`는 커뮤니티 전체가 볼 수 있는 공개 게시글 목록이다. 그래서 `is_public=True`인 글만 조회한다.
+
+반면 `/my-records`는 내가 쓴 글을 관리하는 화면이다. 여기서는 비공개 글도 보여야 하므로 API를 분리했다.
+
+```txt
+GET /posts      -> 공개 게시글 목록
+GET /me/posts   -> 내 게시글 목록, 공개/비공개 모두 가능
+```
+
+### 이번에 나온 React Hook
+
+- `useEffect`: 필터나 검색어가 바뀔 때마다 API를 다시 호출한다.
+- `useState`: 전체 기록 통계용 `allRecords`, 목록용 `records`, 로딩 상태, 에러 상태를 관리한다.
+- cleanup flag: `isActive`를 두어 컴포넌트가 사라진 뒤 늦게 온 API 응답이 state를 바꾸지 않게 막는다.
+
+### 이번에 나온 백엔드 개념
+
+- `Literal`: `visibility` query가 `all`, `public`, `private` 중 하나만 받도록 제한한다.
+- current user API: `/me/...`는 현재 로그인 사용자의 데이터를 다루는 API 이름으로 자주 쓴다.
+- visibility filter: `public`이면 `Post.is_public is True`, `private`이면 `Post.is_public is False` 조건을 붙인다.
+- service/repository 분리: current user 결정은 service, DB query는 repository가 담당한다.
+
+### JWT/OAuth2 후 바뀔 부분
+
+지금은 demo user를 현재 사용자처럼 사용한다. 나중에는 아래처럼 바뀐다.
+
+```txt
+현재: demo.student@junglelog.local 조회
+나중: JWT access token -> current_user -> current_user.id
+```
+
+또 비공개 글 상세 조회는 `/posts/{id}` 공개 상세 API만으로는 부족하므로, 작성자 본인/ADMIN 권한을 확인하는 상세 조회 흐름이 필요하다.
+
 ## 2026-06-14 댓글 삭제 API와 상세 화면 연결 학습
 
 이번 구현은 게시글 상세 화면에서 댓글마다 `삭제` 버튼을 보여주고, 버튼을 누르면 `DELETE /comments/{comment_id}` API로 댓글을 soft delete 처리하는 작업이다.

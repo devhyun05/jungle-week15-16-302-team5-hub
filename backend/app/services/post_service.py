@@ -230,6 +230,51 @@ def get_posts(
     )
 
 
+def get_my_posts(
+    db: Session,
+    category: str | None,
+    keyword: str | None,
+    visibility: str,
+    page: int,
+    size: int,
+) -> PostListResponse:
+    """
+    내 기록 화면용 게시글 목록 API 응답을 만든다.
+
+    현재는 JWT/OAuth2 연결 전이므로 demo student를 현재 로그인 사용자처럼 사용한다.
+    나중에는 `get_demo_post_author()` 대신 `current_user` dependency 결과를 사용한다.
+    """
+
+    # TODO auth: JWT/OAuth2 연결 후에는 demo user가 아니라 current_user.id를 사용한다.
+    author = post_repository.get_demo_post_author(db)
+
+    if author is None:
+        raise RuntimeError("내 기록 조회용 demo 사용자를 찾을 수 없습니다.")
+
+    posts, total, comment_counts = post_repository.list_posts_by_author(
+        db=db,
+        author_id=author.id,
+        category=category,
+        keyword=keyword,
+        visibility=visibility,
+        page=page,
+        size=size,
+    )
+
+    return PostListResponse(
+        items=[
+            build_post_list_item(
+                post=post,
+                comment_count=comment_counts.get(post.id, 0),
+            )
+            for post in posts
+        ],
+        total=total,
+        page=page,
+        size=size,
+    )
+
+
 def get_post_detail(db: Session, post_id: int) -> PostDetailResponse | None:
     """
     게시글 상세 API 응답을 만든다.

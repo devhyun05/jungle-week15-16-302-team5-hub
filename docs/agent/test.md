@@ -1,5 +1,32 @@
 # QA Checklist
 
+## 2026-06-14 QA: 내 기록 화면 API 전환
+
+### 확인 목표
+
+- `GET /me/posts`가 현재 demo user의 게시글을 반환한다.
+- 카테고리, 공개 범위, 검색어 query가 동작한다.
+- `/my-records` 화면이 mock data가 아니라 API 응답을 렌더링한다.
+
+### 실행한 검증
+
+- [x] `backend`: `python -m compileall app`
+- [x] `frontend`: `npm run build`
+- [x] OpenAPI에 `/me/posts` `get` 등록 확인
+- [x] `GET /me/posts?visibility=all&size=50` 응답 확인
+- [x] `GET /me/posts?visibility=public&size=50` 응답 확인
+- [x] `GET /me/posts?category=learning-log&visibility=all&size=50` 응답 확인
+- [x] 임시 비공개 게시글 생성 후 `visibility=private`에서 조회 확인
+- [x] 임시 비공개 게시글 삭제 정리
+- [x] 브라우저에서 `/my-records` 화면 렌더링 확인
+- [x] 브라우저에서 API 에러 문구와 `Unexpected Application Error` 없음 확인
+
+### 다음 QA 후보
+
+- JWT/OAuth2 후 실제 사용자별 `/me/posts` 분리 검증
+- 비공개 글 상세 조회 권한 검증
+- 검색어 한글 인코딩을 프론트 입력 기준으로 검증
+
 ## 2026-06-14 QA: 댓글 삭제 API와 상세 화면 연결
 
 ### 확인 목표

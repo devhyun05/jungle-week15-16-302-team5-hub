@@ -1,5 +1,37 @@
 # Setup Notes
 
+## 2026-06-14 내 기록 API QA에 사용한 명령어
+
+### 전체 내 기록 조회
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/me/posts?visibility=all&size=50"
+```
+
+### 공개 글만 조회
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/me/posts?visibility=public&size=50"
+```
+
+### 비공개 글만 조회
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/me/posts?visibility=private&size=50"
+```
+
+### 카테고리 필터 조회
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/me/posts?category=learning-log&visibility=all&size=50"
+```
+
+### 브라우저 확인 URL
+
+```txt
+http://localhost:5173/my-records
+```
+
 ## 2026-06-14 댓글 삭제 API QA에 사용한 명령어
 
 ### 댓글 삭제 상태 코드 확인

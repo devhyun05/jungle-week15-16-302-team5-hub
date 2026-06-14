@@ -7,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 # health_router는 /health, /health/db endpoint 묶음이다.
 from app.routers.health import router as health_router
+# me_router는 현재 로그인 사용자의 데이터 조회 endpoint 묶음이다.
+from app.routers.me import router as me_router
 # posts_router는 /posts, /posts/{post_id} endpoint 묶음이다.
 from app.routers.posts import router as posts_router
 
@@ -36,3 +38,4 @@ app.include_router(health_router)
 app.include_router(posts_router)
 
 app.include_router(comments_router)
+app.include_router(me_router)
