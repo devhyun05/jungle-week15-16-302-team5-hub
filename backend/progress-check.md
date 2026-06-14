@@ -11,15 +11,9 @@
 
 ## 현재 위치
 
-<<<<<<< HEAD
-- 현재 추천 세션: Session 02 `User/Auth 모델과 스키마`
-- 다음 행동: `models/user.py`, `models/refresh_token.py`, `schemas/auth.py` 오리엔테이션부터 시작하기
-- 마지막 업데이트: 2026-06-13 / Session 01 마무리, `../.venv/bin/python -m pytest tests/test_health.py` 통과 확인
-=======
 - 현재 추천 세션: Session 10 `댓글 API`
 - 다음 행동: `schemas/comment.py`, `routers/comments.py` 오리엔테이션부터 시작하기
 - 마지막 업데이트: 2026-06-15 / Session 09 마무리, `../.venv/bin/python -m pytest` 전체 51개 테스트 통과 확인
->>>>>>> 0e408d6 (feat: complete backend session 09 posts write api)
 
 ## 세션별 체크표
 
