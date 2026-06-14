@@ -11,15 +11,9 @@
 
 ## 현재 위치
 
-<<<<<<< HEAD
-- 현재 추천 세션: Session 02 `User/Auth 모델과 스키마`
-- 다음 행동: `models/user.py`, `models/refresh_token.py`, `schemas/auth.py` 오리엔테이션부터 시작하기
-- 마지막 업데이트: 2026-06-13 / Session 01 마무리, `../.venv/bin/python -m pytest tests/test_health.py` 통과 확인
-=======
 - 현재 추천 세션: Session 08 `게시글 목록과 상세 조회`
 - 다음 행동: `routers/posts.py`, `services/post_service.py` 오리엔테이션부터 시작하기
 - 마지막 업데이트: 2026-06-15 / Session 07 마무리, `../.venv/bin/python -m pytest` 전체 40개 테스트 통과 확인
->>>>>>> 8087d9d (feat: implement post response schemas)
 
 ## 세션별 체크표
 
