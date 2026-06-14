@@ -345,7 +345,6 @@ GET /posts?tags=클리어슬라임&tags=거품
       "summary": "클리어 글루에 향료와 글리터를 먼저 섞습니다.",
       "post_type": "recipe",
       "slime_type": "클리어슬라임",
-      "difficulty": "초보자추천",
       "tags": ["클리어슬라임", "레시피"],
       "author": {
         "id": 1,
@@ -355,14 +354,6 @@ GET /posts?tags=클리어슬라임&tags=거품
       },
       "comment_count": 0,
       "is_owner": true,
-      "ingredients": "클리어 PVA 글루, 액티베이터, 딸기향 향료",
-      "ratio": "글루 100ml 기준 액티베이터 소량",
-      "steps": "향료를 섞은 뒤 액티베이터를 나눠 넣습니다.",
-      "texture_result": "투명하고 탱글한 질감",
-      "storage_tip": "밀폐 용기에 보관",
-      "symptom": null,
-      "attempted_solution": null,
-      "solved_status": null,
       "created_at": "2026-06-11T10:00:00Z",
       "updated_at": "2026-06-11T10:00:00Z"
     }
@@ -394,16 +385,7 @@ GET /posts?tags=클리어슬라임&tags=거품
   "content": "처음 만드는 사람도 따라할 수 있는 투명 슬라임 레시피입니다.",
   "post_type": "recipe",
   "slime_type": "클리어슬라임",
-  "difficulty": "초보자추천",
-  "tag_names": ["클리어슬라임", "레시피"],
-  "ingredients": "클리어 PVA 글루, 액티베이터, 딸기향 향료",
-  "ratio": "글루 100ml 기준 액티베이터 2~3방울씩",
-  "steps": "향료와 글리터를 먼저 섞고 액티베이터를 나눠 넣습니다.",
-  "texture_result": "탱글하고 투명한 질감",
-  "storage_tip": "사용 후 밀폐 용기에 보관",
-  "symptom": null,
-  "attempted_solution": null,
-  "solved_status": null
+  "tag_names": ["클리어슬라임", "레시피"]
 }
 ```
 
@@ -418,6 +400,7 @@ GET /posts?tags=클리어슬라임&tags=거품
 - `tag_names`는 최대 8개까지 정규화한다
 - 태그 정규화는 앞의 `#`, 앞뒤 공백, 내부 공백을 제거하고 중복을 없앤다
 - 존재하지 않는 태그명은 `tags`에 새로 만들고 `post_tags`로 연결한다
+- 현재 프론트 글쓰기 폼은 레시피 재료, 비율, 제작 순서, 실패 증상 등을 별도 입력칸으로 보내지 않는다. 이 정보는 우선 `content` 본문에 자유롭게 작성하고, 별도 필드가 필요해지면 프론트 입력칸과 DB 컬럼을 함께 확장한다.
 - 게시글 생성 후 RAG 구현 단계에서는 `embeddings` 생성 작업을 연결한다
 
 ### GET `/posts/{post_id}`
