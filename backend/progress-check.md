@@ -11,9 +11,9 @@
 
 ## 현재 위치
 
-- 현재 추천 세션: Session 07 `Post 스키마와 응답 변환`
-- 다음 행동: `schemas/post.py`, `services/post_service.py` 오리엔테이션부터 시작하기
-- 마지막 업데이트: 2026-06-15 / Session 06 마무리, `../.venv/bin/python -m pytest` 전체 34개 테스트 통과 확인
+- 현재 추천 세션: Session 08 `게시글 목록과 상세 조회`
+- 다음 행동: `routers/posts.py`, `services/post_service.py` 오리엔테이션부터 시작하기
+- 마지막 업데이트: 2026-06-15 / Session 07 마무리, `../.venv/bin/python -m pytest` 전체 40개 테스트 통과 확인
 
 ## 세션별 체크표
 
@@ -26,7 +26,7 @@
 | 4 | Auth API | `routers/auth.py` | signup, login, refresh, logout, me, cookie | 완료 | [x] | [x] | [x] | [x] | [x] | 회원가입/로그인/refresh/logout/me API 구현, cookie/access token 흐름 설명, 테스트 통과 |
 | 5 | Post, Comment, Tag 모델 | `models/post.py`, `models/comment.py`, `models/tag.py` | 관계, ForeignKey, 다대다 | 완료 | [x] | [x] | [x] | [x] | [x] | 현재 프론트 폼 기준 최소 Post 필드, 댓글/태그 관계, post_tags 구현 |
 | 6 | Tag API와 seed | `schemas/tag.py`, `services/tag_service.py`, `routers/tags.py`, `seed.py` | seed, tag list, popular count, 직접 입력 태그 정규화 | 완료 | [x] | [x] | [x] | [x] | [x] | 초기 태그 seed, `/tags`, `/tags/popular`, 태그 정규화 구현 및 테스트 통과 |
-| 7 | Post 스키마와 응답 변환 | `schemas/post.py`, `services/post_service.py` | create/update/response, summary | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
+| 7 | Post 스키마와 응답 변환 | `schemas/post.py`, `services/post_service.py` | create/update/response, summary | 완료 | [x] | [x] | [x] | [x] | [x] | `PostCreate`, `PostUpdate`, `PostResponse`, `PostListResponse`, `post_to_response` 구현 및 테스트 통과 |
 | 8 | 게시글 목록과 상세 조회 | `routers/posts.py`, `services/post_service.py` | query, multi tags AND filter, paging, 404 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 9 | 게시글 생성, 수정, 삭제 | `routers/posts.py`, `services/post_service.py`, `services/tag_service.py` | DB insert/update/delete, 권한, tag_names 저장 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 10 | 댓글 API | `schemas/comment.py`, `routers/comments.py` | 댓글 CRUD, 권한, nested path | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
@@ -101,3 +101,11 @@
 - 테스트 확인: `../.venv/bin/python -m pytest tests/test_tags_api.py` 실행 결과 `5 passed`; 전체 `../.venv/bin/python -m pytest` 실행 결과 `34 passed, 1 warning`.
 - 다음에 다시 말로 설명할 개념: `seed_initial_tags`가 중복을 피하는 방식, `post_tags` row 수를 `func.count`로 세어 인기 태그 count를 만드는 방식, `Depends(get_db)`가 router 함수에 DB 세션을 넣어주는 흐름.
 - 다음 추천 행동: Session 07 `Post 스키마와 응답 변환`에서 `PostCreate`, `PostUpdate`, `PostResponse`, `PostListResponse`, `post_to_response` 흐름 구현하기.
+
+### 2026-06-15 / Session 07
+
+- 한 줄 요약: `PostCreate`, `PostUpdate`, 작성자 포함 `PostResponse`, 목록 응답, `post_to_response` 변환 흐름을 구현함.
+- 막힌 지점: DB 컬럼이 아닌 응답 계산값(`summary`, `tags`, `comment_count`, `is_owner`)을 어디에서 만들어야 하는지 구분하는 부분.
+- 테스트 확인: `../.venv/bin/python -m pytest tests/test_post_schemas.py` 실행 결과 `6 passed`; 전체 `../.venv/bin/python -m pytest` 실행 결과 `40 passed, 1 warning`.
+- 다음에 다시 말로 설명할 개념: Pydantic 요청/응답 스키마와 SQLAlchemy 모델의 차이, `post_to_response`가 관계 객체에서 태그/댓글/작성자를 읽어 프론트 응답으로 바꾸는 흐름.
+- 다음 추천 행동: Session 08 `게시글 목록과 상세 조회`에서 `GET /posts`, 필터/페이징, `GET /posts/{post_id}`와 404 처리를 구현하기.
