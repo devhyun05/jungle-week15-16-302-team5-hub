@@ -258,7 +258,8 @@ python -m pytest tests/test_auth_api.py
 - `post_tags`
 - relationship
 - cascade
-- 선택 필드
+- 현재 프론트 글쓰기 폼 기준 게시글 필드: title, content, post_type, slime_type
+- 레시피 재료, 비율, 제작 순서, 실패 증상 등은 지금은 content에 저장하고 나중에 입력칸을 만들 때 확장
 
 구현 후 테스트:
 

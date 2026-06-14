@@ -11,9 +11,9 @@
 
 ## 현재 위치
 
-- 현재 추천 세션: Session 05 `Post, Comment, Tag 모델`
-- 다음 행동: `models/post.py`, `models/comment.py`, `models/tag.py` 오리엔테이션부터 시작하기
-- 마지막 업데이트: 2026-06-14 / Session 04 마무리, `../.venv/bin/python -m pytest` 전체 24개 테스트 통과 확인
+- 현재 추천 세션: Session 06 `Tag API와 seed`
+- 다음 행동: `schemas/tag.py`, `services/tag_service.py`, `routers/tags.py`, `seed.py` 오리엔테이션부터 시작하기
+- 마지막 업데이트: 2026-06-14 / Session 05 마무리, `../.venv/bin/python -m pytest` 전체 29개 테스트 통과 확인
 
 ## 세션별 체크표
 
@@ -24,7 +24,7 @@
 | 2 | User/Auth 모델과 스키마 | `models/user.py`, `models/refresh_token.py`, `schemas/auth.py` | User, RefreshToken, TokenResponse | 완료 | [x] | [x] | [x] | [x] | [x] | `User`, `RefreshToken`, Auth schema 구현 및 테스트 통과 |
 | 3 | 인증 서비스 | `services/auth_service.py`, `tests/test_auth_service.py` | password hash, access JWT, refresh hash/rotation/revoke, current_user | 완료 | [x] | [x] | [x] | [x] | [x] | 비밀번호 hash/검증, access JWT, refresh token hash 저장/검증/회전/폐기, current_user 테스트 통과 |
 | 4 | Auth API | `routers/auth.py` | signup, login, refresh, logout, me, cookie | 완료 | [x] | [x] | [x] | [x] | [x] | 회원가입/로그인/refresh/logout/me API 구현, cookie/access token 흐름 설명, 테스트 통과 |
-| 5 | Post, Comment, Tag 모델 | `models/post.py`, `models/comment.py`, `models/tag.py` | 관계, ForeignKey, 다대다 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
+| 5 | Post, Comment, Tag 모델 | `models/post.py`, `models/comment.py`, `models/tag.py` | 관계, ForeignKey, 다대다 | 완료 | [x] | [x] | [x] | [x] | [x] | 현재 프론트 폼 기준 최소 Post 필드, 댓글/태그 관계, post_tags 구현 |
 | 6 | Tag API와 seed | `schemas/tag.py`, `services/tag_service.py`, `routers/tags.py`, `seed.py` | seed, tag list, popular count, 직접 입력 태그 정규화 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 7 | Post 스키마와 응답 변환 | `schemas/post.py`, `services/post_service.py` | create/update/response, summary | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 | 8 | 게시글 목록과 상세 조회 | `routers/posts.py`, `services/post_service.py` | query, multi tags AND filter, paging, 404 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
@@ -85,3 +85,11 @@
 - 테스트 확인: `../.venv/bin/python -m pytest` 실행 결과 `24 passed, 1 warning`. Session 04 API 테스트는 `tests/test_auth_api.py` 기준 `8 passed`.
 - 다음에 다시 말로 설명할 개념: access token 만료 순간 자동 refresh가 아니라, 보호 API가 401을 반환했을 때 `/auth/refresh`를 시도한다는 점. 브라우저 refresh cookie 흐름에는 프론트 `credentials: "include"` 설정이 필요하다는 점.
 - 다음 추천 행동: Session 05 `Post, Comment, Tag 모델`에서 게시글, 댓글, 태그, `post_tags` 관계 모델 오리엔테이션부터 시작.
+
+### 2026-06-14 / Session 05
+
+- 한 줄 요약: 현재 프론트 글쓰기 폼에 맞춰 `Post`는 `title`, `content`, `post_type`, `slime_type` 중심으로 단순화하고, `Comment`, `Tag`, `post_tags` 관계 모델을 구현함.
+- 막힌 지점: API 설계서에는 레시피 재료, 비율, 제작 순서, 실패 증상 같은 확장 필드가 있었지만, 현재 프론트는 해당 입력칸을 보내지 않으므로 우선 `content` 본문에 저장하기로 결정함.
+- 테스트 확인: `../.venv/bin/python -m pytest tests/test_models.py` 실행 결과 `5 passed`; 전체 `../.venv/bin/python -m pytest` 실행 결과 `29 passed, 1 warning`.
+- 다음에 다시 말로 설명할 개념: `post_tags`가 왜 별도 중간 테이블인지, `relationship`은 DB 컬럼이 아니라 파이썬에서 연결 객체를 쉽게 탐색하게 해주는 설정이라는 점.
+- 다음 추천 행동: Session 06 `Tag API와 seed`에서 초기 태그 seed, `GET /tags`, `GET /tags/popular`, 태그 정규화 흐름 구현하기.
