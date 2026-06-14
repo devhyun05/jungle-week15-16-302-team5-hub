@@ -1135,3 +1135,64 @@ feat: 雽撽竴 臁绊殞 API鞕� 瓴岇嫓旮� 靸侅劯 鞐瓣舶
 ```txt
 feat: Google OAuth 牢刘 repository 扁馆 眠啊
 ```
+
+## 2026-06-14 Google OAuth auth router/service/dependency 备泅
+
+惑怕: 肯丰
+
+格钎: Google OAuth 肺弊牢 矫累何磐 泅犁 荤侩磊 炼雀鳖瘤 归浚靛 牢刘 endpoint 扁馆阑 备泅茄促.
+
+眠啊/荐沥茄 颇老:
+
+- `backend/app/dependencies/__init__.py`
+- `backend/app/dependencies/auth.py`
+- `backend/app/services/auth_service.py`
+- `backend/app/routers/auth.py`
+- `backend/app/main.py`
+
+备泅茄 endpoint:
+
+- `GET /auth/google/login`
+- `GET /auth/google/callback`
+- `GET /auth/me`
+- `POST /auth/refresh`
+- `POST /auth/logout`
+
+备泅茄 巴:
+
+- OAuth `state` cookie 积己 棺 callback 八刘
+- Google 肺弊牢 URL 积己
+- Google authorization code -> Google access token 背券 窃荐
+- Google access token -> Google userinfo 炼雀 窃荐
+- Google profile -> JungleLog User 炼雀/积己 楷搬
+- JungleLog access token / refresh token 惯鞭
+- refresh token hash DB 历厘
+- HttpOnly cookie 汲沥
+- refresh token rotation
+- logout 矫 refresh token 企扁 棺 cookie 昏力
+- `get_current_user`, `get_current_approved_user`, `require_roles` dependency 眠啊
+
+酒流 巢篮 巴:
+
+- React 肺弊牢 滚瓢阑 `/auth/google/login`俊 楷搬
+- 肺弊牢 饶 `/auth/me`肺 角力 荤侩磊 role/approvalStatus 啊廉坷扁
+- 扁粮 demo user 扁馆 霸矫臂 累己/郴 扁废 API甫 current user 扁馆栏肺 函版
+- 包府磊 铰牢 API 备泅
+- CSRF token 扁馆 mutating request 焊碍
+
+八刘:
+
+- `python -m compileall app` 己傍
+- FastAPI app俊 auth route 5俺 殿废 犬牢
+- `GET /auth/google/login` -> 307
+- Google redirect location 咯何 犬牢
+- OAuth state cookie 积己 犬牢
+- cookie 绝绰 `GET /auth/me` -> 401
+- cookie 绝绰 `POST /auth/refresh` -> 401
+- `POST /auth/logout` -> 200
+
+眠玫 目乖 力格:
+
+```txt
+feat: Google OAuth 牢刘 扼快磐 备泅
+```

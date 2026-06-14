@@ -743,3 +743,35 @@ cd C:\junhee\WEEK15_AI_BOARD\backend
 .\.venv\Scripts\python.exe -m compileall app
 .\.venv\Scripts\python.exe -c "from app.schemas.auth import CurrentUserResponse; from app.repositories.user_repository import is_initial_admin_email; from app.repositories.auth_token_repository import is_refresh_token_active; print(CurrentUserResponse(id=1, email='a@test.com', name='A', role='STUDENT', approvalStatus='승인 대기').model_dump(by_alias=True)); print(is_initial_admin_email('none@example.com')); print(callable(is_refresh_token_active))"
 ```
+
+## 2026-06-14 Google OAuth auth router QA
+
+목표: Google OAuth endpoint가 FastAPI에 등록되고, 비밀값을 출력하지 않은 상태로 기본 인증 흐름이 동작하는지 확인한다.
+
+- [x] `backend/app/routers/auth.py`가 존재한다.
+- [x] `backend/app/services/auth_service.py`가 존재한다.
+- [x] `backend/app/dependencies/auth.py`가 존재한다.
+- [x] `backend/app/main.py`에 auth router가 등록되어 있다.
+- [x] `/auth/google/login` route가 등록되어 있다.
+- [x] `/auth/google/callback` route가 등록되어 있다.
+- [x] `/auth/me` route가 등록되어 있다.
+- [x] `/auth/refresh` route가 등록되어 있다.
+- [x] `/auth/logout` route가 등록되어 있다.
+- [x] `GET /auth/google/login`이 307 redirect를 반환한다.
+- [x] redirect target이 Google OAuth 도메인으로 시작한다.
+- [x] `oauth_state` cookie가 설정된다.
+- [x] cookie 없는 `GET /auth/me`는 401을 반환한다.
+- [x] cookie 없는 `POST /auth/refresh`는 401을 반환한다.
+- [x] `POST /auth/logout`은 200을 반환한다.
+- [x] `python -m compileall app` 성공.
+
+검증 명령:
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -m compileall app
+.\.venv\Scripts\python.exe -c "from app.main import app; print([route.path for route in app.routes if route.path.startswith('/auth')])"
+.\.venv\Scripts\python.exe -c "from fastapi.testclient import TestClient; from app.main import app; from app.core.config import settings; client = TestClient(app); login_response = client.get('/auth/google/login', follow_redirects=False); print('login_status=', login_response.status_code); print('login_redirect_google=', login_response.headers.get('location', '').startswith('https://accounts.google.com/')); print('state_cookie_set=', settings.oauth_state_cookie_name in login_response.cookies); me_response = client.get('/auth/me'); print('me_without_cookie=', me_response.status_code); refresh_response = client.post('/auth/refresh'); print('refresh_without_cookie=', refresh_response.status_code); logout_response = client.post('/auth/logout'); print('logout_status=', logout_response.status_code)"
+```
+
+주의: 실제 Google 로그인 end-to-end는 브라우저에서 Google 계정을 거쳐야 하므로 프론트 로그인 버튼 연결 후 따로 QA한다.

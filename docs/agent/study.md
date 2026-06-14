@@ -2308,3 +2308,88 @@ DB에 원문을 저장하면 DB가 노출됐을 때 공격자가 바로 재사용할 수 있다.
 - approval status
 - refresh token hash
 - token revocation
+
+## 2026-06-14 Google OAuth auth router/service/dependency 학습 기록
+
+이번 단계는 Google OAuth 백엔드 흐름을 실제 endpoint로 만든 작업이다.
+
+### 수정한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/dependencies/auth.py` | cookie의 access token으로 현재 로그인 사용자를 찾는 공통 dependency |
+| `backend/app/services/auth_service.py` | Google OAuth 통신, JungleLog token 발급, refresh token rotation 처리 |
+| `backend/app/routers/auth.py` | `/auth/...` HTTP endpoint 정의 |
+| `backend/app/main.py` | auth router를 FastAPI app에 등록 |
+
+### 로그인 시작 흐름
+
+```txt
+브라우저
+-> GET /auth/google/login
+-> FastAPI가 oauth_state 생성
+-> oauth_state를 HttpOnly cookie로 저장
+-> Google OAuth URL로 307 Redirect
+-> 브라우저가 Google 로그인 화면으로 이동
+```
+
+### 로그인 콜백 흐름
+
+```txt
+Google
+-> GET /auth/google/callback?code=...&state=...
+-> FastAPI가 cookie state와 query state 비교
+-> Google token endpoint 호출
+-> Google userinfo endpoint 호출
+-> users 테이블에서 사용자 조회 또는 생성
+-> access token 생성
+-> refresh token 생성
+-> refresh token hash DB 저장
+-> access/refresh token을 HttpOnly cookie로 저장
+-> React frontend로 redirect
+```
+
+### /auth/me 흐름
+
+```txt
+브라우저가 cookie 자동 전송
+-> get_current_user()
+-> access token cookie 읽기
+-> decode_access_token()
+-> token sub에서 user_id 추출
+-> users 테이블 조회
+-> CurrentUserResponse 반환
+```
+
+### /auth/refresh 흐름
+
+```txt
+refresh token cookie 읽기
+-> refresh token 원문 hash
+-> auth_refresh_tokens.token_hash 조회
+-> revoked_at / expires_at 확인
+-> 새 access token 생성
+-> 새 refresh token 생성 및 hash 저장
+-> 기존 refresh token revoked_at 채움
+-> 새 cookie 내려주기
+```
+
+### 이번에 이해해야 할 핵심 포인트
+
+- router는 HTTP request/response만 다룬다.
+- service는 Google OAuth 흐름과 token 발급 같은 비즈니스 흐름을 다룬다.
+- repository는 DB query만 다룬다.
+- dependency는 여러 endpoint에서 공통으로 필요한 현재 사용자 조회를 재사용하게 해준다.
+- access token에는 role을 넣지 않고 user_id만 넣는다. role은 DB에서 다시 읽어야 권한 변경이 바로 반영된다.
+
+### 추가 학습 키워드
+
+- FastAPI dependency
+- RedirectResponse
+- JSONResponse
+- HttpOnly cookie
+- SameSite=Lax
+- OAuth state parameter
+- refresh token rotation
+- 401 Unauthorized
+- 403 Forbidden

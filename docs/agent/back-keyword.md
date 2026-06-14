@@ -828,3 +828,40 @@ JWT êµ¬í˜„, DB ì„¤ê³„ ë¬¸ì„œ, API ì„¤ê³„ ë¬¸ì„œëŠ” íŒ€ì›ì—ê²Œ ê³µìœ í•´ì•¼ í•˜
 - ÀÌ¹ø ±¸Çö ¿¹½Ã:
   - `user_repository.py`: users Å×ÀÌºí Á¶È¸/»ı¼º/°»½Å
   - `auth_token_repository.py`: auth_refresh_tokens Å×ÀÌºí ÀúÀå/Á¶È¸/Æó±â
+
+### FastAPI Dependency
+
+- »óÅÂ: ÁøÇà Áß
+- ¾ğÁ¦ ´ëÈ­µÇ´Â°¡: ¿©·¯ API¿¡¼­ ÇöÀç ·Î±×ÀÎ »ç¿ëÀÚ³ª ±ÇÇÑ °Ë»ç¸¦ °øÅëÀ¸·Î ½á¾ß ÇÒ ¶§
+- ¿ì¸® ÇÁ·ÎÁ§Æ®¿¡¼­ ¾îµğ¿¡ ¾²ÀÌ´Â°¡: `get_current_user`, `get_current_approved_user`, `require_roles`
+- ÇÙ½É °³³ä:
+  - `Depends()`´Â FastAPI°¡ endpoint ½ÇÇà Àü¿¡ ÇÊ¿äÇÑ °ªÀ» ¸¸µé¾î ³Ö¾îÁÖ´Â ±â´ÉÀÌ´Ù.
+  - ÀÎÁõ dependency´Â cookie¿¡¼­ tokenÀ» ÀĞ°í DB »ç¿ëÀÚ·Î ¹Ù²ãÁØ´Ù.
+  - role dependency´Â STUDENT/COACH/ADMIN Á¢±Ù Á¦ÇÑ¿¡ »ç¿ëµÈ´Ù.
+- °ü·Ã ÆÄÀÏ:
+  - `backend/app/dependencies/auth.py`
+
+### HttpOnly Cookie / SameSite
+
+- »óÅÂ: ÁøÇà Áß
+- ¾ğÁ¦ ´ëÈ­µÇ´Â°¡: ºê¶ó¿ìÀú¿¡ access/refresh tokenÀ» ÀúÀåÇÒ ¶§
+- ¿ì¸® ÇÁ·ÎÁ§Æ®¿¡¼­ ¾îµğ¿¡ ¾²ÀÌ´Â°¡: Google OAuth ·Î±×ÀÎ ÈÄ JungleLog token cookie ÀúÀå
+- ÇÙ½É °³³ä:
+  - HttpOnly cookie´Â JavaScript¿¡¼­ Á÷Á¢ ÀĞÀ» ¼ö ¾ø´Ù.
+  - SameSite=Lax´Â ÀÏ¹İÀûÀÎ ¿ÜºÎ »çÀÌÆ® CSRF À§ÇèÀ» ÁÙÀÌ¸é¼­ ·Î±×ÀÎ redirect Èå¸§Àº À¯ÁöÇÏ±â ÁÁÀº ±âº»°ªÀÌ´Ù.
+  - ¿î¿µ HTTPS È¯°æ¿¡¼­´Â `COOKIE_SECURE=true`·Î ¹Ù²ã¾ß ÇÑ´Ù.
+- °ü·Ã ÆÄÀÏ:
+  - `backend/app/routers/auth.py`
+  - `backend/app/core/config.py`
+
+### 401 / 403 ÀÎÁõ ¿À·ù
+
+- »óÅÂ: ÁøÇà Áß
+- ¾ğÁ¦ ´ëÈ­µÇ´Â°¡: ·Î±×ÀÎÇÏÁö ¾Ê¾Ò°Å³ª ±ÇÇÑÀÌ ¾ø´Â ¿äÃ»À» Ã³¸®ÇÒ ¶§
+- ¿ì¸® ÇÁ·ÎÁ§Æ®¿¡¼­ ¾îµğ¿¡ ¾²ÀÌ´Â°¡: `/auth/me`, °ü¸®ÀÚ ½ÂÀÎ API, ÄÚÄ¡ Àü¿ë API
+- ÇÙ½É °³³ä:
+  - 401 Unauthorized: ·Î±×ÀÎ Á¤º¸°¡ ¾ø°Å³ª À¯È¿ÇÏÁö ¾Ê´Ù.
+  - 403 Forbidden: ·Î±×ÀÎÀº ÇßÁö¸¸ ±ÇÇÑ ¶Ç´Â ½ÂÀÎ »óÅÂ°¡ ¸ÂÁö ¾Ê´Ù.
+- °ü·Ã ÆÄÀÏ:
+  - `backend/app/dependencies/auth.py`
+  - `backend/app/routers/auth.py`

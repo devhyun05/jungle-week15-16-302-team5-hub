@@ -407,3 +407,14 @@ uvicorn app.main:app --reload
 - 초기 관리자 이메일은 `.env`의 `ADMIN_EMAILS`에서 읽고, 일치하면 `ADMIN / 승인 완료`로 생성됩니다.
 - 일반 Google 로그인 사용자는 `STUDENT / 승인 대기`로 생성됩니다.
 - 아직 `/auth/google/login`, `/auth/google/callback`, `/auth/me`, `/auth/refresh`, `/auth/logout` endpoint는 다음 단계에서 구현 예정입니다.
+
+## 최근 인증 라우터 구현
+
+- Google OAuth 로그인 시작/콜백 endpoint를 추가했습니다.
+- `GET /auth/google/login`은 Google 로그인 화면으로 redirect합니다.
+- `GET /auth/google/callback`은 Google authorization code를 처리하고 JungleLog access/refresh token cookie를 발급합니다.
+- `GET /auth/me`는 HttpOnly access token cookie를 기준으로 현재 로그인 사용자를 반환합니다.
+- `POST /auth/refresh`는 refresh token rotation 방식으로 새 access/refresh token을 발급합니다.
+- `POST /auth/logout`은 refresh token을 폐기하고 인증 cookie를 삭제합니다.
+- `backend/app/dependencies/auth.py`에 현재 사용자 조회, 승인 사용자 제한, role 제한 dependency를 추가했습니다.
+- 실제 브라우저 Google 로그인 end-to-end 확인은 프론트 로그인 버튼 연결 후 진행 예정입니다.
