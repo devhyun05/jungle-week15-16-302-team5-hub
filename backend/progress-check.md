@@ -11,9 +11,9 @@
 
 ## 현재 위치
 
-- 현재 추천 세션: Session 10 `댓글 API`
-- 다음 행동: `schemas/comment.py`, `routers/comments.py` 오리엔테이션부터 시작하기
-- 마지막 업데이트: 2026-06-15 / Session 09 마무리, `../.venv/bin/python -m pytest` 전체 51개 테스트 통과 확인
+- 현재 추천 세션: Session 11 `프론트 연동 점검`
+- 다음 행동: `app/main.py`, `frontend/src/api/*` 호출 흐름 점검부터 시작하기
+- 마지막 업데이트: 2026-06-15 / Session 10 마무리, `../.venv/bin/python -m pytest` 전체 57개 테스트 통과 확인
 
 ## 세션별 체크표
 
@@ -29,7 +29,7 @@
 | 7 | Post 스키마와 응답 변환 | `schemas/post.py`, `services/post_service.py` | create/update/response, summary | 완료 | [x] | [x] | [x] | [x] | [x] | `PostCreate`, `PostUpdate`, `PostResponse`, `PostListResponse`, `post_to_response` 구현 및 테스트 통과 |
 | 8 | 게시글 목록과 상세 조회 | `routers/posts.py`, `services/post_service.py` | query, multi tags AND filter, paging, 404 | 완료 | [x] | [x] | [x] | [x] | [x] | `GET /posts`, `GET /posts/{post_id}`, keyword/post_type/slime_type/tag/tags AND 필터 구현 |
 | 9 | 게시글 생성, 수정, 삭제 | `routers/posts.py`, `services/post_service.py`, `services/tag_service.py` | DB insert/update/delete, 권한, tag_names 저장 | 완료 | [x] | [x] | [x] | [x] | [x] | `POST /posts`, `PATCH /posts/{post_id}`, `DELETE /posts/{post_id}`, 작성자 권한, 태그 생성/교체 구현 |
-| 10 | 댓글 API | `schemas/comment.py`, `routers/comments.py` | 댓글 CRUD, 권한, nested path | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
+| 10 | 댓글 API | `schemas/comment.py`, `routers/comments.py` | 댓글 CRUD, 권한, nested path | 완료 | [x] | [x] | [x] | [x] | [x] | 댓글 목록/생성/수정/삭제, 작성자 권한, 선택 로그인 is_owner 구현 |
 | 11 | 프론트 연동 점검 | `app/main.py`, `frontend/src/api/*` | CORS, token, 응답 필드, `/`/`/posts`, 다중 태그 URL 일치 | 미시작 | [ ] | [ ] | [ ] | [ ] | [ ] |  |
 
 ## 세션 종료 기록 양식
@@ -125,3 +125,11 @@
 - 테스트 확인: `../.venv/bin/python -m pytest tests/test_posts_write_api.py` 실행 결과 `6 passed`; 전체 `../.venv/bin/python -m pytest` 실행 결과 `51 passed, 1 warning`.
 - 다음에 다시 말로 설명할 개념: `Depends(get_current_user)`가 access token에서 현재 사용자를 만드는 흐름, `post.author_id != current_user.id` 권한 체크, `tag_names`를 `Tag` 객체 목록으로 바꿔 `post_tags` 관계에 연결하는 방식.
 - 다음 추천 행동: Session 10 `댓글 API`에서 댓글 생성/수정/삭제와 작성자 권한, nested path 흐름 구현하기.
+
+### 2026-06-15 / Session 10
+
+- 한 줄 요약: `CommentCreate`, `CommentUpdate`, `CommentResponse`, 댓글 목록/생성/수정/삭제 API와 작성자 권한 검사를 구현함.
+- 막힌 지점: 응답 필드 중 `author`는 users 테이블 연결값이고 `is_owner`는 DB 컬럼이 아니라 현재 로그인 사용자와 댓글 작성자를 비교한 계산값이라는 부분.
+- 테스트 확인: `../.venv/bin/python -m pytest tests/test_comments_api.py` 실행 결과 `6 passed`; 전체 `../.venv/bin/python -m pytest` 실행 결과 `57 passed, 1 warning`.
+- 다음에 다시 말로 설명할 개념: 댓글 목록은 선택 로그인으로 `is_owner`만 계산하고, 댓글 생성/수정/삭제는 필수 로그인으로 `get_current_user`를 사용한다는 점.
+- 다음 추천 행동: Session 11 `프론트 연동 점검`에서 백엔드 응답 필드와 `frontend/src/api/*` 호출 흐름이 실제로 맞는지 확인하기.
