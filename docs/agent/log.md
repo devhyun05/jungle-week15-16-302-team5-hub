@@ -1,5 +1,47 @@
 # JungleLog Progress Log
 
+## 2026-06-14 JWT refresh token 저장 구조 추가
+
+상태: 완료
+
+목표: Google OAuth / JWT 인증을 구현하기 전에 access token과 refresh token을 분리하는 보안 구조를 DB 설계와 SQLAlchemy 모델에 반영한다.
+
+구현 파일:
+
+- `backend/app/db/models/auth_refresh_token.py`
+- `backend/app/db/models/user.py`
+- `backend/app/db/models/__init__.py`
+- `docs/agent/db-design.md`
+- `README.md`
+- `docs/agent/study.md`
+
+구현 내용:
+
+- `auth_refresh_tokens` 모델을 추가했다.
+- refresh token 원문 대신 `token_hash`만 저장하도록 설계했다.
+- refresh token 만료는 `expires_at`, 폐기는 `revoked_at`으로 구분했다.
+- refresh token rotation을 위해 `replaced_by_token_id` self reference를 추가했다.
+- `User.refresh_tokens` 관계를 추가했다.
+- `models/__init__.py`에 `AuthRefreshToken`을 등록해 `Base.metadata.create_all()`이 테이블을 인식할 수 있게 했다.
+- `db-design.md`의 테이블 목록, DBML, 필드 설명에 인증 토큰 테이블을 반영했다.
+
+검증:
+
+- `python -m compileall app` 성공
+- SQLAlchemy `configure_mappers()` 성공
+- `Base.metadata.tables`에 `auth_refresh_tokens` 등록 확인
+- `init_db()` 실행 성공
+- PostgreSQL 실제 테이블 목록 13개 확인
+- `auth_refresh_tokens` 컬럼 목록 확인: `id`, `user_id`, `token_hash`, `expires_at`, `revoked_at`, `replaced_by_token_id`, `user_agent`, `ip_address`, `created_at`
+- `npm run build` 성공
+- `git diff --check` 통과. CRLF 변환 warning만 있음
+
+다음 작업:
+
+1. 검증을 통과시키고 `auth_refresh_tokens` 실제 테이블 생성 확인
+2. `security.py`에 access token / refresh token 생성과 검증 유틸 구현
+3. Google OAuth login/callback API 구현
+
 ## 2026-06-14 내 기록 화면 API 전환
 
 상태: 완료

@@ -13,6 +13,7 @@ RAG, MCP, Agent, OpenAI 호출 기록은 기본 CRUD가 안정화된 뒤 v2에�
 | 테이블 | 역할 |
 | --- | --- |
 | `users` | Google OAuth 기반 학생, 코치, 관리자 계정 |
+| `auth_refresh_tokens` | JWT access token 재발급을 위한 refresh token 해시, 만료, 폐기 이력 |
 | `user_approval_logs` | 운영자가 사용자 권한과 승인 상태를 변경한 이력 |
 | `post_categories` | 학습 로그, 트러블슈팅, 프로젝트 회고, 면접 질문, 포트폴리오 관리 카테고리 |
 | `posts` | 게시글 본문 |
@@ -94,6 +95,26 @@ Google OAuth로 로그인한 사용자 계정이다.
 | `approval_note` | `text` | 승인/거절/정지 메모 | 사유가 길어질 수 있어 `text`로 둔다. |
 | `created_at` | `timestamp` | 가입 시점 | row 생성 시간을 저장한다. |
 | `updated_at` | `timestamp` | 사용자 정보 수정 시점 | role, 승인 상태 변경 시간을 추적한다. |
+
+### auth_refresh_tokens
+
+JWT access token은 짧게 만료시키고, refresh token으로 다시 access token을 발급받게 한다.
+이 테이블은 refresh token의 원문이 아니라 해시값과 만료/폐기 상태를 저장한다.
+
+| 필드 | 타입 | 화면/기능 | 왜 이 타입인가 |
+| --- | --- | --- | --- |
+| `id` | `bigint` | refresh token row 구분 | 로그인 세션 기록이 계속 쌓일 수 있으므로 큰 정수 PK를 쓴다. |
+| `user_id` | `bigint` | 토큰 소유 사용자 | `users.id`를 참조해 어떤 사용자의 로그인 세션인지 연결한다. |
+| `token_hash` | `varchar(64)` | refresh token 검증 | refresh token 원문을 DB에 저장하지 않고 sha256 해시만 저장한다. sha256 hex 문자열은 64자다. |
+| `expires_at` | `timestamp` | refresh token 만료 검사 | access token 재발급 요청 시 아직 유효한 refresh token인지 판단한다. |
+| `revoked_at` | `timestamp` | 로그아웃/강제 만료 | 값이 있으면 더 이상 사용할 수 없는 refresh token으로 본다. |
+| `replaced_by_token_id` | `bigint` | refresh token rotation | 기존 refresh token을 새 토큰으로 교체했을 때 새 row를 가리킨다. 재사용 공격 추적에 필요하다. |
+| `user_agent` | `varchar(500)` | 접속 브라우저/기기 참고 | 같은 사용자가 여러 브라우저에서 로그인했을 때 구분할 수 있는 보조 정보다. |
+| `ip_address` | `varchar(45)` | 접속 IP 참고 | IPv4와 IPv6를 모두 담을 수 있도록 45자를 사용한다. |
+| `created_at` | `timestamp` | 로그인 세션 생성 시점 | refresh token이 언제 발급되었는지 추적한다. |
+
+이 테이블은 로그인 세션을 관리하는 보안 테이블이다.
+게시글 화면에 직접 보이지는 않지만 `/auth/refresh`, `/auth/logout`, 관리자 강제 로그아웃 같은 인증 기능의 기반이 된다.
 
 ### user_approval_logs
 
@@ -336,6 +357,18 @@ Table users {
   updated_at timestamp [not null]
 }
 
+Table auth_refresh_tokens {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  token_hash varchar(64) [not null, unique, note: 'sha256 hash of refresh token, never store raw token']
+  expires_at timestamp [not null]
+  revoked_at timestamp
+  replaced_by_token_id bigint
+  user_agent varchar(500)
+  ip_address varchar(45)
+  created_at timestamp [not null]
+}
+
 Table user_approval_logs {
   id bigint [pk, increment]
   user_id bigint [not null]
@@ -467,6 +500,8 @@ Table notifications {
 
 Ref: posts.author_id > users.id
 Ref: users.approved_by > users.id
+Ref: auth_refresh_tokens.user_id > users.id
+Ref: auth_refresh_tokens.replaced_by_token_id > auth_refresh_tokens.id
 Ref: user_approval_logs.user_id > users.id
 Ref: user_approval_logs.actor_id > users.id
 Ref: posts.category_id > post_categories.id

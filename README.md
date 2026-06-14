@@ -1,5 +1,17 @@
 # JungleLog
 
+## 2026-06-14 최신 구현: JWT refresh token 저장 구조 추가
+
+Google OAuth / JWT 인증 구현을 시작하기 전에 access token과 refresh token을 분리하는 인증 구조로 방향을 확정했습니다.
+
+- access token은 짧게 유지하는 JWT로 사용합니다.
+- refresh token은 원문을 DB에 저장하지 않고 해시값만 `auth_refresh_tokens` 테이블에 저장합니다.
+- `backend/app/db/models/auth_refresh_token.py` 모델을 추가했습니다.
+- `User.refresh_tokens` 관계를 추가해 한 사용자가 여러 로그인 세션을 가질 수 있게 했습니다.
+- `docs/agent/db-design.md`의 테이블 목록, DBML, 필드 설명에 `auth_refresh_tokens`를 반영했습니다.
+
+아직 실제 Google OAuth callback, JWT 발급, refresh token rotation, logout API는 구현 전입니다. 다음 단계에서 `security.py`, 인증 repository/service/router를 순서대로 구현할 예정입니다.
+
 ## 2026-06-14 최신 구현: 내 기록 화면 API 전환
 
 `/my-records` 화면을 mock data 필터링에서 백엔드 `GET /me/posts` API 기반으로 전환했습니다.

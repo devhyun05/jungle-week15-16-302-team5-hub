@@ -1,6 +1,8 @@
 # 이 파일은 app.db.models 패키지를 import할 때 모든 모델 클래스를 함께 로드하기 위한 모음 파일이다.
 # init_db.py에서 import app.db.models를 실행하면 아래 모델들이 모두 import되어 Base.metadata에 등록된다.
 
+# refresh token 저장/폐기 테이블 모델
+from app.db.models.auth_refresh_token import AuthRefreshToken
 # 댓글 테이블 모델
 from app.db.models.comment import Comment
 # 알림 테이블 모델
@@ -29,6 +31,7 @@ from app.db.models.user_approval_log import UserApprovalLog
 # __all__은 "이 패키지에서 공개적으로 사용할 이름 목록"을 의미한다.
 # from app.db.models import User, Post 같은 import가 명확해진다.
 __all__ = [
+    "AuthRefreshToken",
     "Comment",
     "Notification",
     "PortfolioProject",

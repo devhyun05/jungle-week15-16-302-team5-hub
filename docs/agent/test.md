@@ -1,5 +1,31 @@
 # QA Checklist
 
+## 2026-06-14 QA: JWT refresh token 저장 구조
+
+### 확인 목표
+
+- `AuthRefreshToken` 모델이 SQLAlchemy metadata에 등록된다.
+- `User.refresh_tokens` 관계가 깨지지 않는다.
+- `init_db()` 실행 후 PostgreSQL에 `auth_refresh_tokens` 테이블이 생성된다.
+- DBML과 실제 SQLAlchemy 모델의 핵심 필드가 일치한다.
+
+### 실행할 검증
+
+- [x] `backend`: `python -m compileall app`
+- [x] SQLAlchemy `configure_mappers()` 성공
+- [x] `Base.metadata.tables`에 `auth_refresh_tokens` 포함
+- [x] `init_db()` 실행 성공
+- [x] PostgreSQL 실제 테이블 목록에 `auth_refresh_tokens` 포함
+- [x] `auth_refresh_tokens` 컬럼에 `user_id`, `token_hash`, `expires_at`, `revoked_at`, `replaced_by_token_id` 포함
+- [x] `frontend`: `npm run build`
+- [x] `git diff --check` 통과
+
+### 다음 QA 후보
+
+- `/auth/refresh` 구현 후 폐기된 refresh token으로 재발급을 시도하면 실패하는지 확인한다.
+- `/auth/logout` 구현 후 `revoked_at`이 채워지는지 확인한다.
+- refresh token rotation 구현 후 `replaced_by_token_id`가 연결되는지 확인한다.
+
 ## 2026-06-14 QA: 내 기록 화면 API 전환
 
 ### 확인 목표

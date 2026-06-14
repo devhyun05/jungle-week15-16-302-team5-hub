@@ -1,5 +1,28 @@
 # Setup Notes
 
+## 2026-06-14 auth_refresh_tokens 테이블 생성 확인 명령
+
+JWT refresh token 모델을 추가한 뒤에는 기존 DB 초기화 명령을 다시 실행하면 새 테이블이 생성된다.
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -c "from app.db.init_db import init_db; init_db(); print('init_db done')"
+```
+
+실제 PostgreSQL 테이블 목록에서 `auth_refresh_tokens`가 보이는지 확인한다.
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -c "from sqlalchemy import inspect; from app.db.session import engine; print(sorted(inspect(engine).get_table_names()))"
+```
+
+특정 테이블의 컬럼만 확인하려면 아래 명령을 사용한다.
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -c "from sqlalchemy import inspect; from app.db.session import engine; print([column['name'] for column in inspect(engine).get_columns('auth_refresh_tokens')])"
+```
+
 ## 2026-06-14 내 기록 API QA에 사용한 명령어
 
 ### 전체 내 기록 조회

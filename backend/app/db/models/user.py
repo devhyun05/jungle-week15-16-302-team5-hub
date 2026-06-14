@@ -58,6 +58,8 @@ class User(Base):
     review_request_coaches: Mapped[list["ReviewRequestCoach"]] = relationship(back_populates="coach")
     # User -> Notification 목록 관계다. 사용자에게 온 알림들이다.
     notifications: Mapped[list["Notification"]] = relationship(back_populates="user")
+    # User -> AuthRefreshToken 목록 관계다. 로그인한 브라우저/기기별 refresh token 기록이다.
+    refresh_tokens: Mapped[list["AuthRefreshToken"]] = relationship(back_populates="user")
     # 이 사용자가 승인/거절/정지 대상이었던 이력들이다.
     # UserApprovalLog에는 user_id와 actor_id가 둘 다 users.id를 보므로 foreign_keys를 지정해야 한다.
     approval_logs: Mapped[list["UserApprovalLog"]] = relationship(

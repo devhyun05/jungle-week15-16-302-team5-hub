@@ -1,5 +1,43 @@
 # Backend Keyword Map
 
+## 2026-06-14 키워드 / JWT Access Token, Refresh Token, Token Hash
+
+### Access Token
+
+- 상태: 진행 중
+- 언제 대화되는가: Google OAuth 로그인 후 JungleLog API 요청을 보호할 때
+- 우리 프로젝트에서 어디에 쓰이는가: 게시글 작성/수정/삭제, 댓글 작성/삭제, 내 기록, 코치 리뷰, 관리자 승인 API
+- 핵심 개념: access token은 API 요청마다 “현재 사용자가 누구인지” 증명하는 짧은 수명의 JWT다.
+- 관련 파일: 예정 `backend/app/core/security.py`, `backend/app/dependencies/auth.py`
+- 다음에 다시 볼 시점: `/auth/me`, 보호 API dependency를 구현할 때
+
+### Refresh Token
+
+- 상태: 진행 중
+- 언제 대화되는가: access token이 만료되었지만 사용자를 다시 Google 로그인으로 보내지 않고 새 access token을 발급할 때
+- 우리 프로젝트에서 어디에 쓰이는가: `auth_refresh_tokens` 테이블, 예정 `/auth/refresh`, `/auth/logout`
+- 핵심 개념: refresh token은 긴 수명의 로그인 세션 토큰이다. access token보다 민감하므로 원문 저장을 피하고 폐기/만료 관리를 해야 한다.
+- 관련 파일: `backend/app/db/models/auth_refresh_token.py`
+- 다음에 다시 볼 시점: refresh token 발급, 재발급, 로그아웃 API를 만들 때
+
+### Token Hash
+
+- 상태: 진행 중
+- 언제 대화되는가: refresh token을 DB에 저장할 때
+- 우리 프로젝트에서 어디에 쓰이는가: `auth_refresh_tokens.token_hash`
+- 핵심 개념: refresh token 원문을 DB에 저장하지 않고 sha256 같은 해시 결과만 저장한다. 요청이 오면 쿠키의 원문 refresh token을 다시 해시해서 DB 값과 비교한다.
+- 관련 파일: `backend/app/db/models/auth_refresh_token.py`, 예정 `backend/app/core/security.py`
+- 다음에 다시 볼 시점: `hash_refresh_token()` 유틸을 구현할 때
+
+### Refresh Token Rotation
+
+- 상태: 진행 중
+- 언제 대화되는가: refresh token으로 access token을 재발급할 때 기존 refresh token을 새 refresh token으로 교체할지 결정할 때
+- 우리 프로젝트에서 어디에 쓰이는가: `auth_refresh_tokens.replaced_by_token_id`, `revoked_at`
+- 핵심 개념: refresh token을 한 번 사용하면 기존 토큰을 폐기하고 새 토큰을 발급한다. 폐기된 토큰이 다시 사용되면 탈취 가능성을 의심할 수 있다.
+- 관련 파일: `backend/app/db/models/auth_refresh_token.py`
+- 다음에 다시 볼 시점: `/auth/refresh` 구현 때
+
 ## 2026-06-14 키워드: /me API와 Current User
 
 ### /me API

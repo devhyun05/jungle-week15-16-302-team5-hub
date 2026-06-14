@@ -1,5 +1,69 @@
 # Study Notes
 
+## 2026-06-14 JWT refresh token 저장 구조 학습
+
+이번 작업은 Google OAuth / JWT 인증을 바로 붙이기 전에 refresh token을 안전하게 저장할 DB 구조를 추가한 단계다.
+
+### 이번에 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/db/models/auth_refresh_token.py` | refresh token 해시, 만료, 폐기 상태를 저장하는 SQLAlchemy 모델 |
+| `backend/app/db/models/user.py` | `User.refresh_tokens` 관계 추가 |
+| `backend/app/db/models/__init__.py` | 새 모델을 `Base.metadata`에 등록되도록 import |
+| `docs/agent/db-design.md` | ERD 테이블 목록, DBML, 필드별 설명 업데이트 |
+| `README.md` | 현재 인증 구현 방향 업데이트 |
+
+### 왜 refresh token 테이블이 필요한가
+
+access token은 API 요청마다 현재 사용자를 증명하는 짧은 JWT다. 짧게 만료시키면 탈취되었을 때 피해 시간이 줄어든다.
+
+하지만 access token이 너무 빨리 만료되면 사용자가 계속 다시 로그인해야 한다. 그래서 refresh token을 사용한다. refresh token은 access token을 다시 발급받기 위한 긴 수명의 토큰이다.
+
+```txt
+Google OAuth 로그인
+-> backend가 사용자 확인
+-> access token 발급
+-> refresh token 발급
+-> refresh token 해시를 DB에 저장
+-> access token 만료 시 refresh token으로 재발급
+```
+
+### 왜 token 원문을 저장하지 않는가
+
+refresh token 원문이 DB에 저장되어 있으면 DB가 유출되었을 때 공격자가 그대로 로그인 세션을 탈취할 수 있다. 그래서 DB에는 원문 대신 해시값만 저장한다.
+
+```txt
+브라우저 Cookie: refresh_token 원문
+DB: sha256(refresh_token)
+```
+
+사용자가 `/auth/refresh`를 호출하면 서버는 쿠키의 refresh token 원문을 다시 해시해서 DB의 `token_hash`와 비교한다.
+
+### 이번 모델의 핵심 필드
+
+- `user_id`: 어떤 사용자의 로그인 세션인지 연결한다.
+- `token_hash`: refresh token 원문 대신 저장하는 해시값이다.
+- `expires_at`: refresh token 만료 시각이다.
+- `revoked_at`: 로그아웃이나 강제 만료로 폐기된 시각이다.
+- `replaced_by_token_id`: refresh token rotation에서 새 토큰 row를 연결한다.
+- `user_agent`, `ip_address`: 어떤 브라우저/환경에서 발급된 토큰인지 추적하는 보조 정보다.
+
+### SQLAlchemy 개념
+
+- `ForeignKey("users.id")`: refresh token이 어느 사용자에게 속하는지 DB 관계를 만든다.
+- `relationship(back_populates="refresh_tokens")`: Python 코드에서 `token.user`, `user.refresh_tokens`처럼 객체 관계로 접근하게 한다.
+- `unique=True`: 같은 `token_hash`가 중복 저장되지 않도록 막는다.
+- `index=True`: 로그인/refresh 요청마다 token hash를 찾게 되므로 조회 속도를 위해 둔다.
+- self reference: `replaced_by_token_id`가 같은 테이블의 `id`를 다시 참조한다.
+
+### 다음에 연결될 코드
+
+- `security.py`: access token 생성/검증, refresh token 생성/해시
+- `auth_service.py`: Google callback 처리, 사용자 생성/갱신, 토큰 발급
+- `auth_repository.py`: refresh token 저장/조회/폐기
+- `auth.py router`: `/auth/google/login`, `/auth/google/callback`, `/auth/me`, `/auth/refresh`, `/auth/logout`
+
 ## 2026-06-14 내 기록 화면 API 전환 학습
 
 이번 구현은 `/my-records` 화면이 `mockData.ts`의 posts를 직접 필터링하던 구조에서 백엔드 `GET /me/posts` API를 호출하는 구조로 바뀐 작업이다.
