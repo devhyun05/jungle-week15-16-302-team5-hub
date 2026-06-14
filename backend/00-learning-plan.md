@@ -31,6 +31,15 @@
 
 오리엔테이션에서는 개념만 먼저 잡습니다. Level 3 빈칸은 사용자가 달라고 요청한 뒤에만 채팅으로 제공합니다.
 
+구현해야 할 파일이 여러 개인 세션에서는 처음에 전체 흐름을 짧게 설명한 뒤, 한 번에 한 파일씩 쪼개서 진행합니다.
+
+파일별 진행에서 반드시 지킬 것:
+
+- 지금 다루는 파일 하나의 역할만 먼저 말한다.
+- 그 파일에서 구현할 핵심 필드, 함수, 클래스만 좁혀 설명한다.
+- 헷갈리기 쉬운 개념은 해당 파일 안에서 필요한 만큼만 설명한다.
+- 사용자가 이해하거나 작성한 뒤 다음 파일로 넘어간다.
+
 ## 시작 전 진도 확인 절차
 
 세션 시작 요청이 오면 Codex는 다음 순서로 움직입니다.
@@ -59,6 +68,8 @@ Level 3은 가장 많이 비운 상태입니다.
 - 테스트에서 요청 body, header, assert
 
 Level 3 빈칸 코드는 파일에 미리 저장하지 않습니다. 사용자가 요청하면 Codex가 세션 중 채팅으로만 제공합니다.
+
+Level 3 빈칸을 채팅으로 줄 때는 각 빈칸 옆이나 바로 위에 주석으로 무엇을 넣어야 하는지 힌트를 함께 적습니다.
 
 ## 전체 구현 흐름
 
@@ -145,6 +156,7 @@ python -m pytest tests/test_health.py
 
 - `users` 테이블 모델
 - email, password_hash, nickname, created_at
+- 기존 DB 스키마와 맞추기 위한 updated_at
 - `refresh_tokens` 테이블 모델
 - token_hash, family_id, expires_at, revoked_at, replaced_by_token_id
 - `SignupRequest`

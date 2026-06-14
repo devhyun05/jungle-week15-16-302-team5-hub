@@ -10,7 +10,6 @@
 - `완료`: Level 3을 채우고, 피드백을 반영하고, 테스트 확인법까지 말로 설명함
 
 ## 현재 위치
-
 - 현재 추천 세션: Session 06 `Tag API와 seed`
 - 다음 행동: `schemas/tag.py`, `services/tag_service.py`, `routers/tags.py`, `seed.py` 오리엔테이션부터 시작하기
 - 마지막 업데이트: 2026-06-14 / Session 05 마무리, `../.venv/bin/python -m pytest` 전체 29개 테스트 통과 확인
