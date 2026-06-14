@@ -1,19 +1,100 @@
 # 말랑 연구소 DB 테이블 생성 SQL
 
-이 문서는 현재 확정한 최소 DB 설계를 PostgreSQL에 생성하기 위한 SQL이다.
+이 문서는 현재 프론트 글쓰기 폼과 백엔드 Session 05 모델에 맞춘 PostgreSQL 생성 SQL이다.
+
+현재 글쓰기 화면은 `title`, `content`, `post_type`, `slime_type`, `tag_names`만 보낸다. 그래서 `posts` 테이블도 레시피 재료, 비율, 제작 순서, 실패 증상 같은 세부 컬럼을 아직 만들지 않는다. 그 정보는 지금은 `content` 본문에 저장하고, 나중에 프론트 입력칸을 추가할 때 DB 컬럼과 쿼리를 함께 확장한다.
 
 ## 사용 전 확인
 
-- PostgreSQL에 `pgvector` 확장이 설치되어 있어야 한다.
-- `CREATE EXTENSION IF NOT EXISTS vector;`에서 에러가 나면 pgvector 설치가 먼저 필요하다.
-- 마지막 HNSW 인덱스 생성은 pgvector 버전 또는 환경에 따라 실패할 수 있다. 실패하면 해당 `CREATE INDEX idx_embeddings_vector_hnsw` 구문만 제외하고 실행한다.
+- 새 DB를 만들 때는 아래 `최종 생성 쿼리`를 실행한다.
+- 이미 예전 SQL로 테이블을 만든 DB라면 먼저 `기존 DB 수정 쿼리`를 1회 실행한다.
+- RAG/Agent용 `embeddings`와 `pgvector`는 아직 기본 게시판 세션에서 쓰지 않으므로 이 문서의 기본 생성 SQL에서 제외한다.
+
+## 기존 DB 수정 쿼리
+
+아래 쿼리는 예전 스키마를 이미 만든 DB를 현재 프론트 기준으로 맞출 때 사용한다. 새 DB에는 실행하지 않아도 된다.
+
+```sql
+-- posts.user_id -> posts.author_id
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'posts'
+          AND column_name = 'user_id'
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'posts'
+          AND column_name = 'author_id'
+    ) THEN
+        ALTER TABLE posts RENAME COLUMN user_id TO author_id;
+    END IF;
+END;
+$$;
+
+-- comments.user_id -> comments.author_id
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'comments'
+          AND column_name = 'user_id'
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'comments'
+          AND column_name = 'author_id'
+    ) THEN
+        ALTER TABLE comments RENAME COLUMN user_id TO author_id;
+    END IF;
+END;
+$$;
+
+-- 현재 프론트가 보내지 않는 확장 컬럼 제거
+ALTER TABLE posts
+    DROP COLUMN IF EXISTS difficulty,
+    DROP COLUMN IF EXISTS ingredients,
+    DROP COLUMN IF EXISTS ratio,
+    DROP COLUMN IF EXISTS steps,
+    DROP COLUMN IF EXISTS texture_result,
+    DROP COLUMN IF EXISTS storage_tip,
+    DROP COLUMN IF EXISTS symptom,
+    DROP COLUMN IF EXISTS attempted_solution,
+    DROP COLUMN IF EXISTS solved_status;
+
+-- SQLAlchemy 모델 길이에 맞추기
+ALTER TABLE posts
+    ALTER COLUMN post_type TYPE VARCHAR(20),
+    ALTER COLUMN slime_type TYPE VARCHAR(80);
+
+ALTER TABLE tags
+    ALTER COLUMN name TYPE VARCHAR(80),
+    ALTER COLUMN tag_type TYPE VARCHAR(40);
+
+-- 현재 SQLAlchemy post_tags 모델에는 created_at 컬럼이 없다.
+ALTER TABLE post_tags
+    DROP COLUMN IF EXISTS created_at;
+
+-- 인덱스 이름과 대상 컬럼 정리
+DROP INDEX IF EXISTS idx_posts_user_id;
+DROP INDEX IF EXISTS idx_comments_user_id;
+
+CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);
+CREATE INDEX IF NOT EXISTS idx_comments_author_id ON comments(author_id);
+
+-- embeddings는 아직 기본 게시판 기능에서 사용하지 않는다.
+-- 이미 만들어 둔 테이블을 제거하고 싶을 때만 아래 주석을 해제한다.
+-- DROP TABLE IF EXISTS embeddings;
+```
 
 ## 최종 생성 쿼리
 
 ```sql
--- pgvector 사용
-CREATE EXTENSION IF NOT EXISTS vector;
-
 -- updated_at 자동 갱신 함수
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -70,30 +151,19 @@ CREATE TABLE refresh_tokens (
 -- POSTS
 CREATE TABLE posts (
     id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL,
+    author_id BIGINT NOT NULL,
 
     title VARCHAR(200) NOT NULL,
     content TEXT NOT NULL,
 
-    post_type VARCHAR(50) NOT NULL DEFAULT 'general',
-    slime_type VARCHAR(50),
-    difficulty VARCHAR(50),
-
-    ingredients TEXT,
-    ratio TEXT,
-    steps TEXT,
-    texture_result TEXT,
-    storage_tip TEXT,
-
-    symptom TEXT,
-    attempted_solution TEXT,
-    solved_status VARCHAR(50),
+    post_type VARCHAR(20) NOT NULL,
+    slime_type VARCHAR(80),
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT fk_posts_user
-        FOREIGN KEY (user_id)
+    CONSTRAINT fk_posts_author
+        FOREIGN KEY (author_id)
         REFERENCES users(id)
         ON DELETE CASCADE,
 
@@ -106,7 +176,7 @@ CREATE TABLE posts (
 CREATE TABLE comments (
     id BIGSERIAL PRIMARY KEY,
     post_id BIGINT NOT NULL,
-    user_id BIGINT NOT NULL,
+    author_id BIGINT NOT NULL,
 
     content TEXT NOT NULL,
 
@@ -118,8 +188,8 @@ CREATE TABLE comments (
         REFERENCES posts(id)
         ON DELETE CASCADE,
 
-    CONSTRAINT fk_comments_user
-        FOREIGN KEY (user_id)
+    CONSTRAINT fk_comments_author
+        FOREIGN KEY (author_id)
         REFERENCES users(id)
         ON DELETE CASCADE
 );
@@ -128,8 +198,8 @@ CREATE TABLE comments (
 -- TAGS
 CREATE TABLE tags (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    tag_type VARCHAR(50) NOT NULL DEFAULT 'custom',
+    name VARCHAR(80) NOT NULL,
+    tag_type VARCHAR(40) NOT NULL DEFAULT 'custom',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT uq_tags_name UNIQUE (name)
@@ -140,7 +210,6 @@ CREATE TABLE tags (
 CREATE TABLE post_tags (
     post_id BIGINT NOT NULL,
     tag_id BIGINT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     PRIMARY KEY (post_id, tag_id),
 
@@ -153,55 +222,6 @@ CREATE TABLE post_tags (
         FOREIGN KEY (tag_id)
         REFERENCES tags(id)
         ON DELETE CASCADE
-);
-
-
--- EMBEDDINGS
-CREATE TABLE embeddings (
-    id BIGSERIAL PRIMARY KEY,
-
-    source_type VARCHAR(50) NOT NULL,
-
-    post_id BIGINT,
-    comment_id BIGINT,
-
-    content TEXT NOT NULL,
-
-    -- 1536은 예시입니다.
-    -- 사용하는 임베딩 모델의 차원에 맞게 변경하세요.
-    embedding VECTOR(1536),
-
-    embedding_model VARCHAR(100),
-    embedding_dim INT,
-    content_hash VARCHAR(255),
-
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT fk_embeddings_post
-        FOREIGN KEY (post_id)
-        REFERENCES posts(id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT fk_embeddings_comment
-        FOREIGN KEY (comment_id)
-        REFERENCES comments(id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT chk_embeddings_source_match
-        CHECK (
-            (
-                source_type = 'post'
-                AND post_id IS NOT NULL
-                AND comment_id IS NULL
-            )
-            OR
-            (
-                source_type = 'comment'
-                AND post_id IS NULL
-                AND comment_id IS NOT NULL
-            )
-        )
 );
 
 
@@ -221,20 +241,14 @@ BEFORE UPDATE ON comments
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER trg_embeddings_updated_at
-BEFORE UPDATE ON embeddings
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
-
-
 -- 기본 조회 인덱스
-CREATE INDEX idx_posts_user_id ON posts(user_id);
+CREATE INDEX idx_posts_author_id ON posts(author_id);
 CREATE INDEX idx_posts_created_id ON posts(created_at DESC, id DESC);
 CREATE INDEX idx_posts_type_created ON posts(post_type, created_at DESC);
 CREATE INDEX idx_posts_slime_created ON posts(slime_type, created_at DESC);
 
 CREATE INDEX idx_comments_post_created ON comments(post_id, created_at ASC);
-CREATE INDEX idx_comments_user_id ON comments(user_id);
+CREATE INDEX idx_comments_author_id ON comments(author_id);
 
 CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
 CREATE INDEX idx_refresh_tokens_family_id ON refresh_tokens(family_id);
@@ -247,27 +261,8 @@ CREATE INDEX idx_tags_type ON tags(tag_type);
 CREATE INDEX idx_tags_name ON tags(name);
 
 CREATE INDEX idx_post_tags_tag_post ON post_tags(tag_id, post_id);
-
-CREATE INDEX idx_embeddings_post_id ON embeddings(post_id);
-CREATE INDEX idx_embeddings_comment_id ON embeddings(comment_id);
-CREATE INDEX idx_embeddings_source_type ON embeddings(source_type);
-CREATE INDEX idx_embeddings_content_hash ON embeddings(content_hash);
-
-
--- 같은 게시글/댓글 안에서 같은 조각 중복 임베딩 방지
-CREATE UNIQUE INDEX uq_embeddings_post_chunk
-ON embeddings(post_id, content_hash)
-WHERE post_id IS NOT NULL AND content_hash IS NOT NULL;
-
-CREATE UNIQUE INDEX uq_embeddings_comment_chunk
-ON embeddings(comment_id, content_hash)
-WHERE comment_id IS NOT NULL AND content_hash IS NOT NULL;
-
-
--- pgvector 유사도 검색 인덱스
--- 데이터가 적은 초기에는 없어도 됩니다.
--- pgvector 버전 또는 환경에 따라 실패하면 이 줄만 빼고 실행하세요.
-CREATE INDEX idx_embeddings_vector_hnsw
-ON embeddings
-USING hnsw (embedding vector_cosine_ops);
 ```
+
+## 나중에 Agent/RAG 붙일 때
+
+Agent/RAG 단계에서는 `embeddings` 테이블과 `pgvector` 확장을 별도 마이그레이션으로 추가한다. 이때도 `posts`에 레시피 세부 컬럼을 꼭 추가해야 하는 것은 아니다. 기본적으로는 `posts.title`, `posts.content`, `tags.name`, `comments.content`를 임베딩 원문으로 사용할 수 있다.
