@@ -5,7 +5,7 @@ import { FileText, Github, Globe, Lightbulb, Lock, MessageSquare, Trash2 } from 
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
-import { createPostComment, getPostComments } from "../../api/comments";
+import { createPostComment, deleteComment, getPostComments } from "../../api/comments";
 import { deletePost, getPostDetail, type PostDetailApiResponse } from "../../api/posts";
 import { posts } from "../../data/mockData";
 import type { UserRole } from "../../data/mockData";
@@ -59,6 +59,8 @@ export function PostDetail() {
   const [commentLoadError, setCommentLoadError] = useState("");
   const [isCommentLoading, setIsCommentLoading] = useState(false);
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+  const [commentDeleteError, setCommentDeleteError] = useState("");
   const [comments, setComments] = useState<CommentItem[]>([]);
 
   useEffect(() => {
@@ -243,6 +245,23 @@ export function PostDetail() {
     }
   };
 
+  const removeComment = async (commentId: string) => {
+    setDeletingCommentId(commentId);
+    setCommentDeleteError("");
+
+    try {
+      await deleteComment(commentId);
+
+      // 실제 DB에서는 soft delete가 되었고, 화면에서는 바로 사라진 것처럼 보여준다.
+      // TODO auth: JWT/OAuth2 연결 후에는 본인 댓글 또는 ADMIN 권한일 때만 삭제 버튼을 보여준다.
+      setComments((prev) => prev.filter((comment) => comment.id !== commentId));
+    } catch {
+      setCommentDeleteError("댓글을 삭제하지 못했습니다. 백엔드 서버와 API 상태를 확인해주세요.");
+    } finally {
+      setDeletingCommentId(null);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <article className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
@@ -395,29 +414,46 @@ export function PostDetail() {
             <div className="bg-red-50 p-6 text-sm text-red-700">{commentLoadError}</div>
           )}
 
+          {commentDeleteError && (
+            <div className="bg-red-50 p-6 text-sm text-red-700">{commentDeleteError}</div>
+          )}
+
           {!isCommentLoading && !commentLoadError && comments.length === 0 && (
             <div className="p-6 text-sm text-slate-500">아직 등록된 댓글이 없습니다.</div>
           )}
 
           {comments.map((comment) => (
             <div key={comment.id} className={comment.role === "COACH" ? "bg-indigo-50/30 p-6" : "bg-white p-6"}>
-              <div className="mb-2 flex items-center gap-2">
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
-                    comment.role === "COACH" ? "bg-indigo-100 text-indigo-700" : "bg-emerald-100 text-emerald-700"
-                  }`}
-                >
-                  {comment.author.slice(0, 1)}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-slate-900">{comment.author}</span>
-                    <Badge variant={comment.role === "COACH" ? "success" : "secondary"} className="text-[10px]">
-                      {getRoleLabel(comment.role)}
-                    </Badge>
+              <div className="mb-2 flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
+                      comment.role === "COACH" ? "bg-indigo-100 text-indigo-700" : "bg-emerald-100 text-emerald-700"
+                    }`}
+                  >
+                    {comment.author.slice(0, 1)}
                   </div>
-                  <span className="text-xs text-slate-500">{comment.createdAt}</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-900">{comment.author}</span>
+                      <Badge variant={comment.role === "COACH" ? "success" : "secondary"} className="text-[10px]">
+                        {getRoleLabel(comment.role)}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-slate-500">{comment.createdAt}</span>
+                  </div>
                 </div>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-red-600 hover:bg-red-50"
+                  onClick={() => void removeComment(comment.id)}
+                  disabled={deletingCommentId === comment.id}
+                >
+                  {deletingCommentId === comment.id ? "삭제 중" : "삭제"}
+                </Button>
               </div>
               <p className="mt-2 text-sm text-slate-700">{comment.content}</p>
             </div>

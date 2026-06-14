@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -101,3 +103,32 @@ def create_comment(
     db.refresh(comment)
 
     return comment
+
+
+def get_comment_for_update(db: Session, comment_id: int) -> Comment | None:
+    """
+    삭제 또는 수정 대상 댓글을 id로 조회한다.
+
+    이미 soft delete된 댓글은 다시 삭제할 대상이 아니므로 `deleted_at is null` 조건으로 제외한다.
+    """
+
+    return db.scalar(
+        select(Comment)
+        .options(selectinload(Comment.author))
+        .where(
+            Comment.id == comment_id,
+            Comment.deleted_at.is_(None),
+        )
+    )
+
+
+def soft_delete_comment(db: Session, comment: Comment) -> None:
+    """
+    댓글을 실제로 지우지 않고 deleted_at만 채워 삭제 처리한다.
+
+    댓글 row를 바로 없애면 나중에 운영자가 삭제 이력을 확인하거나 복구하기 어렵다.
+    그래서 게시글 삭제와 같은 방식으로 soft delete를 사용한다.
+    """
+
+    comment.deleted_at = datetime.now(timezone.utc)
+    db.commit()

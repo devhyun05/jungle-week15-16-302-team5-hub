@@ -1,5 +1,73 @@
 # Study Notes
 
+## 2026-06-14 댓글 삭제 API와 상세 화면 연결 학습
+
+이번 구현은 게시글 상세 화면에서 댓글마다 `삭제` 버튼을 보여주고, 버튼을 누르면 `DELETE /comments/{comment_id}` API로 댓글을 soft delete 처리하는 작업이다.
+
+### 이번에 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/repositories/comment_repository.py` | 댓글 id로 삭제 대상 댓글을 찾고 `comments.deleted_at`을 업데이트한다. |
+| `backend/app/services/comment_service.py` | 댓글이 존재하는지 판단하고 삭제 흐름을 결정한다. |
+| `backend/app/routers/comments.py` | `DELETE /comments/{comment_id}` HTTP endpoint를 만든다. |
+| `frontend/src/app/api/comments.ts` | 프론트에서 댓글 삭제 API를 호출하는 `deleteComment` 함수를 제공한다. |
+| `frontend/src/app/pages/posts/PostDetail.tsx` | 댓글 삭제 버튼, 삭제 중 상태, 삭제 실패 메시지, 삭제 후 state 제거를 담당한다. |
+
+### 코드 흐름
+
+```txt
+PostDetail.tsx 댓글 삭제 클릭
+-> removeComment(comment.id)
+-> deleteComment(comment.id)
+-> DELETE /comments/{comment_id}
+-> routers/comments.py
+-> comment_service.delete_comment()
+-> comment_repository.get_comment_for_update()
+-> comment_repository.soft_delete_comment()
+-> comments.deleted_at 업데이트
+-> 204 No Content
+-> 프론트 comments state에서 해당 댓글 제거
+```
+
+### 왜 `/posts/{post_id}/comments/{comment_id}`가 아니라 `/comments/{comment_id}`인가?
+
+댓글 id는 이미 댓글 하나를 고유하게 구분한다. 그래서 삭제할 때는 게시글 id까지 없어도 어떤 댓글을 삭제할지 알 수 있다.
+
+JungleLog v1에서는 다음처럼 나눴다.
+
+```txt
+댓글 목록/작성: /posts/{post_id}/comments
+댓글 삭제: /comments/{comment_id}
+```
+
+목록과 작성은 “어느 게시글의 댓글인가”가 중요하고, 삭제는 “어느 댓글인가”가 중요하기 때문이다.
+
+### 이번에 나온 백엔드 개념
+
+- nested resource: 댓글은 게시글 아래에 달리는 하위 자원이다.
+- `DELETE /comments/{comment_id}`: 댓글 하나를 삭제 처리하는 REST endpoint다.
+- soft delete: `comments.deleted_at`에 삭제 시각을 기록한다.
+- `204 No Content`: 삭제 성공 후 응답 body 없이 성공만 알린다.
+- `404 Not Found`: 없는 댓글이거나 이미 삭제된 댓글이면 반환한다.
+
+### 이번에 나온 React 개념
+
+- `useState`: 삭제 중인 댓글 id와 삭제 에러 메시지를 관리한다.
+- optimistic에 가까운 UI 갱신: API 성공 후 전체 댓글 목록을 다시 받지 않고 local state에서 해당 댓글만 제거한다.
+- list rendering: `comments.map(...)` 안에서 각 댓글마다 삭제 버튼을 렌더링한다.
+- disabled state: 현재 삭제 중인 댓글 버튼만 `삭제 중`으로 바꾼다.
+
+### JWT/OAuth2 후 바뀔 부분
+
+지금은 백엔드 인증 전 단계라 삭제 API가 실제 작성자를 확인하지 않는다. 나중에는 다음 조건이 필요하다.
+
+```txt
+댓글 작성자 본인 또는 ADMIN만 삭제 가능
+```
+
+프론트에서도 이 조건에 맞는 댓글에만 삭제 버튼을 보여주는 방식으로 바뀐다.
+
 ## 2026-06-14 게시글 삭제 API와 상세 화면 연결 학습
 
 이번 구현은 게시글 상세 화면에서 `삭제` 버튼을 눌렀을 때 `DELETE /posts/{post_id}` API를 호출하고, 백엔드에서 해당 게시글을 soft delete 처리하는 작업이다.

@@ -1,5 +1,30 @@
 # QA Checklist
 
+## 2026-06-14 QA: 댓글 삭제 API와 상세 화면 연결
+
+### 확인 목표
+
+- `DELETE /comments/{comment_id}`가 soft delete 방식으로 동작한다.
+- 삭제된 댓글은 게시글 댓글 목록에서 보이지 않는다.
+- 프론트 상세 화면은 댓글 삭제 API 함수를 통해 state에서 댓글을 제거한다.
+
+### 실행한 검증
+
+- [x] `backend`: `python -m compileall app`
+- [x] `frontend`: `npm run build`
+- [x] `POST /posts`로 QA용 게시글 생성
+- [x] `POST /posts/{post_id}/comments`로 QA용 댓글 작성
+- [x] `DELETE /comments/{comment_id}`가 `204` 반환
+- [x] 삭제 후 `GET /posts/{post_id}/comments`가 `total=0` 반환
+- [x] `DELETE /comments/999999999`가 `404` 반환
+- [x] QA용 게시글 정리 삭제 `204` 반환
+
+### 다음 QA 후보
+
+- JWT/OAuth2 후 댓글 작성자 본인/ADMIN 삭제 권한 검증
+- 댓글 삭제 버튼이 권한 없는 사용자에게 숨겨지는지 검증
+- 삭제된 댓글이 코치 피드백/알림과 연결될 때 표시 정책 검토
+
 ## 2026-06-14 QA: 게시글 삭제 API와 상세 화면 연결
 
 ### 확인 목표

@@ -1,5 +1,17 @@
 # JungleLog
 
+## 2026-06-14 최신 구현: 댓글 삭제 API와 상세 화면 연결
+
+`DELETE /comments/{comment_id}`를 구현하고 게시글 상세 화면의 댓글 삭제 버튼을 백엔드 API에 연결했습니다.
+
+- `backend/app/repositories/comment_repository.py`: 삭제 대상 댓글 조회와 `deleted_at`을 채우는 `soft_delete_comment`를 추가했습니다.
+- `backend/app/services/comment_service.py`: 댓글 삭제 비즈니스 흐름을 담당하는 `delete_comment`를 추가했습니다.
+- `backend/app/routers/comments.py`: `DELETE /comments/{comment_id}` endpoint를 추가했고 성공 시 `204 No Content`를 반환합니다.
+- `frontend/src/app/api/comments.ts`: `deleteComment` API 호출 함수를 추가했습니다.
+- `frontend/src/app/pages/posts/PostDetail.tsx`: 댓글별 삭제 버튼을 추가하고, 삭제 성공 시 현재 화면의 댓글 목록에서 제거하도록 연결했습니다.
+
+현재 댓글 기능은 조회, 작성, 삭제까지 API와 화면이 연결되었습니다. 삭제는 게시글과 동일하게 soft delete 방식이며, 실제 작성자/관리자 권한 검사는 JWT/OAuth2 구현 후 추가 예정입니다.
+
 ## 2026-06-14 최신 구현: 게시글 삭제 API와 상세 화면 연결
 
 `DELETE /posts/{post_id}`를 구현하고 게시글 상세 화면의 삭제 버튼을 백엔드 API에 연결했습니다.

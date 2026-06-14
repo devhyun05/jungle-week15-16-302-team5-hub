@@ -105,3 +105,22 @@ def create_comment_for_post(
     comment.author = author
 
     return build_comment_item(comment)
+
+
+def delete_comment(db: Session, comment_id: int) -> bool:
+    """
+    댓글 삭제 API의 비즈니스 흐름을 처리한다.
+
+    현재는 JWT/OAuth2 연결 전이므로 댓글 작성자 권한 검사는 하지 않는다.
+    인증 구현 후에는 댓글 작성자 본인 또는 ADMIN만 삭제할 수 있게 검사해야 한다.
+    """
+
+    comment = comment_repository.get_comment_for_update(db=db, comment_id=comment_id)
+
+    if comment is None:
+        return False
+
+    # TODO auth: JWT/OAuth2 연결 후 comment.author_id == current_user.id 또는 ADMIN인지 검사한다.
+    comment_repository.soft_delete_comment(db=db, comment=comment)
+
+    return True

@@ -1,5 +1,25 @@
 # Frontend Keyword Map
 
+## 2026-06-14 키워드: 리스트 항목 삭제와 state 갱신
+
+### 리스트 항목 삭제
+
+댓글 목록은 `comments.map(...)`으로 렌더링된다. 댓글 하나를 삭제하면 전체 페이지를 새로고침하지 않고 state에서 해당 id만 제거한다.
+
+```txt
+setComments((prev) => prev.filter((comment) => comment.id !== commentId))
+```
+
+이 코드는 “기존 댓글 목록 중 삭제한 id와 다른 댓글만 남긴다”는 뜻이다.
+
+### 삭제 중 상태
+
+`deletingCommentId`에는 현재 삭제 중인 댓글 id를 저장한다. 그래서 여러 댓글 중 실제 삭제 중인 버튼 하나만 `삭제 중`으로 보이게 할 수 있다.
+
+### API 함수 분리
+
+`deleteComment`는 `frontend/src/app/api/comments.ts`에 둔다. 화면 컴포넌트는 `deleteComment(comment.id)`만 호출하고, 실제 URL과 method는 API 파일에서 관리한다.
+
 ## 2026-06-14 키워드: 삭제 확인 UI와 API 호출 분리
 
 ### 삭제 확인 UI

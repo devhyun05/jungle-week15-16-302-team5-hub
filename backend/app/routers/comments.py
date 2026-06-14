@@ -84,3 +84,23 @@ def create_comment(
 
     return comment
 
+
+@router.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_comment(
+    # URL path의 comment_id로 어떤 댓글을 삭제 처리할지 결정한다. 예: DELETE /comments/3
+    comment_id: int,
+    # 댓글 삭제는 comments.deleted_at 값을 바꾸는 DB UPDATE 작업이므로 session이 필요하다.
+    db: Session = Depends(get_db),
+) -> None:
+    """
+    댓글을 soft delete 처리한다.
+
+    실제 row를 삭제하지 않고 `deleted_at`을 채운다.
+    댓글 목록 조회는 이미 `deleted_at is null` 조건을 사용하므로 삭제된 댓글은 사용자에게 보이지 않는다.
+    """
+
+    deleted = comment_service.delete_comment(db=db, comment_id=comment_id)
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="댓글을 찾을 수 없습니다.")
+

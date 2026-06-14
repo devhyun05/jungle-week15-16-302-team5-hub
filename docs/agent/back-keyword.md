@@ -1,5 +1,34 @@
 # Backend Keyword Map
 
+## 2026-06-14 키워드: Nested Resource와 댓글 Delete
+
+### Nested Resource
+
+댓글은 게시글 아래에 달리는 자원이므로 목록과 작성은 아래 경로처럼 게시글 id를 포함한다.
+
+```txt
+GET /posts/{post_id}/comments
+POST /posts/{post_id}/comments
+```
+
+반면 삭제는 댓글 id 하나만으로 댓글을 특정할 수 있으므로 아래처럼 설계했다.
+
+```txt
+DELETE /comments/{comment_id}
+```
+
+### 댓글 soft delete
+
+댓글도 게시글처럼 실제 row를 삭제하지 않고 `comments.deleted_at`을 채운다. 그래서 댓글 목록 조회에서는 아래 조건으로 삭제된 댓글을 제외한다.
+
+```txt
+Comment.deleted_at is null
+```
+
+### 권한 체크 예정
+
+현재는 JWT/OAuth2 전이라 권한 검사가 없다. 나중에는 댓글 작성자 본인 또는 ADMIN만 삭제 가능하게 만들어야 한다.
+
 ## 2026-06-14 키워드: CRUD Delete, Soft Delete, 204 No Content
 
 ### CRUD Delete

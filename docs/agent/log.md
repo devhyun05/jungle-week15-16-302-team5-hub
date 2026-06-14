@@ -1,5 +1,57 @@
 # JungleLog Progress Log
 
+## 2026-06-14 댓글 삭제 API와 상세 화면 연결
+
+상태: 완료
+
+목표: 게시글 상세 화면의 댓글 삭제 버튼을 mock 동작이 아니라 실제 백엔드 `DELETE /comments/{comment_id}` API에 연결한다.
+
+구현 파일:
+
+- `backend/app/repositories/comment_repository.py`
+- `backend/app/services/comment_service.py`
+- `backend/app/routers/comments.py`
+- `frontend/src/app/api/comments.ts`
+- `frontend/src/app/pages/posts/PostDetail.tsx`
+- `README.md`
+- `docs/agent/api-design.md`
+- `docs/agent/study.md`
+- `docs/agent/test.md`
+- `docs/agent/setup.md`
+- `docs/agent/back-keyword.md`
+- `docs/agent/front-keyword.md`
+
+구현 내용:
+
+- `DELETE /comments/{comment_id}` endpoint를 추가했다.
+- 삭제는 hard delete가 아니라 `comments.deleted_at`을 채우는 soft delete로 처리했다.
+- 삭제된 댓글은 `GET /posts/{post_id}/comments`에서 보이지 않는다.
+- 프론트 상세 화면의 각 댓글에 삭제 버튼을 추가했다.
+- 삭제 성공 후 전체 목록을 다시 가져오지 않고 현재 `comments` state에서 해당 댓글만 제거했다.
+- 실제 작성자/관리자 권한 검사는 JWT/OAuth2 구현 후 붙일 TODO로 남겼다.
+
+검증:
+
+- `backend`: `python -m compileall app` 성공
+- `frontend`: `npm run build` 성공
+- HTTP QA: 테스트 게시글 생성 후 댓글 작성 성공
+- HTTP QA: `DELETE /comments/{id}`가 `204` 반환
+- HTTP QA: 삭제 후 `GET /posts/{post_id}/comments`가 `total=0` 반환
+- HTTP QA: 없는 댓글 삭제 시 `404` 반환
+- HTTP QA: QA용 테스트 게시글 정리 삭제 `204` 반환
+
+커밋 추천 제목:
+
+```txt
+feat: 댓글 삭제 API와 상세 화면 연결
+```
+
+다음 후보 작업:
+
+1. 내 기록 화면을 실제 API 기반으로 전환
+2. 게시글/댓글 작성자 권한 처리를 위한 JWT/OAuth2 구현 준비
+3. 태그/카테고리 API를 분리해 프론트 필터 데이터를 백엔드에서 받도록 전환
+
 ## 2026-06-14 게시글 삭제 API와 상세 화면 연결
 
 상태: 완료

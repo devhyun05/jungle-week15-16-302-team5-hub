@@ -51,3 +51,15 @@ export async function createPostComment(
 
   return response.json();
 }
+
+export async function deleteComment(commentId: string | number): Promise<void> {
+  // 댓글 삭제는 DELETE /comments/{comment_id}로 보낸다.
+  // 백엔드는 실제 row를 없애지 않고 deleted_at을 채우는 soft delete로 처리한다.
+  const response = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error("댓글을 삭제하지 못했습니다.");
+  }
+}

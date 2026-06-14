@@ -1,5 +1,47 @@
 # Setup Notes
 
+## 2026-06-14 댓글 삭제 API QA에 사용한 명령어
+
+### 댓글 삭제 상태 코드 확인
+
+```powershell
+curl.exe -s -o NUL -w "%{http_code}" -X DELETE "http://localhost:8000/comments/{comment_id}"
+```
+
+기대 결과:
+
+```txt
+204
+```
+
+### 없는 댓글 삭제 확인
+
+```powershell
+curl.exe -s -o NUL -w "%{http_code}" -X DELETE "http://localhost:8000/comments/999999999"
+```
+
+기대 결과:
+
+```txt
+404
+```
+
+### 댓글 목록 확인
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/posts/{post_id}/comments"
+```
+
+삭제 후 기대 결과:
+
+```json
+{
+  "postId": 1,
+  "items": [],
+  "total": 0
+}
+```
+
 ## 2026-06-14 삭제 API QA에 사용한 명령어
 
 ### 백엔드 문법 검증
