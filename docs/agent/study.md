@@ -1,5 +1,90 @@
 # Study Notes
 
+## 2026-06-14 JWT / refresh token 보안 유틸 학습
+
+이번 작업은 인증 API를 만들기 전에 토큰을 생성하고 검증하는 공통 함수를 준비한 단계다.
+
+### 이번에 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/core/security.py` | access token 생성/검증, refresh token 생성/해시 유틸 |
+| `backend/app/core/config.py` | JWT, Google OAuth, Cookie 설정값 추가 |
+| `backend/.env.example` | 팀원이 따라 설정할 수 있는 환경변수 예시 추가 |
+| `backend/requirements.txt` | `python-jose`, `cryptography` 의존성 반영 |
+| `README.md` | 현재 인증 구현 상태 업데이트 |
+
+### 왜 python-jose를 쓰는가
+
+JWT는 단순히 문자열을 base64로 나눈 것이 아니라 서명, 만료 시간, 알고리즘 검증이 들어간 인증 토큰이다. 직접 구현하면 알고리즘 혼동, 만료 검증 누락 같은 실수가 생길 수 있으므로 검증된 라이브러리인 `python-jose`를 사용한다.
+
+```txt
+payload
+-> jwt.encode(payload, secret, algorithm)
+-> access token 문자열
+-> jwt.decode(token, secret, algorithms=[algorithm])
+-> payload 복원 및 서명/만료 검증
+```
+
+### security.py 흐름
+
+```txt
+create_access_token(user_id)
+-> payload에 sub, type, iat, exp 저장
+-> settings.jwt_secret_key로 서명
+-> JWT 문자열 반환
+
+decode_access_token(token)
+-> JWT 서명과 만료 검증
+-> type이 access인지 확인
+-> sub를 int user_id로 변환
+-> 실패하면 None
+```
+
+### 왜 JWT에 role을 넣지 않았나
+
+role을 JWT에 넣으면 관리자가 사용자의 role을 바꿔도 이미 발급된 access token에는 옛 role이 남는다.
+그래서 access token에는 `sub`로 user id만 넣고, role과 승인 상태는 DB에서 다시 조회하는 방식으로 간다.
+
+```txt
+access token -> user_id만 확인
+DB users table -> role, approval_status 확인
+```
+
+### refresh token 흐름
+
+```txt
+create_refresh_token()
+-> 예측 불가능한 랜덤 문자열 생성
+-> 브라우저 HttpOnly cookie로 전달 예정
+
+hash_refresh_token(refresh_token)
+-> sha256 hash 생성
+-> DB auth_refresh_tokens.token_hash에 저장 예정
+```
+
+DB에는 refresh token 원문을 저장하지 않는다. 원문은 쿠키에만 있고 DB에는 해시만 저장한다.
+
+### 이번에 나온 키워드
+
+- JWT
+- access token
+- refresh token
+- token hash
+- HS256
+- exp, iat, sub claim
+- HttpOnly Cookie
+- refresh token rotation
+- python-jose
+- cryptography
+
+### 다음에 연결될 부분
+
+- `auth_repository.py`: refresh token hash 저장/조회/폐기
+- `auth_service.py`: Google OAuth callback 처리와 토큰 발급
+- `auth.py`: `/auth/google/login`, `/auth/google/callback`, `/auth/me`, `/auth/refresh`, `/auth/logout`
+- `dependencies/auth.py`: cookie에서 access token을 읽고 current user를 만드는 dependency
+
 ## 2026-06-14 JWT refresh token 저장 구조 학습
 
 이번 작업은 Google OAuth / JWT 인증을 바로 붙이기 전에 refresh token을 안전하게 저장할 DB 구조를 추가한 단계다.

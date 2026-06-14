@@ -1,5 +1,49 @@
 # JungleLog Progress Log
 
+## 2026-06-14 JWT / refresh token 보안 유틸 추가
+
+상태: 완료
+
+목표: Google OAuth callback과 보호 API 구현 전에 access token, refresh token 생성/검증 유틸을 준비한다.
+
+구현 파일:
+
+- `backend/app/core/security.py`
+- `backend/app/core/config.py`
+- `backend/.env.example`
+- `backend/requirements.txt`
+- `README.md`
+- `docs/agent/study.md`
+- `docs/agent/back-keyword.md`
+- `docs/agent/setup.md`
+- `docs/agent/test.md`
+
+구현 내용:
+
+- `python-jose[cryptography]`를 설치했다.
+- `requirements.txt`에 JWT 관련 의존성을 반영했다.
+- `Settings`에 Google OAuth, JWT, Cookie 설정값을 추가했다.
+- `.env.example`에 로컬 개발자가 채워야 할 OAuth/JWT 설정 예시를 추가했다.
+- `create_access_token(user_id)`로 JWT access token을 생성하게 했다.
+- `decode_access_token(token)`으로 유효한 access token에서 user id를 꺼내게 했다.
+- `create_refresh_token()`으로 안전한 랜덤 refresh token을 만들게 했다.
+- `hash_refresh_token(refresh_token)`으로 DB 저장용 sha256 해시를 만들게 했다.
+
+검증:
+
+- `python -m compileall app` 성공
+- `create_access_token(123)` 결과가 문자열인지 확인
+- `decode_access_token(token)` 결과가 `123`인지 확인
+- `create_refresh_token()` 결과가 충분히 긴 랜덤 문자열인지 확인
+- `hash_refresh_token(refresh)` 결과가 64자인지 확인
+- 같은 refresh token은 같은 hash를 만드는지 확인
+
+다음 작업:
+
+1. auth repository에서 refresh token hash 저장/조회/폐기 구현
+2. auth service에서 Google OAuth callback 처리 구현
+3. auth router에서 `/auth/google/login`, `/auth/google/callback`, `/auth/me`, `/auth/refresh`, `/auth/logout` 구현
+
 ## 2026-06-14 JWT refresh token 저장 구조 추가
 
 상태: 완료

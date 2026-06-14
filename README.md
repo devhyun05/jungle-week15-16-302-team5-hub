@@ -1,5 +1,26 @@
 # JungleLog
 
+## 2026-06-14 최신 구현: JWT / refresh token 보안 유틸 추가
+
+Google OAuth callback에서 사용할 토큰 생성/검증 기반을 구현했습니다.
+
+- `python-jose[cryptography]`를 설치하고 `requirements.txt`에 반영했습니다.
+- `backend/app/core/config.py`에 Google OAuth, JWT, Cookie 관련 설정을 추가했습니다.
+- `backend/.env.example`에 OAuth/JWT 설정 예시를 추가했습니다.
+- `backend/app/core/security.py`를 실제 JWT access token 생성/검증 구조로 교체했습니다.
+- refresh token 원문 생성과 sha256 해시 유틸을 추가했습니다.
+
+현재 구현된 보안 유틸:
+
+- `create_access_token(user_id)`
+- `decode_access_token(token)`
+- `create_refresh_token()`
+- `hash_refresh_token(refresh_token)`
+- `get_access_token_expires_at()`
+- `get_refresh_token_expires_at()`
+
+아직 실제 `/auth/google/login`, `/auth/google/callback`, `/auth/me`, `/auth/refresh`, `/auth/logout` API는 구현 전입니다. 다음 단계에서 인증 repository/service/router를 연결합니다.
+
 ## 2026-06-14 최신 구현: JWT refresh token 저장 구조 추가
 
 Google OAuth / JWT 인증 구현을 시작하기 전에 access token과 refresh token을 분리하는 인증 구조로 방향을 확정했습니다.

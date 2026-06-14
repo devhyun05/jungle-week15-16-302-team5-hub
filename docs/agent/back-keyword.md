@@ -1,5 +1,34 @@
 # Backend Keyword Map
 
+## 2026-06-14 키워드 / python-jose, HS256, JWT Claim
+
+### python-jose
+
+- 상태: 진행 중
+- 언제 대화되는가: JWT를 직접 문자열 조립으로 만들지 않고 라이브러리로 서명/검증할 때
+- 우리 프로젝트에서 어디에 쓰이는가: `backend/app/core/security.py`
+- 핵심 개념: JWT encode/decode, 서명 검증, 만료 시간 검증을 맡는 라이브러리다.
+- 관련 파일: `backend/requirements.txt`, `backend/app/core/security.py`
+- 다음에 다시 볼 시점: `/auth/me`에서 access token을 검증할 때
+
+### HS256
+
+- 상태: 진행 중
+- 언제 대화되는가: JWT 서명 알고리즘을 정할 때
+- 우리 프로젝트에서 어디에 쓰이는가: `settings.jwt_algorithm`
+- 핵심 개념: 하나의 secret key로 JWT를 서명하고 검증하는 대칭키 방식이다. 로컬/개인 프로젝트에서는 단순하고 충분히 다루기 쉽다.
+- 관련 파일: `backend/app/core/config.py`, `backend/.env.example`
+- 다음에 다시 볼 시점: 배포 환경에서 secret key 관리 전략을 정할 때
+
+### JWT Claim
+
+- 상태: 진행 중
+- 언제 대화되는가: JWT payload에 어떤 값을 넣을지 결정할 때
+- 우리 프로젝트에서 어디에 쓰이는가: `sub`, `type`, `iat`, `exp`
+- 핵심 개념: `sub`는 사용자 식별자, `exp`는 만료 시간, `iat`는 발급 시간, `type`은 access token과 refresh token 혼용을 막는 용도다.
+- 관련 파일: `backend/app/core/security.py`
+- 다음에 다시 볼 시점: auth dependency에서 current user를 만들 때
+
 ## 2026-06-14 키워드 / JWT Access Token, Refresh Token, Token Hash
 
 ### Access Token

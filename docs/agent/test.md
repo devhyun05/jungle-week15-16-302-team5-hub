@@ -1,5 +1,34 @@
 # QA Checklist
 
+## 2026-06-14 QA: JWT / refresh token 보안 유틸
+
+### 확인 목표
+
+- JWT access token이 문자열로 생성된다.
+- 생성한 access token에서 user id를 다시 꺼낼 수 있다.
+- refresh token 원문이 생성된다.
+- refresh token hash가 DB 설계와 같은 64자 문자열이다.
+- JWT 설정값이 `settings`에서 정상 로딩된다.
+
+### 실행한 검증
+
+- [x] `backend`: `python -m compileall app`
+- [x] `create_access_token(123)` 결과 타입이 `str`
+- [x] `decode_access_token(token)` 결과가 `123`
+- [x] `create_refresh_token()` 결과가 충분히 긴 문자열
+- [x] `hash_refresh_token(refresh)` 결과 길이가 `64`
+- [x] 같은 refresh token은 같은 hash를 반환
+- [x] `settings.jwt_access_token_expire_minutes`가 `15`
+- [x] `settings.jwt_refresh_token_expire_days`가 `14`
+- [x] `settings.auth_access_cookie_name`이 `junglelog_access_token`
+- [x] `settings.auth_refresh_cookie_name`이 `junglelog_refresh_token`
+
+### 다음 QA 후보
+
+- 만료된 access token이 `decode_access_token()`에서 `None` 처리되는지 확인한다.
+- refresh token DB 저장/조회/폐기 repository QA를 추가한다.
+- `/auth/refresh` 구현 후 폐기된 refresh token 재사용이 막히는지 확인한다.
+
 ## 2026-06-14 QA: JWT refresh token 저장 구조
 
 ### 확인 목표

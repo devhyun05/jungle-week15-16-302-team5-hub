@@ -1,5 +1,50 @@
 # Setup Notes
 
+## 2026-06-14 JWT 라이브러리 설치와 보안 유틸 검증 명령
+
+JWT 생성/검증에는 `python-jose[cryptography]`를 사용한다.
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -m pip install "python-jose[cryptography]"
+.\.venv\Scripts\python.exe -m pip freeze > requirements.txt
+```
+
+JWT / refresh token 유틸 동작 확인:
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -c "from app.core.security import create_access_token, decode_access_token, create_refresh_token, hash_refresh_token; token = create_access_token(123); print(type(token).__name__); print(decode_access_token(token)); refresh = create_refresh_token(); print(len(refresh) > 40); digest = hash_refresh_token(refresh); print(len(digest)); print(digest == hash_refresh_token(refresh))"
+```
+
+기대 결과:
+
+```txt
+str
+123
+True
+64
+True
+```
+
+현재 설정값 로딩 확인:
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -c "from app.core.config import settings; print(settings.jwt_access_token_expire_minutes); print(settings.jwt_refresh_token_expire_days); print(settings.auth_access_cookie_name); print(settings.auth_refresh_cookie_name)"
+```
+
+기대 결과:
+
+```txt
+15
+14
+junglelog_access_token
+junglelog_refresh_token
+```
+
+주의: 실제 로그인 구현 전에는 `backend/.env`의 `JWT_SECRET_KEY`를 긴 랜덤 문자열로 바꿔야 한다.
+
 ## 2026-06-14 auth_refresh_tokens 테이블 생성 확인 명령
 
 JWT refresh token 모델을 추가한 뒤에는 기존 DB 초기화 명령을 다시 실행하면 새 테이블이 생성된다.
