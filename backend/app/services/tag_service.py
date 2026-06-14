@@ -112,3 +112,38 @@ def list_popular_tags(db: Session, limit: int = 12) -> list[PopularTagResponse]:
         )
         for row in rows
     ]
+
+
+# 글쓰기/수정 요청의 tag_names를 실제 Tag 모델 목록으로 바꾼다.
+# 정규화 -> 중복 제거 -> DB 조회 -> 없으면 새 태그 생성 순서로 처리한다.
+def get_or_create_tags(
+    db: Session,
+    tag_names: list[str],
+) -> list[Tag]:
+    normalized_names: list[str] = []
+
+    for raw_name in tag_names:
+        normalized_name = normalize_tag_name(raw_name)
+
+        if normalized_name and normalized_name not in normalized_names:
+            normalized_names.append(normalized_name)
+
+    tags: list[Tag] = []
+
+    for name in normalized_names:
+        tag = (
+            db.query(Tag)
+            .filter(Tag.name == name)
+            .first()
+        )
+
+        if tag is None:
+            tag = Tag(
+                name=name,
+                tag_type="custom",
+            )
+            db.add(tag)
+
+        tags.append(tag)
+
+    return tags

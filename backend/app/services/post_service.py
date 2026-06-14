@@ -10,9 +10,14 @@ from sqlalchemy.orm import Session
 
 from app.models import Post
 from app.models.tag import Tag
-from app.schemas.post import PostAuthorResponse, PostListResponse, PostResponse
-from app.services.tag_service import normalize_tag_name
-
+from app.schemas.post import (
+    PostAuthorResponse,
+    PostCreate,
+    PostListResponse,
+    PostResponse,
+    PostUpdate,
+)
+from app.services.tag_service import get_or_create_tags, normalize_tag_name
 
 SUMMARY_MAX_LENGTH = 80
 
@@ -148,3 +153,65 @@ def list_posts(
 # 없는 글인지 판단하고 404로 바꾸는 일은 HTTP 계층인 router에서 담당한다.
 def get_post_by_id(db: Session, post_id: int) -> Post | None:
     return db.query(Post).filter(Post.id == post_id).first()
+
+
+# 글쓰기 요청 body와 현재 로그인 사용자 id로 새 게시글을 만든다.
+# Post row를 만들고, tag_names를 Tag 객체 목록으로 바꿔 연결한 뒤 DB에 저장한다.
+def create_post(
+    db: Session,
+    post_data: PostCreate,
+    author_id: int,
+) -> Post:
+    post = Post(
+        author_id=author_id,
+        title=post_data.title,
+        content=post_data.content,
+        post_type=post_data.post_type,
+        slime_type=post_data.slime_type,
+    )
+
+    post.tags = get_or_create_tags(db, post_data.tag_names)
+
+    db.add(post)
+    db.commit()
+    db.refresh(post)
+
+    return post
+
+
+# 수정 요청 body로 기존 게시글을 부분 수정한다.
+# None이 아닌 필드만 바꾸고, tag_names가 들어온 경우에만 태그 연결을 새 목록으로 교체한다.
+def update_post(
+    db: Session,
+    post: Post,
+    post_data: PostUpdate,
+) -> Post:
+    if post_data.title is not None:
+        post.title = post_data.title
+
+    if post_data.content is not None:
+        post.content = post_data.content
+
+    if post_data.post_type is not None:
+        post.post_type = post_data.post_type
+
+    if post_data.slime_type is not None:
+        post.slime_type = post_data.slime_type
+
+    if post_data.tag_names is not None:
+        post.tags = get_or_create_tags(db, post_data.tag_names)
+
+    db.commit()
+    db.refresh(post)
+
+    return post
+
+
+# 게시글을 DB에서 삭제한다.
+# comments는 Post 모델의 cascade 설정으로 함께 정리되고, post_tags 연결도 관계에서 같이 정리된다.
+def delete_post(
+    db: Session,
+    post: Post,
+) -> None:
+    db.delete(post)
+    db.commit()
