@@ -1069,3 +1069,69 @@ docs: ì‘ì—… ìš´ì˜ ê·œì¹™ì— ì»¤ë°‹ ì•ˆë‚´ ì¶”ê°€
 ```txt
 feat: ëŒ“ê¸€ ì¡°íšŒ APIì™€ ê²Œì‹œê¸€ ìƒì„¸ ì—°ê²°
 ```
+
+## 2026-06-14 Google OAuth ·ÎÄÃ ¼³Á¤ È®ÀÎ
+
+»óÅÂ: ÁøÇà Áß
+
+¸ñÇ¥: Google Cloud OAuth Client »ı¼º ÈÄ ¹é¿£µå `.env`¿¡¼­ OAuth/JWT ¼³Á¤À» ÀĞÀ» ¼ö ÀÖ´ÂÁö È®ÀÎÇÑ´Ù.
+
+È®ÀÎ °á°ú:
+
+- `GOOGLE_CLIENT_ID` ¼³Á¤µÊ
+- `GOOGLE_CLIENT_SECRET` ¼³Á¤µÊ
+- `GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback`
+- `JWT_SECRET_KEY` ±âº»°ª¿¡¼­ º¯°æµÊ
+- access token ¸¸·á: 15ºĞ
+- refresh token ¸¸·á: 14ÀÏ
+- `httpx` ¼³Ä¡ ¹× `requirements.txt` ¹İ¿µ ¿Ï·á
+
+´ÙÀ½ ÀÛ¾÷:
+
+- Google login URL »ı¼º endpoint ±¸Çö
+- Google callback endpoint ±¸Çö
+- access/refresh token cookie ¹ß±Ş
+- `/auth/me`, `/auth/refresh`, `/auth/logout` ±¸Çö
+
+## 2026-06-14 OAuth ÀÎÁõ ±â¹İ schema/repository Ãß°¡
+
+»óÅÂ: ¿Ï·á
+
+¸ñÇ¥: Google OAuth callback ±¸Çö Àü¿¡ »ç¿ëÀÚ ÀúÀå/Á¶È¸¿Í refresh token ÀúÀå/Á¶È¸ Ã¥ÀÓÀ» repository °èÃşÀ¸·Î ºĞ¸®ÇÑ´Ù.
+
+Ãß°¡ÇÑ ÆÄÀÏ:
+
+- `backend/app/schemas/auth.py`
+- `backend/app/repositories/user_repository.py`
+- `backend/app/repositories/auth_token_repository.py`
+
+±¸ÇöÇÑ °Í:
+
+- `/auth/me` ÀÀ´ä¿¡ »ç¿ëÇÒ `CurrentUserResponse` schema Ãß°¡
+- Google `sub` ±âÁØ »ç¿ëÀÚ Á¶È¸ ÇÔ¼ö Ãß°¡
+- Google Ã¹ ·Î±×ÀÎ »ç¿ëÀÚ »ı¼º ÇÔ¼ö Ãß°¡
+- Àç·Î±×ÀÎ ½Ã ÀÌ¸ŞÀÏ, ÇÁ·ÎÇÊ ÀÌ¹ÌÁö, ¸¶Áö¸· ·Î±×ÀÎ ½Ã°¢ °»½Å ÇÔ¼ö Ãß°¡
+- ÃÊ±â °ü¸®ÀÚ ÀÌ¸ŞÀÏÀÌ¸é `ADMIN / ½ÂÀÎ ¿Ï·á`·Î »ı¼º
+- ÀÏ¹İ »ç¿ëÀÚ´Â `STUDENT / ½ÂÀÎ ´ë±â`·Î »ı¼º
+- refresh token hash ÀúÀå/Á¶È¸/È°¼º ¿©ºÎ È®ÀÎ/Æó±â ÇÔ¼ö Ãß°¡
+
+¾ÆÁ÷ ±¸ÇöÇÏÁö ¾ÊÀº °Í:
+
+- Google ·Î±×ÀÎ ½ÃÀÛ endpoint
+- Google callback endpoint
+- Google token endpoint È£Ãâ
+- Google userinfo endpoint È£Ãâ
+- HttpOnly cookie ¹ß±Ş
+- `/auth/me`, `/auth/refresh`, `/auth/logout`
+
+°ËÁõ:
+
+- `python -m compileall app` ¼º°ø
+- `CurrentUserResponse` alias Ãâ·Â È®ÀÎ
+- `user_repository`, `auth_token_repository` import È®ÀÎ
+
+ÃßÃµ Ä¿¹Ô Á¦¸ñ:
+
+```txt
+feat: Google OAuth ÀÎÁõ repository ±â¹İ Ãß°¡
+```

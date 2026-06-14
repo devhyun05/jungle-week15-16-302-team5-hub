@@ -396,3 +396,14 @@ uvicorn app.main:app --reload
 - `frontend/src/app/api/comments.ts`ì— ëŒ“ê¸€ ì¡°íšŒ API í˜¸ì¶œ í•¨ìˆ˜ë¥¼ ì¶”ê°€í–ˆìŠµë‹ˆë‹¤.
 - `PostDetail` í™”ë©´ì—ì„œ ë°±ì—”ë“œ ëŒ“ê¸€ APIë¥¼ í˜¸ì¶œí•´ ëŒ“ê¸€ ëª©ë¡ stateì— ë°˜ì˜í•˜ë„ë¡ ì—°ê²°í–ˆìŠµë‹ˆë‹¤.
 - ëŒ“ê¸€ ì¡°íšŒ APIëŠ” ì‹¤ì œ ì €ì¥/ì‘ì„± API ì „ ë‹¨ê³„ì´ë©°, í˜„ì¬ ëŒ“ê¸€ ì‘ì„± ë²„íŠ¼ì€ ì•„ì§ í™”ë©´ local state mock ë™ì‘ì…ë‹ˆë‹¤.
+
+## ÃÖ±Ù ÀÎÁõ ±â¹İ ±¸Çö
+
+- Google OAuth / JWT ¿¬°áÀ» À§ÇÑ ¹é¿£µå ±â¹İ ÆÄÀÏÀ» Ãß°¡Çß½À´Ï´Ù.
+- `backend/app/schemas/auth.py`¿¡ `/auth/me` ÀÀ´äÀ¸·Î »ç¿ëÇÒ `CurrentUserResponse` schema¸¦ Ãß°¡Çß½À´Ï´Ù.
+- `backend/app/repositories/user_repository.py`¿¡ Google »ç¿ëÀÚ Á¶È¸/»ı¼º/ÃÖ±Ù ·Î±×ÀÎ °»½Å ·ÎÁ÷À» Ãß°¡Çß½À´Ï´Ù.
+- `backend/app/repositories/auth_token_repository.py`¿¡ refresh token hash ÀúÀå, Á¶È¸, Æó±â ·ÎÁ÷À» Ãß°¡Çß½À´Ï´Ù.
+- refresh token ¿ø¹®Àº DB¿¡ ÀúÀåÇÏÁö ¾Ê°í, `sha256` hash¸¸ ÀúÀåÇÏ´Â ¹æÇâÀ¸·Î ¼³°èÇß½À´Ï´Ù.
+- ÃÊ±â °ü¸®ÀÚ ÀÌ¸ŞÀÏÀº `.env`ÀÇ `ADMIN_EMAILS`¿¡¼­ ÀĞ°í, ÀÏÄ¡ÇÏ¸é `ADMIN / ½ÂÀÎ ¿Ï·á`·Î »ı¼ºµË´Ï´Ù.
+- ÀÏ¹İ Google ·Î±×ÀÎ »ç¿ëÀÚ´Â `STUDENT / ½ÂÀÎ ´ë±â`·Î »ı¼ºµË´Ï´Ù.
+- ¾ÆÁ÷ `/auth/google/login`, `/auth/google/callback`, `/auth/me`, `/auth/refresh`, `/auth/logout` endpoint´Â ´ÙÀ½ ´Ü°è¿¡¼­ ±¸Çö ¿¹Á¤ÀÔ´Ï´Ù.

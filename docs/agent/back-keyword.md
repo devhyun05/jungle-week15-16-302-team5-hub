@@ -785,3 +785,46 @@ JWT êµ¬í˜„, DB ì„¤ê³„ ë¬¸ì„œ, API ì„¤ê³„ ë¬¸ì„œëŠ” íŒ€ì›ì—ê²Œ ê³µìœ í•´ì•¼ í•˜
 - í•µì‹¬ ê°œë…: ì—¬ëŸ¬ ì»¬ëŸ¼ ì¡°í•©ì´ ì¤‘ë³µë˜ì§€ ì•Šë„ë¡ DB ì°¨ì›ì—ì„œ ì œí•œí•œë‹¤.
 - ì´ë²ˆ êµ¬í˜„ ì˜ˆì‹œ: `portfolio_projects.owner_id + repo_full_name`
 - ë‹¤ìŒì— ë‹¤ì‹œ ë³¼ ì‹œì : í¬íŠ¸í´ë¦¬ì˜¤ í”„ë¡œì íŠ¸ ë“±ë¡ API êµ¬í˜„ ì‹œ
+
+### OAuth2 Authorization Code Flow
+
+- »óÅÂ: ÁøÇà Áß
+- ¾ğÁ¦ ´ëÈ­µÇ´Â°¡: Google Cloud¿¡¼­ OAuth Client¸¦ ¸¸µé°í FastAPI callbackÀ» ¼³°èÇÒ ¶§
+- ¿ì¸® ÇÁ·ÎÁ§Æ®¿¡¼­ ¾îµğ¿¡ ¾²ÀÌ´Â°¡: Google ·Î±×ÀÎÀ¸·Î »ç¿ëÀÚ¸¦ ÀÎÁõÇÏ°í JungleLog access/refresh tokenÀ» ¹ß±ŞÇÒ ¶§
+- ÇÙ½É °³³ä:
+  - ºê¶ó¿ìÀú´Â Google ·Î±×ÀÎ È­¸éÀ¸·Î ÀÌµ¿ÇÑ´Ù.
+  - GoogleÀº ·Î±×ÀÎ ¼º°ø ÈÄ `code`¸¦ ¹é¿£µå callback URL·Î µ¹·ÁÁØ´Ù.
+  - ¹é¿£µå´Â ±× `code`¸¦ Google token endpoint¿¡ º¸³» access tokenÀ¸·Î ±³È¯ÇÑ´Ù.
+  - ¹é¿£µå´Â Google userinfo endpoint¿¡¼­ email/name/picture/sub¸¦ °¡Á®¿Â´Ù.
+- °ü·Ã ÆÄÀÏ:
+  - ¿¹Á¤: `backend/app/routers/auth.py`
+  - ¿¹Á¤: `backend/app/services/auth_service.py`
+  - ÇöÀç: `backend/app/repositories/user_repository.py`
+
+### Session / JWT / Refresh Token
+
+- »óÅÂ: ÁøÇà Áß
+- ¾ğÁ¦ ´ëÈ­µÇ´Â°¡: ·Î±×ÀÎ À¯Áö, ÇöÀç »ç¿ëÀÚ Á¶È¸, ·Î±×¾Æ¿ô, ÅäÅ« Àç¹ß±ŞÀ» ±¸ÇöÇÒ ¶§
+- ¿ì¸® ÇÁ·ÎÁ§Æ®¿¡¼­ ¾îµğ¿¡ ¾²ÀÌ´Â°¡: JungleLog ÀÚÃ¼ access token°ú refresh token ¹ß±Ş
+- ÇÙ½É °³³ä:
+  - access tokenÀº Âª°Ô »ì¾Æ ÀÖ°í API ÀÎÁõ¿¡ ¾´´Ù.
+  - refresh tokenÀº ±æ°Ô »ì¾Æ ÀÖ°í access token Àç¹ß±Ş¿¡ ¾´´Ù.
+  - refresh token ¿ø¹®Àº DB¿¡ ÀúÀåÇÏÁö ¾Ê°í hash¸¸ ÀúÀåÇÑ´Ù.
+  - tokenÀ» Æó±âÇÒ ¶§´Â `revoked_at`À» Ã¤¿î´Ù.
+- °ü·Ã ÆÄÀÏ:
+  - `backend/app/core/security.py`
+  - `backend/app/db/models/auth_refresh_token.py`
+  - `backend/app/repositories/auth_token_repository.py`
+
+### Repository Layer
+
+- »óÅÂ: ÁøÇà Áß
+- ¾ğÁ¦ ´ëÈ­µÇ´Â°¡: router/service¿¡¼­ Á÷Á¢ SQLÀ» ¾²Áö ¾Ê°í DB Á¢±ÙÀ» ºĞ¸®ÇÒ ¶§
+- ¿ì¸® ÇÁ·ÎÁ§Æ®¿¡¼­ ¾îµğ¿¡ ¾²ÀÌ´Â°¡: °Ô½Ã±Û, ´ñ±Û, »ç¿ëÀÚ, refresh token DB Á¢±Ù
+- ÇÙ½É °³³ä:
+  - repository´Â SQLAlchemy query¸¦ ´ã´çÇÑ´Ù.
+  - service´Â ºñÁî´Ï½º Èå¸§À» ´ã´çÇÑ´Ù.
+  - router´Â HTTP ¿äÃ»/ÀÀ´äÀ» ´ã´çÇÑ´Ù.
+- ÀÌ¹ø ±¸Çö ¿¹½Ã:
+  - `user_repository.py`: users Å×ÀÌºí Á¶È¸/»ı¼º/°»½Å
+  - `auth_token_repository.py`: auth_refresh_tokens Å×ÀÌºí ÀúÀå/Á¶È¸/Æó±â

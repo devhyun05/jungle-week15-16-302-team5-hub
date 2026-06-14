@@ -716,3 +716,30 @@ users
 .\.venv\Scripts\python.exe -c "from app.db.base import Base; import app.db.models; print(sorted(Base.metadata.tables.keys()))"
 .\.venv\Scripts\python.exe -c "from app.db.init_db import init_db; init_db(); print('init_db done')"
 ```
+
+## 2026-06-14 OAuth schema/repository QA
+
+목표: Google OAuth endpoint 구현 전, 인증 관련 schema와 repository가 독립적으로 import/compile 되는지 확인한다.
+
+- [x] `backend/app/schemas/auth.py`가 존재한다.
+- [x] `CurrentUserResponse`가 `profileImageUrl`, `approvalStatus` alias를 지원한다.
+- [x] `backend/app/repositories/user_repository.py`가 존재한다.
+- [x] `get_user_by_id()`가 users.id 기준 조회 함수로 분리되어 있다.
+- [x] `get_user_by_google_sub()`가 Google `sub` 기준 조회 함수로 분리되어 있다.
+- [x] `get_or_create_google_user()`가 기존 사용자 조회 또는 신규 생성을 담당한다.
+- [x] 초기 관리자 이메일은 `.env`의 `ADMIN_EMAILS`에서 판단한다.
+- [x] 신규 일반 사용자는 `STUDENT / 승인 대기`로 생성되도록 설계되어 있다.
+- [x] 재로그인 시 `users.name`을 덮어쓰지 않도록 설계되어 있다.
+- [x] `backend/app/repositories/auth_token_repository.py`가 존재한다.
+- [x] refresh token 원문이 아니라 hash를 저장하는 함수가 있다.
+- [x] refresh token 조회/활성 여부 확인/폐기 함수가 있다.
+- [x] `python -m compileall app` 성공.
+- [x] auth schema/repository import 검증 성공.
+
+검증 명령:
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -m compileall app
+.\.venv\Scripts\python.exe -c "from app.schemas.auth import CurrentUserResponse; from app.repositories.user_repository import is_initial_admin_email; from app.repositories.auth_token_repository import is_refresh_token_active; print(CurrentUserResponse(id=1, email='a@test.com', name='A', role='STUDENT', approvalStatus='승인 대기').model_dump(by_alias=True)); print(is_initial_admin_email('none@example.com')); print(callable(is_refresh_token_active))"
+```

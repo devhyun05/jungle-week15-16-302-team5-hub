@@ -1007,3 +1007,17 @@ http://localhost:8000/docs
   "detail": "ê²Œì‹œê¸€ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤."
 }
 ```
+
+## 2026-06-14 Google OAuth / httpx ¼³Á¤
+
+Google OAuth ¹é¿£µå ±¸ÇöÀ» À§ÇØ HTTP client ¶óÀÌºê·¯¸® `httpx`¸¦ ¼³Ä¡Çß´Ù.
+FastAPI ¼­¹ö°¡ Google token endpoint¿Í userinfo endpoint¿¡ ¿äÃ»À» º¸³»±â À§ÇØ »ç¿ëÇÑ´Ù.
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -m pip install httpx
+.\.venv\Scripts\python.exe -m pip freeze > requirements.txt
+```
+
+`.env`¿¡´Â Google OAuth Client ID/Secret, redirect URI, JWT secretÀ» ÀúÀåÇÑ´Ù.
+ÁÖÀÇ: `GOOGLE_CLIENT_SECRET`, `JWT_SECRET_KEY`´Â Àı´ë README, agent ¹®¼­, GitHub, Ã¤ÆÃ¿¡ ³ëÃâÇÏÁö ¾Ê´Â´Ù.

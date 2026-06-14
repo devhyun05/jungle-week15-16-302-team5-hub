@@ -2209,3 +2209,102 @@ GET /posts/{id}/comments
 - fetch error handling
 - CORS response header
 - backend response DTOì™€ frontend state ë³€í™˜
+
+## 2026-06-14 Google OAuth / JWT ±¸Çö Àü ÁØºñ
+
+ÀÌ¹ø ´Ü°è´Â Google OAuth¸¦ ½ÇÁ¦ ¹é¿£µå ·Î±×ÀÎ Èå¸§À¸·Î ¿¬°áÇÏ±â À§ÇÑ ÁØºñ ´Ü°è´Ù.
+
+### ÀÌ¹ø¿¡ È®ÀÎÇÑ °Í
+
+| Ç×¸ñ | ÀÇ¹Ì |
+| --- | --- |
+| Google OAuth Client ID | JungleLog ¾ÛÀ» GoogleÀÌ ½Äº°ÇÏ´Â °ø°³ id |
+| Google OAuth Client Secret | ¹é¿£µå¸¸ ¾Ë¾Æ¾ß ÇÏ´Â ºñ¹Ğ°ª |
+| Redirect URI | Google ·Î±×ÀÎ ÈÄ ´Ù½Ã FastAPI·Î µ¹¾Æ¿À´Â ÁÖ¼Ò |
+| JWT Secret Key | JungleLog access token ¼­¸í¿¡ ¾²´Â ºñ¹ĞÅ° |
+| httpx | ¹é¿£µå°¡ Google API·Î HTTP ¿äÃ»À» º¸³»´Â ¶óÀÌºê·¯¸® |
+
+### ¿Ö httpx°¡ ÇÊ¿äÇÑ°¡
+
+ºê¶ó¿ìÀú »ç¿ëÀÚ´Â Google ·Î±×ÀÎ È­¸é¿¡¼­ ·Î±×ÀÎÇÏÁö¸¸, ÃÖÁ¾ÀûÀ¸·Î Google¿¡°Ô authorization code¸¦ access tokenÀ¸·Î ¹Ù²ã ´Ş¶ó°í ¿äÃ»ÇÏ´Â ÁÖÃ¼´Â FastAPI ¹é¿£µå´Ù.
+±×·¡¼­ ¹é¿£µå ¾È¿¡¼­ ¿ÜºÎ HTTP ¿äÃ»À» º¸³¾ µµ±¸°¡ ÇÊ¿äÇÏ°í, ±× ¿ªÇÒÀ» `httpx`°¡ ¸Ã´Â´Ù.
+
+### ´ÙÀ½¿¡ ÀÌÇØÇÒ ÄÚµå Èå¸§
+
+```txt
+ºê¶ó¿ìÀú
+-> GET /auth/google/login
+-> Google ·Î±×ÀÎ È­¸é
+-> GET /auth/google/callback?code=...&state=...
+-> FastAPI°¡ Google token endpoint È£Ãâ
+-> FastAPI°¡ Google userinfo endpoint È£Ãâ
+-> users Å×ÀÌºí¿¡¼­ »ç¿ëÀÚ »ı¼º ¶Ç´Â Á¶È¸
+-> access token / refresh token ¹ß±Ş
+-> HttpOnly cookie ÀúÀå
+-> GET /auth/me ·Î ÇöÀç »ç¿ëÀÚ È®ÀÎ
+```
+
+### Ãß°¡ ÇĞ½À Å°¿öµå
+
+- OAuth2 Authorization Code Flow
+- OpenID Connect
+- redirect URI
+- state parameter
+- HttpOnly cookie
+- access token
+- refresh token rotation
+- token hash ÀúÀå
+
+## 2026-06-14 OAuth schema/repository ÇĞ½À ±â·Ï
+
+ÀÌ¹ø ´Ü°è´Â ½ÇÁ¦ Google ·Î±×ÀÎ endpoint¸¦ ¸¸µé±â Àü¿¡, ·Î±×ÀÎ °á°ú¸¦ DB¿Í API ÀÀ´äÀ¸·Î ´Ù·ç´Â ±âº» ºÎÇ°À» ¸¸µç ÀÛ¾÷ÀÌ´Ù.
+
+### ¼öÁ¤ÇÑ ÆÄÀÏ°ú ¿ªÇÒ
+
+| ÆÄÀÏ | ¿ªÇÒ |
+| --- | --- |
+| `backend/app/schemas/auth.py` | ÇöÀç ·Î±×ÀÎ »ç¿ëÀÚ Á¤º¸¸¦ ÇÁ·ĞÆ®¿£µå¿¡ ¾î¶² JSONÀ¸·Î ³»·ÁÁÙÁö Á¤ÀÇ |
+| `backend/app/repositories/user_repository.py` | `users` Å×ÀÌºí¿¡¼­ Google »ç¿ëÀÚ Á¶È¸, »ı¼º, Àç·Î±×ÀÎ °»½Å Ã³¸® |
+| `backend/app/repositories/auth_token_repository.py` | `auth_refresh_tokens` Å×ÀÌºí¿¡ refresh token hash ÀúÀå, Á¶È¸, Æó±â Ã³¸® |
+
+### ÇÙ½É ÄÚµå Èå¸§
+
+```txt
+Google userinfo ÀÀ´ä
+-> google_sub / email / name / picture ÃßÃâ
+-> get_or_create_google_user()
+-> ±âÁ¸ user°¡ ÀÖÀ¸¸é update_google_login_user()
+-> ¾øÀ¸¸é create_google_user()
+-> access token ¹ß±Ş ¿¹Á¤
+-> refresh token ¿ø¹® »ı¼º ¿¹Á¤
+-> hash_refresh_token()
+-> create_refresh_token_record()
+```
+
+### ¿Ö google_sub¸¦ ±âÁØÀ¸·Î Ã£´Â°¡
+
+ÀÌ¸ŞÀÏÀº »ç¿ëÀÚ°¡ º¯°æÇÒ ¼öµµ ÀÖ°í, Á¶Á÷ Á¤Ã¥¿¡ µû¶ó ´Ş¶óÁú ¼öµµ ÀÖ´Ù.
+¹İ¸é GoogleÀÇ `sub`´Â Google °èÁ¤ÀÇ °íÀ¯ ½Äº°ÀÚ¶ó °°Àº »ç¿ëÀÚ¸¦ ´Ù½Ã Ã£´Â ±âÁØÀ¸·Î ´õ ¾ÈÁ¤ÀûÀÌ´Ù.
+
+### ¿Ö users.nameÀ» Àç·Î±×ÀÎ ¶§ µ¤¾î¾²Áö ¾Ê´Â°¡
+
+`users.name`Àº JungleLog ¾È¿¡¼­ Ç¥½ÃµÇ´Â ÀÌ¸§ÀÌ´Ù.
+³ªÁß¿¡ »ç¿ëÀÚ°¡ ´Ğ³×ÀÓÃ³·³ Á÷Á¢ ¹Ù²Ü ¼ö ÀÖ¾î¾ß ÇÏ¹Ç·Î, Google Àç·Î±×ÀÎ ¶§¸¶´Ù Google ÀÌ¸§À¸·Î µ¤¾î¾²¸é »ç¿ëÀÚÀÇ ¼öÁ¤ÀÌ »ç¶óÁø´Ù.
+±×·¡¼­ Àç·Î±×ÀÎ ¶§´Â email, profile_image_url, last_login_at¸¸ °»½ÅÇÑ´Ù.
+
+### ¿Ö refresh token ¿ø¹®À» DB¿¡ ÀúÀåÇÏÁö ¾Ê´Â°¡
+
+refresh tokenÀº ¿À·¡ »ì¾Æ ÀÖ´Â ÀÎÁõ ¼ö´ÜÀÌ´Ù.
+DB¿¡ ¿ø¹®À» ÀúÀåÇÏ¸é DB°¡ ³ëÃâµÆÀ» ¶§ °ø°İÀÚ°¡ ¹Ù·Î Àç»ç¿ëÇÒ ¼ö ÀÖ´Ù.
+±×·¡¼­ ºê¶ó¿ìÀú cookie¿¡´Â ¿ø¹®À» ÁÖ°í, DB¿¡´Â `sha256` hash¸¸ ÀúÀåÇÑ´Ù.
+
+### ÀÌ¹ø ´Ü°è¿¡¼­ ³ª¿Â Å°¿öµå
+
+- Pydantic response schema
+- Field alias
+- Repository layer
+- Google OAuth `sub`
+- initial admin
+- approval status
+- refresh token hash
+- token revocation
