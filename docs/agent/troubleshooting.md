@@ -400,3 +400,25 @@ GET /posts/999999/comments -> 404
 OpenAPI path -> /posts/{post_id}/comments 등록 확인
 npm run build -> 성공
 ```
+
+## 2026-06-15 Browser OAuth QA timeout
+
+상황:
+
+- Browser 플러그인으로 `http://localhost:5173/`에 진입했다.
+- 비로그인 상태에서 `/login` 화면이 표시되는 것은 확인했다.
+- Google 로그인 버튼 클릭 후 navigation 대기 중 timeout이 발생했고, 이후 in-app browser 세션을 다시 잡지 못했다.
+
+판단:
+
+- 브라우저 자동화 세션 문제로 보이며, 앱 코드나 OAuth endpoint 자체의 실패로 단정할 수 없다.
+- 같은 흐름을 HTTP 기준으로 확인한 결과 `GET /auth/google/login`은 307 Google redirect와 state cookie를 정상 반환했다.
+
+대응:
+
+- 브라우저 자동화 대신 HTTP/code 기준 QA로 로그인 시작 흐름을 검증했다.
+- 실제 Google 계정 선택과 callback 성공 여부는 사용자 브라우저에서 수동으로 확인해야 한다.
+
+주의:
+
+- `curl -I /auth/google/login`은 HEAD 요청이라 405가 반환된다. 이 endpoint는 GET endpoint이므로 `curl.exe -s -D - -o NUL http://localhost:8000/auth/google/login`로 확인한다.

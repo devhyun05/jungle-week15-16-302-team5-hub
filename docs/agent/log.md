@@ -1535,3 +1535,23 @@ feat: 대시보드 API 기반 정리
 ```txt
 fix: 설정 화면 mock 문구 정리
 ```
+## 2026-06-15 OAuth 로그인 시작 흐름 QA
+
+상태: 부분 완료
+
+검증한 것:
+
+- `http://localhost:5173/login` -> 200
+- 비로그인 상태에서 `http://localhost:5173/` 진입 시 `/login` 화면 표시
+- `Login.tsx` 버튼이 `loginWithGoogle` 호출
+- `loginWithGoogle`가 `window.location.href = {API_BASE_URL}/auth/google/login` 실행
+- `GET /auth/google/login` -> 307 Temporary Redirect
+- redirect location이 Google OAuth 도메인
+- `junglelog_oauth_state` cookie 설정
+- 쿠키 없는 `GET /auth/me` -> 401
+
+주의:
+
+- `curl -I /auth/google/login`은 HEAD 요청이므로 405가 정상이다. 이 endpoint는 GET만 허용한다.
+- 실제 Google 계정 선택과 동의는 사용자 계정 조작이 필요하므로 수동 QA로 남겼다.
+- Browser 플러그인으로 버튼 클릭 확인 중 timeout이 발생해 HTTP/code 기준 QA로 대체했다.

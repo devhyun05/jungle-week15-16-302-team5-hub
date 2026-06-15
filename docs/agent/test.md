@@ -1065,3 +1065,28 @@ cd C:\junhee\WEEK15_AI_BOARD\backend
 - [x] 프로필 저장 버튼은 비활성화되어 있다.
 - [x] GitHub 전역 계정 연동은 준비 중으로 표시한다.
 - [x] `npm run build` 성공.
+## 2026-06-15 OAuth 로그인 시작 QA
+
+목표: 사용자가 URL을 직접 입력하지 않아도 로그인 버튼에서 Google OAuth 시작 endpoint로 이동할 수 있는지 확인한다.
+
+체크리스트:
+
+- [x] 프론트 로그인 페이지 `http://localhost:5173/login`이 200을 반환한다.
+- [x] 비로그인 상태의 앱 진입은 로그인 화면으로 이어진다.
+- [x] 로그인 버튼은 `loginWithGoogle`를 호출한다.
+- [x] `loginWithGoogle`는 `/auth/google/login`으로 브라우저를 이동시킨다.
+- [x] `GET /auth/google/login`은 307 redirect를 반환한다.
+- [x] redirect 대상은 Google OAuth URL이다.
+- [x] OAuth state cookie가 설정된다.
+- [x] 쿠키 없는 `/auth/me`는 401을 반환한다.
+- [ ] 실제 Google 계정 선택 후 callback 성공 확인은 수동 QA 필요.
+- [ ] 최초 로그인 계정의 승인 대기 화면 확인은 수동 QA 필요.
+- [ ] 관리자 승인 후 role별 화면 분기는 수동 QA 필요.
+
+검증 명령:
+
+```powershell
+curl.exe -I http://localhost:5173/login
+curl.exe -s -D - -o NUL http://localhost:8000/auth/google/login
+curl.exe -s -o NUL -w "%{http_code}" http://localhost:8000/auth/me
+```

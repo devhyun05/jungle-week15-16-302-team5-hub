@@ -696,3 +696,22 @@ AI 도우미 화면을 `mockData.portfolioProjects` 대신 실제 포트폴리�
 검증:
 
 - `npm run build` 성공
+## 2026-06-15 QA: OAuth 로그인 시작 흐름 확인
+
+Google OAuth 브라우저 end-to-end 전 단계까지 로컬 QA를 진행했습니다.
+
+확인한 것:
+
+- 프론트 `/login` 페이지가 정상 서빙됩니다.
+- 비로그인 상태에서 앱 진입 시 로그인 화면으로 이동합니다.
+- 로그인 버튼은 `loginWithGoogle()`을 호출하고, 프론트에서 `/auth/google/login`으로 이동합니다.
+- `GET /auth/google/login`은 307 redirect를 반환합니다.
+- redirect 대상은 Google OAuth URL입니다.
+- OAuth state cookie가 HttpOnly/SameSite=Lax로 설정됩니다.
+- 쿠키 없는 `GET /auth/me`는 401을 반환합니다.
+
+남은 수동 확인:
+
+- 실제 Google 계정 선택 및 동의 후 `/auth/google/callback` 성공 흐름
+- 최초 로그인 사용자의 승인 대기 화면 확인
+- 관리자 승인 후 STUDENT/COACH/ADMIN 화면 분기 확인
