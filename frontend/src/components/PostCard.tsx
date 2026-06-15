@@ -31,6 +31,20 @@ export default function PostCard({ post }: PostCardProps) {
       <Link to={`/posts/${post?.id || ""}`} aria-label={`${post?.title || "게시글"} 상세 보기`}>
         <h3 className={cn(h3, "transition hover:text-mint-dark")}>{post?.title || "게시글 제목"}</h3>
       </Link>
+      {post?.imageUrl && (
+        <Link
+          className="block aspect-[16/9] overflow-hidden rounded-md border border-line bg-page"
+          to={`/posts/${post.id || ""}`}
+          aria-label={`${post.title || "게시글"} 사진 보기`}
+        >
+          <img
+            className="h-full w-full object-cover"
+            src={post.imageUrl}
+            alt={`${post.title || "슬라임"} 사진`}
+            loading="lazy"
+          />
+        </Link>
+      )}
       <p className={cardCopy}>{post?.summary || "게시글 요약과 작성자 정보를 표시할 영역입니다."}</p>
       <footer className="flex flex-wrap items-center justify-between gap-3">
         <div className={tagRow}>

@@ -2,7 +2,7 @@
 
 이 문서는 현재 프론트 글쓰기 폼과 백엔드 Session 05 모델에 맞춘 PostgreSQL 생성 SQL이다.
 
-현재 글쓰기 화면은 `title`, `content`, `post_type`, `slime_type`, `tag_names`만 보낸다. 그래서 `posts` 테이블도 레시피 재료, 비율, 제작 순서, 실패 증상 같은 세부 컬럼을 아직 만들지 않는다. 그 정보는 지금은 `content` 본문에 저장하고, 나중에 프론트 입력칸을 추가할 때 DB 컬럼과 쿼리를 함께 확장한다.
+현재 글쓰기 화면은 `title`, `content`, `post_type`, `slime_type`, `image_url`, `tag_names`를 보낸다. 그래서 `posts` 테이블도 레시피 재료, 비율, 제작 순서, 실패 증상 같은 세부 컬럼을 아직 만들지 않는다. 그 정보는 지금은 `content` 본문에 저장하고, 나중에 프론트 입력칸을 추가할 때 DB 컬럼과 쿼리를 함께 확장한다.
 
 ## 사용 전 확인
 
@@ -71,6 +71,10 @@ ALTER TABLE posts
 ALTER TABLE posts
     ALTER COLUMN post_type TYPE VARCHAR(20),
     ALTER COLUMN slime_type TYPE VARCHAR(80);
+
+-- 게시글 사진 첨부 컬럼
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS image_url TEXT;
 
 ALTER TABLE tags
     ALTER COLUMN name TYPE VARCHAR(80),
@@ -155,6 +159,7 @@ CREATE TABLE posts (
 
     title VARCHAR(200) NOT NULL,
     content TEXT NOT NULL,
+    image_url TEXT,
 
     post_type VARCHAR(20) NOT NULL,
     slime_type VARCHAR(80),

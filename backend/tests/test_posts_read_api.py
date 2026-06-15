@@ -73,6 +73,7 @@ def seed_posts(db: Session) -> dict[str, Post | User]:
         content="액티베이터를 조금씩 넣고 충분히 섞어요.",
         post_type="recipe",
         slime_type="클리어슬라임",
+        image_url="https://example.com/clear-slime.png",
         tags=[clear_tag, recipe_tag],
     )
     failure_post = Post(
@@ -195,6 +196,7 @@ def test_get_post_detail_returns_post_and_404(
     assert response.status_code == 200
     data = response.json()
     assert data["title"] == "클리어 슬라임 레시피"
+    assert data["image_url"] == "https://example.com/clear-slime.png"
     assert data["comment_count"] == 1
     assert data["is_owner"] is False
     assert missing_response.status_code == 404

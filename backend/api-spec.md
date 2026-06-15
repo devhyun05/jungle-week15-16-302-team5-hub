@@ -324,10 +324,10 @@ Query
 | `keyword` | string | 아니오 | 없음 | 제목, 본문, 슬라임 타입, 증상, 태그명 검색 |
 | `post_type` | string | 아니오 | 없음 | `recipe`, `failure`, `review`, `general` |
 | `tag` | string | 아니오 | 없음 | 태그명, 기존 단일 태그 필터 호환용 |
-| `tags` | string[] | 아니오 | 없음 | 반복 쿼리로 전달하는 태그명 목록. 모든 태그를 포함한 게시글만 조회 |
+| `tags` | string[] | 아니오 | 없음 | 반복 쿼리로 전달하는 태그명 목록. 하나라도 포함한 게시글 조회 |
 | `slime_type` | string | 아니오 | 없음 | 슬라임 종류 |
 
-다중 태그 필터는 반복 쿼리로 전달한다. `tag`와 `tags`가 함께 전달되면 중복을 제거한 뒤 모두 포함 조건으로 처리한다.
+다중 태그 필터는 반복 쿼리로 전달한다. `tag`와 `tags`가 함께 전달되면 중복을 제거한 뒤 하나라도 포함 조건으로 처리한다.
 
 ```http
 GET /posts?tags=클리어슬라임&tags=거품
@@ -345,6 +345,7 @@ GET /posts?tags=클리어슬라임&tags=거품
       "summary": "클리어 글루에 향료와 글리터를 먼저 섞습니다.",
       "post_type": "recipe",
       "slime_type": "클리어슬라임",
+      "image_url": "data:image/png;base64,...",
       "tags": ["클리어슬라임", "레시피"],
       "author": {
         "id": 1,
@@ -385,6 +386,7 @@ GET /posts?tags=클리어슬라임&tags=거품
   "content": "처음 만드는 사람도 따라할 수 있는 투명 슬라임 레시피입니다.",
   "post_type": "recipe",
   "slime_type": "클리어슬라임",
+  "image_url": "data:image/png;base64,...",
   "tag_names": ["클리어슬라임", "레시피"]
 }
 ```
@@ -398,6 +400,7 @@ GET /posts?tags=클리어슬라임&tags=거품
 - 작성자는 access token의 현재 사용자
 - `tag_names`는 추천 태그와 사용자가 직접 입력한 태그를 모두 포함할 수 있다
 - `tag_names`는 최대 8개까지 정규화한다
+- `image_url`은 생략 가능하며 `http(s)` 이미지 URL 또는 이미지 data URL을 받는다
 - 태그 정규화는 앞의 `#`, 앞뒤 공백, 내부 공백을 제거하고 중복을 없앤다
 - 존재하지 않는 태그명은 `tags`에 새로 만들고 `post_tags`로 연결한다
 - 현재 프론트 글쓰기 폼은 레시피 재료, 비율, 제작 순서, 실패 증상 등을 별도 입력칸으로 보내지 않는다. 이 정보는 우선 `content` 본문에 자유롭게 작성하고, 별도 필드가 필요해지면 프론트 입력칸과 DB 컬럼을 함께 확장한다.
@@ -428,6 +431,7 @@ GET /posts?tags=클리어슬라임&tags=거품
 ```json
 {
   "title": "딸기향 투명 슬라임 레시피 수정",
+  "image_url": null,
   "tag_names": ["클리어슬라임", "향료", "초보자추천"]
 }
 ```
@@ -444,6 +448,7 @@ GET /posts?tags=클리어슬라임&tags=거품
 구현 메모:
 
 - partial update 방식
+- `image_url`을 `null`로 보내면 첨부 사진을 제거한다
 - `tag_names`가 요청에 포함될 때만 태그 연결을 교체한다
 - 직접 입력 태그가 포함되면 생성 후 연결한다
 - 게시글 수정 후 RAG 구현 단계에서는 관련 임베딩을 갱신한다

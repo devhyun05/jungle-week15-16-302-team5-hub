@@ -46,6 +46,7 @@ def post_to_response(
         summary=make_post_summary(post.content),
         post_type=post.post_type,
         slime_type=post.slime_type,
+        image_url=post.image_url,
         tags=[tag.name for tag in post.tags],
         author=PostAuthorResponse.model_validate(post.author),
         comment_count=len(post.comments),
@@ -167,6 +168,7 @@ def create_post(
         content=post_data.content,
         post_type=post_data.post_type,
         slime_type=post_data.slime_type,
+        image_url=post_data.image_url,
     )
 
     post.tags = get_or_create_tags(db, post_data.tag_names)
@@ -196,6 +198,9 @@ def update_post(
 
     if post_data.slime_type is not None:
         post.slime_type = post_data.slime_type
+
+    if "image_url" in post_data.model_fields_set:
+        post.image_url = post_data.image_url
 
     if post_data.tag_names is not None:
         post.tags = get_or_create_tags(db, post_data.tag_names)

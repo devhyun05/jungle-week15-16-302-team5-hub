@@ -41,6 +41,11 @@ class Post(Base):
         nullable=False,
     )
 
+    image_url: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
     post_type: Mapped[str] = mapped_column(
         String(20),
         nullable=False,

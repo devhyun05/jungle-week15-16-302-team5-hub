@@ -37,7 +37,7 @@
 - `/`와 `/posts`는 모두 같은 게시판 메인 화면이며, 백엔드는 `GET /posts` 하나로 목록을 제공한다.
 - `GET /posts`는 `keyword`, `post_type`, `tag`, 반복 `tags` query를 지원한다.
 - 반복 `tags`는 선택한 태그 중 하나라도 포함하는 OR 필터다.
-- 현재 글쓰기/수정 화면은 `title`, `content`, `post_type`, `slime_type`, `tag_names`를 보낸다. 레시피 재료, 비율, 제작 순서, 실패 증상 같은 세부 정보는 지금은 `content`에 작성한다.
+- 현재 글쓰기/수정 화면은 `title`, `content`, `post_type`, `slime_type`, `image_url`, `tag_names`를 보낸다. 레시피 재료, 비율, 제작 순서, 실패 증상 같은 세부 정보는 지금은 `content`에 작성한다.
 - 글쓰기/수정 요청의 `tag_names`는 추천 태그뿐 아니라 사용자가 직접 입력한 태그도 포함한다.
 - `GET /tags/popular`는 많이 사용된 태그를 반환하고, 프론트는 최대 8개만 노출한다.
 

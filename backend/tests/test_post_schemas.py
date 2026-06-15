@@ -53,12 +53,14 @@ def test_post_create_matches_frontend_write_payload() -> None:
         content="처음 만드는 사람도 따라할 수 있는 투명 슬라임 레시피입니다.",
         post_type="recipe",
         slime_type="클리어슬라임",
+        image_url=" data:image/webp;base64,aW1hZ2U= ",
         tag_names=["클리어슬라임", "레시피"],
     )
 
     assert request.title == "딸기향 투명 슬라임 만들기"
     assert request.post_type == "recipe"
     assert request.slime_type == "클리어슬라임"
+    assert request.image_url == "data:image/webp;base64,aW1hZ2U="
     assert request.tag_names == ["클리어슬라임", "레시피"]
 
 
@@ -85,16 +87,26 @@ def test_post_create_validates_required_fields_and_tag_limit() -> None:
             tag_names=[f"태그{i}" for i in range(9)],
         )
 
+    with pytest.raises(ValidationError):
+        PostCreate(
+            title="제목입니다.",
+            content="본문입니다.",
+            post_type="recipe",
+            image_url="ftp://example.com/image.png",
+        )
+
 
 def test_post_update_allows_partial_payload() -> None:
     request = PostUpdate(
         title="딸기향 투명 슬라임 레시피 수정",
+        image_url="https://example.com/slime.jpg",
         tag_names=["클리어슬라임", "향료", "초보자추천"],
     )
 
     assert request.title == "딸기향 투명 슬라임 레시피 수정"
     assert request.content is None
     assert request.post_type is None
+    assert request.image_url == "https://example.com/slime.jpg"
     assert request.tag_names == ["클리어슬라임", "향료", "초보자추천"]
 
 
@@ -115,6 +127,7 @@ def test_post_to_response_calculates_frontend_fields(db: Session) -> None:
         content="본문입니다.",
         post_type="recipe",
         slime_type="클리어슬라임",
+        image_url="https://example.com/slime.png",
         tags=[clear_tag, recipe_tag],
     )
     first_comment = Comment(
@@ -137,6 +150,7 @@ def test_post_to_response_calculates_frontend_fields(db: Session) -> None:
 
     assert data["id"] == post.id
     assert data["summary"] == "본문입니다."
+    assert data["image_url"] == "https://example.com/slime.png"
     assert data["tags"] == ["클리어슬라임", "레시피"]
     assert data["author"]["email"] == "slime@example.com"
     assert data["comment_count"] == 2

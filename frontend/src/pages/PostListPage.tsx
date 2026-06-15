@@ -60,6 +60,7 @@ function toCardData(post: Post): PostCardData {
     type: post.post_type,
     title: post.title,
     summary: post.summary,
+    imageUrl: post.image_url,
     tags: post.tags,
     author: post.author.nickname,
     time: formatDate(post.created_at),

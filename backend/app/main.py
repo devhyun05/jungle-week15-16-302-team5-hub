@@ -5,16 +5,23 @@
 - 앱 생성 함수, CORS 미들웨어, 라우터 등록, 상태 확인 API를 다시 만든다.
 - `tests/test_health.py`로 확인한다.
 """
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
+from app.db.migrations import ensure_post_image_url_column
+from app.db.session import engine
 from app.routers import auth, comments, posts, tags
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
+
+    if os.getenv("VERCEL") == "1" or os.getenv("RUN_SCHEMA_MIGRATIONS") == "1":
+        ensure_post_image_url_column(engine)
+
     app = FastAPI(title="Malang Lab API")
 
     app.add_middleware(

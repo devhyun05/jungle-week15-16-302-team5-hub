@@ -1,4 +1,4 @@
-import { FormEvent, KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { fetchTags } from "../api/tags";
 import { createPost, fetchPost, updatePost } from "../api/posts";
@@ -31,11 +31,15 @@ const postTypes: Array<{ label: string; description: string; value: PostType }> 
   { label: "일반", description: "그 외 자유 글", value: "general" },
 ];
 
+const maxImageFileSize = 1_000_000;
+const acceptedImageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
 interface FormState {
   title: string;
   content: string;
   post_type: PostType;
   slime_type: string;
+  image_url: string;
   tag_names: string[];
 }
 
@@ -44,6 +48,7 @@ const initialForm: FormState = {
   content: "",
   post_type: "failure",
   slime_type: "",
+  image_url: "",
   tag_names: [],
 };
 
@@ -55,6 +60,7 @@ export default function PostEditorPage() {
   const [tags, setTags] = useState<string[]>([]);
   const [customTags, setCustomTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [imageInputKey, setImageInputKey] = useState(0);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -108,6 +114,7 @@ export default function PostEditorPage() {
             content: post.content,
             post_type: post.post_type,
             slime_type: post.slime_type || "",
+            image_url: post.image_url || "",
             tag_names: post.tags,
           });
         }
@@ -188,6 +195,43 @@ export default function PostEditorPage() {
     }
   }
 
+  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!acceptedImageTypes.includes(file.type)) {
+      setMessage("JPG, PNG, WebP, GIF 이미지만 첨부할 수 있어요.");
+      setImageInputKey((current) => current + 1);
+      return;
+    }
+
+    if (file.size > maxImageFileSize) {
+      setMessage("사진은 1MB 이하만 첨부할 수 있어요.");
+      setImageInputKey((current) => current + 1);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        updateForm("image_url", reader.result);
+        setMessage("");
+      }
+    };
+    reader.onerror = () => {
+      setMessage("사진을 읽지 못했습니다.");
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeImage() {
+    updateForm("image_url", "");
+    setImageInputKey((current) => current + 1);
+    setMessage("");
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
@@ -196,6 +240,7 @@ export default function PostEditorPage() {
       const payload = {
         ...form,
         slime_type: form.slime_type || null,
+        image_url: form.image_url || null,
       };
       const post = isEdit && postId
         ? await updatePost<Post>(postId, payload)
@@ -274,6 +319,32 @@ export default function PostEditorPage() {
             required
           />
         </label>
+
+        <div className={formGroup}>
+          <span className={formLabel}>슬라임 사진</span>
+          <input
+            key={imageInputKey}
+            className={cn(field, "file:mr-4 file:rounded-md file:border-0 file:bg-mint-soft file:px-3 file:py-2 file:text-base file:font-bold file:text-mint-dark")}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleImageChange}
+          />
+          {form.image_url && (
+            <div className="grid gap-3 rounded-md border border-line bg-page/70 p-3">
+              <div className="aspect-[16/9] overflow-hidden rounded-md border border-line bg-white">
+                <img
+                  className="h-full w-full object-contain"
+                  src={form.image_url}
+                  alt="첨부한 슬라임 사진"
+                />
+              </div>
+              <button className={ghostButton} type="button" onClick={removeImage}>
+                사진 삭제
+              </button>
+            </div>
+          )}
+          <span className={meta}>JPG, PNG, WebP, GIF / 최대 1MB</span>
+        </div>
 
         <div className={formGroup}>
           <span className={formLabel}>태그</span>

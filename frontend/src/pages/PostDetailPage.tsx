@@ -172,6 +172,15 @@ export default function PostDetailPage() {
               {post.tags.length ? post.tags.map((tag) => <TagBadge key={tag} label={tag} />) : <TagBadge label="태그없음" />}
             </div>
             {post.slime_type && <p className={muted}><strong>슬라임 종류</strong> {post.slime_type}</p>}
+            {post.image_url && (
+              <figure className="overflow-hidden rounded-md border border-line bg-page">
+                <img
+                  className="max-h-[560px] w-full object-contain"
+                  src={post.image_url}
+                  alt={`${post.title} 슬라임 사진`}
+                />
+              </figure>
+            )}
             <div className="grid gap-4 whitespace-pre-wrap border-y border-line py-6 text-[18px] leading-8 text-ink">
               {post.content}
             </div>

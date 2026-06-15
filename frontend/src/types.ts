@@ -14,6 +14,7 @@ export interface PostCardData {
   type?: PostType;
   title?: string;
   summary?: string;
+  imageUrl?: string | null;
   tags?: string[];
   author?: string;
   time?: string;
@@ -28,6 +29,7 @@ export interface Post {
   summary: string;
   post_type: PostType;
   slime_type?: string | null;
+  image_url?: string | null;
   tags: string[];
   author: User;
   comment_count: number;

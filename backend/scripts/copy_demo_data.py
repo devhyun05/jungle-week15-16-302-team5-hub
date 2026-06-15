@@ -77,6 +77,7 @@ def main() -> None:
                     author_id=target_author.id,
                     title=source_post.title,
                     content=source_post.content,
+                    image_url=source_post.image_url,
                     post_type=source_post.post_type,
                     slime_type=source_post.slime_type,
                     created_at=source_post.created_at,
@@ -85,6 +86,7 @@ def main() -> None:
                 target_db.add(target_post)
                 target_db.flush()
 
+            target_post.image_url = source_post.image_url
             target_post.tags = [
                 tags_by_name[source_tag.name]
                 for source_tag in source_post.tags

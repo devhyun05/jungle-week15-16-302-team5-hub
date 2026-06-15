@@ -111,6 +111,7 @@ def test_create_post_stores_post_and_normalized_tags(
             "content": "액티베이터를 조금씩 넣어요.",
             "post_type": "recipe",
             "slime_type": "클리어슬라임",
+            "image_url": "data:image/png;base64,aW1hZ2U=",
             "tag_names": ["# 클리어 슬라임", "레시피", "레시피", "향료"],
         },
         headers=auth_headers(author),
@@ -119,12 +120,14 @@ def test_create_post_stores_post_and_normalized_tags(
     assert response.status_code == 201
     data = response.json()
     assert data["title"] == "딸기향 투명 슬라임"
+    assert data["image_url"] == "data:image/png;base64,aW1hZ2U="
     assert data["author"]["email"] == author.email
     assert data["is_owner"] is True
     assert data["tags"] == ["클리어슬라임", "레시피", "향료"]
 
     post = db.query(Post).filter(Post.id == data["id"]).one()
     assert post.author_id == author.id
+    assert post.image_url == "data:image/png;base64,aW1hZ2U="
     assert [tag.name for tag in post.tags] == ["클리어슬라임", "레시피", "향료"]
     assert db.query(Tag).filter(Tag.name == "클리어슬라임").one().tag_type == "custom"
 
@@ -140,6 +143,7 @@ def test_update_post_changes_only_owner_fields_and_replaces_tags(
         f"/posts/{post.id}",
         json={
             "title": "수정한 레시피",
+            "image_url": "https://example.com/slime.png",
             "tag_names": ["버터 슬라임", "초보자추천"],
         },
         headers=auth_headers(author),
@@ -149,11 +153,13 @@ def test_update_post_changes_only_owner_fields_and_replaces_tags(
     data = response.json()
     assert data["title"] == "수정한 레시피"
     assert data["content"] == "기존 본문입니다."
+    assert data["image_url"] == "https://example.com/slime.png"
     assert data["tags"] == ["버터슬라임", "초보자추천"]
 
     db.refresh(post)
     assert post.title == "수정한 레시피"
     assert post.content == "기존 본문입니다."
+    assert post.image_url == "https://example.com/slime.png"
     assert [tag.name for tag in post.tags] == ["버터슬라임", "초보자추천"]
 
 

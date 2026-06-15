@@ -6,7 +6,7 @@
 
 - 회원가입, 로그인, 로그인 유지는 `users`, `refresh_tokens`가 담당한다.
 - 게시글은 `posts` 한 테이블에서 레시피, 실패 질문, 후기, 일반 글을 함께 관리한다.
-- 현재 글쓰기 화면은 `title`, `content`, `post_type`, `slime_type`, `tag_names`만 보낸다.
+- 현재 글쓰기 화면은 `title`, `content`, `post_type`, `slime_type`, `image_url`, `tag_names`를 보낸다.
 - 예전 설계에 있던 레시피 재료, 비율, 제작 순서, 실패 증상, 해결 상태 같은 상세 필드는 현재 `posts` 테이블에서 제거했다.
 - 상세 정보는 지금은 `content` 본문에 작성하고, 나중에 프론트 입력칸이 생기면 DB 컬럼과 API schema를 함께 확장한다.
 - 태그는 `tags`에 한 번만 저장하고, 게시글과 태그의 다대다 관계는 `post_tags`로 연결한다.
@@ -53,6 +53,7 @@ erDiagram
       int author_id FK "작성자"
       varchar title "제목"
       text content "본문"
+      text image_url "첨부 사진 URL 또는 data URL"
       varchar post_type "recipe/failure/review/general"
       varchar slime_type "슬라임 종류"
       timestamptz created_at "작성 일시"
@@ -87,7 +88,7 @@ erDiagram
 | --- | --- | --- | --- |
 | `users` | 회원 계정과 작성자 정보를 저장한다. | `email`, `password_hash`, `nickname` | 회원가입, 로그인, 작성자 표시 |
 | `refresh_tokens` | refresh token hash와 회전 이력을 저장한다. | `token_hash`, `family_id`, `expires_at`, `revoked_at` | 로그인 유지, 토큰 재발급, 로그아웃 |
-| `posts` | 게시글 본문과 분류 정보를 저장한다. | `title`, `content`, `post_type`, `slime_type` | 게시글 목록, 상세, 작성, 수정, 삭제 |
+| `posts` | 게시글 본문, 첨부 사진, 분류 정보를 저장한다. | `title`, `content`, `image_url`, `post_type`, `slime_type` | 게시글 목록, 상세, 작성, 수정, 삭제 |
 | `comments` | 게시글별 댓글을 저장한다. | `post_id`, `author_id`, `content` | 댓글 목록, 작성, 수정, 삭제 |
 | `tags` | 검색과 필터에 쓰는 태그 마스터를 저장한다. | `name`, `tag_type` | 태그 목록, 인기 태그, 직접 입력 태그 |
 | `post_tags` | 게시글과 태그의 다대다 관계를 연결한다. | `post_id`, `tag_id` | 다중 태그 필터, 게시글 태그 표시 |
@@ -153,6 +154,7 @@ access token이 만료됐을 때 로그인 상태를 이어가기 위한 테이�
 | `author_id` | `int` | FK `users.id`, NOT NULL, index | 작성자 |
 | `title` | `varchar(200)` | NOT NULL | 게시글 제목 |
 | `content` | `text` | NOT NULL | 게시글 본문 |
+| `image_url` | `text` | NULL | 첨부 사진 URL 또는 data URL |
 | `post_type` | `varchar(20)` | NOT NULL, index | `recipe`, `failure`, `review`, `general` |
 | `slime_type` | `varchar(80)` | NULL, index | 선택 입력하는 슬라임 종류 |
 | `created_at` | `timestamptz` | DEFAULT now | 작성 일시 |
