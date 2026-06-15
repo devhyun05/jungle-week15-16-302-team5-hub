@@ -1452,3 +1452,34 @@ OAuth 기존 이메일 사용자 연결 QA 결과:
 - [x] `git diff --check` 통과
 - [x] 기존 이메일 사용자에 새 Google sub 연결 테스트 성공
 - [x] 테스트용 사용자 cleanup 완료
+
+## 2026-06-15 실제 브라우저 Google 로그인 진입 QA
+
+목표: 사용자가 URL을 직접 조합하지 않고 로그인 버튼만 눌러 Google OAuth 화면으로 이동할 수 있는지 확인한다.
+
+체크리스트:
+
+- [x] `http://localhost:5173/login` 접속 시 브라우저 title이 `JungleLog`다.
+- [x] 로그인 화면에 `Google로 계속하기` 버튼이 보인다.
+- [x] 로그인 화면 console error가 없다.
+- [x] Google 로그인 버튼은 1개만 존재한다.
+- [x] Google 로그인 버튼 클릭 시 `accounts.google.com` 로그인 화면으로 이동한다.
+- [x] Google OAuth URL에 `redirect_uri=http://localhost:8000/auth/google/callback` 흐름이 포함된다.
+- [x] 비로그인 상태에서 `/posts/new` 직접 접근 시 `/login`으로 redirect된다.
+- [x] 보호 라우트 redirect 후 로그인 버튼이 유지된다.
+- [x] 보호 라우트 redirect 후 console error가 없다.
+- [ ] 실제 Google 계정 선택/동의 화면 통과
+- [ ] callback 후 JungleLog 화면 복귀
+- [ ] `/auth/me` 기준 관리자/학생/코치 화면 분기 확인
+- [ ] `npm run build`
+- [ ] `python -m compileall app`
+- [ ] `git diff --check`
+
+실제 브라우저 Google 로그인 진입 QA 결과:
+
+- [x] `npm run build` 성공
+- [x] `python -m compileall app` 성공
+- [x] `git diff --check` 통과
+- [x] `/login` 화면 title `JungleLog` 확인
+- [x] Google 로그인 버튼 클릭 시 `accounts.google.com` 이동 확인
+- [x] `/posts/new` 비로그인 접근 시 `/login` redirect 확인

@@ -3318,3 +3318,26 @@ OAuth 로그인은 보통 Google의 `sub` 값을 기준으로 사용자를 찾�
 - 이메일은 unique 제약이 있으므로 같은 이메일 row가 이미 있을 때 새 row를 만들면 안 된다.
 - Google userinfo에서 email_verified를 확인한 뒤 받은 이메일이므로 기존 계정 연결 기준으로 사용할 수 있다.
 - 기존 관리자 role과 승인 상태는 유지하고, Google sub와 마지막 로그인 정보만 갱신한다.
+
+## 2026-06-15 브라우저 OAuth 진입 흐름 학습 기록
+
+### 이번에 확인한 흐름
+
+```txt
+/login 화면
+-> Google로 계속하기 버튼 클릭
+-> /auth/google/login 호출
+-> 백엔드가 Google OAuth URL로 redirect
+-> 브라우저가 accounts.google.com 로그인 화면으로 이동
+```
+
+### 중요한 개념
+
+- 프론트 로그인 버튼은 직접 Google API를 호출하지 않는다.
+- 버튼은 백엔드의 `/auth/google/login`으로 이동시키고, 백엔드가 Google OAuth URL을 만들어 redirect한다.
+- OAuth state는 백엔드가 cookie로 저장하고, callback에서 돌아온 state와 비교한다.
+- `/posts/new` 같은 보호 라우트는 로그인 전 접근 시 `/login`으로 돌려보내야 한다.
+
+### 아직 사람이 직접 해야 하는 이유
+
+Google 계정 선택과 동의 화면은 실제 개인 계정 인증 과정이다. 계정 선택, 2단계 인증, 권한 동의 같은 부분은 자동화보다 사용자가 직접 확인하는 것이 안전하다.

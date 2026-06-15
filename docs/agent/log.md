@@ -1975,3 +1975,33 @@ remaining_test_users=0
 ```txt
 fix: OAuth 기존 이메일 사용자 연결 처리
 ```
+
+## 2026-06-15 실제 브라우저 Google 로그인 진입 QA
+
+상태: 부분 완료
+
+확인한 것:
+
+```txt
+http://localhost:5173/login
+-> title: JungleLog
+-> Google 로그인 버튼 표시
+-> 버튼 클릭 시 accounts.google.com Google 로그인 화면으로 이동
+-> redirect_uri는 http://localhost:8000/auth/google/callback 기준
+```
+
+보호 라우트 확인:
+
+```txt
+http://localhost:5173/posts/new 직접 접근
+-> 비로그인 상태이므로 http://localhost:5173/login으로 이동
+-> 로그인 버튼 유지
+-> 브라우저 console error 없음
+```
+
+남은 수동 QA:
+
+- 실제 Google 계정 선택
+- OAuth 동의 화면 통과
+- callback 후 JungleLog로 복귀
+- `/auth/me` 기준 ADMIN / STUDENT / COACH 화면 분기 확인

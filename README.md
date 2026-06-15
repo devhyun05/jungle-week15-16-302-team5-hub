@@ -330,6 +330,7 @@ Google Cloud Console 설정:
 - 비로그인 브라우저 진입 시 `/login` 이동 확인
 - 비로그인 사용자의 `/posts/new` 직접 접근 시 `/login` 이동 확인
 - 브라우저 탭 제목과 HTML 메타 정보가 JungleLog 기준인지 확인
+- 로그인 화면의 Google 로그인 버튼이 실제 Google OAuth 화면으로 이동하는지 확인
 - 로컬 DB의 과거 개발용 demo 사용자 잔존 데이터 제거 확인
 
 통합 시나리오에서 검증한 흐름:
