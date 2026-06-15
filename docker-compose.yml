@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg18
+    container_name: glowboard-postgres
+    environment:
+      POSTGRES_DB: glowboard
+      POSTGRES_USER: glowboard
+      POSTGRES_PASSWORD: glowboard
+    ports:
+      - "55432:5432"
+    volumes:
+      - glowboard-postgres-data:/var/lib/postgresql
+
+volumes:
+  glowboard-postgres-data:
