@@ -3659,3 +3659,80 @@ MainLayout ë Œë”ë§
 - React useEffect
 - Promise.all
 - pagination
+## 2026-06-15 ÄÚÄ¡ ÀÎ¹Ú½º QA ÇĞ½À ±â·Ï
+
+ÀÌ¹ø¿¡ ¼öÁ¤ÇÑ ÆÄÀÏ:
+
+| ÆÄÀÏ | ¿ªÇÒ |
+| --- | --- |
+| `frontend/src/app/layouts/MainLayout.tsx` | ·Î±×ÀÎ »ç¿ëÀÚÀÇ role¿¡ µû¶ó »çÀÌµå¹Ù ¸Ş´º¸¦ °í¸¥´Ù. ÀÌ¹ø¿¡´Â COACH ¸Ş´º¿¡¼­ ´ë½Ãº¸µå¸¦ Á¦°ÅÇß´Ù. |
+| `frontend/src/app/pages/dashboard/Dashboard.tsx` | `/` ±âº» È­¸éÀÌ´Ù. ÀÌ¹ø¿¡´Â COACH°¡ Á¢±ÙÇÏ¸é ÄÚÄ¡ ¸®ºä ÀÎ¹Ú½º·Î ÀÌµ¿ÇÏµµ·Ï ¼öÁ¤Çß´Ù. |
+
+ÀÌ¹ø ±¸Çö¿¡¼­ ¾Ë¾Æ¾ß ÇÏ´Â React °³³ä:
+
+### Á¶°ÇºÎ ¶ó¿ìÆÃ
+
+`Dashboard`´Â role¿¡ µû¶ó ´Ù¸¥ È­¸éÀ¸·Î º¸³»´Â ¿ªÇÒµµ ÇÑ´Ù.
+
+```tsx
+if (role === "ADMIN") {
+  return <Navigate to="/admin/users" replace />;
+}
+
+if (role === "COACH") {
+  return <Navigate to="/coach-review" replace />;
+}
+```
+
+`Navigate`´Â »ç¿ëÀÚ°¡ Æ¯Á¤ URL¿¡ µé¾î¿ÔÀ» ¶§ ´Ù¸¥ URL·Î ÀÌµ¿½ÃÅ°´Â React Router ÄÄÆ÷³ÍÆ®´Ù.
+
+### ¿ªÇÒº° ¸Ş´º ±¸¼º
+
+`MainLayout`Àº `user.role`À» ±âÁØÀ¸·Î `studentNavItems`, `coachNavItems`, `adminNavItems` Áß ÇÏ³ª¸¦ °í¸¥´Ù.
+
+```txt
+STUDENT -> ´ë½Ãº¸µå, ÀüÃ¼ °Ô½Ã±Û, ³» ±â·Ï, Æ÷Æ®Æú¸®¿À °ü¸®, AI µµ¿ì¹Ì, ÄÚÄ¡ ¸®ºä ¿äÃ», ¼³Á¤
+COACH -> ÄÚÄ¡ ¸®ºä ÀÎ¹Ú½º, ÀüÃ¼ °Ô½Ã±Û, ¼³Á¤
+ADMIN -> »ç¿ëÀÚ ½ÂÀÎ, ÀüÃ¼ °Ô½Ã±Û, ¼³Á¤
+```
+
+### ¿Ö ÄÚÄ¡ ´ë½Ãº¸µå¸¦ Á¦°ÅÇß³ª
+
+ÄÚÄ¡´Â ÇĞ»ıÃ³·³ ¸ÅÀÏ ±â·ÏÀ» ¾²°Å³ª Æ÷Æ®Æú¸®¿À¸¦ °ü¸®ÇÏ´Â »ç¿ëÀÚ°¡ ¾Æ´Ï´Ù.
+ÄÚÄ¡ÀÇ ÇÙ½É ¾÷¹«´Â ÇĞ»ıÀÌ º¸³½ ¸®ºä ¿äÃ»À» È®ÀÎÇÏ°í ÇÇµå¹éÇÏ´Â °ÍÀÌ´Ù.
+±×·¡¼­ COACHÀÇ ±âº» ÁøÀÔ È­¸éÀº ´ë½Ãº¸µåº¸´Ù `/coach-review`°¡ ´õ ÀÚ¿¬½º·´´Ù.
+
+ÀÌ¹ø ±¸Çö¿¡¼­ »ç¿ëÇÑ ¹é¿£µå/API °³³ä:
+
+- ÄÚÄ¡ ÀÎ¹Ú½º´Â `GET /review-requests/inbox` ÀÀ´äÀ» »ç¿ëÇÑ´Ù.
+- »óÅÂ º¯°æÀº `PATCH /review-requests/{id}` Èå¸§À» »ç¿ëÇÑ´Ù.
+- ÀúÀåµÈ ÇÇµå¹éÀº ´Ù½Ã inbox API·Î ³»·Á¿Í¼­ textarea °ªÀ¸·Î Ç¥½ÃµÈ´Ù.
+
+ÄÚµå Èå¸§:
+
+```txt
+COACH ·Î±×ÀÎ
+-> MainLayoutÀÌ /auth/me ÀÀ´äÀÇ roleÀ» È®ÀÎ
+-> coachNavItems ¼±ÅÃ
+-> »çÀÌµå¹Ù¿¡´Â ÄÚÄ¡ ¸®ºä ÀÎ¹Ú½º / ÀüÃ¼ °Ô½Ã±Û / ¼³Á¤¸¸ Ç¥½Ã
+-> / Á¢±Ù ½Ã Dashboard¿¡¼­ /coach-review·Î redirect
+-> CoachReview°¡ getReviewInbox() È£Ãâ
+-> ¿äÃ» ¸ñ·Ï°ú ¼±ÅÃµÈ ¿äÃ» »ó¼¼ Ç¥½Ã
+-> »óÅÂ ¹öÆ° Å¬¸¯ ½Ã updateReviewRequest() È£Ãâ
+-> ÀÀ´äÀ¸·Î ¹ŞÀº request¸¦ requests state¿¡ ¹İ¿µ
+```
+
+³»°¡ ÀÌÇØÇØ¾ß ÇÒ ÇÙ½É Æ÷ÀÎÆ®:
+
+- ÇÁ·ĞÆ®¿¡¼­ ¸Ş´º¸¦ ¼û±â´Â °Í°ú ¹é¿£µå ±ÇÇÑ °Ë»ç´Â ´Ù¸¥ ¹®Á¦´Ù.
+- ¸Ş´º´Â UX¸¦ Á¤¸®ÇÏ±â À§ÇÑ °ÍÀÌ°í, ½ÇÁ¦ º¸¾ÈÀº ¹é¿£µå `require_roles()`°¡ ´ã´çÇÑ´Ù.
+- role ±â¹İ È­¸éÀº ¡°Á¢±Ù °¡´É ¿©ºÎ¡±»Ó ¾Æ´Ï¶ó ¡°¹«¾ùÀ» ±âº» ¾÷¹«·Î º¸¿©ÁÙÁö¡±µµ °°ÀÌ ¼³°èÇØ¾ß ÇÑ´Ù.
+- QA¸¦ À§ÇØ DB roleÀ» ÀÓ½Ã·Î ¹Ù²å´Ù¸é ¹İµå½Ã ¿ø·¡ role·Î º¹±¸ÇØ¾ß ÇÑ´Ù.
+
+Ãß°¡·Î °øºÎÇÒ Å°¿öµå:
+
+- React Router Navigate
+- role based navigation
+- route guard
+- service workflow QA
+- UI role design
