@@ -43,6 +43,9 @@ const statusColors: Record<ReviewStatus, string> = {
 };
 
 const reviewStatusOptions: ReviewStatus[] = ["대기 중", "검토 중", "피드백 완료", "수정 요청", "최종 확인"];
+// /me/posts API는 한 번에 최대 50개까지만 조회할 수 있다.
+// 프론트에서 더 큰 값을 보내면 FastAPI Query 검증에서 422가 발생한다.
+const REVIEW_TARGET_POST_PAGE_SIZE = 50;
 
 function ReviewStatusBadge({ status }: { status: ReviewStatus }) {
   return <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusColors[status]}`}>{status}</span>;
@@ -104,7 +107,7 @@ function StudentReviewView() {
 
     try {
       const [postData, projectData, coachData, requestData] = await Promise.all([
-        getMyPosts({ visibility: "all", size: 100 }),
+        getMyPosts({ visibility: "all", size: REVIEW_TARGET_POST_PAGE_SIZE }),
         getPortfolioProjects(),
         getCoachOptions(),
         getMyReviewRequests(),
