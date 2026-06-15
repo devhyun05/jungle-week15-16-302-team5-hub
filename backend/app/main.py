@@ -7,6 +7,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.posts import router as posts_router
 from app.api.routes.comments import router as comments_router
 from app.api.routes.tags import router as tags_router
+from app.api.routes.admin import router as admin_router
 from app.db.base import Base
 from app.db.session import engine
 from app.models.post import Post  # noqa: F401
@@ -41,6 +42,7 @@ app.include_router(auth_router)
 app.include_router(posts_router)
 app.include_router(comments_router)
 app.include_router(tags_router)
+app.include_router(admin_router)
 
 
 @app.get("/health")
