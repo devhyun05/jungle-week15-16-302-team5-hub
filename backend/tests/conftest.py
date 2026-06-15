@@ -80,3 +80,18 @@ def client() -> Generator[TestClient, None, None]:
     # 다음 테스트가 이전 테스트 데이터에 영향을 받지 않도록 정리한다.
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=test_engine)
+
+
+@pytest.fixture()
+def db_session(client: TestClient) -> Generator[Session, None, None]:
+    """API 호출 뒤 테스트용 DB 상태를 직접 확인하기 위한 session이다.
+
+    client fixture가 table 생성과 dependency override를 맡고,
+    이 fixture는 같은 in-memory DB를 열어 row 상태만 검사한다.
+    """
+
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

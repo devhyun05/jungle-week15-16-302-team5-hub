@@ -10,9 +10,10 @@ from app.api.routes.tags import router as tags_router
 from app.db.base import Base
 from app.db.session import engine
 from app.models.post import Post  # noqa: F401
-from app.models.session import UserSession  # noqa: F401
-from app.models.user import User  # noqa: F401
 from app.models.comment import Comment  # noqa: F401
+from app.models.user import User  # noqa: F401
+from app.models.session import UserSession  # noqa: F401
+from app.models.refresh_token import RefreshToken  # noqa: F401
 
 
 @asynccontextmanager
