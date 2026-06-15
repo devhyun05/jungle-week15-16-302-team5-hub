@@ -21,6 +21,10 @@ const portfolioStatuses: PortfolioStatus[] = ["작성중", "보완 필요", "정
 // /me/posts API는 한 번에 최대 50개까지만 허용한다.
 // 포트폴리오 기록 연결 목록도 같은 제한을 지켜야 422 validation error가 나지 않는다.
 const PORTFOLIO_LINKABLE_POST_PAGE_SIZE = 50;
+const sectionActionClass =
+  "border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm hover:bg-emerald-100 hover:text-emerald-800";
+const utilityActionClass =
+  "border-slate-200 bg-white text-slate-700 shadow-sm hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800";
 
 function portfolioStatusClass(status: string) {
   if (status === "정리 완료") return "bg-emerald-100 text-emerald-700";
@@ -504,29 +508,17 @@ export function Portfolio() {
                         </span>
                       </a>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" className="gap-2 whitespace-nowrap" asChild>
-                        <Link to={`/ai-assistant?project=${selectedProject.id}&type=portfolio`}>
-                          <Sparkles className="h-4 w-4" />
-                          AI 도우미에서 포트폴리오 글 만들기
-                        </Link>
-                      </Button>
-                      <Button variant="outline" size="sm" className="whitespace-nowrap" onClick={() => setIsConnectOpen(true)}>
-                        기록 연결하기
-                      </Button>
-                      <Button variant="outline" size="sm" className="whitespace-nowrap" asChild>
-                        <Link to="/coach-review">코치 리뷰 요청하기</Link>
-                      </Button>
-                      <Button variant="outline" size="sm" className="whitespace-nowrap" onClick={() => void publishPortfolioPost()} disabled={isSaving}>
+                    <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                      <Button variant="outline" size="sm" className={`whitespace-nowrap ${sectionActionClass}`} onClick={() => void publishPortfolioPost()} disabled={isSaving}>
                         포트폴리오 게시글로 발행
                       </Button>
                       {selectedProject.publishedPostId && (
-                        <Button variant="ghost" size="sm" className="whitespace-nowrap" asChild>
-                          <Link to={`/posts/${selectedProject.publishedPostId}`}>게시글로 보기</Link>
+                        <Button variant="outline" size="sm" className={`whitespace-nowrap ${sectionActionClass}`} asChild>
+                          <Link to={`/posts/${selectedProject.publishedPostId}`}>게시글 보러가기</Link>
                         </Button>
                       )}
                       {selectedProjectGithubHref ? (
-                        <Button variant="outline" size="sm" className="whitespace-nowrap" asChild>
+                        <Button variant="outline" size="sm" className={`whitespace-nowrap ${utilityActionClass}`} asChild>
                           <a href={selectedProjectGithubHref} target="_blank" rel="noreferrer">
                             <ExternalLink className="mr-1 h-3 w-3" />
                             GitHub 보기
@@ -537,7 +529,7 @@ export function Portfolio() {
                           GitHub URL 확인 필요
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={() => void refreshGithubInfo()} disabled={analyzing}>
+                      <Button variant="outline" size="sm" className={`whitespace-nowrap ${utilityActionClass}`} onClick={() => void refreshGithubInfo()} disabled={analyzing}>
                         <RefreshCw className={`mr-1 h-3 w-3 ${analyzing ? "animate-spin" : ""}`} />
                         GitHub 정보 새로고침
                       </Button>
@@ -564,10 +556,18 @@ export function Portfolio() {
                   </div>
 
                   <div>
-                    <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                      <FileText className="h-4 w-4 text-emerald-600" />
-                      포트폴리오 글
-                    </h3>
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                        <FileText className="h-4 w-4 text-emerald-600" />
+                        포트폴리오 글
+                      </h3>
+                      <Button variant="outline" size="sm" className={`whitespace-nowrap ${sectionActionClass}`} asChild>
+                        <Link to={`/ai-assistant?project=${selectedProject.id}&type=portfolio`}>
+                          <Sparkles className="mr-1 h-3 w-3" />
+                          AI 도우미에서 포트폴리오 글 만들기
+                        </Link>
+                      </Button>
+                    </div>
                     <div className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-4 text-sm leading-6 text-slate-700">
                       <p className="line-clamp-5 whitespace-pre-line">
                         {selectedProject.savedPortfolioDraft ?? "아직 저장된 포트폴리오 글이 없습니다."}
@@ -578,32 +578,36 @@ export function Portfolio() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-lg border border-slate-200 bg-white p-4">
                       <div className="mb-2 flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-900">면접 예상 질문</p>
-                        <Badge variant={selectedProject.aiInterviewSaved ? "success" : "secondary"}>
-                          {selectedProject.aiInterviewSaved ? "저장됨" : "저장 전"}
-                        </Badge>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-slate-900">면접 예상 질문</p>
+                          <Badge variant={selectedProject.aiInterviewSaved ? "success" : "secondary"}>
+                            {selectedProject.aiInterviewSaved ? "저장됨" : "저장 전"}
+                          </Badge>
+                        </div>
+                        <Button asChild variant="outline" size="sm" className={sectionActionClass}>
+                          <Link to={`/ai-assistant?project=${selectedProject.id}&type=interview`}>면접 질문 만들기</Link>
+                        </Button>
                       </div>
                       <p className="line-clamp-5 whitespace-pre-line text-sm leading-6 text-slate-600">
                         {selectedProject.savedInterviewQuestions ??
                           "AI 도우미에서 이 프로젝트를 선택하면 GitHub repo와 연결 기록을 기준으로 면접 예상 질문을 저장할 수 있습니다."}
                       </p>
-                      <Button asChild variant="outline" size="sm" className="mt-3">
-                        <Link to={`/ai-assistant?project=${selectedProject.id}&type=interview`}>면접 질문 만들기</Link>
-                      </Button>
                     </div>
                     <div className="rounded-lg border border-slate-200 bg-white p-4">
                       <div className="mb-2 flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-900">코치 리뷰/피드백</p>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${feedbackStatusClass(selectedProject.coachFeedbackStatus)}`}>
-                          {selectedProject.coachFeedbackStatus}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-slate-900">코치 리뷰/피드백</p>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${feedbackStatusClass(selectedProject.coachFeedbackStatus)}`}>
+                            {selectedProject.coachFeedbackStatus}
+                          </span>
+                        </div>
+                        <Button asChild variant="outline" size="sm" className={sectionActionClass}>
+                          <Link to="/coach-review">코치 리뷰 요청하기</Link>
+                        </Button>
                       </div>
                       <p className="text-sm leading-6 text-slate-600">
                         포트폴리오 글을 저장한 뒤 코치 리뷰를 요청하면 피드백 이력과 상태를 이 프로젝트 기준으로 관리합니다.
                       </p>
-                      <Button asChild variant="outline" size="sm" className="mt-3">
-                        <Link to="/coach-review">코치 리뷰 요청하기</Link>
-                      </Button>
                     </div>
                   </div>
 
@@ -646,12 +650,17 @@ export function Portfolio() {
                     </div>
 
                     <div>
-                      <div className="mb-3 flex items-center justify-between">
+                      <div className="mb-3 flex items-center justify-between gap-2">
                         <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                           <Link2 className="h-4 w-4 text-slate-500" />
                           연결된 학습 기록
                         </h3>
-                        <span className="text-xs text-slate-400">{linkedRecords.length}개</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-400">{linkedRecords.length}개</span>
+                          <Button variant="outline" size="sm" className={sectionActionClass} onClick={() => setIsConnectOpen(true)}>
+                            기록 연결하기
+                          </Button>
+                        </div>
                       </div>
                       <div className="space-y-2">
                         {linkedRecords.map((record) => (

@@ -5019,3 +5019,40 @@ GitHub ������Ʈ ���
 - UI information architecture
 - empty state
 - data flow preservation
+
+---
+
+## 2026-06-16 학습 기록: 포트폴리오 관리 액션 버튼 UI 정리
+
+이번 구현은 기능을 새로 만든 것이 아니라, 이미 있던 포트폴리오 관리 행동을 화면 정보 구조에 맞게 다시 배치한 작업이다.
+
+관련 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | 포트폴리오 프로젝트 상세 패널의 섹션별 버튼 배치와 버튼 스타일 정리 |
+| `README.md` | 현재 구현 상태에 포트폴리오 관리 버튼 정리 내용 반영 |
+| `docs/agent/log.md` | 작업 진행 기록 |
+| `docs/agent/test.md` | 이 단위에서 확인할 QA 항목 기록 |
+
+핵심 흐름:
+
+1. 포트폴리오 글을 만들고 싶으면 `포트폴리오 글` 섹션에서 AI 도우미로 이동한다.
+2. 학습 기록을 연결하고 싶으면 `연결된 학습 기록` 섹션에서 기록 연결 모달을 연다.
+3. 코치에게 확인받고 싶으면 `코치 리뷰/피드백` 섹션에서 리뷰 요청 화면으로 이동한다.
+4. 프로젝트 단위 작업인 게시글 발행, 게시글 보기, GitHub 보기, GitHub 정보 새로고침은 상단 액션 줄에 남긴다.
+
+중요 개념:
+
+- 같은 버튼이라도 위치에 따라 사용자가 이해하는 의미가 달라진다.
+- React에서는 기존 상태와 API 호출 함수를 유지하면서 JSX 배치만 바꿔도 사용자 흐름을 크게 개선할 수 있다.
+- `Button asChild`는 `Link`나 `a` 태그를 버튼처럼 보이게 만들 때 사용한다.
+- 중복 버튼은 기능이 많아 보이게 하지만 실제로는 사용자가 어디를 눌러야 할지 헷갈리게 만든다.
+
+추가 학습 키워드:
+
+- UI information architecture
+- action hierarchy
+- section header action
+- React JSX refactor
+- reusable className

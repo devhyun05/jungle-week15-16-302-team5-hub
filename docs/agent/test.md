@@ -2767,3 +2767,41 @@ ai empty state visible=True
 - [ ] 실제 학생 프로젝트에서 `포트폴리오 게시글로 발행` 버튼을 클릭한다.
 - [ ] 발행 후 `게시글로 보기`로 이동해 전체 포트폴리오 글이 보이는지 확인한다.
 - [ ] AI 도우미에서 프로젝트가 있을 때 결과 저장 버튼이 기존 저장 흐름을 유지하는지 확인한다.
+
+---
+
+## 2026-06-16 QA: 포트폴리오 관리 액션 버튼 UI 정리
+
+목표: 포트폴리오 관리 화면의 버튼 위치와 스타일을 정리해도 기존 포트폴리오 데이터 흐름이 깨지지 않는지 확인한다.
+
+체크리스트:
+
+- [ ] 프론트엔드 `npm run build`가 성공한다.
+- [ ] `/portfolio` 화면이 에러 없이 열린다.
+- [ ] `포트폴리오 글` 섹션 제목 옆에 `AI 도우미에서 포트폴리오 글 만들기` 버튼이 보인다.
+- [ ] `면접 예상 질문` 섹션 제목 옆에 `면접 질문 만들기` 버튼이 보인다.
+- [ ] `코치 리뷰/피드백` 섹션 제목 옆에 `코치 리뷰 요청하기` 버튼이 보인다.
+- [ ] `연결된 학습 기록` 섹션 제목 옆에 `기록 연결하기` 버튼이 보인다.
+- [ ] 상단 액션 줄에는 `포트폴리오 게시글로 발행`, `게시글 보러가기`, `GitHub 보기`, `GitHub 정보 새로고침`만 남는다.
+- [ ] 주요 액션 버튼이 연한 초록색 계열로 통일되어 보인다.
+- [ ] 기존 API 호출 함수와 저장 필드가 바뀌지 않아 포트폴리오 프로젝트 값이 꼬이지 않는다.
+
+검증 출력 요약:
+
+```txt
+아직 실행 전
+```
+
+검증 결과 업데이트:
+
+```txt
+npm run build: success
+/portfolio browser smoke: success, no Unexpected Application Error
+/portfolio current session: admin user with 0 projects, so project-detail action buttons are not visible in DOM
+source label check: portfolio action labels are present in Portfolio.tsx
+```
+
+남은 수동 QA:
+
+- [ ] 학생 계정에서 프로젝트가 1개 이상 있는 상태로 `/portfolio`에 들어가 섹션별 버튼 위치를 눈으로 확인한다.
+- [ ] `게시글 보러가기`가 발행된 프로젝트에서 명확한 버튼처럼 보이는지 확인한다.
