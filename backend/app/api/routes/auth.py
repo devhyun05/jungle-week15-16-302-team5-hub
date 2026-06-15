@@ -137,11 +137,15 @@ def logout_endpoint(
     response.delete_cookie(
         key=settings.refresh_cookie_name,
         path=settings.auth_cookie_path,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
     )
 
     response.delete_cookie(
         key=settings.csrf_cookie_name,
         path=settings.csrf_cookie_path,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
     )
 
     return None

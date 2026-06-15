@@ -217,17 +217,18 @@ POST /api/auth/logout
 -> request cookies: refresh_token, csrf_token
 -> request header: X-CSRF-Token
 -> response: 204 or success body
--> clear refresh_token, csrf_token cookies
+-> clear refresh_token, csrf_token cookies with matching path, secure, and samesite attributes
 ```
 
 Policy:
 
 - normal APIs use `Authorization: Bearer <access_token>`; GlowBoard access token lifetime is 30 minutes.
 - refresh/logout use refresh cookie and CSRF check.
-- access token expiry triggers one refresh attempt and one original request retry.
+- access token expiry triggers one shared refresh attempt inside the same tab and one original request retry per failed request.
 - login creates one `sessions` row and one `refresh_tokens` row.
 - refresh marks the old refresh token `used_at`, creates a new `refresh_tokens` row, and keeps the parent session as the same device/browser login.
 - logout clears frontend access token state, revokes the backend refresh session, and deletes refresh/csrf cookies. Existing stateless access tokens are not denylisted in the Day 2-B baseline and naturally expire within 30 minutes.
+- logout delete-cookie headers use the configured cookie path, `Secure`, and `SameSite` policy so production HTTPS cookies are actually cleared.
 
 ### Post List Search and Pagination
 
@@ -409,6 +410,7 @@ exceeded response:
 ```
 
 가능하면 `Retry-After` header를 포함한다.
+`Retry-After`를 만들기 위한 Redis `TTL` 조회는 제한 초과 시에만 수행한다.
 
 ### Day 2 Implementation Files
 

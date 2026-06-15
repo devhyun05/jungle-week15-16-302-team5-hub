@@ -1,6 +1,8 @@
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import hash_refresh_token
 from app.models.refresh_token import RefreshToken
 from app.models.session import UserSession
@@ -262,12 +264,51 @@ def test_logout_revokes_session_and_clears_cookies(
         header.startswith("refresh_token=")
         and "Max-Age=0" in header
         and "Path=/api/auth" in header
+        and "SameSite=lax" in header
         for header in set_cookie_headers
     )
     assert any(
         header.startswith("csrf_token=")
         and "Max-Age=0" in header
         and "Path=/" in header
+        and "SameSite=lax" in header
+        for header in set_cookie_headers
+    )
+
+
+def test_logout_delete_cookie_uses_configured_secure_attribute(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    signup_user(client)
+    login_response = login_user(client)
+    csrf_cookie = login_response.cookies.get("csrf_token")
+
+    monkeypatch.setattr(settings, "cookie_secure", True)
+
+    response = client.post(
+        "/api/auth/logout",
+        headers={"X-CSRF-Token": csrf_cookie},
+    )
+
+    assert response.status_code == 204
+
+    set_cookie_headers = response.headers.get_list("set-cookie")
+
+    assert any(
+        header.startswith("refresh_token=")
+        and "Max-Age=0" in header
+        and "Path=/api/auth" in header
+        and "SameSite=lax" in header
+        and "Secure" in header
+        for header in set_cookie_headers
+    )
+    assert any(
+        header.startswith("csrf_token=")
+        and "Max-Age=0" in header
+        and "Path=/" in header
+        and "SameSite=lax" in header
+        and "Secure" in header
         for header in set_cookie_headers
     )
 

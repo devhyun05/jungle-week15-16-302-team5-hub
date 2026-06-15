@@ -130,6 +130,7 @@ Alembic migrations
 | 7-day idle + 30-day absolute session | implemented for login/refresh |
 | access token lifetime | 30 minutes |
 | logout access token policy | frontend clears authStore/access token; backend revokes refresh session; no access token denylist in Day 2-B baseline |
+| same-tab concurrent refresh | implemented with shared refresh Promise in frontend API client |
 
 ### Backend Files
 
@@ -150,7 +151,7 @@ Alembic migrations
 | File | Purpose |
 |---|---|
 | `frontend/src/api/auth.ts` | login/signup/logout API wrappers with credentials and CSRF header |
-| `frontend/src/api/client.ts` | attach Bearer token, include credentials when requested, refresh once on 401 and retry once |
+| `frontend/src/api/client.ts` | attach Bearer token, include credentials when requested, share one in-flight refresh Promise on concurrent 401s, retry once |
 | `frontend/src/stores/authStore.ts` | access token/current user shared state |
 | `frontend/src/types/auth.ts` | auth request/response types |
 | `frontend/src/pages/LoginPage.tsx` | login form and authStore update |
@@ -559,7 +560,7 @@ Implemented for comment creation.
 | File | Purpose |
 |---|---|
 | `backend/app/core/redis.py` | Redis client creation |
-| `backend/app/services/rate_limit_service.py` | fixed window counter and 429 exception |
+| `backend/app/services/rate_limit_service.py` | fixed window counter and 429 exception; reads Redis TTL only when limit is exceeded |
 | `backend/app/api/routes/comments.py` | calls `check_rate_limit` before comment creation |
 | `docker-compose.yml` | Redis service |
 | root `.env.example` | `REDIS_URL` example |
@@ -579,6 +580,7 @@ key: rate:comments:create:{user_id}
 limit: 5
 window_seconds: 60
 failure: 429 Too Many Requests
+Retry-After: remaining window seconds
 ```
 
 ### Why Redis
@@ -614,7 +616,7 @@ Zustand authStore is implemented. Cookie refresh integration code is connected i
 | File | Purpose |
 |---|---|
 | `frontend/src/stores/authStore.ts` | access token/current user shared state |
-| `frontend/src/api/client.ts` | reads token, sends Bearer header, refreshes once on 401, retries once |
+| `frontend/src/api/client.ts` | reads token, sends Bearer header, shares one in-flight refresh Promise on same-tab concurrent 401s, retries once |
 | `frontend/src/api/auth.ts` | login/signup/logout; login/logout include credentials, logout sends CSRF header |
 | `frontend/src/App.tsx` | navigation and logout UI |
 | `frontend/src/pages/LoginPage.tsx` | login updates store |
@@ -645,7 +647,9 @@ local component state:
 
 ```text
 API request gets 401
--> client calls /api/auth/refresh once with credentials include
+-> if authStore already has a newer access token, retry with it
+-> otherwise client calls /api/auth/refresh once with credentials include
+-> same-tab concurrent requests wait for the same refresh Promise
 -> stores new access token
 -> retries original request once
 -> if refresh fails, clear authStore and send user to login

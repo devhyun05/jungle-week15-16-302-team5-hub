@@ -13,6 +13,8 @@ type ApiOptions = {
     skipRefresh?: boolean
 }
 
+let refreshPromise: Promise<TokenResponse> | null = null
+
 export function getCookie(name: string): string | null {
     const cookies = document.cookie.split('; ')
 
@@ -27,20 +29,28 @@ export function getCookie(name: string): string | null {
     return null
 }
 
-async function refreshAccessToken() {
+async function refreshAccessToken(): Promise<TokenResponse> {
+    if (refreshPromise) {
+        return refreshPromise
+    }
+
     const csrfToken = getCookie('csrf_token')
 
-    const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+    refreshPromise = fetch(`${API_BASE_URL}/api/auth/refresh`, {
         method: 'POST',
         headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : {},
         credentials: 'include',
+    }).then(async (response) => {
+        if (!response.ok) {
+            throw new Error(`Refresh failed: ${response.status}`)
+        }
+
+        return response.json() as Promise<TokenResponse>
+    }).finally(() => {
+        refreshPromise = null
     })
 
-    if (!response.ok) {
-        throw new Error(`Refresh failed: ${response.status}`)
-    }
-
-    return response.json() as Promise<TokenResponse>
+    return refreshPromise
 }
 
 
@@ -69,6 +79,16 @@ export async function apiRequest<T>(
 
     if (response.status === 401 && !options.skipRefresh) {
         try {
+            const currentToken = useAuthStore.getState().token
+
+            if (currentToken && currentToken !== options.token) {
+                return apiRequest<T>(path, {
+                    ...options,
+                    token: currentToken,
+                    skipRefresh: true,
+                })
+            }
+
             const refreshResult = await refreshAccessToken()
             useAuthStore.getState().login(
                 refreshResult.access_token,

@@ -12,16 +12,20 @@ def check_rate_limit(
     window_seconds: int,
     client: Redis = redis_client,
 ) -> None:
+    count = 0
+    ttl = window_seconds
+
     try:
         count = client.incr(key)
 
         if count == 1:
             client.expire(key, window_seconds)
 
-        ttl = client.ttl(key)
-        if ttl < 0:
-            client.expire(key, window_seconds)
-            ttl = window_seconds
+        if count > limit:
+            ttl = client.ttl(key)
+            if ttl < 0:
+                client.expire(key, window_seconds)
+                ttl = window_seconds
 
     except RedisError:
         return

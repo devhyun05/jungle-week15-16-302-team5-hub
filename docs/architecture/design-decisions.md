@@ -66,7 +66,9 @@
 | refresh session은 7일 idle timeout + 30일 absolute max로 둔다. | 7일 동안 안 오면 로그아웃, 계속 와도 30일 뒤 재로그인한다. |
 | refresh token rotation은 `sessions` + `refresh_tokens` 분리 방식으로 구현한다. | session은 기기/브라우저별 로그인 묶음이고, refresh_tokens는 그 안의 token 이력이라 여러 디바이스 관리와 재사용 감지가 명확하다. |
 | access token 만료 시 refresh 1회 후 원래 요청 1회 재시도한다. | UX를 유지하되 무한 retry loop를 막는다. |
+| 같은 탭 안의 동시 401은 frontend API client에서 진행 중인 refresh Promise를 공유한다. | 여러 API 요청이 동시에 만료를 만나도 `/api/auth/refresh`를 한 번만 보내 refresh token rotation/reuse detection 충돌을 막는다. |
 | logout은 frontend access token 상태를 비우고 backend refresh session을 revoke한다. | stateless access token은 denylist 없이 즉시 서버 폐기되지 않으므로, 30분 만료와 refresh session revoke로 기본 상용 절충안을 잡는다. |
+| logout cookie 삭제는 set cookie와 같은 path, secure, samesite 기준을 넘긴다. | 운영 HTTPS에서 `Secure` cookie가 남아 로그아웃이 불완전해지는 일을 막는다. |
 
 ## Frontend State
 
@@ -113,6 +115,7 @@ Notes:
 | key는 `rate:comments:create:{user_id}`로 둔다. | 기능, 동작, 사용자 기준이 key에 드러난다. |
 | 알고리즘은 fixed window로 시작한다. | 학습과 구현이 단순하고 TTL로 확인하기 쉽다. |
 | 예시 정책은 60초 5회다. | Swagger에서 1~5회 성공, 6회 429를 확인하기 쉽다. |
+| Redis TTL은 제한 초과 시에만 조회한다. | 정상 요청마다 `TTL` round-trip을 추가하지 않고, 429 `Retry-After`가 필요할 때만 남은 시간을 읽는다. |
 
 Candidates:
 
@@ -143,8 +146,9 @@ Decisions:
 |---|---|
 | Backend | pytest route/service integration 중심 |
 | Frontend | build/lint와 브라우저 수동 flow 확인 |
-| Redis | Swagger/manual로 429 확인, 이후 backend test 보강 |
-| Auth refresh/logout | login cookie, refresh CSRF 403, refresh success, rotation, old token reuse revoke, logout CSRF 403, logout session/token revoke, cookie delete, refresh after logout test 통과. frontend login/logout credentials, CSRF header, 401 refresh retry 연결과 build 통과. 브라우저에서 login cookie 저장, readable csrf cookie, HttpOnly refresh token 비노출, logout `X-CSRF-Token`, cookie 삭제 흐름 확인 완료 |
+| Redis | Swagger/manual로 429 확인. `test_rate_limit_service.py`에서 정상 요청은 TTL을 읽지 않고, 제한 초과 시에만 `Retry-After` 계산을 위해 TTL을 읽는 것을 확인 |
+| Auth refresh/logout | login cookie, refresh CSRF 403, refresh success, rotation, old token reuse revoke, logout CSRF 403, logout session/token revoke, cookie delete, refresh after logout test 통과. logout cookie delete header에 path, SameSite, Secure 설정 반영 테스트 추가. frontend login/logout credentials, CSRF header, 401 refresh retry 연결과 build 통과. 브라우저에서 login cookie 저장, readable csrf cookie, HttpOnly refresh token 비노출, logout `X-CSRF-Token`, cookie 삭제 흐름 확인 완료 |
+| Frontend concurrent refresh | 같은 탭 안에서는 `refreshPromise`를 공유해 동시 401 요청들이 하나의 refresh 결과를 기다리게 한다. 이미 authStore에 새 access token이 들어온 요청은 refresh 없이 새 token으로 원 요청만 재시도한다. 여러 탭 동시 refresh는 추가 후보로 남긴다 |
 | E2E | signup/login/post/comment/search happy path |
 
 ## Implementation Candidates Backlog
@@ -158,6 +162,7 @@ Decisions:
 - full-text search
 - cursor pagination
 - refresh token reuse grace window
+- multi-tab refresh coordination with `BroadcastChannel`, a localStorage lock, or a short backend grace window
 - access token denylist/blacklist
 - per-request session check for access tokens
 - device/session management UI

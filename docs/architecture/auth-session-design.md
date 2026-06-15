@@ -40,6 +40,7 @@
 | rotation storage | separate `refresh_tokens` history table | session은 로그인 묶음이고 refresh_tokens는 token rotation 이력이라 의미가 깔끔하다. |
 | multi-device model | one session per browser/device login | 같은 계정의 Mac/iPhone/회사 PC 로그인을 따로 관리할 수 있다. |
 | 401 handling | refresh once, retry original request once | access token은 짧게 두되 사용자 경험을 유지하고 무한 loop를 막는다. |
+| concurrent refresh in one tab | share one in-flight refresh Promise | 동시에 여러 API가 401을 받아도 refresh token rotation 요청을 하나만 보내 reuse detection 오탐을 막는다. |
 
 ## Conceptual Model
 
@@ -116,6 +117,19 @@ Path: /api/auth
 Max-Age: remaining time until sessions.absolute_expires_at
 ```
 
+Cookie deletion policy:
+
+```text
+delete refresh_token with the same Path, Secure, and SameSite values used when setting it
+```
+
+Reason:
+
+```text
+In production HTTPS, refresh_token is a Secure cookie.
+If logout deletion omits matching cookie attributes, some browsers may keep the cookie.
+```
+
 ### CSRF Token
 
 - Sent as a readable cookie.
@@ -131,8 +145,14 @@ name: csrf_token
 HttpOnly: false
 Secure: false in local HTTP, true in production HTTPS
 SameSite: Lax
-Path: /api/auth
+Path: /
 Max-Age: remaining time until sessions.absolute_expires_at
+```
+
+Cookie deletion policy:
+
+```text
+delete csrf_token with the same Path, Secure, and SameSite values used when setting it
 ```
 
 Header:
@@ -263,23 +283,51 @@ CSRF is not required for normal APIs in this design because auth is not cookie-b
 
 ```text
 1. Normal API returns 401 because access token expired.
-2. Frontend calls /api/auth/refresh with credentials included.
-3. Browser automatically sends refresh_token and csrf_token cookies.
-4. Frontend also sends X-CSRF-Token header.
-5. Backend verifies CSRF cookie/header match.
-6. Backend hashes the refresh cookie value.
-7. Backend finds the matching refresh_tokens row and parent session.
-8. Backend checks parent session revoked_at, expires_at, absolute_expires_at.
-9. Backend checks token used_at, revoked_at, expires_at.
-10. Backend verifies refresh token hash.
-11. Backend sets old refresh token used_at.
-12. Backend creates new refresh_tokens row R2.
-13. Backend sets old replaced_by_token_id = R2.id.
-14. Backend updates sessions.expires_at to min(now + 7 days, absolute_expires_at).
-15. Backend returns a new access token and rotated refresh cookie.
-16. Frontend stores new access token in authStore.
-17. Frontend retries the original request once.
+2. Frontend first checks whether authStore already has a newer access token than the failed request used.
+3. If a newer token already exists, frontend retries the original request once with that token and does not call refresh.
+4. If no newer token exists, frontend calls refreshAccessToken().
+5. refreshAccessToken() reuses the existing refreshPromise if another request in the same tab is already refreshing.
+6. Only the first refresh caller sends /api/auth/refresh with credentials included.
+7. Browser automatically sends refresh_token and csrf_token cookies.
+8. Frontend also sends X-CSRF-Token header.
+9. Backend verifies CSRF cookie/header match.
+10. Backend hashes the refresh cookie value.
+11. Backend finds the matching refresh_tokens row and parent session.
+12. Backend checks parent session revoked_at, expires_at, absolute_expires_at.
+13. Backend checks token used_at, revoked_at, expires_at.
+14. Backend verifies refresh token hash.
+15. Backend sets old refresh token used_at.
+16. Backend creates new refresh_tokens row R2.
+17. Backend sets old replaced_by_token_id = R2.id.
+18. Backend updates sessions.expires_at to min(now + 7 days, absolute_expires_at).
+19. Backend returns a new access token and rotated refresh cookie.
+20. Frontend stores new access token in authStore.
+21. All waiting requests retry their original request once with the same new access token.
 ```
+
+Why single-flight refresh is needed:
+
+```text
+If A, B, and C requests all fail with 401 at the same time,
+without coordination they may each call /api/auth/refresh.
+
+A succeeds and rotates R1 -> R2.
+B and C still send old R1.
+The backend may detect R1.used_at is not null and revoke the session.
+```
+
+Single-tab mitigation:
+
+```text
+let refreshPromise = null
+
+if refreshPromise exists:
+    wait for it
+else:
+    create one refresh request
+```
+
+This prevents duplicate refresh calls inside one JavaScript runtime.
 
 ### Logout
 
@@ -289,7 +337,7 @@ CSRF is not required for normal APIs in this design because auth is not cookie-b
 3. Backend finds refresh token row and parent session.
 4. Backend sets sessions.revoked_at.
 5. Backend may set current refresh_tokens.revoked_at.
-6. Backend deletes refresh_token and csrf_token cookies.
+6. Backend deletes refresh_token and csrf_token cookies using the same path, secure, and samesite policy used when setting them.
 7. Frontend clears authStore.
 ```
 
@@ -330,6 +378,36 @@ small grace window for concurrent tabs
 revoke all sessions for the user on high-risk reuse
 security notification
 admin audit event
+```
+
+## Multi-Tab Refresh Race
+
+The current frontend fix handles concurrent requests inside one tab. Multiple browser tabs are separate JavaScript runtimes, so each tab has its own `refreshPromise`.
+
+Possible race:
+
+```text
+Tab A and Tab B both have expired access tokens.
+Tab A calls /api/auth/refresh and rotates R1 -> R2.
+Tab B calls /api/auth/refresh almost at the same time with old R1.
+Backend sees old R1 and may treat it as reuse.
+```
+
+Implementation candidates:
+
+| Option | Idea | Trade-off |
+|---|---|---|
+| BroadcastChannel | One tab announces "refresh started" and "refresh finished" to other tabs. | Good browser support, but needs fallback and careful timeout handling. |
+| localStorage lock | Store a short-lived refresh lock and result marker in localStorage. | Works across tabs, but lock expiry and stale lock cleanup must be correct. |
+| backend grace window | Allow the previous refresh token to be accepted briefly if it was replaced milliseconds ago by the same session. | More tolerant UX, but weakens strict reuse detection and needs audit rules. |
+
+Recommended later path:
+
+```text
+Day 7 auth hardening:
+1. keep the current same-tab refreshPromise guard.
+2. add BroadcastChannel or localStorage lock for multi-tab coordination.
+3. only consider backend grace window if real multi-tab UX remains noisy.
 ```
 
 ## Multi-Device Policy
@@ -391,6 +469,7 @@ Do not use wildcard origin with credentials.
 | logout leaves existing access token usable until expiry | 30-minute access token lifetime, frontend authStore clear, future access token denylist/session check |
 | XSS steals refresh token | HttpOnly refresh cookie |
 | CSRF uses refresh/logout cookies | CSRF token check for refresh/logout |
+| Secure cookie remains after logout | delete cookies with matching path, secure, and samesite attributes |
 | stolen old refresh token reused | `refresh_tokens.used_at` reuse detection and session revoke |
 | one account uses several devices | one `sessions` row per device/browser login |
 | session lasts forever | 7-day idle timeout and 30-day absolute max |
@@ -430,9 +509,10 @@ Backend tests should cover:
 - absolute-expired session is rejected.
 - revoked session is rejected.
 - logout revokes session and clears cookies.
+- logout delete-cookie headers include the configured path, SameSite, and Secure policy.
 
 Frontend/manual checks should cover:
 
 - normal API uses `Authorization: Bearer`.
-- expired access token triggers exactly one refresh retry.
+- expired access token triggers one shared refresh request inside the same tab, then retries the original requests once.
 - refresh failure clears authStore and sends the user back to login.
