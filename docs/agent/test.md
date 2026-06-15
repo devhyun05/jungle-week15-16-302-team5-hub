@@ -1953,3 +1953,40 @@ hasDuplicateNotice=True
 hasRepoAfterReturn=True
 hasHorizontalOverflow=False
 ```
+
+## 2026-06-15 QA: 게시글 조회수와 댓글 수 반영
+
+목표: 게시글 목록의 조회수와 댓글 수가 실제 상세 조회/댓글 작성 흐름과 맞게 반영되는지 확인한다.
+
+TestClient QA:
+
+- [x] 임시 STUDENT 사용자를 만들었다.
+- [x] 임시 공개 게시글을 만들었다.
+- [x] 게시글 생성 직후 목록에서 `views=0`, `comments=0`을 확인했다.
+- [x] 상세 첫 조회 후 상세 응답에서 `views=1`을 확인했다.
+- [x] 상세 첫 조회 후 목록 재조회에서 `views=1`, `comments=0`을 확인했다.
+- [x] 댓글 작성 API가 201을 반환했다.
+- [x] 댓글 작성 후 목록 재조회에서 `views=1`, `comments=1`을 확인했다.
+- [x] 상세 두 번째 조회 후 상세 응답에서 `views=2`, `comments=1`을 확인했다.
+- [x] 상세 두 번째 조회 후 목록 재조회에서 `views=2`, `comments=1`을 확인했다.
+- [x] QA용 댓글, 태그 연결, 게시글, 임시 사용자를 삭제했다.
+
+검증 출력 요약:
+
+```txt
+list_before.views=0
+list_before.comments=0
+detail_first_views=1
+list_after_first_detail.views=1
+comment_status=201
+list_after_comment.comments=1
+detail_second_views=2
+detail_second_comments=1
+list_after_second_detail.views=2
+list_after_second_detail.comments=1
+```
+
+결론:
+
+- 현재 게시글 목록/상세의 조회수와 댓글 수는 실제 API 기준으로 일치한다.
+- 이 항목은 코드 수정 없이 QA 통과로 기록한다.

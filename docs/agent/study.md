@@ -4017,3 +4017,57 @@ COACH �α���
 - SQLAlchemy `func.lower`
 - React controlled input
 - empty/error state UX
+
+## 2026-06-15 학습: 게시글 조회수와 댓글 수가 맞게 보이는 이유
+
+이번에 본 파일:
+
+- `backend/app/routers/posts.py`
+- `backend/app/services/post_service.py`
+- `backend/app/repositories/post_repository.py`
+- `backend/app/schemas/post.py`
+- `frontend/src/app/api/posts.ts`
+- `frontend/src/app/pages/posts/Posts.tsx`
+- `frontend/src/app/pages/posts/PostDetail.tsx`
+
+핵심 개념:
+
+- `view_count`: posts 테이블에 저장되는 조회수 컬럼이다.
+- `comments`: comments 테이블을 `post_id`별로 count해서 응답에 붙이는 계산값이다.
+- 목록 API는 게시글 목록과 댓글 수 dict를 함께 가져와 `views`, `comments`로 응답한다.
+- 상세 API는 접근 가능한 게시글을 찾은 뒤 `view_count`를 1 증가시키고 상세 응답을 만든다.
+- 댓글 작성 API는 comments row를 만들고, 목록 API는 다음 조회 때 그 row를 count한다.
+
+백엔드 흐름:
+
+1. `GET /posts`가 `post_service.get_posts()`를 호출한다.
+2. `post_repository.list_posts()`가 공개 게시글 목록을 가져온다.
+3. 같은 함수에서 `get_comment_counts()`로 게시글별 댓글 수를 한 번에 계산한다.
+4. `build_post_list_item()`이 `post.view_count`를 `views`, 댓글 count를 `comments`로 넣는다.
+5. `GET /posts/{post_id}`가 `post_service.get_post_detail()`을 호출한다.
+6. `post_repository.get_accessible_post_by_id()`가 접근 가능한 글을 찾고 `increase_post_view_count()`를 호출한다.
+7. 증가된 `view_count`와 현재 댓글 수가 상세 응답으로 내려간다.
+
+프론트 흐름:
+
+1. `Posts.tsx`는 `getPosts()`로 목록을 불러온다.
+2. 목록 카드에서 `post.views`, `post.comments`를 그대로 표시한다.
+3. `PostDetail.tsx`는 `getPostDetail()`로 상세를 불러온다.
+4. 상세 화면 상단은 댓글 목록 로딩 후 `comments.length`를 표시한다.
+5. 댓글 작성에 성공하면 새 댓글을 state에 추가하므로 상세 화면의 댓글 수가 바로 늘어난다.
+
+이번 QA에서 배운 점:
+
+- 숫자 표시가 맞는지는 화면만 보면 헷갈릴 수 있으므로 API 순서를 정해서 검증해야 한다.
+- 댓글 수는 post row에 저장하지 않고 comments table을 count하는 방식이 더 일관적이다.
+- 조회수는 상세 조회라는 이벤트가 발생할 때 posts row의 `view_count`를 직접 증가시킨다.
+- 목록에서 보이는 숫자는 결국 다음 목록 API 호출 때 최신 DB 값을 다시 받는다.
+
+추가로 공부할 키워드:
+
+- aggregate count
+- N+1 query
+- SQL `group by`
+- derived field
+- view count side effect
+- API response DTO
