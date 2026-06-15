@@ -4266,3 +4266,79 @@ COACH �α���
 - object storage
 - signed URL
 - DTO field alias
+
+## 2026-06-15 학습: 학생 게시글 CRUD 화면 흐름
+
+이번에 본 파일:
+
+- `frontend/src/app/pages/posts/PostEdit.tsx`
+- `frontend/src/app/pages/posts/PostDetail.tsx`
+- `frontend/src/app/pages/posts/MyRecords.tsx`
+- `frontend/src/app/api/posts.ts`
+- `frontend/src/app/api/comments.ts`
+- `backend/app/routers/posts.py`
+- `backend/app/routers/comments.py`
+
+파일별 역할:
+
+- `PostEdit.tsx`: `/posts/new`와 `/posts/:id/edit`을 함께 담당하는 작성/수정 폼이다.
+- `PostDetail.tsx`: 게시글 상세, GitHub repo 보기, 댓글 작성/삭제, 게시글 삭제 확인 UI를 담당한다.
+- `MyRecords.tsx`: 현재 로그인 사용자가 작성한 글을 `/me/posts`로 불러와 보여준다.
+- `posts.ts`: 게시글 목록/상세/작성/수정/삭제 API client다.
+- `comments.ts`: 댓글 목록/작성/삭제 API client다.
+- `posts.py`: FastAPI 게시글 router다.
+- `comments.py`: FastAPI 댓글 router다.
+
+이번 구현에서 사용한 React 개념:
+
+- `useParams`: `/posts/:id`, `/posts/:id/edit`의 `id` 값을 읽는다.
+- `useNavigate`: 작성/수정/삭제 후 다른 화면으로 이동한다.
+- `useEffect`: 화면이 열릴 때 기존 게시글, 댓글, 관련 게시글을 API로 불러온다.
+- `useState`: 입력값, 로딩 상태, 에러, 댓글 목록, 삭제 확인 상태를 관리한다.
+- controlled input: 제목, 본문, GitHub URL, 댓글 입력값을 React state와 연결한다.
+- 조건부 렌더링: 로딩/빈 상태/에러/삭제 확인 UI를 상태에 따라 보여준다.
+
+이번 구현에서 사용한 TypeScript 개념:
+
+- API 응답 타입: `PostDetailApiResponse`, `PostListApiItem`, `CommentApiItem`으로 응답 모양을 명확히 한다.
+- union type: `UserRole`처럼 가능한 role 값을 제한한다.
+- null 처리: GitHub URL이나 프로필 이미지가 없을 수 있으므로 `string | null`을 고려한다.
+
+코드 흐름:
+
+1. 학생이 `/posts/new`에 들어간다.
+2. `PostEdit.tsx`가 제목/본문/GitHub URL 입력값을 state로 관리한다.
+3. `발행하기`를 누르면 `createPost(payload)`가 `POST /posts`를 호출한다.
+4. 성공하면 `navigate(/posts/{createdPost.id})`로 상세 화면에 이동한다.
+5. `PostDetail.tsx`는 URL id를 `useParams()`로 읽고 `getPostDetail(id)`를 호출한다.
+6. 같은 id로 `getPostComments(id)`를 호출해 댓글을 불러온다.
+7. 댓글 작성 시 `createPostComment(id, content)`를 호출하고, 성공 응답을 `comments` state에 추가한다.
+8. 내 기록 화면은 `getMyPosts({ visibility: "all" })`로 현재 사용자의 글만 불러온다.
+9. 수정 화면은 `getPostDetail(id)`로 기존 데이터를 가져와 작성 폼에 채운다.
+10. 삭제 버튼은 확인 UI를 열고, `deletePost(id)` 성공 후 `/posts`로 이동한다.
+
+이번에 수정한 점:
+
+- 댓글 시간은 API 응답의 ISO timestamp를 그대로 보여주면 사용자에게 딱딱하게 느껴진다.
+- 그래서 `formatDateTime()`을 추가해 `new Date(dateText).toLocaleString("ko-KR")`로 변환했다.
+- API 데이터는 저장/전송에는 정확한 ISO가 좋지만, 화면 표시는 사용자가 읽기 쉬운 형태로 바꾸는 편이 좋다.
+
+내가 이해해야 할 핵심 포인트:
+
+- 작성 화면과 수정 화면은 같은 컴포넌트를 써도 URL과 `isEditMode`로 동작을 나눌 수 있다.
+- `useParams()`는 URL 안의 값을 읽고, `useNavigate()`는 코드에서 화면 이동을 시킨다.
+- 댓글 작성 후 전체 페이지를 새로고침하지 않아도 state에 새 댓글을 추가하면 화면이 바로 바뀐다.
+- 삭제는 DB row를 바로 지우기보다 `deleted_at`을 채우는 soft delete 방식일 수 있다.
+- 화면에 보이는 날짜는 API 원본 형식과 달라도 된다. 중요한 건 의미가 정확하고 사용자가 읽기 쉬운 것이다.
+
+추가로 공부할 키워드:
+
+- CRUD
+- controlled form
+- useParams
+- useNavigate
+- side effect
+- soft delete
+- optimistic UI
+- ISO timestamp
+- locale date formatting

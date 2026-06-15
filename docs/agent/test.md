@@ -2140,3 +2140,70 @@ qa_profile_uploads=0
 
 - TestClient 실행 중 `StarletteDeprecationWarning`이 출력됐지만 기능 실패는 아니다.
 - 실제 브라우저 파일 선택 자동화는 현재 도구에서 직접 파일 주입 API를 쓰지 않았으므로, 브라우저에서는 설정 화면 UI 존재 여부까지 확인했다.
+
+## 2026-06-15 QA: 학생 게시글 작성/상세/댓글/수정/삭제/내 기록 흐름
+
+목표: 학생 계정으로 게시글 CRUD와 댓글 작성, 내 기록 반영 흐름을 실제 브라우저에서 확인한다.
+
+브라우저 QA:
+
+- [x] 현재 로그인 사용자를 STUDENT / 승인 완료로 임시 전환했다.
+- [x] `/posts/new`가 열린다.
+- [x] 작성 화면에 `새 게시글 작성` 제목이 보인다.
+- [x] 작성 화면에 `관련 커밋` 문구가 보이지 않는다.
+- [x] 작성 화면에 `관련 GitHub repo` 영역이 보인다.
+- [x] 제목, 본문, GitHub repo URL을 입력할 수 있다.
+- [x] `발행하기` 버튼을 누르면 상세 화면 `/posts/:id`로 이동한다.
+- [x] 상세 화면에 작성한 본문이 보인다.
+- [x] 상세 화면에 관련 GitHub repo URL이 보인다.
+- [x] 상세 화면에 `GitHub 보기` 버튼이 보인다.
+- [x] 댓글 입력창에 댓글을 작성할 수 있다.
+- [x] 댓글 작성 후 댓글 수가 1로 바뀐다.
+- [x] 댓글 작성 후 빈 댓글 문구가 사라진다.
+- [x] 댓글 작성 시간이 raw ISO 문자열로 보이는 문제를 발견했다.
+- [x] 댓글 작성 시간을 한국식 날짜/시간으로 포맷팅하도록 수정했다.
+- [x] 새로고침 후에도 댓글이 보인다.
+- [x] 새로고침 후 댓글 작성 시간이 `2026. 06. 15. 오후 11:41`처럼 보인다.
+- [x] `/my-records`에서 작성한 글이 보인다.
+- [x] `/my-records`에서 댓글 수와 조회수가 보인다.
+- [x] `/posts/:id/edit`에서 기존 제목이 폼에 채워진다.
+- [x] 수정 완료 후 상세 화면에 수정한 제목과 본문이 반영된다.
+- [x] 삭제 버튼을 누르면 삭제 확인 UI가 열린다.
+- [x] 삭제 확인 후 `/posts` 목록으로 이동한다.
+- [x] 삭제한 글은 전체 게시글 목록에 보이지 않는다.
+- [x] QA용 게시글과 댓글을 DB에서 삭제했다.
+- [x] 현재 로그인 사용자를 ADMIN / 승인 완료로 복구했다.
+
+검증 출력 요약:
+
+```txt
+newPost.hasCommitText=false
+newPost.hasGithubRepoText=true
+afterPublish.url=/posts/35
+afterPublish.hasBody=true
+afterPublish.hasGithub=true
+afterPublish.hasGithubButton=true
+afterComment.hasComment=true
+afterComment.hasCommentCountOne=true
+afterReload.hasRawIsoCommentDate=false
+afterReload.hasKoreanDateTime=true
+myRecords.hasTitle=true
+myRecords.hasCommentCount=true
+editInitial.titleMatches=true
+editAfter.hasEditedTitle=true
+deleteAfter.isPostsList=true
+deleteAfter.hasDeletedTitle=false
+cleanup.post_exists=0
+cleanup.comments=0
+restore.user_role=ADMIN
+```
+
+빌드 전 확인:
+
+- [x] 화면에 `Unexpected Application Error`가 보이지 않았다.
+- [x] 화면에 `[object Object]`가 보이지 않았다.
+
+결론:
+
+- 학생 게시글 작성/상세/댓글/내 기록/수정/삭제 흐름은 실제 브라우저와 API 기준으로 정상이다.
+- 발견된 댓글 시간 raw ISO 표시는 `formatDateTime()`으로 수정했다.
