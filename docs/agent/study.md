@@ -3736,3 +3736,67 @@ COACH 로그인
 - route guard
 - service workflow QA
 - UI role design
+## 2026-06-15 학생 피드백/알림 QA 학습 기록
+
+이번에 직접 수정한 코드 파일은 없고, 실제 서비스 흐름을 검증했다.
+그래도 이 QA를 이해하려면 아래 파일들의 역할을 알아야 한다.
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/services/review_service.py` | 리뷰 요청 생성, 코치 피드백 저장, 학생/코치 알림 생성 흐름을 담당한다. |
+| `backend/app/repositories/notification_repository.py` | 알림 row를 만들고 조회/읽음 처리한다. |
+| `frontend/src/app/pages/coach/CoachReview.tsx` | STUDENT에게는 리뷰 요청 생성/요청 목록 화면, COACH에게는 인박스 화면을 보여준다. |
+| `frontend/src/app/layouts/MainLayout.tsx` | 헤더 알림 드롭다운에서 `/notifications` API를 호출하고, 알림 클릭 시 읽음 처리한다. |
+
+이번 QA에서 확인한 코드 흐름:
+
+```txt
+코치가 피드백 저장
+-> review_service.update_review_request()
+-> review_requests.status / feedback 업데이트
+-> notification_repository.create_notification()
+-> 학생에게 review-feedback 알림 생성
+-> 학생이 /coach-review 진입
+-> getMyReviewRequests() 호출
+-> 내가 보낸 요청 목록에 피드백 완료와 피드백 본문 표시
+-> 헤더 알림 버튼 클릭
+-> getNotifications() 호출
+-> 피드백 알림 표시
+-> 알림 클릭
+-> markNotificationRead() 호출
+-> unreadCount 감소
+```
+
+이번에 이해해야 할 핵심 개념:
+
+### 이벤트성 부작용
+
+리뷰 피드백 저장은 단순히 `review_requests` row만 바꾸는 작업이 아니다.
+학생에게 알려야 하므로 `notifications` row도 같이 생긴다.
+이런 것을 이벤트성 부작용이라고 볼 수 있다.
+
+### 같은 데이터의 역할별 화면 차이
+
+같은 `review_requests` row라도 STUDENT와 COACH가 보는 의미가 다르다.
+
+- STUDENT: 내가 보낸 요청과 받은 피드백
+- COACH: 나에게 들어온 요청과 처리해야 할 피드백 작업
+
+### 알림 읽음 처리
+
+알림은 단순 표시가 아니라 `is_read` 상태를 가진다.
+알림을 클릭하면 `PATCH /notifications/{id}/read`가 호출되고, 프론트의 unread count가 줄어든다.
+
+배운 점:
+
+- 기능 하나가 여러 화면에 걸쳐 있으면 한 화면만 보는 QA로는 충분하지 않다.
+- `리뷰 요청 -> 코치 피드백 -> 학생 요청 목록 -> 학생 알림`처럼 왕복 흐름을 확인해야 실제 서비스처럼 동작한다고 말할 수 있다.
+- QA용 데이터는 반드시 unique prefix를 붙이고, 끝나면 정확히 해당 데이터만 삭제해야 한다.
+
+추가로 공부할 키워드:
+
+- event side effect
+- notification read state
+- role based view
+- integration QA
+- service layer
