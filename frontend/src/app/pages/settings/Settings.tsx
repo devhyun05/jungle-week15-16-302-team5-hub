@@ -4,8 +4,11 @@ import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
+import { useAuth } from "../../contexts/AuthContext";
 
 export function Settings() {
+  const { user } = useAuth();
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
@@ -19,14 +22,14 @@ export function Settings() {
             <User className="h-4 w-4" />
             프로필
           </CardTitle>
-          <CardDescription>실제 프로필 저장은 백엔드 연결 후 구현 예정입니다.</CardDescription>
+          <CardDescription>프로필 수정 API는 다음 단계에서 연결할 예정입니다.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input defaultValue="김정글" />
-          <Input defaultValue="junhee@example.com" />
-          <Button>
+          <Input value={user?.name ?? ""} readOnly />
+          <Input value={user?.email ?? ""} readOnly />
+          <Button disabled>
             <Save className="mr-2 h-4 w-4" />
-            mock 저장
+            프로필 저장 준비 중
           </Button>
         </CardContent>
       </Card>
@@ -42,10 +45,10 @@ export function Settings() {
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
             <div>
-              <p className="font-semibold text-slate-900">leejunhee8235</p>
-              <p className="text-sm text-slate-500">mock 연결 계정</p>
+              <p className="font-semibold text-slate-900">GitHub 계정 연동</p>
+              <p className="text-sm text-slate-500">현재는 포트폴리오 프로젝트별 repo URL 등록 방식으로 사용합니다.</p>
             </div>
-            <Badge variant="success">연결됨</Badge>
+            <Badge variant="outline">준비 중</Badge>
           </div>
         </CardContent>
       </Card>

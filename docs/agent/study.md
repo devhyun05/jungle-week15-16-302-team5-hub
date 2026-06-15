@@ -2825,3 +2825,24 @@ Dashboard 렌더링
 - API 응답으로 통계 계산하기
 - loading/error UI
 - React Router Navigate
+## 2026-06-15 설정 화면 준비 중 UI 정리 학습 기록
+
+이번 단계는 아직 API가 없는 설정 기능을 실제 저장 기능처럼 보이지 않게 정리한 작업이다.
+
+### 수정한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/settings/Settings.tsx` | 로그인 사용자 정보를 read-only로 보여주고, 미구현 설정 기능을 준비 중 상태로 표시 |
+
+### 사용한 React 개념
+
+- `useAuth`: 현재 로그인 사용자 정보를 화면에 표시한다.
+- read-only controlled input: 값은 보여주지만 아직 수정 저장은 막아둔다.
+- disabled button: API가 없는 기능을 사용 가능한 것처럼 보이지 않게 한다.
+
+### 핵심 포인트
+
+- “mock 저장”처럼 보이는 버튼은 사용자가 실제 저장된다고 오해할 수 있다.
+- 지금 구현된 GitHub 흐름은 전역 계정 연동이 아니라 포트폴리오 프로젝트별 repo URL 등록이다.
+- API가 없으면 숨기거나 준비 중으로 명확히 표시해야 실제 서비스 흐름이 더 신뢰감 있게 보인다.
