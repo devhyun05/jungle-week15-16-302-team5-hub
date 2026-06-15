@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { BookOpen, FolderGit2, Globe, Lock, MessageSquare, Search, Wrench } from "lucide-react";
 import { getMyPosts, type PostListApiItem } from "../../api/posts";
+import { resolveApiAssetUrl } from "../../api/client";
 import { Badge } from "../../components/ui/Badge";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
@@ -16,6 +17,20 @@ function categoryVariant(category: string) {
   if (category === "면접 질문") return "success";
   if (category === "포트폴리오 관리") return "outline";
   return "secondary";
+}
+
+function Avatar({ name, imageUrl }: { name: string; imageUrl?: string | null }) {
+  const resolvedImageUrl = resolveApiAssetUrl(imageUrl);
+
+  if (resolvedImageUrl) {
+    return <img src={resolvedImageUrl} alt={`${name} 프로필`} className="h-6 w-6 rounded-full object-cover" />;
+  }
+
+  return (
+    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-700">
+      {name.slice(0, 1)}
+    </div>
+  );
 }
 
 export function MyRecords() {
@@ -40,7 +55,7 @@ export function MyRecords() {
         }
       } catch {
         if (isActive) {
-          setLoadError("내 기록 통계를 불러오지 못했습니다. 백엔드 서버와 /me/posts API를 확인해주세요.");
+          setLoadError("내 기록 통계를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
         }
       }
     }
@@ -74,7 +89,7 @@ export function MyRecords() {
       } catch {
         if (isActive) {
           setRecords([]);
-          setLoadError("내 기록 목록을 불러오지 못했습니다. 백엔드 서버와 /me/posts API를 확인해주세요.");
+          setLoadError("내 기록 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
         }
       } finally {
         if (isActive) {
@@ -199,7 +214,13 @@ export function MyRecords() {
             </div>
             <h2 className="text-lg font-bold text-slate-900">{post.title}</h2>
             <p className="mt-2 line-clamp-2 text-sm text-slate-600">{post.summary}</p>
-            <p className="mt-2 text-xs text-slate-400">댓글 {post.comments} · 조회 {post.views}</p>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+              <span className="flex items-center gap-2 text-slate-500">
+                <Avatar name={post.author} imageUrl={post.authorProfileImageUrl} />
+                {post.author}
+              </span>
+              <span>댓글 {post.comments} · 조회 {post.views}</span>
+            </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {post.tags.map((tag) => (
                 <span key={tag} className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">

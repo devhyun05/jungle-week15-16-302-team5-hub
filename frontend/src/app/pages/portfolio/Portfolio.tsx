@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { BookOpen, FileText, Github, GitCommit, Link2, Plus, RefreshCw, Search, Sparkles, X } from "lucide-react";
+import { BookOpen, ExternalLink, FileText, Github, GitCommit, Link2, Plus, RefreshCw, Search, Sparkles, X } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
@@ -50,6 +50,43 @@ function formatDate(dateText: string | null) {
   });
 }
 
+function parseGithubRepoFullName(githubUrl: string) {
+  const normalizedUrl = githubUrl.trim().replace(/\.git$/, "");
+
+  if (!normalizedUrl) {
+    return "";
+  }
+
+  try {
+    const parsedUrl = new URL(normalizedUrl.includes("://") ? normalizedUrl : `https://${normalizedUrl}`);
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+
+    if (!parsedUrl.hostname.includes("github.com") || pathParts.length < 2) {
+      return "";
+    }
+
+    return `${pathParts[0]}/${pathParts[1]}`.toLowerCase();
+  } catch {
+    const cleanedUrl = normalizedUrl.replace("github.com/", "").replace(/^\/+/, "");
+    const pathParts = cleanedUrl.split("/").filter(Boolean);
+
+    if (pathParts.length < 2) {
+      return "";
+    }
+
+    return `${pathParts[0]}/${pathParts[1]}`.toLowerCase();
+  }
+}
+
+function isValidGithubUrl(githubUrl: string) {
+  try {
+    const parsedUrl = new URL(githubUrl);
+    return parsedUrl.protocol.startsWith("http") && parsedUrl.hostname.includes("github.com");
+  } catch {
+    return false;
+  }
+}
+
 export function Portfolio() {
   const [projects, setProjects] = useState<PortfolioProjectApiItem[]>([]);
   const [availablePosts, setAvailablePosts] = useState<PostListApiItem[]>([]);
@@ -64,7 +101,7 @@ export function Portfolio() {
   const [notice, setNotice] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  async function loadPortfolioData() {
+  async function loadPortfolioData(preferredProjectId?: number) {
     setIsLoading(true);
     setErrorMessage("");
 
@@ -77,11 +114,17 @@ export function Portfolio() {
       setProjects(projectData.items);
       setAvailablePosts(postData.items);
 
-      const firstProject = projectData.items[0];
-      setSelectedProjectId((prev) => prev ?? firstProject?.id ?? null);
-      setSelectedPostIds(firstProject?.linkedPostIds ?? []);
+      const nextSelectedProject =
+        projectData.items.find((project) => project.id === preferredProjectId) ??
+        projectData.items.find((project) => project.id === selectedProjectId) ??
+        projectData.items[0] ??
+        null;
+
+      setSelectedProjectId(nextSelectedProject?.id ?? null);
+      setSelectedPostIds(nextSelectedProject?.linkedPostIds ?? []);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "포트폴리오 데이터를 불러오지 못했습니다.");
+      console.error(error);
+      setErrorMessage("데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
       setIsLoading(false);
     }
@@ -137,8 +180,25 @@ export function Portfolio() {
   };
 
   const registerGithubProject = async () => {
-    if (!repoUrl.trim()) {
+    const trimmedRepoUrl = repoUrl.trim();
+    const repoFullName = parseGithubRepoFullName(trimmedRepoUrl);
+
+    if (!trimmedRepoUrl) {
       setErrorMessage("GitHub repo URL을 입력해 주세요.");
+      return;
+    }
+
+    if (!repoFullName) {
+      setErrorMessage("github.com의 owner/repository 형식 URL을 입력해주세요.");
+      return;
+    }
+
+    const existingProject = projects.find((project) => project.repoFullName.toLowerCase() === repoFullName);
+
+    if (existingProject) {
+      setSearchKeyword("");
+      selectProject(existingProject);
+      setNotice("이미 등록된 GitHub 프로젝트입니다. 기존 프로젝트를 선택했습니다.");
       return;
     }
 
@@ -148,14 +208,16 @@ export function Portfolio() {
 
     try {
       const newProject = await createPortfolioProject({
-        githubUrl: repoUrl,
+        githubUrl: trimmedRepoUrl,
         techStack: ["GitHub", "분석 예정"],
       });
 
-      upsertProject(newProject);
       setRepoUrl("");
+      await loadPortfolioData(newProject.id);
       setNotice("GitHub 프로젝트가 등록되었습니다. 실제 README/커밋 분석은 MCP 연결 후 갱신됩니다.");
     } catch (error) {
+      console.error(error);
+      await loadPortfolioData();
       setErrorMessage(error instanceof Error ? error.message : "GitHub 프로젝트를 등록하지 못했습니다.");
     } finally {
       setIsSaving(false);
@@ -289,12 +351,14 @@ export function Portfolio() {
                     {isActive && <div className="absolute left-0 top-0 h-full w-1 bg-emerald-500" />}
                     <CardContent className="space-y-3 p-4">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-semibold text-slate-900">{project.title}</h3>
+                        <h3 className="min-w-0 flex-1 truncate font-semibold text-slate-900" title={project.title}>
+                          {project.title}
+                        </h3>
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${portfolioStatusClass(project.portfolioStatus)}`}>
                           {project.portfolioStatus}
                         </span>
                       </div>
-                      <p className="font-mono text-xs text-slate-500">{project.repoFullName}</p>
+                      <p className="break-all font-mono text-xs leading-5 text-slate-500">{project.repoFullName}</p>
                       <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${feedbackStatusClass(project.coachFeedbackStatus)}`}>
                         코치: {project.coachFeedbackStatus}
                       </span>
@@ -349,6 +413,18 @@ export function Portfolio() {
                       <Button variant="outline" size="sm" className="whitespace-nowrap" asChild>
                         <Link to="/coach-review">코치 리뷰 요청하기</Link>
                       </Button>
+                      {isValidGithubUrl(selectedProject.githubUrl) ? (
+                        <Button variant="outline" size="sm" className="whitespace-nowrap" asChild>
+                          <a href={selectedProject.githubUrl} target="_blank" rel="noreferrer">
+                            <ExternalLink className="mr-1 h-3 w-3" />
+                            GitHub 보기
+                          </a>
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="sm" className="whitespace-nowrap" disabled>
+                          GitHub URL 확인 필요
+                        </Button>
+                      )}
                       <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={refreshGithubInfo} disabled={analyzing}>
                         <RefreshCw className={`mr-1 h-3 w-3 ${analyzing ? "animate-spin" : ""}`} />
                         GitHub 정보 새로고침
@@ -382,6 +458,35 @@ export function Portfolio() {
                     </h3>
                     <div className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-4 text-sm leading-6 text-slate-700">
                       {selectedProject.savedPortfolioDraft ?? "아직 저장된 포트폴리오 글 초안이 없습니다."}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="rounded-lg border border-slate-200 bg-white p-4">
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-900">면접 예상 질문</p>
+                        <Badge variant="outline">AI 단계 예정</Badge>
+                      </div>
+                      <p className="text-sm leading-6 text-slate-600">
+                        AI 도우미에서 이 프로젝트를 선택하면 GitHub repo와 연결 기록을 기준으로 면접 예상 질문 샘플을 확인할 수 있습니다.
+                      </p>
+                      <Button asChild variant="outline" size="sm" className="mt-3">
+                        <Link to={`/ai-assistant?project=${selectedProject.id}&type=interview`}>면접 질문 만들기</Link>
+                      </Button>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-white p-4">
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-900">코치 리뷰/피드백</p>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${feedbackStatusClass(selectedProject.coachFeedbackStatus)}`}>
+                          {selectedProject.coachFeedbackStatus}
+                        </span>
+                      </div>
+                      <p className="text-sm leading-6 text-slate-600">
+                        포트폴리오 초안을 저장한 뒤 코치 리뷰를 요청하면 피드백 이력과 상태를 이 프로젝트 기준으로 관리하는 흐름으로 확장합니다.
+                      </p>
+                      <Button asChild variant="outline" size="sm" className="mt-3">
+                        <Link to="/coach-review">코치 리뷰 요청하기</Link>
+                      </Button>
                     </div>
                   </div>
 

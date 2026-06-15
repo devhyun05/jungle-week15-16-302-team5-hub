@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useOutletContext } from "react-router";
-import { AlertCircle, CheckCircle2, ChevronRight, MessageSquare, Search, Send, ShieldCheck, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, ChevronRight, MessageSquare, RefreshCw, Search, Send, ShieldCheck, XCircle } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
@@ -8,6 +8,7 @@ import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { getMyPosts, type PostListApiItem } from "../../api/posts";
 import { getPortfolioProjects, type PortfolioProjectApiItem } from "../../api/portfolio";
+import { resolveApiAssetUrl } from "../../api/client";
 import {
   cancelReviewRequest,
   createReviewRequest,
@@ -45,6 +46,20 @@ function formatDate(dateText: string) {
   });
 }
 
+function Avatar({ name, imageUrl }: { name: string; imageUrl?: string | null }) {
+  const resolvedImageUrl = resolveApiAssetUrl(imageUrl);
+
+  if (resolvedImageUrl) {
+    return <img src={resolvedImageUrl} alt={`${name} 프로필`} className="h-8 w-8 rounded-full object-cover" />;
+  }
+
+  return (
+    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">
+      {name.slice(0, 1)}
+    </div>
+  );
+}
+
 function StudentReviewView() {
   const [targetType, setTargetType] = useState<ReviewTargetType>("post");
   const [targetId, setTargetId] = useState<number | null>(null);
@@ -75,7 +90,16 @@ function StudentReviewView() {
       setProjects(projectData.items);
       setCoaches(coachData.items);
       setRequests(requestData.items);
-      setTargetId((prev) => prev ?? postData.items[0]?.id ?? projectData.items[0]?.id ?? null);
+      setTargetId((prev) => {
+        const targetItems = targetType === "post" ? postData.items : projectData.items;
+        const hasPreviousTarget = targetItems.some((item) => item.id === prev);
+
+        if (hasPreviousTarget) {
+          return prev;
+        }
+
+        return targetItems[0]?.id ?? null;
+      });
       setSelectedCoachIds((prev) => (prev.length > 0 ? prev : coachData.items[0] ? [coachData.items[0].id] : []));
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "리뷰 요청 데이터를 불러오지 못했습니다.");
@@ -164,10 +188,16 @@ function StudentReviewView() {
       ) : (
         <>
           <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
-            <Card>
-              <CardHeader>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-3">
                 <CardTitle className="text-base">리뷰 요청 생성</CardTitle>
-              </CardHeader>
+                <Button type="button" variant="outline" size="sm" onClick={() => void loadStudentReviewData()}>
+                  <RefreshCw className="mr-1 h-3 w-3" />
+                  대상 새로고침
+                </Button>
+              </div>
+            </CardHeader>
               <CardContent className="space-y-5">
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-slate-700">리뷰 대상 유형</label>
@@ -226,8 +256,13 @@ function StudentReviewView() {
                             isSelected ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white hover:bg-slate-50"
                           }`}
                         >
-                          <p className="text-sm font-semibold text-slate-900">{coach.name}</p>
-                          <p className="text-xs text-slate-500">{coach.email}</p>
+                          <div className="flex items-center gap-2">
+                            <Avatar name={coach.name} imageUrl={coach.profileImageUrl} />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-slate-900">{coach.name}</p>
+                              <p className="truncate text-xs text-slate-500">{coach.email}</p>
+                            </div>
+                          </div>
                         </button>
                       );
                     })}
@@ -297,7 +332,7 @@ function StudentReviewView() {
                     <span className="text-xs text-slate-400">{formatDate(request.createdAt)}</span>
                   </div>
                   <h3 className="font-semibold text-slate-900">{request.targetTitle}</h3>
-                  <p className="mt-1 text-sm text-slate-500">담당 코치: {request.coachNames.join(", ")}</p>
+                    <p className="mt-1 text-sm text-slate-500">담당 코치: {request.coachNames.join(", ")}</p>
                   <p className="mt-2 text-sm text-slate-600">{request.message}</p>
                   {request.feedback && <div className="mt-3 rounded-md bg-emerald-50 p-3 text-sm text-emerald-800">피드백: {request.feedback}</div>}
                   <div className="mt-3 flex justify-end">
@@ -466,6 +501,7 @@ function CoachInboxView() {
                   >
                     <div className="mb-1 flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2">
+                        <Avatar name={request.requesterName} imageUrl={request.requesterProfileImageUrl} />
                         <span className="text-sm font-semibold text-slate-900">{request.requesterName}</span>
                         <Badge variant="secondary" className="text-[10px]">
                           {request.category}

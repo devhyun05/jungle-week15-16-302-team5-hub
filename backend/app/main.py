@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.routers.admin import router as admin_router
@@ -15,6 +18,16 @@ from app.routers.reviews import router as reviews_router
 # FastAPI 애플리케이션 객체다.
 # title은 Swagger UI 상단에 보이는 API 이름으로 사용된다.
 app = FastAPI(title=settings.app_name)
+
+# 로컬 개발 단계에서는 사용자가 업로드한 프로필 이미지를 backend/uploads 아래에 저장한다.
+# 배포 단계에서는 이 mount를 S3 같은 외부 스토리지 URL로 교체할 수 있다.
+upload_dir = Path(settings.upload_dir)
+
+if not upload_dir.is_absolute():
+    upload_dir = Path(__file__).resolve().parents[1] / upload_dir
+
+upload_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
 # React 개발 서버와 FastAPI 서버는 포트가 다르므로 origin이 다르다.
 # 브라우저는 다른 origin 요청을 기본적으로 막기 때문에 CORS 허용 설정이 필요하다.

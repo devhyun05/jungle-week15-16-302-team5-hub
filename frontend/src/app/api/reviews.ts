@@ -7,6 +7,7 @@ export type CoachOption = {
   id: number;
   name: string;
   email: string;
+  profileImageUrl: string | null;
 };
 
 export type CoachOptionListResponse = {
@@ -17,8 +18,10 @@ export type ReviewRequestApiItem = {
   id: number;
   requesterId: number;
   requesterName: string;
+  requesterProfileImageUrl: string | null;
   coachIds: number[];
   coachNames: string[];
+  coachProfileImageUrls: (string | null)[];
   targetType: ReviewTargetType;
   targetId: number;
   targetTitle: string;

@@ -47,6 +47,7 @@ def build_comment_item(comment: Comment) -> CommentItemResponse:
         author=comment.author.name,
         author_id=comment.author_id,
         author_role=comment.author.role,
+        author_profile_image_url=comment.author.profile_image_url,
         content=comment.content,
         created_at=comment.created_at,
         updated_at=comment.updated_at,

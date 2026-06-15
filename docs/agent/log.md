@@ -2026,3 +2026,57 @@ http://localhost:5173/posts/new 직접 접근
 - 화면에 메뉴가 보인다고 해서 실제 페이지 기능이 새로 구현된 것은 아닐 수 있다.
 - React 사이드바 메뉴는 route 설정이 아니라 `navItems` 배열 렌더링 결과다.
 - ADMIN의 `/` 접근은 `Dashboard.tsx`에서 `/admin/users`로 redirect되므로, 이번 문제는 route보다 메뉴 배열 문제였다.
+
+## 2026-06-15 학생 화면 QA 개선 체크포인트
+
+상태: 커밋 전 QA 진행
+
+작업 배경:
+
+- AI 단계로 넘어가기 전에 학생 화면에서 실제 서비스 흐름처럼 보이지 않는 부분을 정리해야 했다.
+- 포트폴리오 프로젝트 등록 후 목록이 바로 갱신되지 않거나, GitHub URL 버튼이 실제 링크로 동작하지 않는 문제가 있었다.
+- 게시글 작성 화면의 `관련 커밋` 입력은 현재 서비스 흐름과 맞지 않아서 GitHub repo URL 연결로 바꿨다.
+- 프로필 설정 화면은 이름/이미지 저장 API가 없어서 실제 사용자 경험과 맞지 않았다.
+
+작업 내용:
+
+- `backend/app/routers/me.py`: `PATCH /me/profile` API를 추가했다.
+- `backend/app/main.py`: `/uploads` 정적 파일 경로를 FastAPI에 mount했다.
+- `backend/app/repositories/user_repository.py`: Google OAuth 로그인 때 기존 프로필 이미지를 덮어쓰지 않도록 했다.
+- `backend/app/repositories/post_repository.py`: 게시글 상세 조회 시 `view_count` 증가 흐름을 추가했다.
+- `frontend/src/app/pages/settings/Settings.tsx`: 이름 수정과 이미지 업로드 UI를 실제 API와 연결했다.
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`: GitHub repo 중복 등록 방지, 등록 후 목록 재조회, GitHub 보기 버튼을 정리했다.
+- `frontend/src/app/pages/posts/PostEdit.tsx`: 관련 커밋 대신 GitHub repo URL을 연결하도록 바꿨다.
+- `frontend/src/app/pages/posts/PostDetail.tsx`: GitHub repo 버튼, 작성자/댓글 작성자 프로필 이미지 흐름을 정리했다.
+- `frontend/src/app/pages/ai/AIAssistant.tsx`: AI 연결 전 단계에서 저장된 포트폴리오 초안 보관함을 확인할 수 있게 했다.
+
+학습 포인트:
+
+- 파일 업로드는 JSON이 아니라 `FormData`와 `multipart/form-data`로 처리한다.
+- 백엔드가 `/uploads/...` 같은 상대 경로를 저장하면, 프론트는 API base URL을 붙여 실제 이미지 URL로 바꿔야 한다.
+- Google OAuth 프로필 이미지는 초기값으로만 쓰고, 사용자가 직접 바꾼 이미지는 로그인 때 덮어쓰지 않는 편이 자연스럽다.
+- 게시글 조회수 증가는 단순 조회 API처럼 보이지만 DB 상태를 바꾸는 side effect가 있다.
+
+추천 커밋 제목:
+
+```txt
+feat: 학생 화면 QA 개선
+```
+
+학생 화면 QA 개선 체크포인트 결과:
+
+- [x] `npm run build` 성공
+- [x] `python -m compileall app` 성공
+- [x] `git diff --check` 통과
+- [x] FastAPI 앱에 `/me/profile` 라우트 등록 확인
+- [x] FastAPI 앱에 `/uploads` 정적 파일 경로 등록 확인
+- [x] 관리자 화면 DOM 기준 사이드바 메뉴는 `사용자 승인`, `전체 게시글`, `설정`만 표시됨
+
+확인 명령:
+
+```txt
+npm run build
+python -m compileall app
+git diff --check
+python -c "from app.main import app; paths=[route.path for route in app.routes]; print('/me/profile' in paths); print('/uploads' in paths)"
+```

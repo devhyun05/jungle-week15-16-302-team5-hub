@@ -8,12 +8,14 @@ import { Card, CardContent } from "../../components/ui/Card";
 import { createPostComment, deleteComment, getPostComments } from "../../api/comments";
 import { deletePost, getPostDetail, getPosts, type PostDetailApiResponse, type PostListApiItem } from "../../api/posts";
 import type { UserRole } from "../../api/auth";
+import { resolveApiAssetUrl } from "../../api/client";
 import type { MainLayoutContext } from "../../layouts/MainLayout";
 
 type CommentItem = {
   id: string;
   authorId: number;
   author: string;
+  authorProfileImageUrl: string | null;
   role: UserRole;
   createdAt: string;
   content: string;
@@ -38,6 +40,29 @@ function categoryVariant(category: string) {
 
 function formatDate(dateText: string) {
   return new Date(dateText).toLocaleDateString("ko-KR");
+}
+
+function isValidExternalUrl(url: string | null | undefined) {
+  if (!url) {
+    return false;
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function Avatar({ name, imageUrl, className }: { name: string; imageUrl?: string | null; className: string }) {
+  const resolvedImageUrl = resolveApiAssetUrl(imageUrl);
+
+  if (resolvedImageUrl) {
+    return <img src={resolvedImageUrl} alt={`${name} 프로필`} className={`${className} object-cover`} />;
+  }
+
+  return <div className={className}>{name.slice(0, 1)}</div>;
 }
 
 export function PostDetail() {
@@ -89,7 +114,7 @@ export function PostDetail() {
       } catch {
         if (isActive) {
           setPost(null);
-          setPostLoadError("게시글을 찾을 수 없습니다. 백엔드 서버와 API 경로를 확인해주세요.");
+          setPostLoadError("게시글을 찾을 수 없습니다. 잠시 후 다시 시도해주세요.");
         }
       } finally {
         if (isActive) {
@@ -167,6 +192,7 @@ export function PostDetail() {
             id: String(comment.id),
             authorId: comment.authorId,
             author: comment.author,
+            authorProfileImageUrl: comment.authorProfileImageUrl,
             role: comment.authorRole,
             createdAt: comment.createdAt,
             content: comment.content,
@@ -174,7 +200,7 @@ export function PostDetail() {
         );
       } catch {
         if (isActive) {
-          setCommentLoadError("댓글을 불러오지 못했습니다. 백엔드 서버와 API 경로를 확인해주세요.");
+          setCommentLoadError("댓글을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
         }
       } finally {
         if (isActive) {
@@ -232,10 +258,10 @@ export function PostDetail() {
 
     try {
       await deletePost(id);
-      setDeleteNotice("백엔드에서 게시글이 삭제 처리되었습니다. 게시글 목록으로 이동합니다.");
+      setDeleteNotice("게시글이 삭제되었습니다. 게시글 목록으로 이동합니다.");
       window.setTimeout(() => navigate("/posts"), 700);
     } catch {
-      setDeleteError("게시글을 삭제하지 못했습니다. 백엔드 서버와 API 상태를 확인해주세요.");
+      setDeleteError("게시글을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
       setIsDeleting(false);
     }
@@ -268,6 +294,7 @@ export function PostDetail() {
           id: String(savedComment.id),
           authorId: savedComment.authorId,
           author: savedComment.author,
+          authorProfileImageUrl: savedComment.authorProfileImageUrl,
           role: savedComment.authorRole,
           createdAt: savedComment.createdAt,
           content: savedComment.content,
@@ -275,7 +302,7 @@ export function PostDetail() {
       ]);
       setCommentInput("");
     } catch {
-      setCommentError("댓글을 작성하지 못했습니다. 백엔드 서버와 API 상태를 확인해주세요.");
+      setCommentError("댓글을 작성하지 못했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
       setIsCommentSubmitting(false);
     }
@@ -291,13 +318,14 @@ export function PostDetail() {
       // 실제 DB에서는 soft delete가 되었고, 화면에서는 바로 사라진 것처럼 보여준다.
       setComments((prev) => prev.filter((comment) => comment.id !== commentId));
     } catch {
-      setCommentDeleteError("댓글을 삭제하지 못했습니다. 백엔드 서버와 API 상태를 확인해주세요.");
+      setCommentDeleteError("댓글을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
       setDeletingCommentId(null);
     }
   };
 
   const canManagePost = role === "ADMIN" || post.authorId === user.id;
+  const hasValidGitHubUrl = isValidExternalUrl(post.relatedGitHubUrl);
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -368,9 +396,11 @@ export function PostDetail() {
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-6 text-sm text-slate-500">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 font-medium text-slate-900">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-xs text-emerald-700">
-                {post.author.slice(0, 1)}
-              </div>
+              <Avatar
+                name={post.author}
+                imageUrl={post.authorProfileImageUrl}
+                className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-xs text-emerald-700"
+              />
               {post.author}
             </div>
             <span>·</span>
@@ -396,19 +426,27 @@ export function PostDetail() {
         </div>
       </article>
 
-      {post.relatedCommit && (
+      {post.relatedGitHubUrl && (
         <Card className="border-slate-200 bg-slate-50">
           <CardContent className="flex items-center justify-between gap-4 p-4">
             <div className="flex items-center gap-3">
               <Github className="h-5 w-5 text-slate-700" />
               <div>
-                <p className="text-sm font-medium text-slate-900">관련 커밋</p>
-                <p className="text-xs text-slate-500">{post.relatedCommit}</p>
+                <p className="text-sm font-medium text-slate-900">관련 GitHub repo</p>
+                <p className="break-all text-xs text-slate-500">{post.relatedGitHubUrl}</p>
               </div>
             </div>
-            <Button variant="outline" size="sm">
-              GitHub 보기
-            </Button>
+            {hasValidGitHubUrl ? (
+              <Button variant="outline" size="sm" asChild>
+                <a href={post.relatedGitHubUrl} target="_blank" rel="noreferrer">
+                  GitHub 보기
+                </a>
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" disabled>
+                URL 확인 필요
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
@@ -461,13 +499,13 @@ export function PostDetail() {
             <div key={comment.id} className={comment.role === "COACH" ? "bg-indigo-50/30 p-6" : "bg-white p-6"}>
               <div className="mb-2 flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <div
+                  <Avatar
+                    name={comment.author}
+                    imageUrl={comment.authorProfileImageUrl}
                     className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
                       comment.role === "COACH" ? "bg-indigo-100 text-indigo-700" : "bg-emerald-100 text-emerald-700"
                     }`}
-                  >
-                    {comment.author.slice(0, 1)}
-                  </div>
+                  />
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-slate-900">{comment.author}</span>
@@ -498,9 +536,11 @@ export function PostDetail() {
 
           <div className="p-6">
             <div className="flex gap-4">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-600">
-                {role === "COACH" ? "C" : "S"}
-              </div>
+              <Avatar
+                name={user.name}
+                imageUrl={user.profileImageUrl}
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-600"
+              />
               <div className="flex-1 space-y-2">
                 <textarea
                   value={commentInput}

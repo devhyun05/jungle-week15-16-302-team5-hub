@@ -270,6 +270,34 @@ export function AIAssistant() {
               </p>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader className="border-b border-slate-100 pb-4">
+              <CardTitle className="text-lg">포트폴리오 초안 보관함</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-4">
+              <div className="rounded-lg border border-slate-200 bg-white p-3">
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-slate-900">저장된 포트폴리오 글</p>
+                  <Badge variant={selectedProject.aiDraftSaved ? "success" : "secondary"}>
+                    {selectedProject.aiDraftSaved ? "저장됨" : "저장 전"}
+                  </Badge>
+                </div>
+                <p className="line-clamp-4 text-xs leading-5 text-slate-500">
+                  {selectedProject.savedPortfolioDraft ?? "아직 저장된 포트폴리오 초안이 없습니다."}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-white p-3">
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-slate-900">면접 예상 질문</p>
+                  <Badge variant="outline">AI 단계 예정</Badge>
+                </div>
+                <p className="line-clamp-4 text-xs leading-5 text-slate-500">
+                  현재 화면에서는 선택한 프로젝트 기준 샘플 질문을 생성합니다. 다음 단계에서 OpenAI/RAG 결과를 저장하고 프로젝트별로 다시 불러오도록 연결합니다.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="flex flex-col gap-6 lg:col-span-8">

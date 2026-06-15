@@ -1517,3 +1517,51 @@ OAuth 기존 이메일 사용자 연결 QA 결과:
 
 - 실제 AI 기능은 아직 시작 전이다.
 - AI 전 단계 중 실제 Google 로그인 callback 수동 QA와 알림 API/GitHub 실제 분석은 남아 있다.
+
+## 2026-06-15 학생 화면 QA 개선 체크리스트
+
+목표: AI 단계로 넘어가기 전에 학생 화면의 기본 흐름이 실제 API 기준으로 자연스럽게 이어지는지 확인한다.
+
+체크리스트:
+
+- [ ] `npm run build`
+- [ ] `python -m compileall app`
+- [ ] `git diff --check`
+- [ ] `/me/profile` 라우트가 FastAPI 앱에 등록되어 있다.
+- [ ] `/uploads` 정적 파일 경로가 FastAPI 앱에 등록되어 있다.
+- [ ] 관리자 사이드바에 대시보드 메뉴가 보이지 않는다.
+- [ ] 포트폴리오 프로젝트 등록 후 목록을 다시 불러온다.
+- [ ] 이미 등록한 GitHub repo를 다시 등록하면 중복으로 새 카드가 생기지 않는다.
+- [ ] 게시글 작성/수정 화면에서 관련 커밋 대신 GitHub repo URL을 입력한다.
+- [ ] 게시글 상세 화면에서 GitHub 보기 버튼이 유효한 URL일 때만 열린다.
+- [ ] 댓글/작성자 영역에서 프로필 이미지가 있으면 avatar 이미지가 보인다.
+- [ ] 설정 화면에서 이름과 프로필 이미지 저장 UI가 보인다.
+- [ ] AI 도우미에서 포트폴리오 초안 보관함이 보인다.
+
+QA 결과:
+
+- 진행 중
+
+남은 수동 QA:
+
+- 실제 브라우저에서 이미지 업로드 후 `/uploads/profiles/...` 이미지가 보이는지 확인한다.
+- 실제 Google 로그인 사용자로 이름 수정 후 헤더/사이드바 이름이 갱신되는지 확인한다.
+- 실제 학생 계정에서 게시글 작성 -> 상세 -> 댓글 작성 -> 내 기록 반영 흐름을 확인한다.
+
+학생 화면 QA 개선 체크포인트 결과:
+
+- [x] `npm run build` 성공
+- [x] `python -m compileall app` 성공
+- [x] `git diff --check` 통과
+- [x] FastAPI 앱에 `/me/profile` 라우트 등록 확인
+- [x] FastAPI 앱에 `/uploads` 정적 파일 경로 등록 확인
+- [x] 관리자 화면 DOM 기준 사이드바 메뉴는 `사용자 승인`, `전체 게시글`, `설정`만 표시됨
+
+확인 명령:
+
+```txt
+npm run build
+python -m compileall app
+git diff --check
+python -c "from app.main import app; paths=[route.path for route in app.routes]; print('/me/profile' in paths); print('/uploads' in paths)"
+```

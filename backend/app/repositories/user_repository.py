@@ -133,8 +133,41 @@ def update_google_login_user(
 
     user.email = email.lower()
     user.google_sub = google_sub
-    user.profile_image_url = profile_image_url
+    # Google profile image는 최초 기본값으로만 사용한다.
+    # 사용자가 JungleLog에서 직접 업로드한 이미지가 있으면 재로그인으로 덮어쓰지 않는다.
+    if user.profile_image_url is None:
+        user.profile_image_url = profile_image_url
     user.last_login_at = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(user)
+
+    return user
+
+
+def update_user_profile(
+    db: Session,
+    user: User,
+    name: str,
+    profile_image_url: str | None,
+) -> User:
+    """
+    설정 화면에서 사용자가 직접 수정한 이름과 프로필 이미지를 저장한다.
+
+    Args:
+        db: SQLAlchemy session.
+        user: 현재 로그인한 사용자.
+        name: 화면에 표시할 이름.
+        profile_image_url: 새로 업로드한 이미지 URL. None이면 기존 이미지를 유지한다.
+
+    Returns:
+        변경 후 User model.
+    """
+
+    user.name = name.strip()[:50]
+
+    if profile_image_url is not None:
+        user.profile_image_url = profile_image_url
 
     db.commit()
     db.refresh(user)

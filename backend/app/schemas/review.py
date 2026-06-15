@@ -16,6 +16,7 @@ class CoachOptionResponse(FrontendResponseModel):
     id: int
     name: str
     email: str
+    profile_image_url: str | None = Field(default=None, alias="profileImageUrl")
 
 
 class CoachOptionListResponse(FrontendResponseModel):
@@ -38,8 +39,10 @@ class ReviewRequestResponse(FrontendResponseModel):
     id: int
     requester_id: int = Field(alias="requesterId")
     requester_name: str = Field(alias="requesterName")
+    requester_profile_image_url: str | None = Field(default=None, alias="requesterProfileImageUrl")
     coach_ids: list[int] = Field(alias="coachIds")
     coach_names: list[str] = Field(alias="coachNames")
+    coach_profile_image_urls: list[str | None] = Field(alias="coachProfileImageUrls")
     target_type: str = Field(alias="targetType")
     target_id: int = Field(alias="targetId")
     target_title: str = Field(alias="targetTitle")

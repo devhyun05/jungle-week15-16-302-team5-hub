@@ -58,3 +58,29 @@ export async function logoutCurrentUser(): Promise<void> {
     throw new Error(message);
   }
 }
+
+export async function updateCurrentUserProfile(payload: {
+  name: string;
+  profileImage?: File | null;
+}): Promise<CurrentUser> {
+  const formData = new FormData();
+
+  formData.set("name", payload.name);
+
+  if (payload.profileImage) {
+    formData.set("profileImage", payload.profileImage);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/me/profile`, {
+    method: "PATCH",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response);
+    throw new Error(message);
+  }
+
+  return response.json();
+}

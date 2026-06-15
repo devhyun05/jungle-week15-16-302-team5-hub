@@ -19,9 +19,11 @@ build/
 # Logs
 *.log
 
+# User uploads
+backend/uploads/
+
 # OS / editor
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
-

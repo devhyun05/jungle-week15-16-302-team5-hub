@@ -18,6 +18,7 @@ class CommentItemResponse(FrontendResponseModel):
     author: str
     author_id: int = Field(alias="authorId")
     author_role: str = Field(alias="authorRole")
+    author_profile_image_url: str | None = Field(default=None, alias="authorProfileImageUrl")
     content: str
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")

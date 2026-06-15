@@ -187,6 +187,21 @@ def soft_delete_post(db: Session, post: Post) -> None:
     db.commit()
 
 
+def increase_post_view_count(db: Session, post: Post) -> Post:
+    """
+    게시글 상세 화면을 열었을 때 조회수를 1 증가시킨다.
+
+    목록 화면의 views 값은 posts.view_count를 그대로 내려주므로,
+    상세 조회에서 이 값을 올려야 목록/상세 조회수가 같은 기준으로 움직인다.
+    """
+
+    post.view_count += 1
+    db.commit()
+    db.refresh(post)
+
+    return post
+
+
 def list_posts(
     db: Session,
     category: str | None,
@@ -406,6 +421,7 @@ def get_accessible_post_by_id(
     if post is None:
         return None, 0
 
+    post = increase_post_view_count(db=db, post=post)
     comment_count = get_comment_counts(db, [post.id]).get(post.id, 0)
 
     return post, comment_count

@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices
 
 
 class FrontendResponseModel(BaseModel):
@@ -16,7 +17,12 @@ class PostCreateRequest(FrontendResponseModel):
     category_slug: str = Field(alias="categorySlug", min_length=1, max_length=50)
     tags: list[str] = Field(default_factory=list, max_length=10)
     is_public: bool = Field(default=True, alias="isPublic")
-    related_commit: str | None = Field(default=None, alias="relatedCommit", max_length=500)
+    related_github_url: str | None = Field(
+        default=None,
+        alias="relatedGitHubUrl",
+        validation_alias=AliasChoices("relatedGitHubUrl", "relatedCommit"),
+        max_length=500,
+    )
 
 
 class PostUpdateRequest(PostCreateRequest):
@@ -34,6 +40,7 @@ class PostListItemResponse(FrontendResponseModel):
     author: str
     author_id: int = Field(alias="authorId")
     author_role: str = Field(alias="authorRole")
+    author_profile_image_url: str | None = Field(default=None, alias="authorProfileImageUrl")
     is_public: bool = Field(alias="isPublic")
     views: int
     comments: int
@@ -49,5 +56,5 @@ class PostListResponse(FrontendResponseModel):
 
 class PostDetailResponse(PostListItemResponse):
     content: str
-    related_commit: str | None = Field(alias="relatedCommit")
+    related_github_url: str | None = Field(default=None, alias="relatedGitHubUrl")
     updated_at: datetime = Field(alias="updatedAt")

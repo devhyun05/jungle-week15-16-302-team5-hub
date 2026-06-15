@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Ca
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { createPost, getPostDetail, getPosts, updatePost, type PostListApiItem } from "../../api/posts";
+import { getPortfolioProjects, type PortfolioProjectApiItem } from "../../api/portfolio";
 import { categories } from "../../constants/categories";
 
 function buildSummary(content: string) {
@@ -36,20 +37,26 @@ export function PostEdit() {
   const [isPostLoading, setIsPostLoading] = useState(isEditMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [referencePosts, setReferencePosts] = useState<PostListApiItem[]>([]);
+  const [portfolioProjects, setPortfolioProjects] = useState<PortfolioProjectApiItem[]>([]);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadReferencePosts() {
       try {
-        const data = await getPosts({ page: 1, size: 3 });
+        const [postData, projectData] = await Promise.all([
+          getPosts({ page: 1, size: 3 }),
+          getPortfolioProjects(),
+        ]);
 
         if (isMounted) {
-          setReferencePosts(data.items);
+          setReferencePosts(postData.items);
+          setPortfolioProjects(projectData.items);
         }
       } catch {
         if (isMounted) {
           setReferencePosts([]);
+          setPortfolioProjects([]);
         }
       }
     }
@@ -88,7 +95,7 @@ export function PostEdit() {
         setIsPublic(post.isPublic);
         setTags(post.tags);
         setBody(post.content);
-        setGithubUrl(post.relatedCommit ?? "");
+        setGithubUrl(post.relatedGitHubUrl ?? "");
       })
       .catch((loadError) => {
         if (!isMounted) return;
@@ -139,7 +146,7 @@ export function PostEdit() {
       categorySlug: selectedCategory.slug,
       tags,
       isPublic,
-      relatedCommit: githubUrl.trim() || undefined,
+      relatedGitHubUrl: githubUrl.trim() || undefined,
     };
 
     setIsSubmitting(true);
@@ -154,14 +161,14 @@ export function PostEdit() {
 
         const updatedPost = await updatePost(id, payload);
 
-        setNotice("백엔드에 게시글이 수정되었습니다. 상세 화면으로 이동합니다.");
+        setNotice("게시글이 수정되었습니다. 상세 화면으로 이동합니다.");
         window.setTimeout(() => navigate(`/posts/${updatedPost.id}`), 900);
         return;
       }
 
       const createdPost = await createPost(payload);
 
-      setNotice(`백엔드에 게시글이 발행되었습니다. 생성된 게시글 id: ${createdPost.id}`);
+      setNotice("게시글이 발행되었습니다. 상세 화면으로 이동합니다.");
       // 목록/상세 화면이 API 응답 중심으로 바뀌었기 때문에 생성된 상세 화면으로 바로 이동할 수 있다.
       window.setTimeout(() => navigate(`/posts/${createdPost.id}`), 900);
     } catch (submitError) {
@@ -184,7 +191,7 @@ export function PostEdit() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">{isEditMode ? "게시글 수정" : "새 게시글 작성"}</h1>
             <p className="mt-1 text-sm text-slate-500">
-              새 글 발행과 수정은 백엔드 API에 저장되고, 임시저장은 다음 단계에서 별도 API로 연결합니다.
+              새 글 발행과 수정은 백엔드 API에 저장되고, GitHub repo 정보는 나중에 GitHub API 분석에 활용합니다.
             </p>
           </div>
           <div className="flex gap-2">
@@ -276,14 +283,34 @@ export function PostEdit() {
             className="min-h-[400px] resize-y p-4"
           />
 
-          <div className="flex items-center gap-2">
-            <LinkIcon className="h-4 w-4 text-slate-400" />
-            <Input
-              value={githubUrl}
-              onChange={(event) => setGithubUrl(event.target.value)}
-              placeholder="관련 GitHub 저장소 URL 또는 커밋 메모"
-              className="flex-1"
-            />
+          <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <LinkIcon className="h-4 w-4 text-slate-400" />
+              관련 GitHub repo
+            </div>
+            <div className="grid gap-3 md:grid-cols-[260px_1fr]">
+              <select
+                value={portfolioProjects.some((project) => project.githubUrl === githubUrl) ? githubUrl : ""}
+                onChange={(event) => setGithubUrl(event.target.value)}
+                className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:ring-1 focus:ring-emerald-500"
+              >
+                <option value="">등록된 프로젝트 선택</option>
+                {portfolioProjects.map((project) => (
+                  <option key={project.id} value={project.githubUrl}>
+                    {project.repoFullName}
+                  </option>
+                ))}
+              </select>
+              <Input
+                value={githubUrl}
+                onChange={(event) => setGithubUrl(event.target.value)}
+                placeholder="https://github.com/username/repository"
+                className="bg-white"
+              />
+            </div>
+            <p className="text-xs text-slate-500">
+              이 repo URL은 다음 AI 단계에서 GitHub API/MCP 분석 기준으로 사용합니다.
+            </p>
           </div>
         </Card>
       </div>

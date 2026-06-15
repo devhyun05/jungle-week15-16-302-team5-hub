@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
+import { resolveApiAssetUrl } from "../api/client";
 import { useAuth } from "../contexts/AuthContext";
 import type { ApprovalStatus, CurrentUser, UserRole } from "../api/auth";
 
@@ -104,6 +105,7 @@ export function MainLayout() {
     name: user.name,
     initial: getProfileInitial(user.name),
     badge: getRoleLabel(user.role),
+    imageUrl: resolveApiAssetUrl(user.profileImageUrl),
   };
 
   const handleLogout = async () => {
@@ -155,9 +157,13 @@ export function MainLayout() {
 
         <div className="border-t border-slate-200 p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 font-bold text-emerald-700">
-              {profile.initial}
-            </div>
+            {profile.imageUrl ? (
+              <img src={profile.imageUrl} alt={`${profile.name} 프로필`} className="h-10 w-10 rounded-full object-cover" />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 font-bold text-emerald-700">
+                {profile.initial}
+              </div>
+            )}
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-slate-900">{profile.name}</p>
               <p className="truncate text-xs text-slate-500">{profile.badge}</p>

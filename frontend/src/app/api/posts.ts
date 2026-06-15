@@ -11,6 +11,7 @@ export type PostListApiItem = {
   author: string;
   authorId: number;
   authorRole: UserRole;
+  authorProfileImageUrl: string | null;
   isPublic: boolean;
   views: number;
   comments: number;
@@ -26,7 +27,7 @@ export type PostListApiResponse = {
 
 export type PostDetailApiResponse = PostListApiItem & {
   content: string;
-  relatedCommit: string | null;
+  relatedGitHubUrl: string | null;
   updatedAt: string;
 };
 
@@ -37,7 +38,7 @@ export type PostCreatePayload = {
   categorySlug: string;
   tags: string[];
   isPublic: boolean;
-  relatedCommit?: string;
+  relatedGitHubUrl?: string;
 };
 
 export type PostCreateResponse = PostDetailApiResponse;

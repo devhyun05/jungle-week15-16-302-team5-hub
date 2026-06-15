@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router";
 import { Eye, Lock, MessageCircle, Search } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Input } from "../../components/ui/Input";
+import { resolveApiAssetUrl } from "../../api/client";
 import { getPosts, type PostListApiItem } from "../../api/posts";
 import { categories, type CategorySlug } from "../../constants/categories";
 
@@ -14,6 +15,20 @@ function categoryVariant(category: string) {
   if (category === "면접 질문") return "success";
   if (category === "포트폴리오 관리") return "outline";
   return "secondary";
+}
+
+function Avatar({ name, imageUrl }: { name: string; imageUrl?: string | null }) {
+  const resolvedImageUrl = resolveApiAssetUrl(imageUrl);
+
+  if (resolvedImageUrl) {
+    return <img src={resolvedImageUrl} alt={`${name} 프로필`} className="h-6 w-6 rounded-full object-cover" />;
+  }
+
+  return (
+    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-700">
+      {name.slice(0, 1)}
+    </div>
+  );
 }
 
 export function Posts() {
@@ -49,7 +64,7 @@ export function Posts() {
         setTotal(data.total);
       } catch {
         if (isActive) {
-          setLoadError("게시글 목록을 불러오지 못했습니다. 백엔드 서버와 API 상태를 확인해주세요.");
+          setLoadError("게시글 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
         }
       } finally {
         if (isActive) {
@@ -153,7 +168,10 @@ export function Posts() {
                 ))}
               </div>
               <div className="flex items-center gap-3 text-xs text-slate-400">
-                <span>{post.author}</span>
+                <span className="flex items-center gap-2 text-slate-500">
+                  <Avatar name={post.author} imageUrl={post.authorProfileImageUrl} />
+                  {post.author}
+                </span>
                 <span className="flex items-center gap-1">
                   <Eye className="h-3 w-3" />
                   {post.views}

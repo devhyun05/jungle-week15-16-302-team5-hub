@@ -71,7 +71,7 @@ def create_post(db: Session, request: PostCreateRequest, current_user: User) -> 
         return None
 
     summary = request.summary.strip() if request.summary else build_summary_from_content(content)
-    related_commit = request.related_commit.strip() if request.related_commit else None
+    related_commit = request.related_github_url.strip() if request.related_github_url else None
     tag_names = normalize_tag_names(request.tags)
 
     post = post_repository.create_post(
@@ -122,7 +122,7 @@ def update_post(
         return None
 
     summary = request.summary.strip() if request.summary else build_summary_from_content(content)
-    related_commit = request.related_commit.strip() if request.related_commit else None
+    related_commit = request.related_github_url.strip() if request.related_github_url else None
     tag_names = normalize_tag_names(request.tags)
 
     updated_post = post_repository.update_post(
@@ -266,7 +266,7 @@ def build_post_detail_response(post: Post, comment_count: int) -> PostDetailResp
     return PostDetailResponse(
         **list_item.model_dump(),
         content=post.content,
-        related_commit=post.related_commit,
+        related_github_url=post.related_commit,
         updated_at=post.updated_at,
     )
 
@@ -286,6 +286,7 @@ def build_post_list_item(post: Post, comment_count: int) -> PostListItemResponse
         author=post.author.name,
         author_id=post.author_id,
         author_role=post.author.role,
+        author_profile_image_url=post.author.profile_image_url,
         is_public=post.is_public,
         views=post.view_count,
         comments=comment_count,

@@ -25,6 +25,7 @@ def get_coach_options(db: Session) -> CoachOptionListResponse:
                 id=coach.id,
                 name=coach.name,
                 email=coach.email,
+                profile_image_url=coach.profile_image_url,
             )
             for coach in coaches
         ]
@@ -199,8 +200,10 @@ def build_review_request_response(review_request: ReviewRequest) -> ReviewReques
         id=review_request.id,
         requester_id=review_request.requester_id,
         requester_name=review_request.requester.name,
+        requester_profile_image_url=review_request.requester.profile_image_url,
         coach_ids=[link.coach_id for link in coach_links],
         coach_names=[link.coach.name for link in coach_links],
+        coach_profile_image_urls=[link.coach.profile_image_url for link in coach_links],
         target_type=review_request.target_type,
         target_id=target_id,
         target_title=target_title,

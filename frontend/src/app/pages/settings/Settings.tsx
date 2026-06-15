@@ -1,13 +1,68 @@
 ﻿
-import { Bot, Github, Info, Lock, Save, User } from "lucide-react";
+import { type FormEvent, useEffect, useState } from "react";
+import { Bot, Github, Info, Lock, Save, Upload, User } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
+import { resolveApiAssetUrl } from "../../api/client";
+import { updateCurrentUserProfile } from "../../api/auth";
 import { useAuth } from "../../contexts/AuthContext";
 
 export function Settings() {
-  const { user } = useAuth();
+  const { user, refreshCurrentUser } = useAuth();
+  const [name, setName] = useState(user?.name ?? "");
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(resolveApiAssetUrl(user?.profileImageUrl));
+  const [notice, setNotice] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setName(user?.name ?? "");
+    setPreviewUrl(resolveApiAssetUrl(user?.profileImageUrl));
+  }, [user]);
+
+  const changeProfileImage = (file: File | null) => {
+    setProfileImageFile(file);
+
+    if (!file) {
+      setPreviewUrl(resolveApiAssetUrl(user?.profileImageUrl));
+      return;
+    }
+
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const submitProfile = async (event: FormEvent) => {
+    event.preventDefault();
+
+    const trimmedName = name.trim();
+
+    if (!trimmedName) {
+      setErrorMessage("이름을 입력해주세요.");
+      setNotice("");
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage("");
+    setNotice("");
+
+    try {
+      await updateCurrentUserProfile({
+        name: trimmedName,
+        profileImage: profileImageFile,
+      });
+      await refreshCurrentUser();
+      setProfileImageFile(null);
+      setNotice("프로필이 저장되었습니다.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "프로필을 저장하지 못했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -22,15 +77,48 @@ export function Settings() {
             <User className="h-4 w-4" />
             프로필
           </CardTitle>
-          <CardDescription>프로필 수정 API는 다음 단계에서 연결할 예정입니다.</CardDescription>
+          <CardDescription>Google 이메일은 로그인 식별값으로 유지하고, 표시 이름과 프로필 이미지는 직접 수정할 수 있습니다.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Input value={user?.name ?? ""} readOnly />
-          <Input value={user?.email ?? ""} readOnly />
-          <Button disabled>
-            <Save className="mr-2 h-4 w-4" />
-            프로필 저장 준비 중
-          </Button>
+        <CardContent>
+          <form onSubmit={submitProfile} className="space-y-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-xl font-bold text-emerald-700">
+                {previewUrl ? <img src={previewUrl} alt="프로필 미리보기" className="h-full w-full object-cover" /> : user?.name.slice(0, 1) ?? "J"}
+              </div>
+              <div className="space-y-2">
+                <label className="inline-flex h-9 cursor-pointer items-center rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                  <Upload className="mr-2 h-4 w-4" />
+                  프로필 이미지 선택
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    className="sr-only"
+                    onChange={(event) => changeProfileImage(event.target.files?.[0] ?? null)}
+                  />
+                </label>
+                <p className="text-xs text-slate-500">로컬 개발에서는 backend/uploads에 저장합니다. 배포 시 S3 같은 외부 스토리지로 교체할 예정입니다.</p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="space-y-1">
+                <span className="text-sm font-medium text-slate-700">이름</span>
+                <Input value={name} onChange={(event) => setName(event.target.value)} maxLength={50} />
+              </label>
+              <label className="space-y-1">
+                <span className="text-sm font-medium text-slate-700">Google 이메일</span>
+                <Input value={user?.email ?? ""} readOnly className="bg-slate-50 text-slate-500" />
+              </label>
+            </div>
+
+            {errorMessage && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{errorMessage}</p>}
+            {notice && <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</p>}
+
+            <Button type="submit" disabled={isSaving}>
+              <Save className="mr-2 h-4 w-4" />
+              {isSaving ? "저장 중" : "프로필 저장"}
+            </Button>
+          </form>
         </CardContent>
       </Card>
 

@@ -33,11 +33,15 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 - 게시글 CRUD API와 화면 연결
 - 댓글 조회/작성/삭제 API와 화면 연결
 - 내 기록 조회 API와 화면 연결
+- 프로필 이름/이미지 수정 API와 설정 화면 연결
 - 포트폴리오 프로젝트 등록/수정/목록 API와 화면 연결
 - 포트폴리오 프로젝트와 게시글 연결 API
+- 포트폴리오 프로젝트 중복 등록 방지와 GitHub 링크 이동 UI
 - 코치 리뷰 요청 생성/취소/목록/인박스/피드백 API와 화면 연결
+- 게시글 상세 조회 시 조회수 증가 처리
 - 대시보드 주요 통계 API 기반 정리
 - AI 도우미 화면을 포트폴리오 API 데이터 기반 샘플로 정리
+- AI 도우미 화면에 포트폴리오 초안 보관함 UI 추가
 - 레거시 `mockData.ts` 제거
 - 브라우저 타이틀/메타 정보를 JungleLog 기준으로 정리
 
@@ -48,8 +52,7 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 - GitHub API 또는 MCP 기반 repo 분석 자동화
 - MCP server 구현
 - Agent 추론 루프 구현
-- 알림 API
-- 프로필 수정 API
+- 알림 API와 실시간 알림
 - 실제 Google 계정 선택/동의 화면 수동 QA
 
 ## 주요 사용자 흐름
@@ -322,6 +325,7 @@ Google Cloud Console 설정:
 - `npm run build` 성공
 - `python -m compileall app` 성공
 - `git diff --check` 통과
+- 학생 화면 QA 개선 1차 검증
 - Swagger/OpenAPI 주요 API 등록 확인
 - Google OAuth/JWT callback 흐름 TestClient 검증
 - 비밀값 출력 없이 OAuth/JWT 환경변수 설정 여부 확인
@@ -377,7 +381,6 @@ Google Cloud Console 설정:
 
 - 실제 Google 계정 선택 후 callback 수동 QA가 아직 남아 있다.
 - 알림 API는 아직 샘플 UI 상태다.
-- 프로필 수정 API는 아직 없다.
 - GitHub repo 분석은 아직 실제 GitHub API/MCP와 연결되지 않았다.
 - AI 도우미는 아직 OpenAI/RAG/MCP/Agent를 호출하지 않는다.
 

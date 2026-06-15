@@ -3372,3 +3372,58 @@ Google 계정 선택과 동의 화면은 실제 개인 계정 인증 과정이�
 - 관리자 메뉴, OAuth/JWT, 게시글/댓글/포트폴리오/코치 리뷰 API 연결은 AI 전 단계 범위다.
 - 실제 AI 도우미, RAG, MCP, Agent 호출은 다음 큰 단계에서 구현한다.
 - 알림 API와 GitHub 실제 분석도 AI/외부 연동 단계로 남아 있다.
+
+## 2026-06-15 학생 화면 QA 개선 학습 기록
+
+이번 구현을 이해하려면 알아야 하는 개념:
+
+### 수정한 주요 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/routers/me.py` | 현재 로그인한 사용자의 프로필 조회/수정 API를 담당한다. |
+| `backend/app/main.py` | FastAPI 앱 생성, CORS, 라우터 등록, 정적 파일 제공 경로를 담당한다. |
+| `backend/app/repositories/user_repository.py` | users 테이블을 직접 읽고 수정하는 DB 접근 함수를 모은다. |
+| `backend/app/repositories/post_repository.py` | posts 테이블 조회와 조회수 증가 같은 DB 작업을 담당한다. |
+| `frontend/src/app/api/client.ts` | API base URL, 에러 메시지 파싱, 업로드 이미지 URL 변환을 담당한다. |
+| `frontend/src/app/pages/settings/Settings.tsx` | 프로필 이름과 이미지를 수정하는 화면이다. |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | GitHub repo 기반 프로젝트 등록, 선택, 연결 기록 확인을 담당한다. |
+| `frontend/src/app/pages/posts/PostEdit.tsx` | 게시글 작성/수정 폼을 담당한다. |
+| `frontend/src/app/pages/posts/PostDetail.tsx` | 게시글 상세, 댓글, GitHub repo 연결 버튼을 담당한다. |
+| `frontend/src/app/pages/ai/AIAssistant.tsx` | AI 연결 전 프로젝트 기반 참고자료와 초안 보관함 UI를 보여준다. |
+
+### FastAPI 개념
+
+- `UploadFile`: 브라우저에서 업로드한 파일을 FastAPI가 받는 타입이다.
+- `Form`: JSON body가 아니라 form-data 필드를 받을 때 사용한다.
+- `StaticFiles`: 서버 폴더에 저장된 이미지를 `/uploads/...` URL로 제공할 때 사용한다.
+- `HTTPException`: 파일 형식이나 크기가 잘못됐을 때 400 에러를 명확히 반환한다.
+
+### React 개념
+
+- `FormData`: 파일과 텍스트를 함께 API로 보낼 때 사용한다.
+- `useState`: 업로드할 파일, 미리보기 URL, 저장 메시지 같은 화면 상태를 관리한다.
+- `useEffect`: 로그인 사용자 정보가 바뀌면 설정 폼 값을 다시 맞춘다.
+- 조건부 렌더링: 프로필 이미지가 있으면 `img`, 없으면 이름 첫 글자 avatar를 보여준다.
+
+### TypeScript/API 개념
+
+- 프론트 타입에 `profileImageUrl`, `authorProfileImageUrl` 같은 응답 필드를 추가했다.
+- 백엔드 응답 필드와 프론트 타입 이름이 맞아야 화면에서 avatar를 안정적으로 렌더링할 수 있다.
+- `resolveApiAssetUrl()`은 `/uploads/...` 상대 경로를 `http://localhost:8000/uploads/...` 절대 URL로 바꾼다.
+
+### 나중에 백엔드/AI와 더 연결될 부분
+
+- 현재 GitHub repo URL은 수동 등록이다. 나중에는 GitHub API 또는 MCP로 README, 커밋, 언어 정보를 자동 분석한다.
+- AI 도우미의 포트폴리오 글/면접 질문 생성은 아직 OpenAI/RAG/MCP/Agent 호출 전이다.
+- 알림은 아직 API 연결 전 샘플 UI다.
+
+### 추가 학습 키워드
+
+- multipart/form-data
+- FastAPI UploadFile
+- StaticFiles
+- FormData
+- optimistic UI와 refetch
+- API error parsing
+- side effect가 있는 GET 요청의 장단점

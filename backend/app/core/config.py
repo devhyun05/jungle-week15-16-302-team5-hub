@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     oauth_state_cookie_name: str = "junglelog_oauth_state"
     cookie_secure: bool = False
     cookie_samesite: str = "lax"
+    upload_dir: str = "uploads"
 
     model_config = SettingsConfigDict(
         env_file=".env",

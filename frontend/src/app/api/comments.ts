@@ -7,6 +7,7 @@ export type CommentApiItem = {
   author: string;
   authorId: number;
   authorRole: UserRole;
+  authorProfileImageUrl: string | null;
   content: string;
   createdAt: string;
   updatedAt: string;
