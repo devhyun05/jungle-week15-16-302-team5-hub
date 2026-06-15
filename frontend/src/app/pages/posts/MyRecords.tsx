@@ -180,7 +180,7 @@ export function MyRecords() {
               </button>
             ))}
           </div>
-          <p className="text-xs text-slate-400">현재 로그인 사용자의 JWT 쿠키를 기준으로 내 기록을 조회합니다.</p>
+          <p className="text-xs text-slate-400">내가 작성한 글만 모아 확인하고 공개 범위별로 관리할 수 있습니다.</p>
         </CardContent>
       </Card>
 
@@ -199,7 +199,7 @@ export function MyRecords() {
 
         {!isLoading && !loadError && records.length === 0 && (
           <Card>
-            <CardContent className="p-6 text-sm text-slate-500">조건에 맞는 내 기록이 없습니다.</CardContent>
+            <CardContent className="p-6 text-sm text-slate-500">아직 작성한 글이 없습니다.</CardContent>
           </Card>
         )}
 

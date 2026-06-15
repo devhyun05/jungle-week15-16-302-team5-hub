@@ -264,7 +264,9 @@ function StudentReviewView() {
                   </select>
                   {targetOptions.length === 0 && (
                     <p className="mt-2 text-xs text-slate-500">
-                      선택할 수 있는 {targetType === "post" ? "내 게시글" : "포트폴리오 프로젝트"}가 없습니다.
+                      {targetType === "post"
+                        ? "선택할 수 있는 게시글이 없습니다."
+                        : "선택할 수 있는 포트폴리오 프로젝트가 없습니다."}
                     </p>
                   )}
                 </div>
@@ -338,7 +340,7 @@ function StudentReviewView() {
                     </Button>
                   </>
                 ) : (
-                  <p className="text-sm text-slate-500">리뷰 요청 대상을 먼저 만들어 주세요.</p>
+                  <p className="text-sm text-slate-500">리뷰를 요청할 게시글이나 포트폴리오 프로젝트를 먼저 만들어 주세요.</p>
                 )}
               </CardContent>
             </Card>

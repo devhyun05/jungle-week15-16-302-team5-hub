@@ -96,7 +96,7 @@ export function Settings() {
                     onChange={(event) => changeProfileImage(event.target.files?.[0] ?? null)}
                   />
                 </label>
-                <p className="text-xs text-slate-500">로컬 개발에서는 backend/uploads에 저장합니다. 배포 시 S3 같은 외부 스토리지로 교체할 예정입니다.</p>
+                <p className="text-xs text-slate-500">선택한 이미지는 프로필과 게시글, 댓글, 리뷰 화면의 아바타로 표시됩니다.</p>
               </div>
             </div>
 
@@ -136,7 +136,7 @@ export function Settings() {
               <p className="font-semibold text-slate-900">GitHub 계정 연동</p>
               <p className="text-sm text-slate-500">현재는 포트폴리오 프로젝트별 repo URL 등록 방식으로 사용합니다.</p>
             </div>
-            <Badge variant="outline">준비 중</Badge>
+            <Badge variant="outline">연동 전</Badge>
           </div>
         </CardContent>
       </Card>

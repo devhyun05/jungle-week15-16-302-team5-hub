@@ -1841,3 +1841,45 @@ rg -n "백엔드|API|샘플|mock|debug|MCP|RAG|OpenAI|다음 단계|구현 예�
 ```txt
 rg -n "\[object Object\]|String\(\(item as \{ msg: unknown \}\)\.msg\)|fallbackMessage" frontend/src/app/api/client.ts
 ```
+## 2026-06-15 학생 주요 화면 브라우저 스모크 QA
+
+목표: 학생 역할로 주요 화면을 열어보고, 화면에 raw object/debug/기술 문구가 노출되지 않는지 확인한다.
+
+사전 조건:
+
+- 현재 로그인 사용자를 STUDENT / 승인 완료로 임시 전환한다.
+- 프론트엔드: `http://localhost:5173`
+- 백엔드: `http://localhost:8000`
+
+검증 화면:
+
+- [x] `/`
+- [x] `/posts`
+- [x] `/posts/new`
+- [x] `/my-records`
+- [x] `/portfolio`
+- [x] `/ai-assistant`
+- [x] `/coach-review`
+- [x] `/settings`
+
+공통 확인:
+
+- [x] `Unexpected Application Error`가 보이지 않는다.
+- [x] `[object Object]`가 보이지 않는다.
+- [x] `Google OAuth 로그인`이 보이지 않는다.
+- [x] `로그인됨`이 보이지 않는다.
+- [x] `백엔드 데이터`가 보이지 않는다.
+- [x] `mock`, `debug`가 보이지 않는다.
+
+추가 확인:
+
+- [x] `/my-records`에 `JWT 쿠키` 문구가 보이지 않는다.
+- [x] `/settings`에 `backend/uploads`, `로컬 개발`, `S3` 문구가 보이지 않는다.
+- [x] `/coach-review`의 빈 대상 문구가 `게시글이 없습니다`, `포트폴리오 프로젝트가 없습니다`처럼 자연스럽다.
+
+발견 및 수정:
+
+- `MainLayout.tsx`: `Google OAuth 로그인` -> `내 계정`
+- `MyRecords.tsx`: JWT 쿠키 설명 제거
+- `Settings.tsx`: 프로필 이미지 저장 위치 설명을 아바타 표시 안내로 변경
+- `CoachReview.tsx`: 빈 상태 조건부 문장을 조사 문제 없이 분기

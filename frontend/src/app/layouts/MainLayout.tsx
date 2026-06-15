@@ -228,7 +228,7 @@ export function MainLayout() {
         </div>
 
         <div className="mx-4 mb-4 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-3">
-          <p className="text-xs font-semibold text-emerald-700">Google OAuth 로그인</p>
+          <p className="text-xs font-semibold text-emerald-700">내 계정</p>
           <p className="mt-1 truncate text-sm font-medium text-slate-900">{user.email}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             <Badge variant={user.role === "STUDENT" ? "success" : "outline"} className="px-1.5 py-0 text-[10px]">

@@ -3892,3 +3892,32 @@ COACH �α���
 - JavaScript에서 객체를 억지로 문자열로 바꾸면 `[object Object]`가 된다.
 - 사용자는 내부 응답 구조가 아니라 사람이 읽을 수 있는 안내를 봐야 한다.
 - 백엔드 validation 구조가 조금 달라져도 프론트가 안전하게 fallback할 수 있어야 한다.
+## 2026-06-15 학습: 브라우저 스모크 QA와 UX 문구 다듬기
+
+이번에 본 파일:
+
+- `frontend/src/app/layouts/MainLayout.tsx`
+- `frontend/src/app/pages/posts/MyRecords.tsx`
+- `frontend/src/app/pages/settings/Settings.tsx`
+- `frontend/src/app/pages/coach/CoachReview.tsx`
+
+핵심 개념:
+
+- Smoke QA: 모든 기능을 깊게 테스트하기 전, 주요 화면이 열리고 큰 오류가 없는지 빠르게 훑는 검증이다.
+- Empty state: 데이터가 없을 때 사용자가 다음 행동을 이해할 수 있게 도와주는 화면 상태다.
+- UX writing: 기술 구현 설명보다 사용자가 지금 무엇을 할 수 있는지 알려주는 문장을 쓰는 것이다.
+- Conditional rendering: `targetType`에 따라 `게시글이 없습니다`, `포트폴리오 프로젝트가 없습니다`처럼 다른 문장을 보여줄 수 있다.
+
+이번 코드 흐름:
+
+1. 현재 로그인 사용자를 STUDENT / 승인 완료로 임시 전환했다.
+2. 브라우저에서 학생 주요 라우트 8개를 순회했다.
+3. 각 화면의 본문 텍스트에서 raw object, debug 문구, 기술 문구가 보이는지 확인했다.
+4. 문제 문구가 남은 파일을 찾아 사용자 관점 문장으로 고쳤다.
+5. 다시 브라우저에서 `/my-records`, `/settings`, `/coach-review`를 확인했다.
+
+내가 이해해야 할 포인트:
+
+- `JWT 쿠키`, `backend/uploads`, `S3` 같은 말은 README나 study 문서에는 좋지만 일반 화면에는 부담스러울 수 있다.
+- 빈 상태 문구는 단순히 "없습니다"가 아니라 사용자가 다음에 무엇을 해야 하는지 알려주는 편이 좋다.
+- 조사 문제가 생길 수 있는 조건부 문장은 단어만 바꾸지 말고 문장 전체를 분기하는 게 안전하다.
