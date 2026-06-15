@@ -1364,3 +1364,30 @@ README 정리 QA 결과:
 - [x] `npm run build` 성공
 - [x] `python -m compileall app` 성공
 - [x] `git diff --check` 통과
+
+## 2026-06-15 DB 초기화 demo seed 제거 QA
+
+목표: DB 초기화가 실제 서비스 흐름을 방해하는 개발용 사용자/게시글을 자동 생성하지 않는지 확인한다.
+
+체크리스트:
+
+- [x] `init_db()`가 `create_tables()`와 `seed_post_categories()`만 호출한다.
+- [x] `backend/app`, `frontend/src`, `README.md` 범위에서 `demo.student` 검색 결과가 없다.
+- [x] `backend/app`, `frontend/src`, `README.md` 범위에서 `seed_demo` 검색 결과가 없다.
+- [x] `backend/app`, `frontend/src`, `README.md` 범위에서 `DEMO_POSTS` 검색 결과가 없다.
+- [ ] `npm run build`
+- [ ] `python -m compileall app`
+- [ ] `git diff --check`
+
+수동 QA:
+
+- [ ] 기존 로컬 DB에 과거 개발용 사용자가 남아 있는지 확인한다.
+- [ ] 필요하면 실제 사용자 데이터와 구분한 뒤 별도 정리한다.
+
+DB 초기화 demo seed 제거 QA 결과:
+
+- [x] `npm run build` 성공
+- [x] `python -m compileall app` 성공
+- [x] `git diff --check` 통과
+- [x] 실제 코드/README 범위에서 `demo.student`, `seed_demo`, `DEMO_POSTS` 검색 결과 없음
+- [!] 로컬 PostgreSQL에는 과거 개발용 사용자 `demo.student@junglelog.local`이 1개 남아 있음. 코드 변경으로 새로 생성되지는 않지만, 기존 DB 정리는 별도 승인 후 진행한다.
