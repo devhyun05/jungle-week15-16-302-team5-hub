@@ -9,6 +9,7 @@ from app.routers.health import router as health_router
 from app.routers.me import router as me_router
 from app.routers.portfolio import router as portfolio_router
 from app.routers.posts import router as posts_router
+from app.routers.reviews import router as reviews_router
 
 
 # FastAPI 애플리케이션 객체다.
@@ -34,3 +35,4 @@ app.include_router(me_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(portfolio_router)
+app.include_router(reviews_router)
