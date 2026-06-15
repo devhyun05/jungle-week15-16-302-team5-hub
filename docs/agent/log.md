@@ -1736,3 +1736,30 @@ docs: 실제 API 시나리오 QA 기록
 주의:
 
 - 실제 Google 계정 선택과 동의 화면 통과는 외부 계정 조작이 필요하므로 수동 QA로 남겨둔다.
+
+## 2026-06-15 README 현재 상태 기준 재작성
+
+상태: 완료
+
+목표: 기존 README에 오래된 mock 단계 설명, 깨진 인코딩, 구현 일지가 섞여 있어 제출물 관점에서 혼란스러운 상태를 정리한다.
+
+구현한 것:
+
+- README를 현재 실제 API 연결 상태 기준으로 재작성했다.
+- 프로젝트 개요, 주요 사용자 흐름, 전체 아키텍처, 폴더 구조, 라우트, 주요 API를 한 번에 볼 수 있게 정리했다.
+- RAG/MCP/Agent는 아직 연결 전임을 명확히 하고, 다음 단계 설계로 분리했다.
+- 실행 방법, 환경 변수, Google Cloud 설정, QA 결과, 남은 수동 QA를 정리했다.
+- 오래된 mock UI 구현 일지와 현재 상태가 충돌하지 않도록 README에서 제거했다.
+
+검증 예정:
+
+- README에서 `demo.student`, `mock role`, `mockData.ts` 같은 오래된 설명 검색
+- `npm run build`
+- `python -m compileall app`
+- `git diff --check`
+
+추천 커밋 제목:
+
+```txt
+docs: README 현재 구현 상태로 정리
+```

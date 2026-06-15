@@ -1,791 +1,322 @@
+﻿# JungleLog
 
-## 2026-06-15 ??: ?? ?? ??/??? ??? API
+JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, 프로젝트 회고, 면접 질문, 포트폴리오 자료를 관리하고 코치가 기록을 보고 피드백할 수 있는 AI 게시판 프로젝트입니다.
 
-?? ?? ??? ?? ??? API? ????. ??? `CoachReview` ?? ??? ?? ???? ????.
+현재 목표는 **AI 기능 연결 직전까지 실제 웹서비스처럼 동작하는 상태**를 만드는 것입니다. OpenAI/RAG/MCP/Agent 호출은 다음 단계로 남겨두고, 인증/권한/게시판/포트폴리오/코치 리뷰 흐름은 실제 FastAPI API 기준으로 연결했습니다.
 
-?? ??? ??:
+## 프로젝트 개요
 
-- `GET /review-requests/coaches`: ?? ?? ?? ?? ??
-- `POST /review-requests`: ??? ???/????? ????? ??? ?? ?? ??
-- `GET /review-requests/me`: ??? ?? ?? ?? ?? ??
-- `GET /review-requests/inbox`: ??? ???? ??? ?? ??, ADMIN? ?? ??
-- `PATCH /review-requests/{id}`: ??? ?? ?? ADMIN? ??/??? ??
-- `DELETE /review-requests/{id}`: ??? ?? ? ?? ??
-
-QA ??:
-
-- `backend`: `python -m compileall app` ??
-- TestClient ?? ?? API QA ??
-  - ?? ?? ??: 200
-  - ?? ?? ??: 201
-  - ?? ? ?? ??: 200
-  - ?? ?? ??? ??: 200
-  - ???? ?? ?? patch: 403
-  - ?? ?? ??? ??: 200
-  - ?? ?? ? ??: 400
-  - ?? ? ?? ??: 204
-
-?? ??:
-
-- ??? `CoachReview.tsx`? mock state?? ?? review API? ??
-
----
-
-## 2026-06-15 ??: ????? ???? API ??
-
-????? ?? ??? mock ???? ???? ?? API ???? ????. GitHub API/MCP ??? ?? ??? ??, ?? ????? repo URL ??, ???? ?? ??, ? ??? ??? DB? ????.
-
-?? ??:
-
-- `GET /portfolio/projects`: ?? ??? ???? ????? ???? ?? ??
-- `POST /portfolio/projects`: GitHub repo URL? ????? ??
-- `PATCH /portfolio/projects/{project_id}`: ????? ??? ??? ?? ?? ??
-- `PUT /portfolio/projects/{project_id}/posts`: ????? ? ??? ?? ?? ??
-- COACH? ????? ???? ?? API ?? ??
-- ??? ????? ??? `/portfolio/projects`? `/me/posts`? ?? ??? ????? ?? ??? ??? ????.
-
-?? AI/MCP ?? ? ??? ?:
-
-- ?? GitHub README ????
-- ?? ?? ?? ??
-- OpenAI? ??? ????? ?? ??
-- AI ?? ??? ???? ???? ??
-
-QA ??:
-
-- `backend`: `python -m compileall app` ??
-- `frontend`: `npm run build` ??
-- TestClient ????? API QA ??
-  - COACH ???? ??: 403
-  - STUDENT ???? ??: 201
-  - ???? ?? ??: 200
-  - ????? ??/?? ??: 200
-  - ????-??? ??: 200
-
-?? ??:
-
-- ?? ?? ??/??? API ??
-- AI ???? ?? ????? ???? API ???? ??
-
----
-
-## 2026-06-15 ??: ADMIN ??? ??/?? ?? API ??
-
-??? ??? mock data? ??? ?? `/admin/users` API? ???? ????? ????. Google OAuth? ?? ??? ???? ????? `STUDENT / ?? ??`? ??, ADMIN? ? ???? ??? ?? ??? ????.
-
-?? ??:
-
-- `GET /admin/users`: ADMIN? ??? ?? ?? ??
-- `PATCH /admin/users/{user_id}`: ADMIN? ??? ??/?? ?? ?? ??
-- ?? ??: `?? ??`, `?? ??`, `??`, `??`
-- ??: `STUDENT`, `COACH`, `ADMIN`
-- ??? ??? `??`???? ADMIN? ?? ??? ??? ??? 400?? ??
-- ?? ??? `user_approval_logs`? ??
-- ??? `AdminUsers` ??? API ??? ????, ?? ??/??/?? ???? PATCH ??? ???.
-
-QA ??:
-
-- `backend`: `python -m compileall app` ??
-- `frontend`: `npm run build` ??
-- TestClient ??? QA ??
-  - STUDENT? `/admin/users` ??: 403
-  - ADMIN? `/admin/users` ??: 200
-  - ?? ?? ??? ?? ?? ??
-  - ADMIN? ???? COACH/?? ??? ??: 200
-  - ADMIN ?? ?? ??: 400
-  - ?? ?? ?? ??: 1?
-
-?? ??:
-
-- ????? ???? API ??
-- ????? ??? ?? API ??
-- ?? ?? ??/??? API ??
-
----
-
-## 2026-06-15 ??: ???/?? current_user ?? ??
-
-??? ??/??/??, ?? ??/??, ? ?? ??? ? ?? demo user? ???? ?? Google OAuth/JWT? ??? ?? ??? ??? ???? ????? ????.
-
-?? ??:
-
-- `POST /posts`: ?? ??? STUDENT ?? ADMIN? ?? ??
-- `PATCH /posts/{post_id}`: ??? ?? ?? ADMIN? ?? ??
-- `DELETE /posts/{post_id}`: ??? ?? ?? ADMIN? soft delete ??
-- `GET /me/posts`: ?? ??? ???? ?? ??
-- `POST /posts/{post_id}/comments`: ?? ??? ??? ???? ?? ???? ??
-- `DELETE /comments/{comment_id}`: ?? ??? ?? ?? ADMIN? ?? ??
-- `GET /posts/{post_id}`: ???? ??? ??, ????? ??? ?? ?? ADMIN? ??
-- `GET /posts/{post_id}/comments`: ??? ??? ??? ??, ???? ??? ??? ?? ?? ADMIN? ??
-
-??? ??:
-
-- ???/?? API ??? `credentials: "include"`? ??? HttpOnly cookie ??? ????.
-- ??? ?? ??? ?? ??? `authorId`? ??? ????? ??? ??/ADMIN ??? ????.
-- ??? ?? ??? ??/?? ??? ??? ?? ?? ADMIN??? ???.
-- ?? ?? ??? ?? ??? ?? ?? ADMIN??? ???.
-
-QA ??:
-
-- `backend`: `python -m compileall app` ??
-- `frontend`: `npm run build` ??
-- `git diff --check` ??, CRLF ??? ??
-- TestClient ?? QA ??
-  - ???? ? ??: 401
-  - COACH ? ??: 403
-  - STUDENT ? ??: 201
-  - ??? ? ??: ???? 404, ?? ?? 404, ??? 200, ADMIN 200
-  - ??? ??: ??? ?? 201, ???? ?? 404, ??? ?? 200, ?? ?? ?? 404
-  - ?? ??: ?? ?? 403, ADMIN 204
-
-?? ??:
-
-- ADMIN ??? ??/?? ?? API? ??? ?? ??
-- ????? ???? API ??
-- ?? ?? ??/??? API ??
-
----
-# JungleLog
-
-## 2026-06-15 ?? ??: ??? Google OAuth ??? ?? ??
-
-React ? ?? ? `/auth/me`? ??? ?? ??? ??? ??? ?? ??? ????? ??????. ?? ???? URL? ?? ???? ?? `/login` ??? **Google? ????** ???? Google OAuth ???? ??? ? ????.
-
-??? ??? ??:
-
-- `frontend/src/app/api/client.ts`: ??? API ?? ??? ?? ?? ??? ??? ??????.
-- `frontend/src/app/api/auth.ts`: `/auth/me`, `/auth/refresh`, `/auth/logout`, Google ??? ?? ??? ??????.
-- `frontend/src/app/contexts/AuthContext.tsx`: ? ?? ? `/auth/me`? ????, access token? ????? `/auth/refresh`? ? ? ???? ?? ?? ??? ??????.
-- `frontend/src/app/App.tsx`: ?? ???? `AuthProvider`? ?????.
-- `frontend/src/app/layouts/MainLayout.tsx`: mock role ?? ?? ?? `user.role`, `user.approvalStatus` ???? ????? ?? ??? ?????.
-- `frontend/src/app/components/RoleGate.tsx`: ?? ?? ??? ?? ???? ?? ?? ??? ?????.
-- `frontend/src/app/pages/auth/Login.tsx`: Google OAuth ??? ?? ??? ??????.
-- `frontend/src/app/pages/auth/PendingApproval.tsx`: ???? ??? ?? ??/??/?? ??? ???? ?? ??? ??????.
-- `frontend/src/app/api/posts.ts`, `frontend/src/app/api/comments.ts`: ?? cookie? ??? ??? `credentials: "include"`? ??????.
-
-?? ???/?? ??:
-
-```txt
-/login
--> Google? ???? ??
--> GET /auth/google/login
--> Google ???
--> GET /auth/google/callback
--> access/refresh token HttpOnly cookie ??
--> React ??? ??
--> /auth/me ??
--> ?? ??? /pending-approval
--> ?? ??? role? ?? ??? ??
-```
-
-?? ?? ?? ?? ??:
-
-- ??? ??/??/??, ?? ??/??, ? ?? ???? demo user ??
-- ? ??? FastAPI `get_current_user` / `get_current_approved_user` ???? ??
-- ??? ?? ?? ADMIN ?? ??
-- ??? ??? ??/?? ?? API ??
-- ?????/?? ?? API ??
-
-?? QA:
-
-- `backend`: `python -m compileall app` ??
-- `frontend`: `npm run build` ??
-- ???? QA: `/login`?? `Google? ????` ?? ?? ??
-- ???? QA: ???? ???? `/posts` ?? ?? ? `/login`?? redirect ??
-- ?? ?? QA: ?? ?? ??? ??? ?? ?? ???? UTF-8 ???? ?? ??
-
----
-
-# JungleLog
-
-## 2026-06-14 최신 구현: JWT / refresh token 보안 유틸 추가
-
-Google OAuth callback에서 사용할 토큰 생성/검증 기반을 구현했습니다.
-
-- `python-jose[cryptography]`를 설치하고 `requirements.txt`에 반영했습니다.
-- `backend/app/core/config.py`에 Google OAuth, JWT, Cookie 관련 설정을 추가했습니다.
-- `backend/.env.example`에 OAuth/JWT 설정 예시를 추가했습니다.
-- `backend/app/core/security.py`를 실제 JWT access token 생성/검증 구조로 교체했습니다.
-- refresh token 원문 생성과 sha256 해시 유틸을 추가했습니다.
-
-현재 구현된 보안 유틸:
-
-- `create_access_token(user_id)`
-- `decode_access_token(token)`
-- `create_refresh_token()`
-- `hash_refresh_token(refresh_token)`
-- `get_access_token_expires_at()`
-- `get_refresh_token_expires_at()`
-
-아직 실제 `/auth/google/login`, `/auth/google/callback`, `/auth/me`, `/auth/refresh`, `/auth/logout` API는 구현 전입니다. 다음 단계에서 인증 repository/service/router를 연결합니다.
-
-## 2026-06-14 최신 구현: JWT refresh token 저장 구조 추가
-
-Google OAuth / JWT 인증 구현을 시작하기 전에 access token과 refresh token을 분리하는 인증 구조로 방향을 확정했습니다.
-
-- access token은 짧게 유지하는 JWT로 사용합니다.
-- refresh token은 원문을 DB에 저장하지 않고 해시값만 `auth_refresh_tokens` 테이블에 저장합니다.
-- `backend/app/db/models/auth_refresh_token.py` 모델을 추가했습니다.
-- `User.refresh_tokens` 관계를 추가해 한 사용자가 여러 로그인 세션을 가질 수 있게 했습니다.
-- `docs/agent/db-design.md`의 테이블 목록, DBML, 필드 설명에 `auth_refresh_tokens`를 반영했습니다.
-
-아직 실제 Google OAuth callback, JWT 발급, refresh token rotation, logout API는 구현 전입니다. 다음 단계에서 `security.py`, 인증 repository/service/router를 순서대로 구현할 예정입니다.
-
-## 2026-06-14 최신 구현: 내 기록 화면 API 전환
-
-`/my-records` 화면을 mock data 필터링에서 백엔드 `GET /me/posts` API 기반으로 전환했습니다.
-
-- `backend/app/routers/me.py`: 현재 사용자 기준 API 묶음을 만들고 `GET /me/posts` endpoint를 추가했습니다.
-- `backend/app/repositories/post_repository.py`: 작성자 id, 카테고리, 검색어, 공개 범위 조건으로 게시글을 조회하는 `list_posts_by_author`를 추가했습니다.
-- `backend/app/services/post_service.py`: demo student를 현재 사용자처럼 사용해 내 기록 목록 응답을 만드는 `get_my_posts`를 추가했습니다.
-- `backend/app/main.py`: `me_router`를 FastAPI 앱에 등록했습니다.
-- `frontend/src/app/api/posts.ts`: `getMyPosts` API 호출 함수를 추가했습니다.
-- `frontend/src/app/pages/posts/MyRecords.tsx`: 내 기록 목록, 통계, 카테고리/공개범위/검색 필터를 `GET /me/posts` 응답 기준으로 렌더링하도록 변경했습니다.
-
-현재는 JWT/OAuth2 연결 전이므로 `demo.student@junglelog.local` 사용자를 현재 로그인 사용자처럼 사용합니다. 실제 로그인 후에는 JWT에서 꺼낸 current user 기준으로 `/me/posts`가 동작하도록 바꿀 예정입니다.
-
-## 2026-06-14 최신 구현: 댓글 삭제 API와 상세 화면 연결
-
-`DELETE /comments/{comment_id}`를 구현하고 게시글 상세 화면의 댓글 삭제 버튼을 백엔드 API에 연결했습니다.
-
-- `backend/app/repositories/comment_repository.py`: 삭제 대상 댓글 조회와 `deleted_at`을 채우는 `soft_delete_comment`를 추가했습니다.
-- `backend/app/services/comment_service.py`: 댓글 삭제 비즈니스 흐름을 담당하는 `delete_comment`를 추가했습니다.
-- `backend/app/routers/comments.py`: `DELETE /comments/{comment_id}` endpoint를 추가했고 성공 시 `204 No Content`를 반환합니다.
-- `frontend/src/app/api/comments.ts`: `deleteComment` API 호출 함수를 추가했습니다.
-- `frontend/src/app/pages/posts/PostDetail.tsx`: 댓글별 삭제 버튼을 추가하고, 삭제 성공 시 현재 화면의 댓글 목록에서 제거하도록 연결했습니다.
-
-현재 댓글 기능은 조회, 작성, 삭제까지 API와 화면이 연결되었습니다. 삭제는 게시글과 동일하게 soft delete 방식이며, 실제 작성자/관리자 권한 검사는 JWT/OAuth2 구현 후 추가 예정입니다.
-
-## 2026-06-14 최신 구현: 게시글 삭제 API와 상세 화면 연결
-
-`DELETE /posts/{post_id}`를 구현하고 게시글 상세 화면의 삭제 버튼을 백엔드 API에 연결했습니다.
-
-- `backend/app/repositories/post_repository.py`: `deleted_at`을 채우는 `soft_delete_post`를 추가했습니다.
-- `backend/app/services/post_service.py`: 삭제 대상 게시글 조회와 soft delete 흐름을 담당하는 `delete_post`를 추가했습니다.
-- `backend/app/routers/posts.py`: `DELETE /posts/{post_id}` endpoint를 추가했고 성공 시 `204 No Content`를 반환합니다.
-- `frontend/src/app/api/posts.ts`: `deletePost` fetch 함수를 추가했습니다.
-- `frontend/src/app/pages/posts/PostDetail.tsx`: 삭제 확인 UI에서 API를 호출하고 성공 시 `/posts`로 이동하도록 연결했습니다.
-
-현재 게시글 CRUD는 생성, 목록 조회, 상세 조회, 수정, 삭제까지 API와 화면이 연결되었습니다. 삭제는 실제 row를 지우지 않고 `deleted_at`만 채우는 soft delete 방식이며, 목록/상세/댓글 조회에서는 삭제된 글이 보이지 않습니다.
-
-## 2026-06-14 최신 구현: 게시글 수정 API와 수정 화면 연결
-
-`PATCH /posts/{post_id}`를 구현하고 `/posts/:id/edit` 화면을 백엔드 API에 연결했습니다.
-
-- `backend/app/schemas/post.py`: 수정 요청 body인 `PostUpdateRequest`를 추가했습니다.
-- `backend/app/repositories/post_repository.py`: 수정 대상 게시글 조회와 posts/post_tags 갱신 로직을 추가했습니다.
-- `backend/app/services/post_service.py`: 제목/본문 검증, 카테고리 확인, 태그 정리, 상세 응답 변환 흐름을 추가했습니다.
-- `backend/app/routers/posts.py`: `PATCH /posts/{post_id}` endpoint를 추가했습니다.
-- `frontend/src/app/api/posts.ts`: `updatePost` API 호출 함수를 추가했습니다.
-- `frontend/src/app/pages/posts/PostEdit.tsx`: 수정 화면에서 기존 글을 API로 불러오고, 수정 완료 시 PATCH API를 호출하도록 변경했습니다.
-
-현재 게시글 CRUD 중 생성/조회/수정은 API와 화면이 연결되어 있습니다. 삭제는 다음 단계에서 `DELETE /posts/{post_id}`와 상세 화면의 삭제 버튼을 연결할 예정입니다.
-
-## 2026-06-14 최신 구현: 게시글 목록/상세 API 전환
-
-게시글 목록과 상세 화면을 mock data 중심에서 백엔드 API 응답 중심으로 전환했습니다.
-
-- `frontend/src/app/api/posts.ts`: `getPosts`, `getPostDetail` 조회 함수를 추가했습니다.
-- `frontend/src/app/pages/posts/Posts.tsx`: 카테고리/검색어를 `GET /posts` query string으로 전달하고 API 응답 목록을 렌더링합니다.
-- `frontend/src/app/pages/posts/PostDetail.tsx`: URL의 id로 `GET /posts/{post_id}`를 호출해 상세 데이터를 렌더링합니다.
-- `frontend/src/app/pages/posts/PostEdit.tsx`: 새 글 발행 성공 후 생성된 상세 페이지 `/posts/{id}`로 이동합니다.
-
-이제 `POST /posts`로 생성된 게시글이 `/posts` 목록에 보이고, `/posts/{id}` 상세 화면에서도 열립니다. 게시글 수정/삭제는 아직 mock이며 다음 CRUD 단계에서 `PATCH /posts/{id}`, `DELETE /posts/{id}`로 연결할 예정입니다.
-
-## 2026-06-14 최신 구현: 게시글 작성 API와 글쓰기 화면 연결
-
-`POST /posts`를 구현하고 `/posts/new`의 발행 버튼을 백엔드 API에 연결했습니다.
-
-- `backend/app/schemas/post.py`: `PostCreateRequest`를 추가해 게시글 작성 request body를 검증합니다.
-- `backend/app/repositories/post_repository.py`: demo 작성자 조회, 카테고리 조회, 태그 생성/재사용, 게시글 INSERT 로직을 추가했습니다.
-- `backend/app/services/post_service.py`: 제목/본문 공백 검증, summary 자동 생성, 태그 중복 제거, 응답 변환을 담당합니다.
-- `backend/app/routers/posts.py`: `POST /posts` endpoint를 추가하고 `201 Created`, `400`, `404`, `500` 응답을 구분합니다.
-- `frontend/src/app/api/posts.ts`: 게시글 작성 API 호출 함수를 추가했습니다.
-- `frontend/src/app/pages/posts/PostEdit.tsx`: 새 글 발행 버튼이 백엔드 API를 호출하도록 연결했습니다.
-
-현재는 JWT/OAuth2 전 단계라 게시글 작성자는 `demo.student@junglelog.local` seed 사용자로 저장됩니다. 수정/삭제 API와 목록/상세 화면의 완전한 API 전환은 다음 CRUD 단계에서 진행합니다.
-
-## 2026-06-13 최신 구현: 댓글 작성 API와 프론트 연결
-
-댓글 조회 다음 단계로 `POST /posts/{post_id}/comments`를 구현하고 게시글 상세 화면의 댓글 작성 버튼을 백엔드 API에 연결했습니다.
-
-- `backend/app/schemas/comment.py`: `CommentCreateRequest`를 추가해 댓글 작성 요청 body를 검증합니다.
-- `backend/app/repositories/comment_repository.py`: demo 작성자 조회와 comments 테이블 INSERT 로직을 추가했습니다.
-- `backend/app/services/comment_service.py`: 게시글 존재 확인, 공백 댓글 검증, demo user 기반 댓글 작성 흐름을 담당합니다.
-- `backend/app/routers/comments.py`: `POST /posts/{post_id}/comments` endpoint를 추가하고 `201 Created`, `400`, `404`, `500` 응답을 구분합니다.
-- `frontend/src/app/api/comments.ts`: `createPostComment` API 함수를 추가했습니다.
-- `frontend/src/app/pages/posts/PostDetail.tsx`: 댓글 작성 버튼이 local mock이 아니라 백엔드 POST API를 호출하고, 성공한 댓글을 화면 state에 추가합니다.
-
-현재는 JWT/OAuth2 전 단계라 댓글 작성자는 `demo.student@junglelog.local` seed 사용자로 저장됩니다. 실제 로그인 사용자 기준 댓글 작성, 본인 댓글 삭제 권한, 코치/관리자 권한 처리는 JWT/OAuth2 구현 후 연결할 예정입니다.
-
-React, FastAPI, PostgreSQL 기반 게시판에 AI 응용 기능을 결합하는 개인 과제 프로젝트입니다.
-
-JungleLog는 정글 수강생이 학습 기록, 트러블슈팅, 프로젝트 회고, 면접 질문, 포트폴리오 자료를 관리하고 코치가 기록을 보고 피드백할 수 있는 AI 게시판을 목표로 합니다.
+- 프로젝트명: JungleLog
+- 목적: 정글 수강생의 학습 기록과 포트폴리오 관리, 코치 피드백 흐름을 한 서비스 안에 연결
+- 주요 사용자: 학생, 코치, 관리자
+- 프론트엔드: React, TypeScript, Vite
+- 백엔드: FastAPI, SQLAlchemy
+- 데이터베이스: PostgreSQL
+- 인증: Google OAuth 2.0, JWT access token, refresh token rotation, HttpOnly cookie
+- AI 모델 예정: OpenAI API
 
 ## 현재 구현 상태
 
-React mock UI 1차 구현을 마치고, 현재는 **게시글 조회 API 설계와 구현 단계**를 진행 중입니다.
-프론트엔드는 아직 실제 API 저장 없이 `mockData`와 `useState`로 화면 흐름을 확인하며, 백엔드는 기본 health API와 DB 연결 확인 API까지 구현했습니다.
+### 완료
 
-구현된 화면/기능:
+- Google OAuth/JWT 인증 API
+- access token / refresh token HttpOnly cookie 처리
+- refresh token hash DB 저장, 재발급, 로그아웃 폐기
+- `/auth/me` 기반 현재 사용자 조회
+- 최초 로그인 사용자 `승인 대기` 처리
+- `ADMIN_EMAILS` 기반 초기 관리자 자동 승인
+- 관리자 사용자 승인/역할 변경 API
+- STUDENT / COACH / ADMIN 역할별 라우트 보호
+- 승인 대기/거절/정지 사용자 서비스 접근 제한
+- 게시글 CRUD API와 화면 연결
+- 댓글 조회/작성/삭제 API와 화면 연결
+- 내 기록 조회 API와 화면 연결
+- 포트폴리오 프로젝트 등록/수정/목록 API와 화면 연결
+- 포트폴리오 프로젝트와 게시글 연결 API
+- 코치 리뷰 요청 생성/취소/목록/인박스/피드백 API와 화면 연결
+- 대시보드 주요 통계 API 기반 정리
+- AI 도우미 화면을 포트폴리오 API 데이터 기반 샘플로 정리
+- 레거시 `mockData.ts` 제거
 
-- STUDENT / COACH mock role 전환
-- ADMIN mock role 전환
-- 승인 상태 `승인 완료 / 승인 대기 / 거절 / 정지` mock 전환
-- 역할/승인상태 전환기는 개발용 mock UI이며 실제 서비스에서는 노출하지 않음
-- 역할별 사이드바 메뉴 분기
-- 접근 제한 UI
-- Google OAuth 단일 로그인 정책에 맞춘 로그인 mock 화면
-- Google mock 로그인 클릭 시 신규 학생이 `승인 대기` 상태로 이동하는 흐름
-- 승인 대기 화면
-- 관리자 사용자 승인 mock 화면
-- 상단 알림 드롭다운
-- 동작하지 않는 전역 헤더 검색 UI 제거
-- 대시보드 CTA 라우트 연결
-- 전체 게시글 목록, 카테고리 필터, 검색
-- 게시글 상세 mock data 연결
-- 게시글 작성 / 수정 / 삭제 mock 동작
-- 댓글 작성 mock 동작
-- 내 기록 필터와 검색
-- 포트폴리오 프로젝트 검색
-- GitHub 프로젝트 등록 mock 동작
-- 포트폴리오 프로젝트별 연결 기록 표시
-- 기록 연결하기 mock UI
-- 포트폴리오 상태 변경 mock UI
-- AI 도우미 프로젝트 선택 기반 생성 UI
-- 포트폴리오 글 / 면접 예상 질문 mock 생성
-- 코치 리뷰 요청 생성/취소 mock UI
-- 코치 리뷰 인박스 검색/필터/상태 변경/피드백 전송 mock UI
-- STUDENT / COACH 화면이 같은 mock 리뷰 요청 원본 state를 공유하고 role에 맞게 필터링하도록 개선
-- 코치 리뷰 상태 `최종 확인` 추가
+### 아직 다음 단계
 
-## 현재 라우트
+- 실제 OpenAI API 호출
+- RAG vector search와 요약 생성
+- GitHub API 또는 MCP 기반 repo 분석 자동화
+- MCP server 구현
+- Agent 추론 루프 구현
+- 알림 API
+- 프로필 수정 API
+- 실제 Google 계정 선택/동의 화면 수동 QA
+
+## 주요 사용자 흐름
+
+### 학생
+
+1. Google 계정으로 로그인한다.
+2. 최초 로그인 시 `승인 대기` 상태가 된다.
+3. 관리자가 학생으로 승인하면 서비스 화면에 접근한다.
+4. 학습 로그, 트러블슈팅, 프로젝트 회고, 면접 질문, 포트폴리오 관리 글을 작성한다.
+5. GitHub repo URL로 포트폴리오 프로젝트를 등록한다.
+6. 프로젝트와 자신의 기록을 연결한다.
+7. AI 도우미에서 포트폴리오 글/면접 예상 질문 샘플을 생성한다.
+8. 게시글 또는 포트폴리오 프로젝트를 선택해 코치 리뷰를 요청한다.
+
+### 코치
+
+1. Google 계정으로 로그인한다.
+2. 관리자가 코치로 승인하면 코치 화면에 접근한다.
+3. 전체 게시글을 확인한다.
+4. 자신에게 들어온 리뷰 요청을 인박스에서 확인한다.
+5. 요청 상세를 보고 피드백과 상태를 저장한다.
+
+### 관리자
+
+1. `.env`의 `ADMIN_EMAILS`에 등록된 Google 계정으로 로그인한다.
+2. 신규 사용자 목록을 확인한다.
+3. 사용자를 STUDENT / COACH / ADMIN으로 지정한다.
+4. 승인 대기 / 승인 완료 / 거절 / 정지 상태를 관리한다.
+
+## 전체 아키텍처
+
+```txt
+Browser
+  |
+  | React + TypeScript + Vite
+  | - AuthContext
+  | - React Router RoleGate
+  | - API client fetch(credentials: "include")
+  v
+FastAPI
+  |
+  | Routers
+  | - auth
+  | - posts / comments / me
+  | - admin
+  | - portfolio
+  | - review-requests
+  v
+Service Layer
+  |
+  | 비즈니스 규칙
+  | - 승인 상태 확인
+  | - 역할별 권한 확인
+  | - 게시글/댓글/리뷰 상태 검증
+  v
+Repository Layer
+  |
+  | SQLAlchemy ORM
+  v
+PostgreSQL
+```
+
+## 폴더 구조
+
+```txt
+WEEK15_AI_BOARD/
+  frontend/
+    src/app/
+      api/
+      components/
+      constants/
+      contexts/
+      layouts/
+      pages/
+      routes.tsx
+  backend/
+    app/
+      core/
+      db/
+      dependencies/
+      repositories/
+      routers/
+      schemas/
+      services/
+      main.py
+  docs/
+    agent/
+      code.md
+      setup.md
+      study.md
+      log.md
+      test.md
+      troubleshooting.md
+      db-design.md
+      api-design.md
+  docker-compose.yml
+  README.md
+```
+
+## 주요 라우트
 
 | Route | 화면 | 접근 |
 | --- | --- | --- |
-| `/` | 학생/코치 대시보드, 관리자는 사용자 승인으로 이동 | STUDENT, COACH, ADMIN |
-| `/login` | Google 로그인 | 공통 |
-| `/pending-approval` | 승인 대기 / 승인 상태 안내 | 미승인 사용자 |
-| `/admin/users` | 사용자 승인 관리 | ADMIN |
+| `/login` | Google 로그인 | 비로그인 |
+| `/pending-approval` | 승인 대기/거절/정지 안내 | 로그인 사용자 |
+| `/` | 대시보드 | STUDENT, COACH, ADMIN |
 | `/posts` | 전체 게시글 | STUDENT, COACH, ADMIN |
-| `/posts?category=learning-log` | 학습 로그 필터 목록 | STUDENT, COACH, ADMIN |
-| `/posts/:id` | 게시글 상세 | STUDENT, COACH, ADMIN |
 | `/posts/new` | 게시글 작성 | STUDENT, ADMIN |
-| `/posts/:id/edit` | 게시글 수정 | STUDENT, ADMIN |
+| `/posts/:id` | 게시글 상세 | STUDENT, COACH, ADMIN |
+| `/posts/:id/edit` | 게시글 수정 | 작성자, ADMIN |
 | `/my-records` | 내 기록 | STUDENT, ADMIN |
 | `/portfolio` | 포트폴리오 관리 | STUDENT, ADMIN |
 | `/ai-assistant` | AI 도우미 | STUDENT, ADMIN |
-| `/coach-review` | 학생: 리뷰 요청 / 코치: 리뷰 인박스 / 관리자: 전체 요청 확인 | STUDENT, COACH, ADMIN |
+| `/coach-review` | 학생 리뷰 요청 / 코치 인박스 | STUDENT, COACH, ADMIN |
+| `/admin/users` | 사용자 승인 관리 | ADMIN |
 | `/settings` | 설정 | STUDENT, COACH, ADMIN |
 
-## 현재 화면 구성
+## 주요 API
 
-```txt
-frontend/src/app/
-  api/             백엔드 API 호출 함수 위치
-  components/      공통 UI 컴포넌트
-  contexts/        전역 상태 Context 위치
-  data/            mock data
-  hooks/           재사용 hook 위치
-  layouts/         AuthLayout, MainLayout
-  pages/
-    ai/            AI 도우미
-    admin/         사용자 승인 관리
-    auth/          Google 로그인 / 승인 대기
-    coach/         코치 리뷰
-    dashboard/     대시보드
-    portfolio/     포트폴리오 관리
-    posts/         게시글 / 내 기록
-    settings/      설정
-  types/           공통 타입 위치
-  routes.tsx       라우트 정의
-```
+### 인증
 
-자세한 구조 기준은 [docs/project-structure.md](docs/project-structure.md)에 정리합니다.
-프로젝트 전체 진행 상황과 다음 단계 판단 기준은 [docs/agent/log.md](docs/agent/log.md)에 기록합니다.
+- `GET /auth/google/login`
+- `GET /auth/google/callback`
+- `GET /auth/me`
+- `POST /auth/refresh`
+- `POST /auth/logout`
 
-## Mock UI에서 동작하는 것
+### 게시글/댓글
 
-- `useState`로 입력값, 선택값, 검색어, 필터 상태를 관리합니다.
-- `mockData.ts`의 posts, portfolioProjects, reviewRequests, notifications를 화면에 연결합니다.
-- 관리자 사용자 승인은 `userAccounts` mock state에만 반영됩니다.
-- 관리자 화면에서 역할을 선택한 뒤 `승인 적용`을 누르면 선택한 역할과 `승인 완료` 상태가 함께 mock 반영됩니다.
-- 승인 상태 문제가 있으면 승인 상태 안내 화면으로, 승인 완료 후 role이 맞지 않으면 역할 접근 제한 안내로 분리해 보여줍니다.
-- 검색은 현재 전체 게시글, 내 기록, 포트폴리오, 코치 리뷰처럼 각 화면 안의 mock 검색창에서만 동작합니다.
-- 게시글 작성/수정/삭제는 실제 저장 없이 안내 문구와 라우트 이동만 수행합니다.
-- 댓글 작성은 현재 상세 화면의 local state에만 추가됩니다.
-- 리뷰 요청 취소는 `대기 중` 상태일 때 mock 목록에서 제거됩니다.
-- 코치가 피드백과 상태를 전송하면 같은 mock `requests` state를 통해 학생 요청 목록에서도 확인할 수 있습니다.
-- 코치 인박스는 mock `currentCoachId`에 배정된 리뷰 요청만 먼저 필터링한 뒤 검색/상태/카테고리 필터를 적용합니다.
-- 기록 연결하기는 현재 포트폴리오 화면의 local state만 변경합니다.
-- AI 도우미 저장은 실제 DB 저장 없이 mock 안내 문구만 표시합니다.
+- `GET /posts`
+- `POST /posts`
+- `GET /posts/{post_id}`
+- `PATCH /posts/{post_id}`
+- `DELETE /posts/{post_id}`
+- `GET /me/posts`
+- `GET /posts/{post_id}/comments`
+- `POST /posts/{post_id}/comments`
+- `DELETE /comments/{comment_id}`
 
-## 백엔드 현재 상태
+### 관리자
 
-- FastAPI / Uvicorn 기반 백엔드 가상환경을 구성했습니다.
-- `GET /health` API가 `status`, `service` 응답을 반환합니다.
-- `GET /health/db` API가 PostgreSQL에 `SELECT 1`을 실행해 DB 연결 상태를 확인합니다.
-- `GET /posts` API가 공개 게시글 목록을 페이지네이션 응답으로 반환합니다.
-- `GET /posts/{post_id}` API가 id에 맞는 공개 게시글 상세를 반환합니다.
-- `PATCH /posts/{post_id}` API가 게시글 제목/본문/카테고리/태그/공개 여부를 수정합니다.
-- `GET /posts/{post_id}/comments` API가 게시글 댓글 목록을 반환합니다.
-- `/docs` Swagger 문서에서 `HealthResponse` schema를 확인할 수 있습니다.
-- `/docs` Swagger 문서에서 `DatabaseHealthResponse` schema와 `/health/db` endpoint를 확인할 수 있습니다.
-- `/docs` Swagger 문서에서 `PostListResponse`, `PostDetailResponse` schema와 posts endpoint를 확인할 수 있습니다.
-- `/docs` Swagger 문서에서 `CommentListResponse` schema와 comments endpoint를 확인할 수 있습니다.
-- `.env`, `config.py`, `.env.example` 기반으로 앱 이름, CORS origin, `DATABASE_URL` 설정을 분리했습니다.
-- Docker Compose로 PostgreSQL 16 컨테이너 `junglelog-postgres`를 실행했습니다.
-- SQLAlchemy / psycopg 기반 DB engine, session, `get_db()` 의존성 함수를 구성했습니다.
-- [docs/agent/db-design.md](docs/agent/db-design.md)에 Google OAuth, 관리자 승인, 게시판, 포트폴리오, 코치 리뷰 요청을 포함한 ERD v1을 정리했습니다.
-- ERD v1에서 `role`과 `approval_status`를 분리하고, 승인 이력은 `user_approval_logs`에 남기도록 설계했습니다.
+- `GET /admin/users`
+- `PATCH /admin/users/{user_id}`
 
-## 백엔드 연결 후 구현 예정
+### 포트폴리오
 
-- Google OAuth 로그인 / 첫 로그인 자동 가입
-- Google 로그인 성공 후 자체 JWT 발급
-- JWT 기반 role 판별과 라우트 보호
-- 운영자 승인 상태 기반 API 접근 제한
-- 초기 관리자 `ADMIN_EMAILS` 처리
-- 사용자 승인 / 거절 / 정지 / role 변경 API
-- 게시글 삭제 API
-- 댓글 저장 / 삭제 API
-- 태그 API
-- 페이징 API
-- DB full-text search
-- 포트폴리오 프로젝트 저장 / 조회 API
-- 프로젝트-게시글 연결 저장 API
-- 코치 리뷰 요청 생성 / 취소 / 상태 변경 API
-- 알림 API
-- GitHub API 또는 MCP 기반 repo 분석
-- OpenAI API 호출
-- RAG 검색과 요약
-- Agent 실행 루프
+- `GET /portfolio/projects`
+- `POST /portfolio/projects`
+- `PATCH /portfolio/projects/{project_id}`
+- `PUT /portfolio/projects/{project_id}/posts`
+
+### 코치 리뷰
+
+- `GET /review-requests/coaches`
+- `POST /review-requests`
+- `GET /review-requests/me`
+- `GET /review-requests/inbox`
+- `PATCH /review-requests/{review_request_id}`
+- `DELETE /review-requests/{review_request_id}`
+
+## AI 기능 설계
+
+현재 AI 도우미는 아직 실제 OpenAI 호출 전입니다. 화면은 실제 포트폴리오/게시글 API 데이터를 기반으로 동작하며, 생성 결과는 **AI 연결 전 샘플**로 표시합니다.
+
+### RAG 예정 기능
+
+- 데이터 소스: JungleLog 게시글, 댓글, 포트폴리오 프로젝트, GitHub README/커밋 요약
+- 검색 대상: 학생이 작성한 학습 로그, 트러블슈팅, 회고, 면접 질문, 포트폴리오 관리 글
+- 예정 Vector DB: PostgreSQL pgvector 또는 ChromaDB
+- 예정 기능:
+  - 포트폴리오 프로젝트와 연결된 기록 검색
+  - 비슷한 게시글 추천
+  - 포트폴리오 글 작성 시 근거 기록 요약
+  - 면접 예상 질문 생성 시 프로젝트/기록 기반 근거 제공
+
+### MCP 예정 기능
+
+- MCP server를 통해 외부 시스템을 호출할 예정입니다.
+- 우선 외부 연동 후보는 GitHub API입니다.
+- 예정 기능:
+  - GitHub repo URL 분석
+  - README 가져오기
+  - 최근 커밋 요약 가져오기
+  - 포트폴리오 프로젝트 데이터 자동 보강
+
+### Agent 예정 기능
+
+- OpenAI function calling 또는 유사 tool calling 구조를 사용합니다.
+- Agent는 아래 도구 중 필요한 작업을 선택하는 구조로 설계할 예정입니다.
+  - 게시글 검색
+  - 포트폴리오 프로젝트 조회
+  - GitHub 정보 조회
+  - 포트폴리오 초안 생성
+  - 면접 예상 질문 생성
+- 무한 루프 방지를 위해 최대 반복 횟수와 예외 처리 정책을 둡니다.
 
 ## 실행 방법
 
-자세한 로컬 세팅 과정과 명령어 기록은 [docs/agent/setup.md](docs/agent/setup.md)에 정리합니다.
+### 1. PostgreSQL 실행
 
-프론트엔드 개발 서버:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-프론트엔드 빌드 확인:
-
-```bash
-cd frontend
-npm run build
-```
-
-로컬 PostgreSQL 실행:
-
-```bash
+```powershell
 docker compose up -d
 ```
 
-백엔드 개발 서버:
+### 2. 백엔드 실행
 
-```bash
+```powershell
 cd backend
 .\.venv\Scripts\Activate.ps1
 uvicorn app.main:app --reload
 ```
 
-## 코드 컨벤션과 문서화 기준
+Swagger UI:
 
-- 구현 전 [docs/agent/code.md](docs/agent/code.md)를 먼저 확인합니다.
-- 세팅 명령어와 설치 과정은 [docs/agent/setup.md](docs/agent/setup.md)에 기록합니다.
-- K&R brace 스타일을 지킵니다.
-- 제어문 중괄호를 생략하지 않습니다.
-- 함수/변수명은 의미가 드러나게 작성합니다.
-- 불필요한 주석은 피하고, 백엔드 연결 예정 부분은 `TODO backend`로 구분합니다.
-- 구현이 끝나면 README와 [docs/agent/study.md](docs/agent/study.md)를 함께 업데이트합니다.
-- 단계 진행 상황이 바뀌면 [docs/agent/log.md](docs/agent/log.md)에 현재 상태와 다음 단계를 기록합니다.
-- 구현 중 등장한 학습 키워드는 [docs/agent/front-keyword.md](docs/agent/front-keyword.md)와 [docs/agent/back-keyword.md](docs/agent/back-keyword.md)에 나누어 기록합니다.
-- 구현 후에는 [docs/agent/test.md](docs/agent/test.md)의 QA 체크리스트를 돌리고, 실제 문제와 해결 과정은 [docs/agent/troubleshooting.md](docs/agent/troubleshooting.md)에 기록합니다.
+```txt
+http://localhost:8000/docs
+```
 
-## 다음 작업 예정
+### 3. 프론트엔드 실행
 
-1. `GET /posts`, `GET /posts/{post_id}` API Swagger와 실제 응답 QA
-2. 게시글 작성 / 수정 / 삭제 API 설계와 구현
-3. 댓글 작성 / 삭제 API 설계와 구현
-4. Google OAuth 로그인 / 자동 가입 / JWT 발급 구현
-5. 사용자 승인 / role 변경 API 구현
-6. 프론트 mock data를 실제 API 응답으로 교체
-7. GitHub MCP, RAG, AI Agent 기능 순차 연결
+```powershell
+cd frontend
+npm install
+npm run dev
+```
 
-## 최근 DB 설계 QA
+프론트엔드:
 
-- 현재 React mock 화면 기준으로 ERD v1 매핑 QA를 진행했습니다.
-- 게시글/댓글/태그/포트폴리오/코치 리뷰/알림의 핵심 화면 데이터는 v1 테이블로 설명 가능합니다.
-- 화면에서 쓰는 `MockPost.relatedCommit` 대응을 위해 `posts.related_commit`을 DB 설계에 추가했습니다.
-- 포트폴리오 카드 요약인 `PortfolioProject.summary` 대응을 위해 `portfolio_projects.summary`를 DB 설계에 추가했습니다.
-- 댓글 수, 연결 기록 수, 요청자 이름, 코치 이름, 리뷰 대상 제목은 중복 저장하지 않고 JOIN 또는 count 결과로 만들 예정입니다.
+```txt
+http://localhost:5173
+```
 
-## DB 설계 학습 문서
+## 환경 변수
 
-- [docs/agent/db-design.md](docs/agent/db-design.md)에 ERD v1과 테이블 필드별 선언 이유를 정리했습니다.
-- 각 필드가 왜 필요한지, 어떤 화면/기능과 연결되는지, 어떤 값은 저장하지 않고 JOIN/count로 만드는지 학습할 수 있습니다.
+실제 비밀값은 `backend/.env`에 저장하고 커밋하지 않습니다. 예시는 `backend/.env.example`을 참고합니다.
 
-## 최근 백엔드 구현
+필수 설정:
 
-- ERD v1을 기준으로 SQLAlchemy 모델 1차 구현을 시작했습니다.
-- `backend/app/db/models/user.py`에 `users` 모델을 추가했습니다.
-- `backend/app/db/models/post_category.py`에 `post_categories` 모델을 추가했습니다.
-- `backend/app/db/models/post.py`에 `posts` 모델을 추가했습니다.
-- `backend/app/db/models/__init__.py`에서 모델들을 한 번에 import할 수 있게 정리했습니다.
-- 현재 단계에서는 실제 테이블 생성 전이며, Python 코드에 테이블 구조를 선언한 상태입니다.
-- `Base.metadata.tables` 기준으로 `users`, `post_categories`, `posts`가 등록되는 것을 확인했습니다.
+```txt
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+JWT_SECRET_KEY=
+ADMIN_EMAILS=
+DATABASE_URL=postgresql+psycopg://junglelog:junglelog@localhost:5432/junglelog
+FRONTEND_URL=http://localhost:5173
+BACKEND_CORS_ORIGINS=http://localhost:5173
+```
 
-## 최근 DB 초기화 구현
+Google Cloud Console 설정:
 
-- `backend/app/db/init_db.py`를 추가했습니다.
-- `Base.metadata.create_all(bind=engine)`으로 SQLAlchemy 모델 기준 실제 PostgreSQL 테이블을 생성할 수 있게 했습니다.
-- `users`, `post_categories`, `posts` 테이블 생성을 확인했습니다.
-- 기본 게시글 카테고리 seed 데이터를 추가했습니다.
-  - `learning-log`: 학습 로그
-  - `troubleshooting`: 트러블슈팅
-  - `retrospective`: 프로젝트 회고
-  - `interview`: 면접 질문
-  - `portfolio`: 포트폴리오 관리
-- seed 명령을 여러 번 실행해도 카테고리가 중복 생성되지 않도록 처리했습니다.
+- 승인된 JavaScript 원본: `http://localhost:5173`
+- 승인된 리디렉션 URI: `http://localhost:8000/auth/google/callback`
+- 테스트 모드라면 OAuth 동의 화면 테스트 사용자에 실제 Gmail 추가
 
-## 최근 게시판 모델 확장
+## QA 결과
 
-- `comments`, `tags`, `post_tags` SQLAlchemy 모델을 추가했습니다.
-- `User.comments`, `Post.comments` 관계를 추가했습니다.
-- `Post.post_tags`, `Tag.post_tags`, `PostTag.post`, `PostTag.tag` 관계를 추가했습니다.
-- 실제 PostgreSQL에 `comments`, `tags`, `post_tags` 테이블 생성을 확인했습니다.
-- 현재 실제 테이블 목록은 `users`, `post_categories`, `posts`, `comments`, `tags`, `post_tags`입니다.
-
-## 최근 API 설계와 게시글 조회 구현
-
-- [docs/agent/api-design.md](docs/agent/api-design.md)에 JungleLog API 설계 v1을 추가했습니다.
-- 4단계 1차 범위는 게시글 목록/상세 조회 API로 제한했습니다.
-- `backend/app/schemas/post.py`에 게시글 응답 Pydantic schema를 추가했습니다.
-- `backend/app/repositories/post_repository.py`에 DB 조회 로직을 분리했습니다.
-- `backend/app/services/post_service.py`에 DB 모델을 프론트 친화적인 응답 schema로 바꾸는 로직을 분리했습니다.
-- `backend/app/routers/posts.py`에 `GET /posts`, `GET /posts/{post_id}` endpoint를 추가했습니다.
-- `backend/app/db/init_db.py`에 개발용 demo 사용자/게시글/태그 seed를 추가했습니다.
-- 게시글 조회 API 학습을 위해 router, service, repository, schema, init_db 흐름에 자세한 학습용 주석을 추가했습니다.
-
-## 최근 DB 모델 완성
-
-- ERD v1의 12개 테이블을 SQLAlchemy 모델로 모두 반영했습니다.
-- 기존 6개 테이블 `users`, `post_categories`, `posts`, `comments`, `tags`, `post_tags`에 이어 아래 6개 모델을 추가했습니다.
-  - `user_approval_logs`
-  - `portfolio_projects`
-  - `portfolio_project_posts`
-  - `review_requests`
-  - `review_request_coaches`
-  - `notifications`
-- `User`, `Post`, `PostCategory` 모델에 포트폴리오, 코치 리뷰, 알림, 승인 이력 관계를 연결했습니다.
-- `init_db()` 실행 후 실제 PostgreSQL 테이블 12개 생성을 확인했습니다.
-
-## 최근 댓글 조회 API와 프론트 연결
-
-- `backend/app/schemas/comment.py`에 댓글 목록 응답 schema를 추가했습니다.
-- `backend/app/repositories/comment_repository.py`에 게시글 존재 확인과 댓글 목록 조회 로직을 추가했습니다.
-- `backend/app/services/comment_service.py`에 댓글 DB model을 API 응답으로 변환하는 흐름을 추가했습니다.
-- `backend/app/routers/comments.py`에 `GET /posts/{post_id}/comments` endpoint를 추가했습니다.
-- `frontend/src/app/api/comments.ts`에 댓글 조회 API 호출 함수를 추가했습니다.
-- `PostDetail` 화면에서 백엔드 댓글 API를 호출해 댓글 목록 state에 반영하도록 연결했습니다.
-- 댓글 조회 API는 실제 저장/작성 API 전 단계이며, 현재 댓글 작성 버튼은 아직 화면 local state mock 동작입니다.
-
-## �ֱ� ���� ��� ����
-
-- Google OAuth / JWT ������ ���� �鿣�� ��� ������ �߰��߽��ϴ�.
-- `backend/app/schemas/auth.py`�� `/auth/me` �������� ����� `CurrentUserResponse` schema�� �߰��߽��ϴ�.
-- `backend/app/repositories/user_repository.py`�� Google ����� ��ȸ/����/�ֱ� �α��� ���� ������ �߰��߽��ϴ�.
-- `backend/app/repositories/auth_token_repository.py`�� refresh token hash ����, ��ȸ, ��� ������ �߰��߽��ϴ�.
-- refresh token ������ DB�� �������� �ʰ�, `sha256` hash�� �����ϴ� �������� �����߽��ϴ�.
-- �ʱ� ������ �̸����� `.env`�� `ADMIN_EMAILS`���� �а�, ��ġ�ϸ� `ADMIN / ���� �Ϸ�`�� �����˴ϴ�.
-- �Ϲ� Google �α��� ����ڴ� `STUDENT / ���� ���`�� �����˴ϴ�.
-- ���� `/auth/google/login`, `/auth/google/callback`, `/auth/me`, `/auth/refresh`, `/auth/logout` endpoint�� ���� �ܰ迡�� ���� �����Դϴ�.
-
-## �ֱ� ���� ����� ����
-
-- Google OAuth �α��� ����/�ݹ� endpoint�� �߰��߽��ϴ�.
-- `GET /auth/google/login`�� Google �α��� ȭ������ redirect�մϴ�.
-- `GET /auth/google/callback`�� Google authorization code�� ó���ϰ� JungleLog access/refresh token cookie�� �߱��մϴ�.
-- `GET /auth/me`�� HttpOnly access token cookie�� �������� ���� �α��� ����ڸ� ��ȯ�մϴ�.
-- `POST /auth/refresh`�� refresh token rotation ������� �� access/refresh token�� �߱��մϴ�.
-- `POST /auth/logout`�� refresh token�� ����ϰ� ���� cookie�� �����մϴ�.
-- `backend/app/dependencies/auth.py`�� ���� ����� ��ȸ, ���� ����� ����, role ���� dependency�� �߰��߽��ϴ�.
-- ���� ������ Google �α��� end-to-end Ȯ���� ����Ʈ �α��� ��ư ���� �� ���� �����Դϴ�.
-
-## 2026-06-15 최신 구현: 코치 리뷰 화면 API 연결
-
-코치 리뷰 화면을 mock state 중심에서 실제 백엔드 리뷰 요청 API 기준으로 전환했습니다.
-
-- 학생 화면은 내 게시글, 포트폴리오 프로젝트, 승인된 코치 목록, 내가 보낸 리뷰 요청 목록을 API로 불러옵니다.
-- 학생은 게시글 또는 포트폴리오 프로젝트를 선택해 코치에게 리뷰 요청을 보낼 수 있습니다.
-- 대기 중인 리뷰 요청은 실제 DELETE API로 취소하고 화면 목록에서 제거합니다.
-- 코치/관리자 화면은 받은 리뷰 요청 인박스를 API로 불러오고, 피드백과 상태를 PATCH API로 저장합니다.
-- 원문 댓글 자동 등록은 아직 정책을 정하지 않았으므로 다음 단계 작업으로 남겨두었습니다.
-
-관련 파일:
-
-- `frontend/src/app/api/reviews.ts`
-- `frontend/src/app/pages/coach/CoachReview.tsx`
-
-검증:
+최근 검증:
 
 - `npm run build` 성공
 - `python -m compileall app` 성공
 - `git diff --check` 통과
+- Swagger/OpenAPI 주요 API 등록 확인
+- Google OAuth/JWT callback 흐름 TestClient 검증
+- 관리자/학생/코치 실제 API 시나리오 검증
+- 비로그인 브라우저 진입 시 `/login` 이동 확인
+- 비로그인 사용자의 `/posts/new` 직접 접근 시 `/login` 이동 확인
 
-다음 작업:
-
-- AI 도우미 화면의 남은 mock 데이터를 실제 포트폴리오 API 기준으로 정리
-- 전체 로그인/OAuth 브라우저 흐름 QA
-- 오늘 날짜 Notion 학습 기록 정리
-## 2026-06-15 최신 구현: AI 도우미 포트폴리오 API 기반 정리
-
-AI 도우미 화면을 `mockData.portfolioProjects` 대신 실제 포트폴리오 API 응답 기준으로 정리했습니다.
-
-- `GET /portfolio/projects`로 등록된 내 프로젝트 목록을 불러옵니다.
-- `GET /me/posts`로 내 기록을 불러오고, 선택 프로젝트의 `linkedPostIds`와 맞는 기록만 RAG 참고 자료처럼 보여줍니다.
-- 포트폴리오 글/면접 예상 질문 생성 결과는 아직 OpenAI 호출이 아니라 API 데이터 기반 샘플입니다.
-- 포트폴리오 글 샘플은 `PATCH /portfolio/projects/{id}`로 저장된 포트폴리오 초안에 반영할 수 있습니다.
-- 등록된 프로젝트가 없으면 포트폴리오 관리 화면으로 이동하도록 안내합니다.
-- 내 기록 화면의 오래된 “demo student” 문구를 현재 로그인 사용자 기준 설명으로 수정했습니다.
-
-검증:
-
-- `npm run build` 성공
-- `python -m compileall app` 성공
-- `git diff --check` 통과
-
-남은 작업:
-
-- 실제 OpenAI/RAG/MCP/Agent 호출 연결
-- 대시보드의 mock 통계 API 기반 정리
-- OAuth 브라우저 로그인 end-to-end QA
-## 2026-06-15 최신 구현: 대시보드 API 기반 정리
-
-학생/코치 대시보드의 주요 통계와 최근 목록을 mock data 대신 실제 API 응답 기준으로 정리했습니다.
-
-- 학생 대시보드는 `GET /me/posts`로 최근 내 기록과 카테고리별 기록 수를 계산합니다.
-- 학생의 코치 리뷰 요청 버튼은 `GET /review-requests/me` 응답에서 검토 중인 요청 수를 표시합니다.
-- 코치 대시보드는 `GET /review-requests/inbox`로 검토 필요 요청과 최근 리뷰 요청을 표시합니다.
-- 코치 대시보드의 전체 게시글 수는 `GET /posts` 응답 기준으로 표시합니다.
-- AI 도우미의 query string 의존성을 객체가 아닌 `project` 값 기준으로 안정화했습니다.
-
-검증:
-
-- `npm run build` 성공
-
-다음 작업:
-
-- 전체 OAuth 브라우저 로그인 흐름 QA
-- 알림/설정 화면의 남은 mock 문구 정리
-- 최종 README/test/study/log 정리와 Notion 학습 기록 업데이트
-## 2026-06-15 최신 구현: 설정 화면 준비 중 상태 정리
-
-설정 화면에서 실제 기능처럼 보이던 mock 문구를 제거하고, 아직 API가 없는 기능은 준비 중 상태로 명확히 표시했습니다.
-
-- 프로필 입력은 현재 로그인 사용자 정보 기준 read-only로 표시합니다.
-- 프로필 저장 버튼은 “프로필 저장 준비 중”으로 비활성화했습니다.
-- GitHub 전역 계정 연동은 아직 없으므로 “준비 중” 상태로 표시했습니다.
-- 포트폴리오 프로젝트별 repo URL 등록 방식과 GitHub 계정 연동을 구분했습니다.
-
-검증:
-
-- `npm run build` 성공
-## 2026-06-15 QA: OAuth 로그인 시작 흐름 확인
-
-Google OAuth 브라우저 end-to-end 전 단계까지 로컬 QA를 진행했습니다.
-
-확인한 것:
-
-- 프론트 `/login` 페이지가 정상 서빙됩니다.
-- 비로그인 상태에서 앱 진입 시 로그인 화면으로 이동합니다.
-- 로그인 버튼은 `loginWithGoogle()`을 호출하고, 프론트에서 `/auth/google/login`으로 이동합니다.
-- `GET /auth/google/login`은 307 redirect를 반환합니다.
-- redirect 대상은 Google OAuth URL입니다.
-- OAuth state cookie가 HttpOnly/SameSite=Lax로 설정됩니다.
-- 쿠키 없는 `GET /auth/me`는 401을 반환합니다.
-
-남은 수동 확인:
-
-- 실제 Google 계정 선택 및 동의 후 `/auth/google/callback` 성공 흐름
-- 최초 로그인 사용자의 승인 대기 화면 확인
-- 관리자 승인 후 STUDENT/COACH/ADMIN 화면 분기 확인
-## 2026-06-15 최신 구현: 레거시 mockData 제거
-
-프론트 주요 화면에서 마지막으로 남아 있던 `data/mockData.ts` 의존을 제거했습니다.
-
-- 카테고리 UI 상수는 `frontend/src/app/constants/categories.ts`로 분리했습니다.
-- 게시글 상세의 “AI가 추천하는 관련 기록”은 mock 배열 대신 `GET /posts` API 응답으로 같은 카테고리 공개 기록을 보여줍니다.
-- 글쓰기 화면의 “비슷한 이전 기록”은 mock 배열 대신 `GET /posts` API 응답으로 최근 공개 기록을 보여줍니다.
-- 알림 드롭다운은 아직 알림 API 연결 전 샘플임을 명확히 하고, 레이아웃 내부 샘플 상수로 이동했습니다.
-- `api/posts.ts`, `api/comments.ts`, `PostDetail.tsx`의 role 타입은 `api/auth.ts` 기준으로 정리했습니다.
-- 오래된 `frontend/src/app/api`, `contexts`, `types` README 문구를 현재 인증/API 구조 기준으로 갱신했습니다.
-
-검증:
-
-- `npm run build` 성공
-- `python -m compileall app` 성공
-- `git diff --check` 통과
-- `rg "mockData|data/mockData|mock 저장|mock 연결|demo student" frontend/src/app` 결과 없음
-## 2026-06-15 최종 QA 메모
-
-Swagger/OpenAPI에서 주요 API 등록을 확인했습니다.
-
-확인된 주요 API 영역:
-
-- health / DB health
-- auth / Google OAuth / JWT refresh / logout
-- posts / comments / me
-- admin users
-- portfolio projects
-- review requests
-
-오늘 날짜 Notion 학습 기록도 구현 내용, 막힌 점, 해결 방법, 다음 작업 기준으로 업데이트했습니다.
-
-수동으로 남은 확인은 실제 Google 계정 선택 후 callback 성공과 관리자 승인 후 역할별 화면 분기입니다.
-### OAuth/JWT QA 상태
-
-Google OAuth Client ID/Secret, JWT secret은 `backend/.env`에 직접 설정한다. 이 파일은 비밀값이므로 커밋하지 않는다.
-
-현재 검증된 인증 흐름:
-
-- `/auth/google/login`에서 Google OAuth URL로 redirect
-- OAuth state cookie 발급
-- `/auth/google/callback`에서 state 검증 후 JungleLog access/refresh token 발급
-- access token과 refresh token을 HttpOnly cookie로 저장
-- `/auth/me`로 현재 사용자 조회
-- `/auth/refresh`로 refresh token rotation
-- `/auth/logout`으로 refresh token 폐기 및 cookie 삭제
-- 최초 로그인 사용자는 `승인 대기` 상태
-
-실제 브라우저에서 추가 확인할 설정:
-
-- Google Cloud 승인된 JavaScript 원본: `http://localhost:5173`
-- Google Cloud 승인된 리디렉션 URI: `http://localhost:8000/auth/google/callback`
-- OAuth 동의 화면 테스트 사용자에 실제 Gmail 등록
-- `.env`의 `ADMIN_EMAILS`에 관리자 Gmail 등록
-
-### 승인 대기 화면 UX 개선
-
-Google OAuth 로그인은 성공했지만 아직 운영자 승인이 끝나지 않은 사용자는 `/pending-approval` 화면에서 대기 상태를 확인합니다.
-
-현재 동작:
-
-- 승인 대기/거절/정지 상태 사용자는 서비스 본문 라우트 접근이 제한됩니다.
-- 승인 대기 화면에서 `승인 상태 다시 확인`을 눌러 `/auth/me` 기반 사용자 상태를 다시 불러올 수 있습니다.
-- 승인 대기 화면에서 `로그아웃`을 눌러 `/auth/logout` 후 로그인 화면으로 돌아갈 수 있습니다.
-- 승인 완료 상태가 되면 대시보드로 이동할 수 있습니다.
-
-### 실제 API 시나리오 QA
-
-AI 호출을 제외한 핵심 웹서비스 흐름은 FastAPI `TestClient` 기반 통합 시나리오로 검증했습니다.
-
-검증된 흐름:
+통합 시나리오에서 검증한 흐름:
 
 - ADMIN 최초 로그인과 승인 완료 처리
 - 신규 STUDENT 승인 대기 처리
@@ -800,16 +331,55 @@ AI 호출을 제외한 핵심 웹서비스 흐름은 FastAPI `TestClient` 기반
 남은 수동 QA:
 
 - 실제 브라우저에서 Google 계정 선택과 OAuth 동의 화면 통과
-- 실제 관리자 계정으로 사용자 승인 후 프론트 화면 분기 확인
+- 실제 관리자 계정으로 신규 사용자 승인 후 프론트 화면 분기 확인
 
-### 브라우저 로그인 UX QA
+## 데모
 
-로컬 브라우저에서 비로그인 상태의 첫 진입과 보호 라우트 접근을 확인했습니다.
+현재 로컬 브라우저 QA 기준으로 로그인 화면, 보호 라우트 redirect, Swagger API 등록을 확인했습니다.
 
-- `/` 진입 시 `/login`으로 이동
-- 로그인 화면의 Google 로그인 버튼 표시
-- 승인 대기 안내 문구 표시
-- 비로그인 사용자의 `/posts/new` 직접 접근 시 `/login`으로 이동
-- 브라우저 콘솔 error 없음
+제출 전 추가하면 좋은 스크린샷:
 
-실제 Google 계정 선택과 OAuth 동의 화면 통과는 사용자 계정 조작이 필요하므로 수동 QA로 남아 있습니다.
+- Google 로그인 화면
+- 승인 대기 화면
+- 관리자 사용자 승인 화면
+- 학생 대시보드
+- 포트폴리오 관리 화면
+- 코치 리뷰 인박스
+
+## 회고와 한계
+
+### 배운 점
+
+- React 화면 mock 단계와 실제 API 연결 단계는 설계 기준이 다르다.
+- 로그인 상태와 승인 상태는 분리해서 생각해야 한다.
+- 프론트 라우트 보호는 UX를 위한 것이고, 실제 보안은 백엔드 권한 검사가 담당해야 한다.
+- refresh token은 원문을 DB에 저장하지 않고 hash로 저장하는 편이 안전하다.
+- 학생/코치/관리자 role이 생기면 단순 CRUD보다 권한 검증이 훨씬 중요해진다.
+
+### 현재 한계
+
+- 실제 Google 계정 선택 후 callback 수동 QA가 아직 남아 있다.
+- 알림 API는 아직 샘플 UI 상태다.
+- 프로필 수정 API는 아직 없다.
+- GitHub repo 분석은 아직 실제 GitHub API/MCP와 연결되지 않았다.
+- AI 도우미는 아직 OpenAI/RAG/MCP/Agent를 호출하지 않는다.
+
+### 개선 아이디어
+
+- pgvector 기반 RAG 검색 추가
+- GitHub MCP server 구현
+- OpenAI function calling 기반 Agent 구현
+- 알림 API와 실시간 알림 추가
+- 테스트 자동화 파일 분리
+- Playwright 기반 프론트 E2E 테스트 추가
+
+## 학습/운영 문서
+
+- [코드 컨벤션](docs/agent/code.md)
+- [세팅 기록](docs/agent/setup.md)
+- [학습 기록](docs/agent/study.md)
+- [진행 로그](docs/agent/log.md)
+- [QA 체크리스트](docs/agent/test.md)
+- [트러블슈팅](docs/agent/troubleshooting.md)
+- [DB 설계](docs/agent/db-design.md)
+- [API 설계](docs/agent/api-design.md)

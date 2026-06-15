@@ -1256,3 +1256,29 @@ logged_out_me_status 401
 - [x] `/posts/new` 직접 진입 시 비로그인 사용자는 `/login`으로 이동한다.
 - [x] 보호 라우트 redirect 후 로그인 버튼이 유지된다.
 - [ ] 실제 Google 계정 선택과 OAuth 동의 화면 통과는 수동 QA 필요.
+
+## 2026-06-15 README 정리 QA
+
+목표: README가 현재 실제 API 기반 구현 상태를 설명하고, 오래된 mock 단계 설명으로 사용자를 헷갈리게 하지 않는지 확인한다.
+
+체크리스트:
+
+- [x] 프로젝트 개요가 있다.
+- [x] 주요 구현 기능이 있다.
+- [x] 전체 아키텍처 구조가 있다.
+- [x] RAG/MCP/Agent 기능 설계가 있다.
+- [x] 실행 방법이 있다.
+- [x] 환경 변수와 Google Cloud 설정 안내가 있다.
+- [x] QA 결과와 남은 수동 QA가 있다.
+- [x] 회고, 한계점, 개선 아이디어가 있다.
+- [ ] 오래된 mock/demo 문구 검색 QA
+- [ ] `npm run build`
+- [ ] `python -m compileall app`
+- [ ] `git diff --check`
+
+README 정리 QA 결과:
+
+- [x] 오래된 mock/demo 문구 검색 QA 완료
+- [x] `npm run build` 성공
+- [x] `python -m compileall app` 성공
+- [x] `git diff --check` 통과
