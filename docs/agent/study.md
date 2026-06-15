@@ -2991,3 +2991,58 @@ PendingApproval 렌더링
 - 서비스 접근 가능 여부는 `approvalStatus === "승인 완료"`까지 확인해야 한다.
 - 이미 로그인된 사용자를 `/login`으로 보내면 `Login.tsx`가 다시 `/pending-approval`로 돌려보내므로 UX 순환이 생긴다.
 - 그래서 승인 대기 화면에서는 로그인 버튼보다 `상태 다시 확인`과 `로그아웃`이 자연스럽다.
+
+## 2026-06-15 실제 API 시나리오 QA 학습 기록
+
+이번 QA는 단일 API 하나가 아니라 JungleLog의 핵심 사용자 흐름을 실제 API 호출 순서대로 확인한 작업이다.
+
+### 검증한 사용자 역할
+
+| 역할 | 확인한 일 |
+| --- | --- |
+| ADMIN | 최초 관리자 로그인, 학생 승인, 코치 role 부여 |
+| STUDENT | 승인 전 차단, 승인 후 게시글/댓글/포트폴리오/리뷰 요청 생성 |
+| COACH | 승인 후 댓글 작성, 리뷰 인박스 조회, 피드백 작성 |
+
+### API 흐름
+
+```txt
+관리자 OAuth 로그인
+-> 학생 OAuth 로그인
+-> 코치 OAuth 로그인
+-> 승인 전 학생 POST /posts 차단 확인
+-> ADMIN PATCH /admin/users/{student_id}
+-> ADMIN PATCH /admin/users/{coach_id}
+-> STUDENT POST /posts
+-> STUDENT GET /me/posts
+-> STUDENT POST /posts/{post_id}/comments
+-> COACH POST /posts/{post_id}/comments
+-> STUDENT POST /portfolio/projects
+-> STUDENT PUT /portfolio/projects/{project_id}/posts
+-> STUDENT PATCH /portfolio/projects/{project_id}
+-> STUDENT GET /review-requests/coaches
+-> STUDENT POST /review-requests
+-> COACH GET /review-requests/inbox
+-> COACH PATCH /review-requests/{id}
+-> STUDENT DELETE /review-requests/{id} 실패 확인
+```
+
+### 이해해야 할 핵심
+
+- 인증은 로그인 여부만 확인한다.
+- 승인 상태는 서비스 접근 가능 여부를 결정한다.
+- role은 어떤 기능을 쓸 수 있는지 결정한다.
+- ADMIN은 승인과 role을 관리한다.
+- STUDENT는 자신의 기록과 포트폴리오를 만들고 리뷰를 요청한다.
+- COACH는 학생이 요청한 리뷰를 받아 피드백을 작성한다.
+- 테스트에서 rollback을 쓰면 실제 DB에 QA 데이터가 남지 않는다.
+- 한글 상태값을 CLI 테스트로 보낼 때는 터미널 인코딩도 신경 써야 한다.
+
+### 추가 학습 키워드
+
+- Integration Test
+- TestClient
+- DB transaction rollback
+- Role-based access control
+- Approval workflow
+- API scenario testing

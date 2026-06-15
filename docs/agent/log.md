@@ -1664,3 +1664,56 @@ docs: OAuth callback QA 기록 업데이트
 ```txt
 fix: 승인 대기 화면 UX 개선
 ```
+
+## 2026-06-15 관리자-학생-코치 실제 API 시나리오 QA
+
+상태: 완료
+
+목표: AI 호출 전 핵심 웹서비스 흐름이 실제 API 기준으로 이어지는지 검증한다. Google 서버 응답만 fake 처리하고, DB 변경은 테스트 트랜잭션 안에서 실행 후 rollback했다.
+
+검증한 흐름:
+
+- QA 관리자 Google OAuth 로그인 -> ADMIN / 승인 완료
+- QA 학생 Google OAuth 로그인 -> STUDENT / 승인 대기
+- 승인 대기 학생의 게시글 작성 -> 403 차단
+- 관리자가 학생 승인 -> 승인 완료
+- 관리자가 코치 role과 승인 상태 적용 -> COACH / 승인 완료
+- 승인된 학생 게시글 작성 -> 201
+- 학생 내 기록 조회 -> 작성 글 포함
+- 학생 댓글 작성 -> 201
+- 코치 댓글 작성 -> 201
+- 학생 포트폴리오 프로젝트 등록 -> 201
+- 프로젝트와 게시글 연결 -> 200
+- 포트폴리오 상태/초안 저장 -> 200
+- 학생이 코치 목록 조회 -> 승인된 코치 포함
+- 학생이 코치 리뷰 요청 생성 -> 201
+- 코치가 받은 리뷰 인박스 조회 -> 요청 포함
+- 코치가 피드백 완료 상태와 피드백 작성 -> 200
+- 피드백 완료 요청을 학생이 취소 시도 -> 400 차단
+
+검증 결과 요약:
+
+```txt
+admin_role ADMIN
+pending_student_blocked 403
+student_approved 승인 완료
+coach_approved_role COACH
+post_created_id 20
+comments_created 201 201
+portfolio_project_id 3
+linked_post_ids [20]
+review_request_id 5
+coach_feedback_status 피드백 완료
+cancel_after_feedback_status 400
+```
+
+알게 된 점:
+
+- PowerShell 파이프를 통해 Python 스크립트를 실행할 때 한글 literal이 `?? ??`로 깨질 수 있어 QA 스크립트에서는 유니코드 escape를 사용했다.
+- 이 문제는 앱 코드 문제가 아니라 테스트 명령어 인코딩 문제였다.
+
+추천 커밋 제목:
+
+```txt
+docs: 실제 API 시나리오 QA 기록
+```
