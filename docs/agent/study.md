@@ -3192,3 +3192,36 @@ Google OAuth callback 실패
 - redirect URI는 Google Cloud Console에 등록된 값과 백엔드 설정값이 정확히 같아야 한다.
 - `ADMIN_EMAILS`는 최초 관리자 계정을 자동 승인하기 위한 로컬 초기 설정이다.
 - 자동 QA로는 redirect URL 생성까지 확인할 수 있고, 실제 Google 계정 선택/동의는 수동 QA가 필요하다.
+
+## 2026-06-15 Vite 환경변수 학습 기록
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/api/client.ts` | 모든 프론트 API 함수가 공유하는 백엔드 주소와 에러 메시지 처리 함수가 있다. |
+| `frontend/.env.example` | 프론트에서 필요한 환경변수 예시를 보여준다. |
+| `README.md` | 프론트 환경변수 설정 방법을 문서화했다. |
+
+### 이해해야 할 개념
+
+- Vite에서 프론트 코드가 읽을 수 있는 환경변수는 `VITE_` 접두사가 필요하다.
+- `import.meta.env.VITE_API_BASE_URL`은 빌드 시점에 주입되는 값이다.
+- 프론트 환경변수는 브라우저에 노출될 수 있으므로 API 주소처럼 공개 가능한 값만 넣어야 한다.
+- 백엔드 비밀값은 `GOOGLE_CLIENT_SECRET`, `JWT_SECRET_KEY`처럼 서버에서만 사용해야 한다.
+
+### 코드 흐름
+
+```txt
+client.ts
+-> VITE_API_BASE_URL이 있으면 그 값 사용
+-> 없으면 http://localhost:8000 사용
+-> 마지막 / 제거
+-> posts.ts, auth.ts, comments.ts 등이 API_BASE_URL을 import해서 fetch 호출
+```
+
+### 핵심 포인트
+
+- 하드코딩된 주소는 로컬에서는 편하지만 배포나 포트 변경 때 불편하다.
+- 설정값을 환경변수로 빼면 로컬/배포 환경을 코드 수정 없이 바꿀 수 있다.
+- `replace(/\/$/, "")`는 URL 끝의 `/` 하나를 제거해서 `/posts` 같은 path를 붙일 때 `//posts`가 되지 않게 한다.

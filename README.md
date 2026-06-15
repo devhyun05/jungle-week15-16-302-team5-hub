@@ -284,6 +284,7 @@ http://localhost:5173
 ## 환경 변수
 
 실제 비밀값은 `backend/.env`에 저장하고 커밋하지 않습니다. 예시는 `backend/.env.example`을 참고합니다.
+프론트엔드 API 주소 예시는 `frontend/.env.example`을 참고합니다.
 
 필수 설정:
 
@@ -297,6 +298,14 @@ DATABASE_URL=postgresql+psycopg://junglelog:junglelog@localhost:5432/junglelog
 FRONTEND_URL=http://localhost:5173
 BACKEND_CORS_ORIGINS=http://localhost:5173
 ```
+
+프론트엔드 설정:
+
+```txt
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+`VITE_API_BASE_URL`이 없으면 프론트엔드는 기본값으로 `http://localhost:8000`을 사용합니다.
 
 Google Cloud Console 설정:
 

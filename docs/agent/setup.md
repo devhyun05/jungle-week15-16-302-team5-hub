@@ -1049,3 +1049,26 @@ cd C:\junhee\WEEK15_AI_BOARD\backend
 - 승인된 리디렉션 URI에 `http://localhost:8000/auth/google/callback`이 들어 있어야 한다.
 - OAuth 동의 화면 테스트 사용자에 실제 로그인할 Gmail이 들어 있어야 한다.
 - 브라우저에서 실제 Google 계정 선택과 동의 화면을 통과해야 한다.
+
+## 2026-06-15 프론트엔드 API 주소 설정
+
+프론트엔드는 백엔드 API 주소를 `VITE_API_BASE_URL`로 읽는다.
+
+예시 파일:
+
+```txt
+frontend/.env.example
+```
+
+내용:
+
+```txt
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+로컬 개발에서는 별도 `.env`가 없어도 기본값 `http://localhost:8000`을 사용한다. 배포 환경이나 포트를 바꿀 때는 `frontend/.env` 또는 배포 서비스 환경변수에 `VITE_API_BASE_URL`을 설정하면 된다.
+
+주의:
+
+- `VITE_`로 시작하는 값은 브라우저 번들에 포함될 수 있으므로 비밀값을 넣으면 안 된다.
+- Google Client Secret, JWT Secret 같은 비밀값은 반드시 백엔드 `.env`에만 둔다.

@@ -1339,3 +1339,28 @@ README 정리 QA 결과:
 - [ ] 실제 브라우저에서 Google 계정 선택/동의 화면을 통과한다.
 - [ ] 최초 관리자 이메일 계정으로 로그인했을 때 관리자 화면에 접근할 수 있다.
 - [ ] 일반 신규 사용자 계정으로 로그인했을 때 승인 대기 화면이 보인다.
+
+## 2026-06-15 프론트 API 주소 환경변수 QA
+
+목표: 프론트가 백엔드 API 주소를 하드코딩 대신 `VITE_API_BASE_URL` 기반으로 읽되, 로컬 기본값은 유지하는지 확인한다.
+
+체크리스트:
+
+- [x] `frontend/.env.example`에 `VITE_API_BASE_URL=http://localhost:8000`이 있다.
+- [x] `client.ts`가 `import.meta.env.VITE_API_BASE_URL`을 읽는다.
+- [x] 환경변수가 없으면 `http://localhost:8000`을 기본값으로 사용한다.
+- [x] URL 끝의 `/`를 제거한다.
+- [ ] `npm run build`
+- [ ] `python -m compileall app`
+- [ ] `git diff --check`
+
+수동 QA:
+
+- [ ] 프론트 실행 후 로그인 버튼이 `http://localhost:8000/auth/google/login` 흐름으로 이동하는지 확인한다.
+- [ ] 포트를 바꿀 경우 `frontend/.env`에 `VITE_API_BASE_URL`을 설정하고 다시 실행한다.
+
+프론트 API 주소 환경변수 QA 결과:
+
+- [x] `npm run build` 성공
+- [x] `python -m compileall app` 성공
+- [x] `git diff --check` 통과
