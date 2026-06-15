@@ -55,6 +55,14 @@ function isValidExternalUrl(url: string | null | undefined) {
   }
 }
 
+function shouldShowSummary(summary: string | null | undefined, content: string) {
+  // 작성 화면의 summary는 본문 앞부분으로 자동 생성되므로, 상세에서는 본문과 겹치면 숨긴다.
+  const normalizedSummary = summary?.replace(/\s+/g, " ").trim() ?? "";
+  const normalizedContent = content.replace(/\s+/g, " ").trim();
+
+  return Boolean(normalizedSummary) && normalizedSummary !== normalizedContent && !normalizedContent.startsWith(normalizedSummary);
+}
+
 function Avatar({ name, imageUrl, className }: { name: string; imageUrl?: string | null; className: string }) {
   const resolvedImageUrl = resolveApiAssetUrl(imageUrl);
 
@@ -411,7 +419,9 @@ export function PostDetail() {
           </div>
         </div>
 
-        <p className="mt-6 rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-700">{post.summary}</p>
+        {shouldShowSummary(post.summary, post.content) && (
+          <p className="mt-6 rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-700">{post.summary}</p>
+        )}
 
         <div className="prose prose-slate max-w-none py-6">
           <div className="whitespace-pre-line text-sm leading-7 text-slate-700">{post.content}</div>

@@ -1883,3 +1883,35 @@ rg -n "\[object Object\]|String\(\(item as \{ msg: unknown \}\)\.msg\)|fallbackM
 - `MyRecords.tsx`: JWT 쿠키 설명 제거
 - `Settings.tsx`: 프로필 이미지 저장 위치 설명을 아바타 표시 안내로 변경
 - `CoachReview.tsx`: 빈 상태 조건부 문장을 조사 문제 없이 분기
+## 2026-06-15 QA: 게시글 상세 요약 중복 표시
+
+목표: 새 게시글 작성 후 상세 화면에서 본문이 요약 카드와 본문 영역에 중복 표시되지 않는지 확인한다.
+
+체크리스트:
+
+- [x] `/posts/new`에서 새 게시글을 작성하면 상세 화면으로 이동한다.
+- [x] 상세 화면에 제목, 작성자, 본문, GitHub repo URL이 표시된다.
+- [x] `PostEdit.tsx`에서 생성한 summary가 content 앞부분과 같은 경우를 확인했다.
+- [x] `PostDetail.tsx`에서 summary가 content와 같거나 content 시작 부분이면 요약 카드를 숨긴다.
+- [ ] 브라우저에서 새 글을 다시 작성해 본문이 한 번만 자연스럽게 보이는지 재검증한다.
+
+발견한 문제:
+
+- 작성 화면의 `buildSummary()`가 본문 앞부분을 그대로 잘라 summary를 만들기 때문에, 상세 화면에서 summary와 content가 거의 같은 문장으로 중복 표시될 수 있었다.
+
+수정 확인:
+
+- `shouldShowSummary()`를 추가해 상세 화면에서만 중복 요약 카드를 숨기도록 했다.
+- 목록 화면의 summary 표시는 그대로 유지했다.
+
+브라우저 재검증 결과:
+
+- [x] `/posts/30` 상세 화면에서 QA 본문 시작 문장이 한 번만 표시됐다.
+- [x] GitHub repo URL이 정상 표시됐다.
+- [x] `Unexpected Application Error`와 `[object Object]`가 보이지 않았다.
+- [x] 댓글 수와 댓글 본문이 정상 표시됐다.
+
+정리 예정:
+
+- QA용 게시글, 댓글, 리뷰 요청 데이터는 검증 후 삭제한다.
+- 현재 로그인 계정은 ADMIN / 승인 완료 상태로 복구한다.

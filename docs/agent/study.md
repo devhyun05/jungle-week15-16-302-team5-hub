@@ -3921,3 +3921,42 @@ COACH �α���
 - `JWT 쿠키`, `backend/uploads`, `S3` 같은 말은 README나 study 문서에는 좋지만 일반 화면에는 부담스러울 수 있다.
 - 빈 상태 문구는 단순히 "없습니다"가 아니라 사용자가 다음에 무엇을 해야 하는지 알려주는 편이 좋다.
 - 조사 문제가 생길 수 있는 조건부 문장은 단어만 바꾸지 말고 문장 전체를 분기하는 게 안전하다.
+## 2026-06-15 학습: 게시글 상세에서 summary와 content를 다르게 다루기
+
+이번에 본 파일:
+
+- `frontend/src/app/pages/posts/PostEdit.tsx`
+- `frontend/src/app/pages/posts/PostDetail.tsx`
+
+수정한 파일:
+
+- `frontend/src/app/pages/posts/PostDetail.tsx`
+
+핵심 개념:
+
+- `summary`: 게시글 목록 카드에서 빠르게 훑어보라고 보여주는 짧은 설명이다.
+- `content`: 게시글 상세 화면에서 실제로 읽는 본문이다.
+- `PostEdit.tsx`의 `buildSummary()`는 아직 AI 요약이 없기 때문에 본문 앞부분을 잘라 summary를 만든다.
+- 그래서 새 글을 작성하면 summary와 content의 시작 부분이 거의 같을 수 있다.
+- 상세 화면에서 이 둘을 그대로 모두 보여주면 사용자는 같은 문장을 두 번 읽게 된다.
+
+이번 코드 흐름:
+
+1. 사용자가 `/posts/new`에서 본문을 작성한다.
+2. 발행 시 `buildSummary(trimmedBody)`가 본문 앞부분으로 `summary`를 만든다.
+3. 상세 화면 `/posts/:id`는 `getPostDetail()`로 `summary`와 `content`를 함께 받는다.
+4. `shouldShowSummary(summary, content)`가 두 값을 공백 정리 후 비교한다.
+5. summary가 없거나 content와 같거나 content의 시작 부분과 같으면 요약 카드를 숨긴다.
+6. summary가 별도 요약 문장일 때만 상세 화면 상단에 보여준다.
+
+이번에 이해해야 할 React/TypeScript 포인트:
+
+- 조건부 렌더링: `{조건 && <Component />}` 형태로 조건이 true일 때만 UI를 그린다.
+- optional chaining: `summary?.replace(...)`는 summary가 없을 때 안전하게 undefined를 반환한다.
+- nullish coalescing: `?? ""`는 앞 값이 null 또는 undefined일 때 빈 문자열로 대체한다.
+- helper function: JSX 안에 비교 로직을 길게 쓰지 않고 `shouldShowSummary()`로 분리하면 읽기 쉽다.
+
+백엔드/AI 연결 후 바뀔 수 있는 부분:
+
+- 나중에 OpenAI/RAG로 진짜 요약을 만들면 summary가 content 앞부분 복사본이 아니라 별도 요약이 될 수 있다.
+- 그때도 지금 조건은 안전하다. 진짜 요약이면 content의 시작 부분과 완전히 같지 않으므로 상세에 표시된다.
