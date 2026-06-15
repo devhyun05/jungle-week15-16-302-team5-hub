@@ -520,3 +520,34 @@ size: int = Query(default=50, ge=1, le=50)
 - 프론트 API 호출값은 백엔드 Query 제한과 맞춰야 한다.
 - 여러 API를 `Promise.all`로 묶으면 하나의 API 실패가 전체 화면 데이터 로딩 실패처럼 보일 수 있다.
 - 이런 숫자는 그냥 박아두기보다 의미 있는 상수로 빼두면 원인을 찾기 쉽다.
+---
+
+## 2026-06-15 트러블슈팅: DB/API는 최신인데 브라우저 role/status가 낡게 보임
+
+증상:
+
+- DB에서 리뷰 요청은 `피드백 완료`로 바뀌었다.
+- 실제 `localhost:8000 /review-requests/inbox`도 `피드백 완료`를 반환했다.
+- 하지만 브라우저 코치 인박스는 계속 `대기 중`으로 보였다.
+- QA 후 DB에서 현재 사용자를 `ADMIN`으로 복구했지만 브라우저 사이드바는 한동안 `COACH` 메뉴를 보여줬다.
+
+원인:
+
+- 오래 떠 있던 Vite dev server의 HMR state와 브라우저 캐시가 섞여 최신 `/auth/me`, `/review-requests/inbox` 응답이 화면에 안정적으로 반영되지 않았다.
+- access token이 짧게 만료되는 구조인데 일반 서비스 API들은 401 발생 시 refresh retry를 공통으로 처리하지 않았다.
+
+해결:
+
+- `frontend/src/app/api/client.ts`에 `apiFetch()`를 추가했다.
+- 401 응답 시 `/auth/refresh`를 한 번 호출한 뒤 원래 요청을 재시도하도록 했다.
+- 서비스 API 클라이언트가 공통 `apiFetch()`를 사용하도록 바꿨다.
+- 인증/조회 API에 `cache: "no-store"`를 추가했다.
+- 오래 떠 있던 5173 Vite dev server를 재시작했다.
+
+다음에 비슷한 문제가 나면 확인할 순서:
+
+1. DB 원본 값을 확인한다.
+2. 실제 실행 중인 `localhost:8000` API 응답을 확인한다.
+3. 브라우저 화면 state를 확인한다.
+4. API 응답은 맞는데 화면만 다르면 cache/HMR/dev server를 의심한다.
+5. `npm run build`로 소스 오류인지 dev server 상태 문제인지 분리한다.

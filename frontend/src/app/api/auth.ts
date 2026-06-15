@@ -1,4 +1,4 @@
-import { API_BASE_URL, getErrorMessage } from "./client";
+import { API_BASE_URL, apiFetch, getErrorMessage } from "./client";
 
 export type UserRole = "STUDENT" | "COACH" | "ADMIN";
 export type ApprovalStatus = "승인 대기" | "승인 완료" | "거절" | "정지";
@@ -23,6 +23,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   // credentials: "include"를 넣어야 브라우저가 인증 cookie를 API 요청에 함께 보낸다.
   const response = await fetch(`${API_BASE_URL}/auth/me`, {
     credentials: "include",
+    cache: "no-store",
   });
 
   if (response.status === 401) {
@@ -42,6 +43,7 @@ export async function refreshAuthSession(): Promise<boolean> {
   const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
     method: "POST",
     credentials: "include",
+    cache: "no-store",
   });
 
   return response.ok;
@@ -51,6 +53,7 @@ export async function logoutCurrentUser(): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/auth/logout`, {
     method: "POST",
     credentials: "include",
+    cache: "no-store",
   });
 
   if (!response.ok) {
@@ -71,7 +74,7 @@ export async function updateCurrentUserProfile(payload: {
     formData.set("profileImage", payload.profileImage);
   }
 
-  const response = await fetch(`${API_BASE_URL}/me/profile`, {
+  const response = await apiFetch(`${API_BASE_URL}/me/profile`, {
     method: "PATCH",
     credentials: "include",
     body: formData,

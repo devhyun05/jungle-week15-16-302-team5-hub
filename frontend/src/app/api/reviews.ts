@@ -1,4 +1,4 @@
-import { API_BASE_URL, getErrorMessage } from "./client";
+import { API_BASE_URL, apiFetch, getErrorMessage } from "./client";
 
 export type ReviewTargetType = "post" | "portfolio";
 export type ReviewStatus = "대기 중" | "검토 중" | "피드백 완료" | "수정 요청" | "최종 확인";
@@ -55,8 +55,9 @@ export type ReviewRequestUpdatePayload = {
 };
 
 export async function getCoachOptions(): Promise<CoachOptionListResponse> {
-  const response = await fetch(`${API_BASE_URL}/review-requests/coaches`, {
+  const response = await apiFetch(`${API_BASE_URL}/review-requests/coaches`, {
     credentials: "include",
+    cache: "no-store",
   });
 
   if (!response.ok) {
@@ -68,7 +69,7 @@ export async function getCoachOptions(): Promise<CoachOptionListResponse> {
 }
 
 export async function createReviewRequest(payload: ReviewRequestCreatePayload): Promise<ReviewRequestApiItem> {
-  const response = await fetch(`${API_BASE_URL}/review-requests`, {
+  const response = await apiFetch(`${API_BASE_URL}/review-requests`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -86,8 +87,9 @@ export async function createReviewRequest(payload: ReviewRequestCreatePayload): 
 }
 
 export async function getMyReviewRequests(): Promise<ReviewRequestListResponse> {
-  const response = await fetch(`${API_BASE_URL}/review-requests/me`, {
+  const response = await apiFetch(`${API_BASE_URL}/review-requests/me`, {
     credentials: "include",
+    cache: "no-store",
   });
 
   if (!response.ok) {
@@ -99,8 +101,9 @@ export async function getMyReviewRequests(): Promise<ReviewRequestListResponse> 
 }
 
 export async function getReviewInbox(): Promise<ReviewRequestListResponse> {
-  const response = await fetch(`${API_BASE_URL}/review-requests/inbox`, {
+  const response = await apiFetch(`${API_BASE_URL}/review-requests/inbox`, {
     credentials: "include",
+    cache: "no-store",
   });
 
   if (!response.ok) {
@@ -115,7 +118,7 @@ export async function updateReviewRequest(
   reviewRequestId: number,
   payload: ReviewRequestUpdatePayload,
 ): Promise<ReviewRequestApiItem> {
-  const response = await fetch(`${API_BASE_URL}/review-requests/${reviewRequestId}`, {
+  const response = await apiFetch(`${API_BASE_URL}/review-requests/${reviewRequestId}`, {
     method: "PATCH",
     credentials: "include",
     headers: {
@@ -133,7 +136,7 @@ export async function updateReviewRequest(
 }
 
 export async function cancelReviewRequest(reviewRequestId: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/review-requests/${reviewRequestId}`, {
+  const response = await apiFetch(`${API_BASE_URL}/review-requests/${reviewRequestId}`, {
     method: "DELETE",
     credentials: "include",
   });

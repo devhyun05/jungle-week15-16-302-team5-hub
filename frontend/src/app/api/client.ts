@@ -2,6 +2,66 @@ const rawApiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:800
 
 export const API_BASE_URL = rawApiBaseUrl.replace(/\/$/, "");
 
+let refreshPromise: Promise<boolean> | null = null;
+
+function getRequestUrl(input: RequestInfo | URL) {
+  if (typeof input === "string") {
+    return input;
+  }
+
+  if (input instanceof URL) {
+    return input.href;
+  }
+
+  return input.url;
+}
+
+function shouldRefreshOnUnauthorized(input: RequestInfo | URL) {
+  const url = getRequestUrl(input);
+
+  return !url.includes("/auth/refresh") && !url.includes("/auth/logout") && !url.includes("/auth/google/login");
+}
+
+async function refreshAccessToken() {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then((response) => response.ok)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+}
+
+/**
+ * FastAPI API를 호출할 때 쓰는 공통 fetch 함수다.
+ * access token cookie가 만료되어 401이 오면 refresh token으로 한 번 재발급한 뒤 원래 요청을 재시도한다.
+ */
+export async function apiFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  const requestInit: RequestInit = {
+    credentials: "include",
+    ...init,
+  };
+  const response = await fetch(input, requestInit);
+
+  if (response.status !== 401 || !shouldRefreshOnUnauthorized(input)) {
+    return response;
+  }
+
+  const refreshed = await refreshAccessToken();
+
+  if (!refreshed) {
+    return response;
+  }
+
+  return fetch(input, requestInit);
+}
+
 export function resolveApiAssetUrl(url: string | null | undefined): string | null {
   if (!url) {
     return null;

@@ -1,4 +1,4 @@
-import { API_BASE_URL, getErrorMessage } from "./client";
+import { API_BASE_URL, apiFetch, getErrorMessage } from "./client";
 import type { UserRole } from "./auth";
 
 export type PostListApiItem = {
@@ -71,7 +71,7 @@ export async function getPosts(params: GetPostsParams = {}): Promise<PostListApi
   searchParams.set("page", String(params.page ?? 1));
   searchParams.set("size", String(params.size ?? 50));
 
-  const response = await fetch(`${API_BASE_URL}/posts?${searchParams.toString()}`, {
+  const response = await apiFetch(`${API_BASE_URL}/posts?${searchParams.toString()}`, {
     credentials: "include",
   });
 
@@ -99,7 +99,7 @@ export async function getMyPosts(params: GetMyPostsParams = {}): Promise<PostLis
   searchParams.set("page", String(params.page ?? 1));
   searchParams.set("size", String(params.size ?? 50));
 
-  const response = await fetch(`${API_BASE_URL}/me/posts?${searchParams.toString()}`, {
+  const response = await apiFetch(`${API_BASE_URL}/me/posts?${searchParams.toString()}`, {
     credentials: "include",
   });
 
@@ -113,7 +113,7 @@ export async function getMyPosts(params: GetMyPostsParams = {}): Promise<PostLis
 
 
 export async function getPostDetail(postId: string | number): Promise<PostDetailApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+  const response = await apiFetch(`${API_BASE_URL}/posts/${postId}`, {
     credentials: "include",
   });
 
@@ -127,7 +127,7 @@ export async function getPostDetail(postId: string | number): Promise<PostDetail
 
 
 export async function createPost(payload: PostCreatePayload): Promise<PostCreateResponse> {
-  const response = await fetch(`${API_BASE_URL}/posts`, {
+  const response = await apiFetch(`${API_BASE_URL}/posts`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -146,7 +146,7 @@ export async function createPost(payload: PostCreatePayload): Promise<PostCreate
 
 
 export async function updatePost(postId: string | number, payload: PostUpdatePayload): Promise<PostUpdateResponse> {
-  const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+  const response = await apiFetch(`${API_BASE_URL}/posts/${postId}`, {
     method: "PATCH",
     credentials: "include",
     headers: {
@@ -165,7 +165,7 @@ export async function updatePost(postId: string | number, payload: PostUpdatePay
 
 
 export async function deletePost(postId: string | number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+  const response = await apiFetch(`${API_BASE_URL}/posts/${postId}`, {
     method: "DELETE",
     credentials: "include",
   });

@@ -21,6 +21,8 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 
 - Google OAuth/JWT 인증 API
 - access token / refresh token HttpOnly cookie 처리
+- 공통 `apiFetch`로 access token 만료 시 refresh 후 서비스 API 1회 재시도
+- 인증/서비스 API 조회 요청의 브라우저 캐시 방지 처리
 - refresh token hash DB 저장, 재발급, 로그아웃 폐기
 - `/auth/me` 기반 현재 사용자 조회
 - 최초 로그인 사용자 `승인 대기` 처리
@@ -100,7 +102,7 @@ Browser
   | React + TypeScript + Vite
   | - AuthContext
   | - React Router RoleGate
-  | - API client fetch(credentials: "include")
+  | - API client apiFetch(credentials: "include", refresh retry)
   v
 FastAPI
   |
@@ -371,6 +373,8 @@ Google Cloud Console 설정:
 - 공통 `getErrorMessage()` 보강으로 `[object Object]` 노출 위험 점검
 - 학생 주요 라우트 8개에서 debug/기술 문구와 빈 상태 문구 점검
 - 학생 글쓰기 브라우저 QA 중 발견한 상세 화면 요약/본문 중복 표시 수정
+- 코치 리뷰 인박스 피드백 상태 반영, 학생 알림 생성, 관리자 role 복구 흐름 검증
+- 오래 떠 있던 Vite dev 서버와 브라우저 캐시로 role/menu가 낡게 보이는 문제를 공통 `apiFetch`와 `cache: "no-store"`로 정리
 
 남은 수동 QA:
 
@@ -400,6 +404,7 @@ Google Cloud Console 설정:
 - 로그인 상태와 승인 상태는 분리해서 생각해야 한다.
 - 프론트 라우트 보호는 UX를 위한 것이고, 실제 보안은 백엔드 권한 검사가 담당해야 한다.
 - refresh token은 원문을 DB에 저장하지 않고 hash로 저장하는 편이 안전하다.
+- access token이 짧게 만료되는 구조에서는 일반 API 호출도 refresh 재시도 흐름을 공유해야 한다.
 - 학생/코치/관리자 role이 생기면 단순 CRUD보다 권한 검증이 훨씬 중요해진다.
 
 ### 현재 한계

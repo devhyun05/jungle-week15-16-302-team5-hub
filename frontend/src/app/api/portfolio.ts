@@ -1,4 +1,4 @@
-import { API_BASE_URL, getErrorMessage } from "./client";
+import { API_BASE_URL, apiFetch, getErrorMessage } from "./client";
 
 export type PortfolioStatus = "작성중" | "보완 필요" | "정리 완료";
 
@@ -44,7 +44,7 @@ export type PortfolioProjectUpdatePayload = {
 };
 
 export async function getPortfolioProjects(): Promise<PortfolioProjectListResponse> {
-  const response = await fetch(`${API_BASE_URL}/portfolio/projects`, {
+  const response = await apiFetch(`${API_BASE_URL}/portfolio/projects`, {
     credentials: "include",
   });
 
@@ -57,7 +57,7 @@ export async function getPortfolioProjects(): Promise<PortfolioProjectListRespon
 }
 
 export async function createPortfolioProject(payload: PortfolioProjectCreatePayload): Promise<PortfolioProjectApiItem> {
-  const response = await fetch(`${API_BASE_URL}/portfolio/projects`, {
+  const response = await apiFetch(`${API_BASE_URL}/portfolio/projects`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -78,7 +78,7 @@ export async function updatePortfolioProject(
   projectId: number,
   payload: PortfolioProjectUpdatePayload,
 ): Promise<PortfolioProjectApiItem> {
-  const response = await fetch(`${API_BASE_URL}/portfolio/projects/${projectId}`, {
+  const response = await apiFetch(`${API_BASE_URL}/portfolio/projects/${projectId}`, {
     method: "PATCH",
     credentials: "include",
     headers: {
@@ -96,7 +96,7 @@ export async function updatePortfolioProject(
 }
 
 export async function linkPortfolioProjectPosts(projectId: number, postIds: number[]): Promise<PortfolioProjectApiItem> {
-  const response = await fetch(`${API_BASE_URL}/portfolio/projects/${projectId}/posts`, {
+  const response = await apiFetch(`${API_BASE_URL}/portfolio/projects/${projectId}/posts`, {
     method: "PUT",
     credentials: "include",
     headers: {

@@ -1,4 +1,4 @@
-import { API_BASE_URL, getErrorMessage } from "./client";
+import { API_BASE_URL, apiFetch, getErrorMessage } from "./client";
 import type { ApprovalStatus, UserRole } from "./auth";
 
 export type AdminUser = {
@@ -30,7 +30,7 @@ export type AdminUserUpdateRequest = {
 
 export async function getAdminUsers(): Promise<AdminUserListResponse> {
   // 관리자 화면은 전체 사용자 상태를 한 번에 보고 필터링해야 하므로 v1에서는 최대 100명까지 가져온다.
-  const response = await fetch(`${API_BASE_URL}/admin/users?size=100`, {
+  const response = await apiFetch(`${API_BASE_URL}/admin/users?size=100`, {
     credentials: "include",
   });
 
@@ -46,7 +46,7 @@ export async function updateAdminUser(
   userId: number,
   request: AdminUserUpdateRequest,
 ): Promise<AdminUser> {
-  const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+  const response = await apiFetch(`${API_BASE_URL}/admin/users/${userId}`, {
     method: "PATCH",
     credentials: "include",
     headers: {

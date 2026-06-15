@@ -1,4 +1,4 @@
-import { API_BASE_URL, getErrorMessage } from "./client";
+import { API_BASE_URL, apiFetch, getErrorMessage } from "./client";
 
 export type NotificationApiItem = {
   id: number;
@@ -16,7 +16,7 @@ export type NotificationListResponse = {
 };
 
 export async function getNotifications(size = 10): Promise<NotificationListResponse> {
-  const response = await fetch(`${API_BASE_URL}/notifications?size=${size}`, {
+  const response = await apiFetch(`${API_BASE_URL}/notifications?size=${size}`, {
     credentials: "include",
   });
 
@@ -29,7 +29,7 @@ export async function getNotifications(size = 10): Promise<NotificationListRespo
 }
 
 export async function markNotificationRead(notificationId: number): Promise<NotificationApiItem> {
-  const response = await fetch(`${API_BASE_URL}/notifications/${notificationId}/read`, {
+  const response = await apiFetch(`${API_BASE_URL}/notifications/${notificationId}/read`, {
     method: "PATCH",
     credentials: "include",
   });
@@ -43,7 +43,7 @@ export async function markNotificationRead(notificationId: number): Promise<Noti
 }
 
 export async function markAllNotificationsRead(): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/notifications/read-all`, {
+  const response = await apiFetch(`${API_BASE_URL}/notifications/read-all`, {
     method: "PATCH",
     credentials: "include",
   });

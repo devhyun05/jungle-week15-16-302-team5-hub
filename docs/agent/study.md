@@ -4342,3 +4342,61 @@ COACH 로그인
 - optimistic UI
 - ISO timestamp
 - locale date formatting
+
+---
+
+## 2026-06-15 학습: apiFetch, refresh retry, 브라우저 캐시
+
+이번에 본 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/api/client.ts` | API 공통 설정, 에러 메시지 처리, `apiFetch()` refresh retry 담당 |
+| `frontend/src/app/api/auth.ts` | `/auth/me`, `/auth/refresh`, `/auth/logout`, 프로필 수정 API 담당 |
+| `frontend/src/app/api/reviews.ts` | 코치 리뷰 요청/인박스/피드백 API 담당 |
+| `frontend/src/app/api/posts.ts` | 게시글 목록/상세/작성/수정/삭제 API 담당 |
+| `frontend/src/app/api/comments.ts` | 댓글 조회/작성/삭제 API 담당 |
+| `frontend/src/app/api/portfolio.ts` | 포트폴리오 프로젝트 API 담당 |
+| `frontend/src/app/api/notifications.ts` | 알림 조회/읽음 처리 API 담당 |
+| `frontend/src/app/api/admin.ts` | 관리자 사용자 승인 API 담당 |
+
+핵심 개념:
+
+- access token은 짧게 살고, refresh token은 새 access token을 발급받기 위한 장기 토큰이다.
+- `credentials: "include"`는 HttpOnly cookie를 API 요청에 실어 보내기 위해 필요하다.
+- 일반 API가 401을 받으면 access token이 만료됐을 수 있으므로 `/auth/refresh`를 한 번 호출한 뒤 원래 요청을 재시도할 수 있다.
+- `cache: "no-store"`는 브라우저가 `/auth/me`나 인박스 조회 응답을 오래 들고 있어 role/menu/status가 낡게 보이는 문제를 줄인다.
+- JWT에는 role을 넣지 않고 user id만 넣었으므로 role 변경은 `/auth/me`가 DB를 다시 읽어야 화면에 반영된다.
+- 오래 떠 있던 Vite dev server는 HMR state가 꼬일 수 있으므로, 이상한 Provider 오류가 나면 빌드 확인 후 dev server 재시작도 QA 절차에 포함한다.
+
+코드 흐름:
+
+```txt
+화면 API 함수 호출
+-> apiFetch(url, options)
+-> fetch(url, credentials: "include")
+-> 401이 아니면 그대로 반환
+-> 401이면 /auth/refresh POST
+-> refresh 성공 시 원래 요청을 한 번 재시도
+-> 실패하면 기존 401 응답 반환
+-> 화면은 getErrorMessage()로 안내 문구 표시
+```
+
+이번에 이해해야 할 포인트:
+
+1. `AuthContext`는 앱 시작 시 로그인 사용자를 읽는다.
+2. 하지만 게시글/리뷰/포트폴리오 같은 개별 API도 access token 만료를 만날 수 있다.
+3. 그래서 인증 초기화만 refresh를 처리하면 부족하고, 공통 API client에서도 refresh retry가 필요하다.
+4. role은 DB에서 읽으므로 관리자/코치/학생 전환 QA 후에는 `/auth/me` 캐시를 막아야 최신 메뉴가 보인다.
+5. 브라우저 화면이 이상하면 DB, 실제 HTTP API, React 화면을 분리해서 확인해야 한다.
+
+추가 공부 키워드:
+
+- fetch wrapper
+- retry policy
+- 401 Unauthorized
+- refresh token rotation
+- HttpOnly cookie
+- browser cache
+- Vite HMR
+- source of truth

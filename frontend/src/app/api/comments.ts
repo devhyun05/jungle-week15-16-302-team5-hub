@@ -1,5 +1,5 @@
 import type { UserRole } from "./auth";
-import { API_BASE_URL, getErrorMessage } from "./client";
+import { API_BASE_URL, apiFetch, getErrorMessage } from "./client";
 
 export type CommentApiItem = {
   id: number;
@@ -21,7 +21,7 @@ export type CommentListApiResponse = {
 
 
 export async function getPostComments(postId: string | number): Promise<CommentListApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments`, {
+  const response = await apiFetch(`${API_BASE_URL}/posts/${postId}/comments`, {
     credentials: "include",
   });
 
@@ -38,7 +38,7 @@ export async function createPostComment(
   postId: string | number,
   content: string
 ): Promise<CommentApiItem> {
-  const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments`, {
+  const response = await apiFetch(`${API_BASE_URL}/posts/${postId}/comments`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -57,7 +57,7 @@ export async function createPostComment(
 
 
 export async function deleteComment(commentId: string | number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
+  const response = await apiFetch(`${API_BASE_URL}/comments/${commentId}`, {
     method: "DELETE",
     credentials: "include",
   });
