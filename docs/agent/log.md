@@ -2948,3 +2948,56 @@ docs: 파트 단위 커밋 운영 기준 추가
 - `npm run build` 성공
 - `python -m compileall app` 성공
 - `git diff --check`는 공백 오류 없이 통과했으며, Windows 줄바꿈 경고만 표시됨
+
+---
+
+## 2026-06-16 학생 핵심 흐름 DB/API 자체 QA
+
+상태: 완료
+
+목표: 학생 화면 완료 기준 중 실제 API와 DB 흐름으로 증명해야 하는 항목을 임시 QA 사용자/데이터로 검증했다.
+
+진행한 것:
+
+- QA 학생/코치 사용자를 임시 생성했다.
+- 학생 게시글을 생성하고 댓글을 작성했다.
+- 게시글 상세를 2번 조회해 조회수 증가 흐름을 확인했다.
+- 내 기록 조회에서 방금 만든 게시글이 조회되는지 확인했다.
+- GitHub repo URL로 포트폴리오 프로젝트를 등록했다.
+- 같은 repo를 다시 등록하면 중복으로 차단되는지 확인했다.
+- 포트폴리오 프로젝트에 게시글을 연결했다.
+- 포트폴리오 초안과 면접 예상 질문을 프로젝트에 저장했다.
+- 학생이 게시글을 대상으로 코치 리뷰 요청을 만들었다.
+- 코치 인박스에 해당 요청이 들어오는지 확인했다.
+- 코치가 `최종 확인`과 피드백을 저장하면 학생 요청 목록에 반영되는지 확인했다.
+- QA 데이터는 검증 후 삭제했다.
+
+검증 결과:
+
+```txt
+portfolio_list_contains_created=True
+portfolio_duplicate_blocked=True
+linked_post_ids=[43]
+saved_draft=QA portfolio draft
+saved_interview=QA interview questions
+portfolio_status_after=보완 필요
+my_posts_has_created_post=True
+comment_total=1
+detail_views_before_after=1 2
+detail_comment_count=1
+coach_inbox_has_review=True
+review_status_after=최종 확인
+student_request_feedback_seen=True
+```
+
+발견한 점:
+
+- PowerShell에서 Python stdin으로 한글 literal을 직접 넘기면 `보완 필요`가 깨질 수 있었다.
+- QA 스크립트에서는 한글 상태값을 유니코드 escape로 넣어 검증했다.
+- cleanup에는 `post_tags` 연결 테이블 삭제가 먼저 필요했다.
+
+커밋 추천 제목:
+
+```txt
+docs: 학생 핵심 흐름 QA 기록
+```

@@ -2426,3 +2426,50 @@ npm run build: 성공
 python -m compileall app: 성공
 git diff --check: 공백 오류 없음, Windows 줄바꿈 경고만 표시
 ```
+
+---
+
+## 2026-06-16 QA: 학생 핵심 흐름 DB/API 감사
+
+목표: 학생 화면 완료 기준 중 API/DB 데이터 흐름으로 검증해야 하는 항목을 실제 서비스 함수 기준으로 확인한다.
+
+체크리스트:
+
+- [x] GitHub repo URL로 포트폴리오 프로젝트를 등록할 수 있다.
+- [x] 등록 직후 `get_portfolio_projects` 목록에 해당 프로젝트가 보인다.
+- [x] 같은 repo를 다시 등록하면 중복으로 차단된다.
+- [x] 프로젝트에 게시글/학습 기록을 연결할 수 있다.
+- [x] 포트폴리오 상태를 `보완 필요`로 저장할 수 있다.
+- [x] 포트폴리오 초안을 프로젝트에 저장할 수 있다.
+- [x] 면접 예상 질문을 프로젝트에 저장할 수 있다.
+- [x] 게시글 작성 후 `get_my_posts`에서 해당 게시글이 조회된다.
+- [x] 댓글 작성 후 댓글 목록 total이 1로 보인다.
+- [x] 게시글 상세 조회 시 조회수가 증가한다.
+- [x] 게시글 상세 응답의 댓글 수가 실제 댓글 수와 일치한다.
+- [x] 학생이 작성한 게시글을 코치 리뷰 대상으로 요청할 수 있다.
+- [x] 요청받은 코치 인박스에 해당 리뷰 요청이 보인다.
+- [x] 코치가 `최종 확인`과 피드백을 저장하면 학생 요청 목록에 반영된다.
+- [x] QA 데이터는 검증 후 삭제했다.
+
+검증 출력 요약:
+
+```txt
+portfolio_list_contains_created=True
+portfolio_duplicate_blocked=True
+linked_post_ids=[43]
+saved_draft=QA portfolio draft
+saved_interview=QA interview questions
+portfolio_status_after=보완 필요
+my_posts_has_created_post=True
+comment_total=1
+detail_views_before_after=1 2
+detail_comment_count=1
+coach_inbox_has_review=True
+review_status_after=최종 확인
+student_request_feedback_seen=True
+```
+
+메모:
+
+- PowerShell에서 Python stdin으로 한글 상태값을 직접 넘기면 깨질 수 있어 유니코드 escape로 검증했다.
+- cleanup 시 `post_tags` 연결 테이블을 먼저 삭제해야 `posts` 삭제 FK 오류가 나지 않는다.

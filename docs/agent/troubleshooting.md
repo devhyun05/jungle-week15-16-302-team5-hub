@@ -593,3 +593,11 @@ size: int = Query(default=50, ge=1, le=50)
 
 - QA ��ũ��Ʈ���� `�ǵ�� �Ϸ�`�� ���� �ѱ۷� ���� �ʰ� `\ud53c\ub4dc\ubc31 \uc644\ub8cc` �����ڵ� escape�� �����ߴ�.
 - ���� ���� ��û ����, ��ġ �ǵ�� ����, �л� �˸� ���� ������ ���� ����ߴ�.
+
+## 2026-06-16 - QA 스크립트 한글 literal과 연결 테이블 cleanup
+
+- 영역: 자체 QA 스크립트
+- 증상: PowerShell here-string으로 Python에 `보완 필요`를 직접 넘겼을 때 Python 쪽에서 `?? ??`로 들어가 포트폴리오 상태 검증이 실패했다. 또 실패 후 cleanup에서 `posts`를 지우기 전에 `post_tags`를 지우지 않아 FK 오류가 발생했다.
+- 원인: Windows PowerShell stdin 인코딩과 Python 입력 인코딩이 맞지 않았고, N:M 연결 테이블 삭제 순서가 빠져 있었다.
+- 해결: QA 스크립트의 한글 상태값은 유니코드 escape로 넘기고, cleanup은 `comments`, `post_tags`, `portfolio_project_posts`, `review_request_coaches` 같은 연결/자식 테이블을 먼저 삭제하도록 정리했다.
+- 교훈: 실제 서비스 버그인지 QA 도구 문제인지 구분하려면, 상수 값과 요청 값의 `repr()`을 먼저 비교하는 것이 좋다.

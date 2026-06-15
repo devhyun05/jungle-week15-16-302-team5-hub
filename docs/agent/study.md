@@ -4692,3 +4692,40 @@ GitHub ������Ʈ ���
 
 - `backend/.env`에는 Google OAuth secret, JWT secret 같은 민감정보가 있으므로 절대 커밋하지 않는다.
 - QA가 약한 상태에서 커밋하면 나중에 어느 커밋부터 깨졌는지 추적하기 어려워진다.
+
+---
+
+## 2026-06-16 학습 기록: 학생 핵심 흐름 QA를 읽는 법
+
+이번 QA는 브라우저 화면 하나만 보는 것이 아니라, 화면 뒤에서 실제로 호출되는 서비스 흐름이 맞는지 DB/API 기준으로 확인한 작업이다.
+
+관련 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/services/post_service.py` | 게시글 생성, 내 글 조회, 상세 조회, 조회수/댓글 수 응답 구성 |
+| `backend/app/services/comment_service.py` | 댓글 작성과 댓글 목록 응답 구성 |
+| `backend/app/services/portfolio_service.py` | GitHub 프로젝트 등록, 중복 검사, 기록 연결, 초안/면접 질문 저장 |
+| `backend/app/services/review_service.py` | 학생 리뷰 요청 생성, 코치 인박스 조회, 코치 피드백 저장 |
+| `backend/app/repositories/post_repository.py` | 상세 조회 시 `view_count` 증가, 댓글 수 count query 처리 |
+| `backend/app/repositories/portfolio_repository.py` | 프로젝트 owner/repo 기준 중복 검사와 프로젝트-게시글 연결 저장 |
+
+핵심 흐름:
+
+1. 학생이 게시글을 작성한다.
+2. 댓글을 작성하면 `comments` 테이블에 저장되고, 게시글 목록/상세에서는 댓글 count가 계산된다.
+3. 게시글 상세를 열면 `posts.view_count`가 증가한다.
+4. 학생이 GitHub repo를 포트폴리오 프로젝트로 등록한다.
+5. owner id와 repo full name 기준으로 같은 repo 중복 등록을 막는다.
+6. 프로젝트에 게시글을 연결하면 `portfolio_project_posts` 연결 테이블에 저장된다.
+7. AI 도우미에서 만든 포트폴리오 초안/면접 질문은 프로젝트 row에 저장된다.
+8. 학생이 게시글을 코치 리뷰 대상으로 요청하면 `review_requests`와 `review_request_coaches`에 저장된다.
+9. 코치는 자신에게 배정된 요청을 인박스에서 보고 피드백을 저장한다.
+10. 학생의 요청 목록에서 코치가 저장한 상태와 피드백을 다시 볼 수 있다.
+
+이번에 다시 배운 점:
+
+- 브라우저 화면 QA와 DB/API QA는 서로 보완 관계다.
+- 화면에서 보이는 목록 유지 문제는 실제 저장 여부와 목록 재조회 여부를 함께 봐야 한다.
+- N:M 관계인 게시글 태그나 프로젝트-게시글 연결은 cleanup할 때 연결 테이블을 먼저 지워야 한다.
+- PowerShell을 통해 Python으로 한글 상태값을 넘길 때 인코딩이 깨질 수 있으므로, QA 스크립트에서는 유니코드 escape나 코드 상수를 쓰는 편이 안전하다.
