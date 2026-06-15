@@ -71,6 +71,22 @@ function getRoleLabel(role: UserRole) {
   return labels[role];
 }
 
+function getRoleHomePath(role: UserRole, approvalStatus: ApprovalStatus) {
+  if (approvalStatus !== APPROVAL_APPROVED) {
+    return "/pending-approval";
+  }
+
+  if (role === "COACH") {
+    return "/coach-review";
+  }
+
+  if (role === "ADMIN") {
+    return "/admin/users";
+  }
+
+  return "/";
+}
+
 function getProfileInitial(name: string) {
   return name.trim().slice(0, 1).toUpperCase() || "J";
 }
@@ -169,6 +185,7 @@ export function MainLayout() {
     badge: getRoleLabel(user.role),
     imageUrl: resolveApiAssetUrl(user.profileImageUrl),
   };
+  const homePath = getRoleHomePath(user.role, user.approvalStatus);
 
   const handleLogout = async () => {
     await logout();
@@ -220,12 +237,12 @@ export function MainLayout() {
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
       <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white md:flex">
-        <div className="flex items-center gap-2 p-6">
+        <Link to={homePath} className="flex items-center gap-2 p-6 transition-opacity hover:opacity-80">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-600 font-bold text-white">
             J
           </div>
           <span className="text-xl font-bold tracking-tight text-slate-900">JungleLog</span>
-        </div>
+        </Link>
 
         <div className="mx-4 mb-4 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-3">
           <p className="text-xs font-semibold text-emerald-700">내 계정</p>

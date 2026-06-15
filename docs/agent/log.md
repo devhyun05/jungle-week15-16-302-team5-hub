@@ -3183,3 +3183,82 @@ cleanup_done=True
 ```txt
 docs: 긴 repo 카드 레이아웃 QA 기록
 ```
+
+---
+
+## 2026-06-16 GitHub REST API 실제 연동
+
+상태: 완료
+
+목표:
+
+- AI/MCP 전 단계로 포트폴리오 관리 화면의 GitHub 프로젝트 등록을 실제 GitHub REST API와 연결한다.
+- 등록된 프로젝트의 README, 사용 언어, 최근 커밋 정보를 DB에 저장하고 화면에서 보여준다.
+- 데스크톱 기준으로 주요 화면의 중앙 콘텐츠 폭을 조금 넓힌다.
+- JungleLog 로고를 역할별 홈 이동 버튼처럼 동작하게 한다.
+
+진행한 것:
+
+- `backend/app/services/github_service.py`를 추가했다.
+- GitHub REST API로 repository metadata, README, languages, commits를 조회한다.
+- 공개 repo는 token 없이 조회하고, `GITHUB_TOKEN`이 있으면 Authorization header를 붙이도록 만들었다.
+- 포트폴리오 프로젝트 등록 시 GitHub 분석 결과를 함께 저장하도록 `portfolio_service`와 `portfolio_repository`를 수정했다.
+- `POST /portfolio/projects/{project_id}/github/refresh` API를 추가했다.
+- 포트폴리오 화면의 `GitHub 정보 새로고침` 버튼을 mock `setTimeout`에서 실제 API 호출로 바꿨다.
+- 등록 시 임시 `techStack: ["GitHub"]`를 보내던 흐름을 제거해 백엔드가 GitHub languages 결과를 저장하게 했다.
+- 사이드바 JungleLog 로고를 role별 홈 경로로 연결했다.
+- 주요 화면의 최대 폭을 `max-w-6xl`에서 `max-w-7xl`로 넓혔다.
+
+역할별 로고 홈 이동:
+
+- 승인 전: `/pending-approval`
+- STUDENT: `/`
+- COACH: `/coach-review`
+- ADMIN: `/admin/users`
+
+검증:
+
+```txt
+python -m compileall app
+npm run build
+GitHub public repo smoke test: octocat/Hello-World
+```
+
+결과:
+
+- 백엔드 compile 성공
+- 프론트엔드 build 성공
+- `octocat/Hello-World`에서 repo URL, README 존재 여부, 최근 커밋 3개 조회 확인
+
+커밋 추천 제목:
+
+```txt
+feat: GitHub REST API로 포트폴리오 프로젝트 분석 연결
+```
+
+---
+
+## 2026-06-16 GitHub 연동 UI 브라우저 smoke QA
+
+상태: 완료
+
+확인한 것:
+
+- 현재 브라우저 세션은 ADMIN 사용자로 렌더링됐다.
+- JungleLog 로고 링크가 ADMIN 기본 화면인 `/admin/users`를 가리키는지 확인했다.
+- `/coach-review` 화면에서 `Unexpected Application Error`와 `[object Object]`가 보이지 않았다.
+- 주요 화면 폭 확장 class인 `max-w-7xl`이 렌더링되는지 확인했다.
+- `/portfolio` 화면이 열리고 GitHub repo 입력창과 `GitHub 프로젝트 등록` 버튼이 보이는지 확인했다.
+
+검증 결과:
+
+```txt
+coachReview.bodyHasError=False
+coachReview.logoHref=/admin/users
+coachReview.hasWideContainer=True
+portfolio.bodyHasError=False
+portfolio.hasPortfolioHeading=True
+portfolio.hasRepoInput=True
+portfolio.hasRegisterButton=True
+portfolio.hasWideContainer=True
+```

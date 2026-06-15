@@ -876,3 +876,47 @@ POST /agent/run
 
 - `frontend/src/app/api/portfolio.ts`�� `PortfolioProjectApiItem` Ÿ�Կ� �� �ʵ尡 �߰��ƴ�.
 - AI ����̴� `savedInterviewQuestions`�� PATCH�ϰ�, ��Ʈ������ ȭ���� `aiInterviewSaved`�� badge ���¸� ǥ���Ѵ�.
+
+---
+
+## 2026-06-16 추가: GitHub 정보 새로고침 API
+
+### POST /portfolio/projects/{project_id}/github/refresh
+
+목적:
+
+- 이미 등록된 포트폴리오 프로젝트의 GitHub 정보를 다시 가져온다.
+- GitHub REST API로 README, 사용 언어, 최근 커밋을 조회한 뒤 `portfolio_projects` 테이블에 저장한다.
+
+권한:
+
+- STUDENT
+- ADMIN
+
+Path parameter:
+
+| 이름 | 타입 | 설명 |
+| --- | --- | --- |
+| `project_id` | int | 새로고침할 포트폴리오 프로젝트 id |
+
+Response:
+
+- `PortfolioProjectResponse`
+- 기존 `GET /portfolio/projects`의 item과 같은 응답 구조를 사용한다.
+
+에러:
+
+| 상태 코드 | 의미 |
+| --- | --- |
+| 404 | 프로젝트가 없거나 GitHub 저장소를 찾을 수 없음 |
+| 502 | GitHub API rate limit, 권한 문제, 네트워크 문제 등 외부 API 실패 |
+
+프론트 연결:
+
+- `frontend/src/app/api/portfolio.ts`의 `refreshPortfolioProjectGithubInfo(projectId)`가 호출한다.
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`의 `GitHub 정보 새로고침` 버튼이 사용한다.
+
+비고:
+
+- public repo는 `GITHUB_TOKEN` 없이 조회 가능하다.
+- private repo 또는 rate limit 대응이 필요하면 백엔드 `.env`에 `GITHUB_TOKEN`을 추가한다.

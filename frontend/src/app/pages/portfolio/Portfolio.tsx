@@ -10,6 +10,7 @@ import {
   createPortfolioProject,
   getPortfolioProjects,
   linkPortfolioProjectPosts,
+  refreshPortfolioProjectGithubInfo,
   updatePortfolioProject,
   type PortfolioProjectApiItem,
   type PortfolioStatus,
@@ -228,13 +229,12 @@ export function Portfolio() {
     try {
       const newProject = await createPortfolioProject({
         githubUrl: trimmedRepoUrl,
-        techStack: ["GitHub"],
       });
 
       setRepoUrl("");
       setSearchKeyword("");
       await loadPortfolioData(newProject.id);
-      setNotice("GitHub 프로젝트가 등록되었습니다. 관련 기록을 연결해 포트폴리오를 정리해보세요.");
+      setNotice("GitHub 프로젝트를 등록하고 README, 언어, 최근 커밋 정보를 가져왔습니다.");
     } catch (error) {
       console.error(error);
       const message = error instanceof Error ? error.message : "GitHub 프로젝트를 등록하지 못했습니다.";
@@ -259,12 +259,26 @@ export function Portfolio() {
     }
   };
 
-  const refreshGithubInfo = () => {
+  const refreshGithubInfo = async () => {
+    if (!selectedProject) {
+      return;
+    }
+
     setAnalyzing(true);
-    window.setTimeout(() => {
+    setErrorMessage("");
+    setNotice("");
+
+    try {
+      const updatedProject = await refreshPortfolioProjectGithubInfo(selectedProject.id);
+
+      upsertProject(updatedProject);
+      setNotice("GitHub README, 언어, 최근 커밋 정보를 새로 가져왔습니다.");
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(error instanceof Error ? error.message : "GitHub 정보를 새로고침하지 못했습니다.");
+    } finally {
       setAnalyzing(false);
-      setNotice("GitHub 정보 새로고침을 요청했습니다. README와 커밋 정보는 자동 분석 기능이 준비되면 더 자세히 채워집니다.");
-    }, 700);
+    }
   };
 
   const updatePortfolioStatus = async (status: PortfolioStatus) => {
@@ -315,7 +329,7 @@ export function Portfolio() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">포트폴리오 관리</h1>
         <p className="mt-1 text-slate-500">
@@ -462,7 +476,7 @@ export function Portfolio() {
                           GitHub URL 확인 필요
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={refreshGithubInfo} disabled={analyzing}>
+                      <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={() => void refreshGithubInfo()} disabled={analyzing}>
                         <RefreshCw className={`mr-1 h-3 w-3 ${analyzing ? "animate-spin" : ""}`} />
                         GitHub 정보 새로고침
                       </Button>

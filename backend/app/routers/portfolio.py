@@ -11,6 +11,7 @@ from app.schemas.portfolio import (
     PortfolioProjectResponse,
     PortfolioProjectUpdateRequest,
 )
+from app.services.github_service import GitHubApiError, GitHubRepositoryNotFoundError
 from app.services import portfolio_service
 
 
@@ -48,6 +49,10 @@ def create_portfolio_project(
             request=request,
             current_user=current_user,
         )
+    except GitHubRepositoryNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except GitHubApiError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
@@ -72,6 +77,33 @@ def update_portfolio_project(
         )
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+
+    if project is None:
+        raise HTTPException(status_code=404, detail="포트폴리오 프로젝트를 찾을 수 없습니다.")
+
+    return project
+
+
+@router.post("/{project_id}/github/refresh", response_model=PortfolioProjectResponse)
+def refresh_github_project(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("STUDENT", "ADMIN")),
+) -> PortfolioProjectResponse:
+    """
+    GitHub API를 다시 호출해 프로젝트의 README, 언어, 최근 커밋 정보를 갱신한다.
+    """
+
+    try:
+        project = portfolio_service.refresh_github_project(
+            db=db,
+            project_id=project_id,
+            current_user=current_user,
+        )
+    except GitHubRepositoryNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except GitHubApiError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
 
     if project is None:
         raise HTTPException(status_code=404, detail="포트폴리오 프로젝트를 찾을 수 없습니다.")

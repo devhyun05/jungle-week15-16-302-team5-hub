@@ -87,7 +87,7 @@ export function Posts() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">전체 게시글</h1>

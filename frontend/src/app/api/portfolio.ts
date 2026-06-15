@@ -115,3 +115,17 @@ export async function linkPortfolioProjectPosts(projectId: number, postIds: numb
 
   return response.json();
 }
+
+export async function refreshPortfolioProjectGithubInfo(projectId: number): Promise<PortfolioProjectApiItem> {
+  const response = await apiFetch(`${API_BASE_URL}/portfolio/projects/${projectId}/github/refresh`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response);
+    throw new Error(message);
+  }
+
+  return response.json();
+}

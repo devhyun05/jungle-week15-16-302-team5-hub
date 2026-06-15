@@ -199,7 +199,7 @@ function StudentReviewView() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">코치 리뷰 요청</h1>
         <p className="mt-1 text-slate-500">내 게시글이나 포트폴리오 프로젝트를 선택해서 코치님에게 리뷰를 요청합니다.</p>

@@ -179,7 +179,7 @@ export function PostEdit() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto flex max-w-6xl flex-col gap-6 lg:flex-row">
+    <form onSubmit={handleSubmit} className="mx-auto flex max-w-7xl flex-col gap-6 lg:flex-row">
       <div className="flex-1 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>

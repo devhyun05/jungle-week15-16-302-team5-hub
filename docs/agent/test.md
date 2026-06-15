@@ -2618,3 +2618,72 @@ horizontalOverflow=False
 bodyHasError=False
 cleanup_done=True
 ```
+
+---
+
+## 2026-06-16 QA: GitHub REST API 연동
+
+목표: 포트폴리오 프로젝트 등록/새로고침에 사용할 GitHub REST API service가 실제 public repo를 읽을 수 있는지 확인한다.
+
+체크리스트:
+
+- [x] 백엔드 Python compile이 성공한다.
+- [x] 프론트엔드 `npm run build`가 성공한다.
+- [x] `github_service.analyze_repository("octocat/Hello-World")`가 실제 GitHub API 응답을 반환한다.
+- [x] repo full name과 GitHub URL을 읽는다.
+- [x] README 존재 여부를 확인한다.
+- [x] 최근 커밋 목록을 가져온다.
+- [x] public repo는 `GITHUB_TOKEN` 없이 조회 가능하다.
+
+검증 출력 요약:
+
+```txt
+python -m compileall app: success
+npm run build: success
+repo_full_name=octocat/hello-world
+github_url=https://github.com/octocat/Hello-World
+tech_stack=['GitHub']
+recent_commit_count=3
+has_readme=True
+```
+
+추가 수동 QA:
+
+- [ ] 로그인한 학생 계정으로 `/portfolio`에서 public GitHub repo URL을 직접 등록한다.
+- [ ] 등록 후 README/최근 커밋/언어가 화면에 반영되는지 확인한다.
+- [ ] `GitHub 정보 새로고침` 버튼이 실제 API를 호출해 notice를 보여주는지 확인한다.
+- [ ] private repo 연동이 필요하면 `backend/.env`에 `GITHUB_TOKEN`을 추가한 뒤 다시 확인한다.
+
+---
+
+## 2026-06-16 QA: GitHub 연동 UI 브라우저 smoke
+
+목표: GitHub 연동 후 포트폴리오 화면과 역할별 홈 링크가 브라우저에서 깨지지 않는지 확인한다.
+
+체크리스트:
+
+- [x] 현재 ADMIN 세션에서 JungleLog 로고 링크가 `/admin/users`를 가리킨다.
+- [x] `/coach-review` 화면에 `Unexpected Application Error`가 보이지 않는다.
+- [x] `/coach-review` 화면에 `[object Object]`가 보이지 않는다.
+- [x] 주요 화면에 `max-w-7xl` 컨테이너가 렌더링된다.
+- [x] `/portfolio` 화면이 열린다.
+- [x] `/portfolio` 화면에 GitHub repo URL 입력창이 보인다.
+- [x] `/portfolio` 화면에 `GitHub 프로젝트 등록` 버튼이 보인다.
+
+검증 출력 요약:
+
+```txt
+coachReview.bodyHasError=False
+coachReview.logoHref=/admin/users
+coachReview.hasWideContainer=True
+portfolio.bodyHasError=False
+portfolio.hasPortfolioHeading=True
+portfolio.hasRepoInput=True
+portfolio.hasRegisterButton=True
+portfolio.hasWideContainer=True
+```
+
+남은 수동 QA:
+
+- [ ] 학생 계정으로 실제 public repo URL을 입력해 등록 버튼까지 클릭한다.
+- [ ] 등록된 프로젝트의 README/최근 커밋/언어가 화면에 반영되는지 확인한다.

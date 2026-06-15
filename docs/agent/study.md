@@ -4844,3 +4844,75 @@ GitHub ������Ʈ ���
 
 - UI QA는 텍스트 존재 여부와 레이아웃 수치 검사를 같이 보면 더 단단하다.
 - badge처럼 작은 상태 표시 요소는 `shrink-0`과 `whitespace-nowrap`가 없으면 긴 제목 옆에서 찌그러질 수 있다.
+
+---
+
+## 2026-06-16 학습 기록: GitHub REST API 실제 연동
+
+이번 구현은 포트폴리오 관리의 `GitHub 프로젝트 등록`을 mock이 아니라 실제 GitHub REST API 호출과 연결한 작업이다.
+
+관련 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/services/github_service.py` | GitHub REST API 호출, README base64 decoding, languages/commits 응답 정리 |
+| `backend/app/services/portfolio_service.py` | repo URL 파싱 후 GitHub 분석 결과를 포트폴리오 프로젝트 생성/새로고침 흐름에 연결 |
+| `backend/app/repositories/portfolio_repository.py` | GitHub 분석 결과를 `portfolio_projects` 테이블에 저장 |
+| `backend/app/routers/portfolio.py` | `POST /portfolio/projects/{project_id}/github/refresh` API 추가 |
+| `backend/app/core/config.py` | GitHub API base URL, API version, token 설정값 추가 |
+| `frontend/src/app/api/portfolio.ts` | GitHub 정보 새로고침 API 호출 함수 추가 |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | 등록/새로고침 버튼이 실제 API를 호출하도록 변경 |
+| `frontend/src/app/layouts/MainLayout.tsx` | JungleLog 로고를 역할별 홈 링크로 변경 |
+
+핵심 흐름:
+
+1. 사용자가 포트폴리오 관리 화면에 GitHub repo URL을 입력한다.
+2. 프론트엔드가 `POST /portfolio/projects`로 repo URL을 보낸다.
+3. 백엔드 `portfolio_service`가 URL에서 `owner/repo`를 추출한다.
+4. `github_service`가 GitHub REST API를 호출한다.
+5. repo 설명, README, 사용 언어, 최근 커밋을 JungleLog에 필요한 형태로 정리한다.
+6. repository 계층이 `portfolio_projects` 테이블에 저장한다.
+7. 프론트엔드는 응답을 받아 프로젝트 카드와 상세 패널을 다시 보여준다.
+
+이번 구현에서 사용한 백엔드 개념:
+
+- REST API client: `httpx.Client`
+- 외부 API header: `Accept`, `X-GitHub-Api-Version`, `User-Agent`, 선택적 `Authorization`
+- 예외 처리: GitHub 404는 `GitHubRepositoryNotFoundError`, rate limit/장애는 `GitHubApiError`
+- service 계층: 외부 JSON을 바로 DB에 넣지 않고 앱에서 쓰기 좋은 형태로 변환
+- repository 계층: DB 저장 책임을 service와 분리
+- base64 decoding: GitHub README API의 `content`는 base64라 decode가 필요함
+
+이번 구현에서 사용한 프론트엔드 개념:
+
+- API wrapper 함수 추가
+- `async/await`로 버튼 클릭 시 실제 API 호출
+- `useState`로 loading/error/notice 상태 관리
+- `upsertProject`로 갱신된 프로젝트를 화면 state에 반영
+- `Link`를 이용한 role별 홈 이동
+
+내가 이해해야 할 핵심 포인트:
+
+- GitHub API 호출은 프론트가 직접 하지 않고 백엔드를 거친다.
+- 이유는 token을 브라우저에 노출하지 않고, API 응답을 DB에 저장해야 하기 때문이다.
+- public repo는 token 없이도 조회할 수 있지만, private repo나 rate limit 완화에는 `GITHUB_TOKEN`이 필요하다.
+- AI/RAG/MCP가 붙기 전에도 GitHub README와 commits는 포트폴리오 글 생성의 근거 자료가 된다.
+
+나중에 이어질 부분:
+
+- GitHub REST API 호출을 MCP tool로 감싸기
+- OpenAI가 README/커밋/연결 기록을 참고해 포트폴리오 글 생성
+- RAG 검색으로 연결된 게시글 중 관련 기록만 찾아 프롬프트에 넣기
+- GitHub API rate limit 대응과 재시도/캐시 정책 추가
+
+추가로 공부할 키워드:
+
+- REST API
+- HTTP status code 404/403/502
+- API rate limit
+- external API integration
+- service layer
+- repository layer
+- base64
+- environment variable
+- GitHub REST API

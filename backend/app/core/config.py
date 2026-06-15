@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     cookie_secure: bool = False
     cookie_samesite: str = "lax"
     upload_dir: str = "uploads"
+    github_api_base_url: str = "https://api.github.com"
+    github_api_version: str = "2022-11-28"
+    github_token: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",

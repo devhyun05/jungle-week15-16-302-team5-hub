@@ -129,7 +129,7 @@ export function AdminUsers() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <Badge variant="success">관리자</Badge>

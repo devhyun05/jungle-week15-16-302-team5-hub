@@ -950,3 +950,35 @@ JWT 구현, DB 설계 문서, API 설계 문서는 팀원에게 공유해야 하
 - ���� ����:
   - `backend/app/dependencies/auth.py`
   - `backend/app/routers/auth.py`
+
+---
+
+## 2026-06-16 백엔드 키워드: GitHub REST API 연동
+
+관련 구현:
+
+- `backend/app/services/github_service.py`
+- `backend/app/services/portfolio_service.py`
+- `backend/app/repositories/portfolio_repository.py`
+- `backend/app/routers/portfolio.py`
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`
+
+키워드 연결:
+
+| 키워드 | 이번 구현에서 나온 부분 |
+| --- | --- |
+| REST API | GitHub의 `/repos/{owner}/{repo}`, `/readme`, `/commits`, `/languages` endpoint 호출 |
+| API Design | JungleLog 내부에는 `POST /portfolio/projects/{project_id}/github/refresh`로 감싸서 제공 |
+| HTTP 3xx/4xx/5xx | GitHub 404는 repo 없음, 403은 rate limit/권한 문제, JungleLog에서는 외부 API 실패를 502로 전달 |
+| Error Handling | `GitHubRepositoryNotFoundError`, `GitHubApiError`로 원인을 나누어 처리 |
+| Configuration | `GITHUB_API_BASE_URL`, `GITHUB_API_VERSION`, `GITHUB_TOKEN`을 `Settings`로 관리 |
+| Security | GitHub token은 백엔드 `.env`에만 두고 프론트엔드로 보내지 않음 |
+| Layered Architecture | router -> service -> repository 흐름 유지, 외부 API 호출은 `github_service`로 분리 |
+| Timeout | `httpx.Client(timeout=10.0)`으로 외부 API 요청이 무한히 기다리지 않게 함 |
+
+내가 이해해야 하는 점:
+
+- 프론트에서 GitHub API를 직접 부르면 token 노출 위험이 있고 DB 저장도 애매하다.
+- 백엔드 service가 GitHub JSON을 받아 JungleLog 도메인 모델에 맞게 정리한 뒤 repository가 저장한다.
+- 지금은 public repo 기준이고, private repo는 `GITHUB_TOKEN`을 넣어야 한다.
+- AI 단계에서는 이 GitHub 분석 결과가 RAG/Agent의 근거 자료가 된다.

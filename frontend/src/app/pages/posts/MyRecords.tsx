@@ -113,7 +113,7 @@ export function MyRecords() {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">내 기록</h1>
         <p className="mt-1 text-slate-500">내가 작성한 학습 기록과 포트폴리오 자료를 관리합니다.</p>

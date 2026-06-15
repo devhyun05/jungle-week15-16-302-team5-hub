@@ -42,7 +42,11 @@ Trello는 진행판으로 사용하고, 이 폴더는 저장소 안에 남는 �
 - 3단계 FastAPI 백엔드 기본 구조 구현: 완료
 - 4단계 PostgreSQL DB 설계 및 연결: 완료
 - 4.5단계 ERD v1 12개 SQLAlchemy 모델 반영: 완료
-- 5단계 게시글/댓글 API 구현: 예정
+- 5단계 게시글/댓글/내 기록 API 구현: 완료
+- 6단계 Google OAuth/JWT/권한/관리자 승인 구현: 완료
+- 7단계 포트폴리오/코치 리뷰/알림 API 연결: 완료
+- 8단계 GitHub REST API 실제 연동: 완료
+- 9단계 OpenAI/RAG/MCP/Agent 구현: 예정
 
 ## 2026-06-16 파트 단위 커밋 운영 기준
 

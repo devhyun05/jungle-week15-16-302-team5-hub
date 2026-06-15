@@ -1008,10 +1008,10 @@ http://localhost:8000/docs
 }
 ```
 
-## 2026-06-14 Google OAuth / httpx ����
+## 2026-06-14 Google OAuth / httpx ����
 
-Google OAuth �鿣�� ������ ���� HTTP client ���̺귯�� `httpx`�� ��ġ�ߴ�.
-FastAPI ������ Google token endpoint�� userinfo endpoint�� ��û�� ������ ���� ����Ѵ�.
+Google OAuth �鿣�� ������ ���� HTTP client ���̺귯�� `httpx`�� ��ġ�ߴ�.
+FastAPI ������ Google token endpoint�� userinfo endpoint�� ��û�� ������ ���� ����Ѵ�.
 
 ```powershell
 cd C:\junhee\WEEK15_AI_BOARD\backend
@@ -1019,8 +1019,8 @@ cd C:\junhee\WEEK15_AI_BOARD\backend
 .\.venv\Scripts\python.exe -m pip freeze > requirements.txt
 ```
 
-`.env`���� Google OAuth Client ID/Secret, redirect URI, JWT secret�� �����Ѵ�.
-����: `GOOGLE_CLIENT_SECRET`, `JWT_SECRET_KEY`�� ���� README, agent ����, GitHub, ä�ÿ� �������� �ʴ´�.
+`.env`���� Google OAuth Client ID/Secret, redirect URI, JWT secret�� �����Ѵ�.
+����: `GOOGLE_CLIENT_SECRET`, `JWT_SECRET_KEY`�� ���� README, agent ����, GitHub, ä�ÿ� �������� �ʴ´�.
 
 ## 2026-06-15 Google OAuth 설정 검증 방법
 
@@ -1072,3 +1072,42 @@ VITE_API_BASE_URL=http://localhost:8000
 
 - `VITE_`로 시작하는 값은 브라우저 번들에 포함될 수 있으므로 비밀값을 넣으면 안 된다.
 - Google Client Secret, JWT Secret 같은 비밀값은 반드시 백엔드 `.env`에만 둔다.
+
+---
+
+## 2026-06-16 GitHub REST API 설정
+
+포트폴리오 프로젝트 등록은 GitHub REST API를 사용한다.
+public repository는 token 없이도 조회할 수 있다.
+private repository를 읽거나 GitHub API rate limit을 줄이고 싶으면 `backend/.env`에 `GITHUB_TOKEN`을 추가한다.
+
+`backend/.env.example`에 추가한 값:
+
+```txt
+GITHUB_API_BASE_URL=https://api.github.com
+GITHUB_API_VERSION=2022-11-28
+GITHUB_TOKEN=
+```
+
+검증 명령어:
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -c "from app.services.github_service import analyze_repository; a=analyze_repository('octocat/Hello-World'); print(a.repo_full_name); print(a.github_url); print(a.tech_stack[:3]); print(len(a.recent_commit_summary)); print(bool(a.readme_summary))"
+```
+
+이번 검증 결과:
+
+```txt
+octocat/hello-world
+https://github.com/octocat/Hello-World
+['GitHub']
+3
+True
+```
+
+주의:
+
+- `GITHUB_TOKEN`은 비밀값이므로 GitHub, README, 채팅에 올리지 않는다.
+- 프론트엔드 `.env`에는 GitHub token을 넣으면 안 된다. 브라우저 번들에 노출될 수 있다.
+- 실제 서비스에서는 GitHub API rate limit, timeout, 재시도, 캐시 정책을 추가로 설계한다.

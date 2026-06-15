@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
@@ -71,6 +73,9 @@ def create_project(
     github_url: str,
     summary: str | None,
     tech_stack: str | None,
+    readme_summary: str | None = None,
+    recent_commit_summary: str | None = None,
+    last_commit_at: datetime | None = None,
 ) -> PortfolioProject:
     """
     GitHub repo 하나를 포트폴리오 프로젝트로 등록한다.
@@ -83,14 +88,15 @@ def create_project(
         github_url=github_url,
         summary=summary,
         tech_stack=tech_stack,
-        readme_summary=None,
-        recent_commit_summary=None,
+        readme_summary=readme_summary,
+        recent_commit_summary=recent_commit_summary,
         saved_portfolio_draft=None,
         saved_interview_questions=None,
         portfolio_status="작성중",
         coach_feedback_status="요청 전",
         github_connected=True,
         ai_draft_saved=False,
+        last_commit_at=last_commit_at,
     )
     db.add(project)
 
@@ -100,6 +106,41 @@ def create_project(
         db.rollback()
         raise ValueError("이미 등록된 GitHub 프로젝트입니다.") from error
 
+    db.refresh(project)
+
+    return project
+
+
+def update_github_analysis(
+    db: Session,
+    project: PortfolioProject,
+    title: str,
+    repo_full_name: str,
+    github_url: str,
+    summary: str | None,
+    tech_stack: str | None,
+    readme_summary: str | None,
+    recent_commit_summary: str | None,
+    last_commit_at: datetime | None,
+) -> PortfolioProject:
+    """
+    GitHub API에서 다시 가져온 repo 분석 결과를 프로젝트에 저장한다.
+
+    학생이 직접 작성하는 포트폴리오 초안/상태와
+    GitHub에서 자동으로 가져오는 참고 정보가 섞이지 않도록 별도 함수로 분리했다.
+    """
+
+    project.title = title
+    project.repo_full_name = repo_full_name
+    project.github_url = github_url
+    project.summary = summary
+    project.tech_stack = tech_stack
+    project.readme_summary = readme_summary
+    project.recent_commit_summary = recent_commit_summary
+    project.last_commit_at = last_commit_at
+    project.github_connected = True
+
+    db.commit()
     db.refresh(project)
 
     return project

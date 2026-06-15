@@ -11,6 +11,7 @@ from app.schemas.portfolio import (
     PortfolioProjectResponse,
     PortfolioProjectUpdateRequest,
 )
+from app.services import github_service
 
 
 VALID_PORTFOLIO_STATUSES = {"작성중", "보완 필요", "정리 완료"}
@@ -46,8 +47,6 @@ def create_portfolio_project(
     """
 
     repo_full_name = parse_repo_full_name(request.github_url)
-    title = request.title.strip() if request.title else repo_full_name.split("/")[-1]
-    tech_stack = serialize_text_list(request.tech_stack or ["GitHub"])
 
     existing_project = portfolio_repository.get_project_by_owner_and_repo(
         db=db,
@@ -58,17 +57,60 @@ def create_portfolio_project(
     if existing_project is not None:
         raise ValueError("이미 등록된 GitHub 프로젝트입니다.")
 
+    analysis = github_service.analyze_repository(repo_full_name)
+    title = request.title.strip() if request.title else analysis.title
+    summary = request.summary if request.summary is not None else analysis.summary
+    tech_stack = request.tech_stack or analysis.tech_stack
+
     project = portfolio_repository.create_project(
         db=db,
         owner=current_user,
         title=title,
-        repo_full_name=repo_full_name,
-        github_url=request.github_url,
-        summary=request.summary,
-        tech_stack=tech_stack,
+        repo_full_name=analysis.repo_full_name,
+        github_url=analysis.github_url,
+        summary=summary,
+        tech_stack=serialize_text_list(tech_stack),
+        readme_summary=analysis.readme_summary,
+        recent_commit_summary=serialize_text_list(analysis.recent_commit_summary),
+        last_commit_at=analysis.last_commit_at,
     )
 
     return build_project_response(project)
+
+
+def refresh_github_project(
+    db: Session,
+    project_id: int,
+    current_user: User,
+) -> PortfolioProjectResponse | None:
+    """
+    이미 등록된 프로젝트의 GitHub README, 언어, 최근 커밋 정보를 다시 조회해 저장한다.
+    """
+
+    project = portfolio_repository.get_project_by_id(
+        db=db,
+        project_id=project_id,
+        current_user=current_user,
+    )
+
+    if project is None:
+        return None
+
+    analysis = github_service.analyze_repository(project.repo_full_name)
+    updated_project = portfolio_repository.update_github_analysis(
+        db=db,
+        project=project,
+        title=analysis.title,
+        repo_full_name=analysis.repo_full_name,
+        github_url=analysis.github_url,
+        summary=analysis.summary,
+        tech_stack=serialize_text_list(analysis.tech_stack),
+        readme_summary=analysis.readme_summary,
+        recent_commit_summary=serialize_text_list(analysis.recent_commit_summary),
+        last_commit_at=analysis.last_commit_at,
+    )
+
+    return build_project_response(updated_project)
 
 
 def update_portfolio_project(

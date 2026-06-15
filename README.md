@@ -2,7 +2,7 @@
 
 JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, 프로젝트 회고, 면접 질문, 포트폴리오 자료를 관리하고 코치가 기록을 보고 피드백할 수 있는 AI 게시판 프로젝트입니다.
 
-현재 목표는 **AI 기능 연결 직전까지 실제 웹서비스처럼 동작하는 상태**를 만드는 것입니다. OpenAI/RAG/MCP/Agent 호출은 다음 단계로 남겨두고, 인증/권한/게시판/포트폴리오/코치 리뷰 흐름은 실제 FastAPI API 기준으로 연결했습니다.
+현재 목표는 **AI 기능 연결 직전까지 실제 웹서비스처럼 동작하는 상태**를 만드는 것입니다. OpenAI/RAG/MCP/Agent 호출은 다음 단계로 남겨두고, 인증/권한/게시판/포트폴리오/GitHub repo 분석/코치 리뷰 흐름은 실제 FastAPI API 기준으로 연결했습니다.
 
 ## 프로젝트 개요
 
@@ -13,6 +13,7 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 - 백엔드: FastAPI, SQLAlchemy
 - 데이터베이스: PostgreSQL
 - 인증: Google OAuth 2.0, JWT access token, refresh token rotation, HttpOnly cookie
+- 외부 연동: GitHub REST API
 - AI 모델 예정: OpenAI API
 
 ## 현재 구현 상태
@@ -37,6 +38,8 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 - 내 기록 조회 API와 화면 연결
 - 프로필 이름/이미지 수정 API와 설정 화면 연결
 - 포트폴리오 프로젝트 등록/수정/목록 API와 화면 연결
+- GitHub REST API 기반 repo 등록, README 요약, 사용 언어, 최근 커밋 조회 연결
+- 등록된 프로젝트의 GitHub 정보 새로고침 API와 화면 연결
 - 포트폴리오 프로젝트와 게시글 연결 API
 - 포트폴리오 프로젝트 중복 등록 방지와 GitHub 링크 이동 UI
 - 포트폴리오 프로젝트 등록 후 목록 재조회/중복 등록 UX/긴 repo 카드 표시 안정화
@@ -60,8 +63,8 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 
 - 실제 OpenAI API 호출
 - RAG vector search와 요약 생성
-- GitHub API 또는 MCP 기반 repo 분석 자동화
 - MCP server 구현
+- GitHub 연동을 MCP tool 형태로 감싸는 구조
 - Agent 추론 루프 구현
 - 실시간 알림
 - 실제 Google 계정 선택/동의 화면 수동 QA
@@ -74,7 +77,7 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 2. 최초 로그인 시 `승인 대기` 상태가 된다.
 3. 관리자가 학생으로 승인하면 서비스 화면에 접근한다.
 4. 학습 로그, 트러블슈팅, 프로젝트 회고, 면접 질문, 포트폴리오 관리 글을 작성한다.
-5. GitHub repo URL로 포트폴리오 프로젝트를 등록한다.
+5. GitHub repo URL로 포트폴리오 프로젝트를 등록하고 README, 사용 언어, 최근 커밋을 가져온다.
 6. 프로젝트와 자신의 기록을 연결한다.
 7. AI 도우미에서 포트폴리오 글/면접 예상 질문 샘플을 생성한다.
 8. 게시글 또는 포트폴리오 프로젝트를 선택해 코치 리뷰를 요청한다.
@@ -119,12 +122,21 @@ Service Layer
   | - 승인 상태 확인
   | - 역할별 권한 확인
   | - 게시글/댓글/리뷰 상태 검증
+  | - GitHub REST API 조회 결과 정리
   v
 Repository Layer
   |
   | SQLAlchemy ORM
   v
 PostgreSQL
+
+External API
+  |
+  | GitHub REST API
+  | - Repository metadata
+  | - README
+  | - Languages
+  | - Recent commits
 ```
 
 ## 폴더 구조
@@ -214,6 +226,7 @@ WEEK15_AI_BOARD/
 - `GET /portfolio/projects`
 - `POST /portfolio/projects`
 - `PATCH /portfolio/projects/{project_id}`
+- `POST /portfolio/projects/{project_id}/github/refresh`
 - `PUT /portfolio/projects/{project_id}/posts`
 
 ### 코치 리뷰
@@ -231,7 +244,7 @@ WEEK15_AI_BOARD/
 
 ### RAG 예정 기능
 
-- 데이터 소스: JungleLog 게시글, 댓글, 포트폴리오 프로젝트, GitHub README/커밋 요약
+- 데이터 소스: JungleLog 게시글, 댓글, 포트폴리오 프로젝트, GitHub REST API로 가져온 README/커밋 요약
 - 검색 대상: 학생이 작성한 학습 로그, 트러블슈팅, 회고, 면접 질문, 포트폴리오 관리 글
 - 예정 Vector DB: PostgreSQL pgvector 또는 ChromaDB
 - 예정 기능:
@@ -243,7 +256,7 @@ WEEK15_AI_BOARD/
 ### MCP 예정 기능
 
 - MCP server를 통해 외부 시스템을 호출할 예정입니다.
-- 우선 외부 연동 후보는 GitHub API입니다.
+- 기본 GitHub REST API 연동은 이미 FastAPI service로 구현했고, 다음 단계에서는 이를 MCP tool 형태로 분리/호출하는 구조를 검토합니다.
 - 예정 기능:
   - GitHub repo URL 분석
   - README 가져오기
@@ -313,6 +326,7 @@ ADMIN_EMAILS=
 DATABASE_URL=postgresql+psycopg://junglelog:junglelog@localhost:5432/junglelog
 FRONTEND_URL=http://localhost:5173
 BACKEND_CORS_ORIGINS=http://localhost:5173
+GITHUB_TOKEN= # 선택. public repo만 조회할 때는 비워도 됨
 ```
 
 프론트엔드 설정:
@@ -335,6 +349,7 @@ Google Cloud Console 설정:
 
 - `npm run build` 성공
 - `python -m compileall app` 성공
+- public GitHub repo smoke test 성공: `octocat/Hello-World`의 README/최근 커밋 조회 확인
 - `git diff --check` 통과
 - 학생 화면 QA 개선 1차 검증
 - Swagger/OpenAPI 주요 API 등록 확인
@@ -411,7 +426,7 @@ Google Cloud Console 설정:
 
 - 실제 Google 계정 선택 후 callback 수동 QA가 아직 남아 있다.
 - 알림은 현재 API 기반 조회/읽음 처리까지 지원하며, 실시간 push는 아직 없다.
-- GitHub repo 분석은 아직 실제 GitHub API/MCP와 연결되지 않았다.
+- GitHub repo 분석은 기본 REST API로 연결됐고, MCP tool 구조는 아직 남아 있다.
 - AI 도우미는 아직 OpenAI/RAG/MCP/Agent를 호출하지 않는다.
 - AI 도우미 화면은 프로젝트 기반 생성 결과 보관함과 클립보드 복사 흐름까지 UI 기준으로 정리했다.
 - 프로필 이름 수정과 이미지 업로드는 API 기준으로 검증했고, 업로드 이미지 URL이 게시글/댓글/리뷰 요청 응답까지 이어진다.
@@ -524,3 +539,11 @@ OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 �
 
 - 긴 GitHub repo 이름을 가진 포트폴리오 카드에서 상태 badge와 코치 badge가 카드 안에 유지되는지 브라우저 bounding box로 확인했습니다.
 - 긴 repo 이름 때문에 전체 화면에 가로 스크롤이 생기지 않는지 확인했습니다.
+
+## 최근 변경: GitHub REST API 연동
+
+- 포트폴리오 프로젝트 등록 시 GitHub REST API로 repo metadata, README, languages, 최근 커밋을 가져오도록 연결했습니다.
+- 등록된 프로젝트의 `GitHub 정보 새로고침` 버튼은 `/portfolio/projects/{project_id}/github/refresh` API를 호출해 DB 값을 갱신합니다.
+- public repo는 `GITHUB_TOKEN` 없이 조회할 수 있고, private repo 또는 rate limit 대응이 필요하면 백엔드 `.env`에 `GITHUB_TOKEN`을 설정합니다.
+- 사이드바 JungleLog 로고를 누르면 역할별 기본 화면으로 이동합니다.
+- 주요 업무 화면의 최대 폭을 `max-w-7xl`로 넓혀 데스크톱 여백을 줄였습니다.
