@@ -8,7 +8,7 @@
 
 - `/`와 `/posts`는 같은 게시판 메인 화면이므로 목록 API는 `GET /posts` 하나로 지원한다.
 - 게시글 목록은 검색어, 카테고리(`post_type`), 여러 태그를 함께 사용해 좁혀 본다.
-- 반복 `tags` query는 선택한 태그를 모두 포함하는 AND 조건이다.
+- 반복 `tags` query는 선택한 태그 중 하나라도 포함하는 OR 조건이다.
 - 글쓰기 화면은 기존 태그 선택뿐 아니라 직접 입력한 태그를 `tag_names`로 보낸다.
 - 인기 태그 API는 사용 횟수 기준으로 정렬하고, 프론트는 최대 8개만 보여준다.
 - 인증은 access token + refresh token 방식으로 구현한다. access token은 짧게 만료되는 JWT, refresh token은 DB에 hash만 저장하는 긴 수명 opaque token이다.
@@ -337,7 +337,7 @@ python -m pytest tests/test_post_schemas.py
 - `GET /posts`
 - page, size
 - keyword, post_type, tag, 반복 tags, slime_type 필터
-- 반복 tags는 모두 포함 조건으로 처리
+- 반복 tags는 하나라도 포함 조건으로 처리
 - 최신순 정렬
 - `GET /posts/{post_id}`
 - 404 처리

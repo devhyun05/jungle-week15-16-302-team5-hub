@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { login } from "../api/auth";
 import { storeSession } from "../api/client";
 import { button, field, formGroup, formLabel, h1, meta, muted } from "../styles/ui";
@@ -11,6 +11,7 @@ const segmentedActive = "bg-white text-ink shadow-subtle";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -23,7 +24,11 @@ export default function LoginPage() {
     try {
       const response = await login<TokenResponse>({ email, password });
       storeSession(response.access_token, response.user);
-      navigate("/posts");
+      const redirect = searchParams.get("redirect");
+      const safeRedirect = redirect && redirect.startsWith("/") && !redirect.startsWith("//")
+        ? redirect
+        : "/posts";
+      navigate(safeRedirect);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "로그인에 실패했습니다.");
     } finally {

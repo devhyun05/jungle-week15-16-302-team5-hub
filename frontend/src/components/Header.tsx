@@ -1,5 +1,6 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { logout } from "../api/auth";
 import { AUTH_CHANGE_EVENT, clearSession, getStoredUser } from "../api/client";
 import { cn } from "../styles/ui";
 import type { User } from "../types";
@@ -24,6 +25,16 @@ export default function Header() {
     };
   }, []);
 
+  async function handleLogout() {
+    try {
+      await logout();
+    } catch {
+      // Local logout should still happen even if the server session is already gone.
+    } finally {
+      clearSession();
+    }
+  }
+
   return (
     <header className="sticky top-0 z-10 border-b border-line bg-white/95 backdrop-blur">
       <div className="mx-auto grid w-full max-w-[1180px] grid-cols-[1fr_auto] gap-3 px-4 py-3 md:grid-cols-[auto_1fr_auto] md:items-center md:px-8">
@@ -47,7 +58,7 @@ export default function Header() {
               <span className="inline-flex min-h-10 items-center rounded-md px-2 text-sm font-bold text-muted">
                 {user.nickname}
               </span>
-              <button className={headerAction} type="button" onClick={clearSession}>로그아웃</button>
+              <button className={headerAction} type="button" onClick={handleLogout}>로그아웃</button>
             </>
           ) : (
             <>

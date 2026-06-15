@@ -120,11 +120,10 @@ def list_posts(
     if slime_type is not None:
         query = query.filter(Post.slime_type == slime_type)
 
-    # tag 단일 query와 tags 반복 query를 합친 뒤, 태그마다 any 조건을 추가한다.
-    # filter가 여러 번 붙기 때문에 "이 태그도 있고 저 태그도 있는 글"이라는 AND 조건이 된다.
+    # tag 단일 query와 tags 반복 query를 합친 뒤, 선택한 태그 중 하나라도 있으면 남긴다.
     tag_names = build_tag_filters(tag=tag, tags=tags)
-    for tag_name in tag_names:
-        query = query.filter(Post.tags.any(Tag.name == tag_name))
+    if tag_names:
+        query = query.filter(Post.tags.any(Tag.name.in_(tag_names)))
 
     total = query.count()
     total_pages = ceil(total / size) if total > 0 else 0

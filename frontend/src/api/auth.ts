@@ -14,3 +14,19 @@ export function login<TResponse = unknown>(payload: Pick<AuthPayload, "email" | 
     body: JSON.stringify(payload),
   });
 }
+
+export function refresh<TResponse = unknown>() {
+  return apiRequest<TResponse>("/auth/refresh", {
+    method: "POST",
+  });
+}
+
+export function logout<TResponse = void>() {
+  return apiRequest<TResponse>("/auth/logout", {
+    method: "POST",
+  });
+}
+
+export function fetchMe<TResponse = unknown>() {
+  return apiRequest<TResponse>("/auth/me");
+}

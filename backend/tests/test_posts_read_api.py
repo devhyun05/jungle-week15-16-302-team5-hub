@@ -158,7 +158,7 @@ def test_get_posts_filters_keyword_type_slime_and_single_tag(
     }
 
 
-def test_get_posts_filters_repeated_tags_with_and_condition(
+def test_get_posts_filters_repeated_tags_with_or_condition(
     client: TestClient,
     db: Session,
 ) -> None:
@@ -175,9 +175,11 @@ def test_get_posts_filters_repeated_tags_with_and_condition(
 
     assert response.status_code == 200
     data = response.json()
-    assert data["total"] == 1
-    assert data["items"][0]["title"] == "클리어 슬라임 레시피"
-    assert data["items"][0]["tags"] == ["클리어슬라임", "레시피"]
+    assert data["total"] == 2
+    assert {item["title"] for item in data["items"]} == {
+        "클리어 슬라임 레시피",
+        "끈적임 실패 질문",
+    }
 
 
 def test_get_post_detail_returns_post_and_404(

@@ -35,7 +35,7 @@ def set_refresh_cookie(response: Response, refresh_token: str) -> None:
         value=refresh_token,
         httponly=True,
         secure=settings.refresh_token_cookie_secure,
-        samesite="lax",
+        samesite=settings.refresh_token_cookie_samesite,
         path="/auth",
         max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
     )
@@ -47,7 +47,7 @@ def delete_refresh_cookie(response: Response) -> None:
     response.delete_cookie(
         key=settings.refresh_token_cookie_name,
         path="/auth",
-        samesite="lax",
+        samesite=settings.refresh_token_cookie_samesite,
         secure=settings.refresh_token_cookie_secure,
         httponly=True,
     )

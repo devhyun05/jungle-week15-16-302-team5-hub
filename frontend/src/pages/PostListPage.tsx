@@ -46,6 +46,10 @@ function readTags(params: URLSearchParams) {
   return uniqueTags([...params.getAll("tags"), params.get("tag") || ""]);
 }
 
+function readPostType(params: URLSearchParams) {
+  return params.get("post_type") || params.get("type");
+}
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric" }).format(new Date(value));
 }
@@ -102,7 +106,7 @@ function Pagination({ page, totalPages, onChange }: PaginationProps) {
 export default function PostListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialKeyword = searchParams.get("keyword") || "";
-  const initialType = searchParams.get("type");
+  const initialType = readPostType(searchParams);
   const initialTags = readTags(searchParams);
   const [posts, setPosts] = useState<Post[]>([]);
   const [popularTags, setPopularTags] = useState<string[]>([]);
@@ -129,7 +133,7 @@ export default function PostListPage() {
 
   useEffect(() => {
     const nextKeyword = searchParams.get("keyword") || "";
-    const nextType = searchParams.get("type");
+    const nextType = readPostType(searchParams);
     const nextTags = readTags(searchParams);
     setKeyword(nextKeyword);
     setSubmittedKeyword(nextKeyword);
@@ -174,7 +178,7 @@ export default function PostListPage() {
         if (!ignore) {
           setPosts(response.items);
           setTotal(response.total);
-          setTotalPages(response.total_pages);
+          setTotalPages(Math.max(1, response.total_pages));
         }
       } catch (error) {
         if (!ignore) {

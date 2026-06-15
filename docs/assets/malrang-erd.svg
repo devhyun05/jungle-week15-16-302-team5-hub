@@ -1,141 +1,152 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1300" viewBox="0 0 2200 1300">
   <defs>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.12"/>
+      <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#0f172a" flood-opacity="0.13"/>
     </filter>
     <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
       <path d="M2,2 L10,6 L2,10 Z" fill="#334155"/>
     </marker>
     <style>
-      .bg { fill: #f8fbff; }
-      .title { font-family: Arial, Helvetica, sans-serif; font-size: 52px; font-weight: 800; fill: #0f172a; }
-      .subtitle { font-family: Arial, Helvetica, sans-serif; font-size: 26px; font-weight: 500; fill: #475569; }
-      .card { fill: #ffffff; stroke: #bae6fd; stroke-width: 2; rx: 14; filter: url(#shadow); }
-      .head { fill: #e0f2fe; stroke: #38bdf8; stroke-width: 2; rx: 14; }
-      .head-purple { fill: #f3e8ff; stroke: #c084fc; stroke-width: 2; rx: 14; }
-      .table-name { font-family: Arial, Helvetica, sans-serif; font-size: 29px; font-weight: 800; letter-spacing: 1px; fill: #075985; }
-      .table-name-purple { font-family: Arial, Helvetica, sans-serif; font-size: 29px; font-weight: 800; letter-spacing: 1px; fill: #6b21a8; }
-      .field { font-family: Arial, Helvetica, sans-serif; font-size: 22px; fill: #334155; }
-      .pk { font-family: Arial, Helvetica, sans-serif; font-size: 22px; font-weight: 800; fill: #0f766e; }
-      .fk { font-family: Arial, Helvetica, sans-serif; font-size: 22px; font-weight: 800; fill: #7c3aed; }
-      .rule { font-family: Arial, Helvetica, sans-serif; font-size: 20px; font-weight: 700; fill: #0f766e; }
+      .bg { fill: #f7fafc; }
+      .title { font-family: Arial, "Apple SD Gothic Neo", sans-serif; font-size: 52px; font-weight: 800; fill: #111827; }
+      .subtitle { font-family: Arial, "Apple SD Gothic Neo", sans-serif; font-size: 25px; font-weight: 600; fill: #475569; }
+      .card { fill: #ffffff; stroke-width: 2.5; rx: 14; filter: url(#shadow); }
+      .head { stroke-width: 2.5; rx: 14; }
+      .name { font-family: Arial, "Apple SD Gothic Neo", sans-serif; font-size: 30px; font-weight: 800; letter-spacing: .5px; }
+      .role { font-family: Arial, "Apple SD Gothic Neo", sans-serif; font-size: 18px; font-weight: 700; fill: #64748b; }
+      .field { font-family: Arial, "Apple SD Gothic Neo", sans-serif; font-size: 21px; fill: #334155; }
+      .key { font-family: Arial, "Apple SD Gothic Neo", sans-serif; font-size: 21px; font-weight: 800; }
+      .rule { font-family: Arial, "Apple SD Gothic Neo", sans-serif; font-size: 20px; font-weight: 800; }
       .line { fill: none; stroke: #334155; stroke-width: 4; marker-end: url(#arrow); }
-      .label-bg { fill: #f8fbff; }
-      .label { font-family: Arial, Helvetica, sans-serif; font-size: 23px; font-weight: 800; fill: #1e293b; }
-      .note { font-family: Arial, Helvetica, sans-serif; font-size: 24px; font-weight: 700; fill: #9a3412; }
-      .note-box { fill: #fff7ed; stroke: #fdba74; stroke-width: 2; rx: 14; }
+      .label-bg { fill: #f7fafc; }
+      .label { font-family: Arial, "Apple SD Gothic Neo", sans-serif; font-size: 22px; font-weight: 800; fill: #1f2937; }
+      .note-box { fill: #fff7ed; stroke: #fb923c; stroke-width: 2.5; rx: 14; }
+      .note { font-family: Arial, "Apple SD Gothic Neo", sans-serif; font-size: 22px; font-weight: 700; fill: #9a3412; }
+      .teal-card { stroke: #5eead4; }
+      .teal-head { fill: #ccfbf1; stroke: #14b8a6; }
+      .teal-name, .teal-key, .teal-rule { fill: #0f766e; }
+      .blue-card { stroke: #93c5fd; }
+      .blue-head { fill: #dbeafe; stroke: #3b82f6; }
+      .blue-name, .blue-key, .blue-rule { fill: #1d4ed8; }
+      .purple-card { stroke: #c4b5fd; }
+      .purple-head { fill: #ede9fe; stroke: #8b5cf6; }
+      .purple-name, .purple-key, .purple-rule { fill: #6d28d9; }
+      .rose-card { stroke: #fda4af; }
+      .rose-head { fill: #ffe4e6; stroke: #f43f5e; }
+      .rose-name, .rose-key, .rose-rule { fill: #be123c; }
+      .amber-card { stroke: #fcd34d; }
+      .amber-head { fill: #fef3c7; stroke: #f59e0b; }
+      .amber-name, .amber-key, .amber-rule { fill: #b45309; }
+      .green-card { stroke: #86efac; }
+      .green-head { fill: #dcfce7; stroke: #22c55e; }
+      .green-name, .green-key, .green-rule { fill: #15803d; }
     </style>
   </defs>
 
   <rect class="bg" width="2200" height="1300"/>
 
-  <text class="title" x="105" y="82">Malrang Lab Minimal Database ERD</text>
-  <text class="subtitle" x="105" y="122">Embeddings are 1:N searchable chunks from posts or comments. MCP and Agent results are API responses only.</text>
+  <text class="title" x="105" y="78">Malrang Lab Current Database ERD</text>
+  <text class="subtitle" x="105" y="118">Current implementation keeps posts simple: title, content, post_type, slime_type, tags, comments, and refresh-token auth.</text>
 
-  <path class="line" d="M540 302 H758"/>
-  <rect class="label-bg" x="585" y="264" width="120" height="40"/>
-  <text class="label" x="596" y="292">1:N writes</text>
+  <path class="line" d="M560 310 H770"/>
+  <rect class="label-bg" x="610" y="272" width="124" height="38"/>
+  <text class="label" x="620" y="299">1:N writes</text>
 
-  <path class="line" d="M325 420 V568"/>
-  <rect class="label-bg" x="345" y="474" width="120" height="40"/>
-  <text class="label" x="355" y="502">1:N writes</text>
+  <path class="line" d="M338 430 V594"/>
+  <rect class="label-bg" x="358" y="494" width="124" height="38"/>
+  <text class="label" x="368" y="521">1:N writes</text>
 
-  <path class="line" d="M758 510 C700 552 660 595 572 652"/>
-  <rect class="label-bg" x="646" y="562" width="105" height="40"/>
-  <text class="label" x="656" y="590">1:N has</text>
+  <path class="line" d="M560 235 C715 152 795 142 945 154"/>
+  <rect class="label-bg" x="652" y="174" width="116" height="38"/>
+  <text class="label" x="662" y="201">1:N owns</text>
 
-  <path class="line" d="M1322 458 C1435 505 1478 620 1528 675"/>
-  <rect class="label-bg" x="1415" y="548" width="185" height="40"/>
-  <text class="label" x="1425" y="576">1:N tagged</text>
+  <path class="line" d="M1050 595 C960 648 845 683 580 724"/>
+  <rect class="label-bg" x="748" y="640" width="98" height="38"/>
+  <text class="label" x="758" y="667">1:N has</text>
 
-  <path class="line" d="M1742 402 V568"/>
-  <rect class="label-bg" x="1762" y="466" width="155" height="40"/>
-  <text class="label" x="1772" y="494">1:N assigned</text>
+  <path class="line" d="M1330 446 C1448 504 1515 610 1585 680"/>
+  <rect class="label-bg" x="1430" y="542" width="148" height="38"/>
+  <text class="label" x="1440" y="569">N:M via join</text>
 
-  <path class="line" d="M970 652 V778"/>
-  <rect class="label-bg" x="995" y="704" width="170" height="40"/>
-  <text class="label" x="1005" y="732">1:N chunks</text>
-
-  <path class="line" d="M572 765 C645 815 694 888 758 940"/>
-  <rect class="label-bg" x="612" y="836" width="170" height="40"/>
-  <text class="label" x="622" y="864">1:N chunks</text>
+  <path class="line" d="M1756 430 V594"/>
+  <rect class="label-bg" x="1776" y="494" width="116" height="38"/>
+  <text class="label" x="1786" y="521">N:M via</text>
 
   <g>
-    <rect class="card" x="105" y="170" width="435" height="250"/>
-    <rect class="head" x="105" y="170" width="435" height="58"/>
-    <text class="table-name" x="132" y="209">USERS</text>
-    <text class="pk" x="132" y="268">PK</text><text class="field" x="174" y="268">id bigint</text>
-    <text class="field" x="132" y="302">email varchar(255) unique</text>
-    <text class="field" x="132" y="336">password_hash varchar(255)</text>
-    <text class="field" x="132" y="370">nickname varchar(80)</text>
-    <text class="field" x="132" y="404">created_at, updated_at</text>
+    <rect class="card teal-card" x="105" y="165" width="455" height="265"/>
+    <rect class="head teal-head" x="105" y="165" width="455" height="64"/>
+    <text class="name teal-name" x="132" y="205">USERS</text>
+    <text class="role" x="132" y="256">회원 계정 / 작성자 정보</text>
+    <text class="key teal-key" x="132" y="296">PK</text><text class="field" x="176" y="296">id - 사용자 식별자</text>
+    <text class="field" x="132" y="330">email - 로그인 이메일, unique</text>
+    <text class="field" x="132" y="364">password_hash - 해시된 비밀번호</text>
+    <text class="field" x="132" y="398">nickname - 화면 표시 이름</text>
+    <text class="field" x="132" y="424">created_at, updated_at</text>
   </g>
 
   <g>
-    <rect class="card" x="760" y="130" width="562" height="522"/>
-    <rect class="head" x="760" y="130" width="562" height="58"/>
-    <text class="table-name" x="788" y="169">POSTS</text>
-    <text class="pk" x="788" y="228">PK</text><text class="field" x="830" y="228">id bigint</text>
-    <text class="fk" x="788" y="262">FK</text><text class="field" x="830" y="262">user_id -&gt; users.id</text>
-    <text class="field" x="788" y="296">title varchar(200), content text</text>
-    <text class="field" x="788" y="330">post_type varchar(20)</text>
-    <text class="field" x="788" y="364">slime_type, difficulty</text>
-    <text class="field" x="788" y="398">ingredients, ratio, steps</text>
-    <text class="field" x="788" y="432">texture_result, storage_tip</text>
-    <text class="field" x="788" y="466">symptom, attempted_solution</text>
-    <text class="field" x="788" y="500">solved_status varchar(40)</text>
-    <text class="field" x="788" y="534">created_at, updated_at</text>
-    <rect x="788" y="574" width="372" height="36" rx="13" fill="#ecfeff" stroke="#67e8f9" stroke-width="2"/>
-    <text class="rule" x="808" y="598">recipe | failure | review | general</text>
+    <rect class="card purple-card" x="770" y="140" width="560" height="455"/>
+    <rect class="head purple-head" x="770" y="140" width="560" height="64"/>
+    <text class="name purple-name" x="798" y="180">POSTS</text>
+    <text class="role" x="798" y="231">게시글 CRUD / 검색 / 목록 카드</text>
+    <text class="key purple-key" x="798" y="271">PK</text><text class="field" x="842" y="271">id - 게시글 식별자</text>
+    <text class="key purple-key" x="798" y="305">FK</text><text class="field" x="842" y="305">author_id - users.id</text>
+    <text class="field" x="798" y="339">title - 제목 varchar(200)</text>
+    <text class="field" x="798" y="373">content - 본문 text</text>
+    <text class="field" x="798" y="407">post_type - recipe/failure/review/general</text>
+    <text class="field" x="798" y="441">slime_type - 선택 슬라임 종류</text>
+    <text class="field" x="798" y="475">created_at, updated_at</text>
+    <rect x="798" y="512" width="442" height="42" rx="12" fill="#faf5ff" stroke="#c4b5fd" stroke-width="2"/>
+    <text class="rule purple-rule" x="818" y="540">deleted detail fields now live in content</text>
   </g>
 
   <g>
-    <rect class="card" x="1530" y="170" width="420" height="232"/>
-    <rect class="head" x="1530" y="170" width="420" height="58"/>
-    <text class="table-name" x="1558" y="209">TAGS</text>
-    <text class="pk" x="1558" y="268">PK</text><text class="field" x="1600" y="268">id bigint</text>
-    <text class="field" x="1558" y="302">name varchar(80)</text>
-    <text class="field" x="1558" y="336">tag_type varchar(40)</text>
-    <text class="field" x="1558" y="370">unique(name, tag_type)</text>
+    <rect class="card amber-card" x="1535" y="165" width="455" height="265"/>
+    <rect class="head amber-head" x="1535" y="165" width="455" height="64"/>
+    <text class="name amber-name" x="1563" y="205">TAGS</text>
+    <text class="role" x="1563" y="256">태그 마스터 / 필터 옵션</text>
+    <text class="key amber-key" x="1563" y="296">PK</text><text class="field" x="1607" y="296">id - 태그 식별자</text>
+    <text class="field" x="1563" y="330">name - 태그명, unique</text>
+    <text class="field" x="1563" y="364">tag_type - slime_type/custom 등</text>
+    <text class="field" x="1563" y="398">created_at - 생성 일시</text>
   </g>
 
   <g>
-    <rect class="card" x="105" y="570" width="467" height="270"/>
-    <rect class="head" x="105" y="570" width="467" height="58"/>
-    <text class="table-name" x="132" y="609">COMMENTS</text>
-    <text class="pk" x="132" y="668">PK</text><text class="field" x="174" y="668">id bigint</text>
-    <text class="fk" x="132" y="702">FK</text><text class="field" x="174" y="702">post_id -&gt; posts.id</text>
-    <text class="fk" x="132" y="736">FK</text><text class="field" x="174" y="736">user_id -&gt; users.id</text>
-    <text class="field" x="132" y="770">content text</text>
-    <text class="field" x="132" y="804">created_at, updated_at</text>
+    <rect class="card rose-card" x="105" y="595" width="475" height="285"/>
+    <rect class="head rose-head" x="105" y="595" width="475" height="64"/>
+    <text class="name rose-name" x="132" y="635">COMMENTS</text>
+    <text class="role" x="132" y="686">게시글 상세 댓글</text>
+    <text class="key rose-key" x="132" y="726">PK</text><text class="field" x="176" y="726">id - 댓글 식별자</text>
+    <text class="key rose-key" x="132" y="760">FK</text><text class="field" x="176" y="760">post_id - posts.id</text>
+    <text class="key rose-key" x="132" y="794">FK</text><text class="field" x="176" y="794">author_id - users.id</text>
+    <text class="field" x="132" y="828">content - 댓글 내용</text>
+    <text class="field" x="132" y="862">created_at, updated_at</text>
   </g>
 
   <g>
-    <rect class="card" x="1530" y="570" width="430" height="230"/>
-    <rect class="head" x="1530" y="570" width="430" height="58"/>
-    <text class="table-name" x="1558" y="609">POST_TAGS</text>
-    <text class="pk" x="1558" y="668">PK/FK</text><text class="field" x="1636" y="668">post_id -&gt; posts.id</text>
-    <text class="pk" x="1558" y="702">PK/FK</text><text class="field" x="1636" y="702">tag_id -&gt; tags.id</text>
-    <text class="field" x="1558" y="736">created_at</text>
-    <text class="field" x="1558" y="770">composite primary key</text>
+    <rect class="card blue-card" x="1535" y="595" width="455" height="245"/>
+    <rect class="head blue-head" x="1535" y="595" width="455" height="64"/>
+    <text class="name blue-name" x="1563" y="635">POST_TAGS</text>
+    <text class="role" x="1563" y="686">posts-tags 다대다 연결</text>
+    <text class="key blue-key" x="1563" y="726">PK/FK</text><text class="field" x="1642" y="726">post_id - posts.id</text>
+    <text class="key blue-key" x="1563" y="760">PK/FK</text><text class="field" x="1642" y="760">tag_id - tags.id</text>
+    <text class="field" x="1563" y="794">composite primary key</text>
   </g>
 
   <g>
-    <rect class="card" x="760" y="780" width="620" height="370"/>
-    <rect class="head-purple" x="760" y="780" width="620" height="58"/>
-    <text class="table-name-purple" x="788" y="819">EMBEDDINGS</text>
-    <text class="pk" x="788" y="878">PK</text><text class="field" x="830" y="878">id bigint</text>
-    <text class="field" x="788" y="912">source_type post | comment</text>
-    <text class="fk" x="788" y="946">FK</text><text class="field" x="830" y="946">post_id -&gt; posts.id nullable</text>
-    <text class="fk" x="788" y="980">FK</text><text class="field" x="830" y="980">comment_id -&gt; comments.id nullable</text>
-    <text class="field" x="788" y="1014">content text</text>
-    <text class="field" x="788" y="1048">embedding vector(1536)</text>
-    <text class="field" x="788" y="1082">embedding_model, embedding_dim</text>
-    <text class="field" x="788" y="1116">content_hash, created_at, updated_at</text>
-    <rect x="788" y="1130" width="510" height="34" rx="12" fill="#faf5ff" stroke="#d8b4fe" stroke-width="2"/>
-    <text class="rule" x="806" y="1154">XOR: exactly one of post_id or comment_id</text>
+    <rect class="card green-card" x="770" y="830" width="680" height="360"/>
+    <rect class="head green-head" x="770" y="830" width="680" height="64"/>
+    <text class="name green-name" x="798" y="870">REFRESH_TOKENS</text>
+    <text class="role" x="798" y="921">로그인 유지 / refresh token 회전 이력</text>
+    <text class="key green-key" x="798" y="961">PK</text><text class="field" x="842" y="961">id - refresh token row</text>
+    <text class="key green-key" x="798" y="995">FK</text><text class="field" x="842" y="995">user_id - users.id</text>
+    <text class="field" x="798" y="1029">token_hash - 원문 token의 hash, unique</text>
+    <text class="field" x="798" y="1063">family_id - 회전 token 묶음</text>
+    <text class="field" x="798" y="1097">expires_at, revoked_at, last_used_at</text>
+    <text class="field" x="798" y="1131">replaced_by_token_id - 새 token row 참조</text>
+    <text class="field" x="798" y="1165">user_agent, ip_address, created_at</text>
   </g>
 
-  <rect class="note-box" x="530" y="1210" width="1140" height="60"/>
-  <text class="note" x="558" y="1248">Embedding relation: posts 1:N embeddings, comments 1:N embeddings. Each embedding row has one source only.</text>
+  <rect class="note-box" x="230" y="1220" width="1740" height="62"/>
+  <text class="note" x="260" y="1259">Current scope excludes embeddings/RAG tables until the AI/RAG phase. Current post details stay in content.</text>
 </svg>
