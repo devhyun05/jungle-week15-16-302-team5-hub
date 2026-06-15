@@ -25,6 +25,9 @@ export type ReviewRequestApiItem = {
   targetType: ReviewTargetType;
   targetId: number;
   targetTitle: string;
+  targetSummary: string | null;
+  targetPreview: string | null;
+  targetLinkUrl: string | null;
   category: string;
   categorySlug: string;
   message: string | null;

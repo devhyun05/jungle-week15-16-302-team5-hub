@@ -187,12 +187,21 @@ def build_review_request_response(review_request: ReviewRequest) -> ReviewReques
     if review_request.target_type == "post" and review_request.target_post is not None:
         target_id = review_request.target_post.id
         target_title = review_request.target_post.title
+        target_summary = review_request.target_post.summary
+        target_preview = review_request.target_post.content
+        target_link_url = review_request.target_post.related_commit
     elif review_request.target_project is not None:
         target_id = review_request.target_project.id
         target_title = review_request.target_project.title
+        target_summary = review_request.target_project.summary
+        target_preview = review_request.target_project.saved_portfolio_draft or review_request.target_project.readme_summary
+        target_link_url = review_request.target_project.github_url
     else:
         target_id = review_request.target_post_id or review_request.target_project_id or 0
         target_title = "삭제되었거나 찾을 수 없는 대상"
+        target_summary = None
+        target_preview = None
+        target_link_url = None
 
     coach_links = review_request.review_request_coaches
 
@@ -207,6 +216,9 @@ def build_review_request_response(review_request: ReviewRequest) -> ReviewReques
         target_type=review_request.target_type,
         target_id=target_id,
         target_title=target_title,
+        target_summary=target_summary,
+        target_preview=target_preview,
+        target_link_url=target_link_url,
         category=review_request.category.label,
         category_slug=review_request.category.slug,
         message=review_request.message,

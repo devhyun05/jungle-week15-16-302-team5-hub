@@ -1565,3 +1565,40 @@ python -m compileall app
 git diff --check
 python -c "from app.main import app; paths=[route.path for route in app.routes]; print('/me/profile' in paths); print('/uploads' in paths)"
 ```
+
+## 2026-06-15 코치 리뷰 인박스 미리보기 QA
+
+목표: 코치가 리뷰 요청을 선택했을 때 대상 내용을 인박스 안에서 이해하고 피드백을 작성할 수 있는지 확인한다.
+
+체크리스트:
+
+- [x] `npm run build` 성공
+- [x] `python -m compileall app` 성공
+- [x] `/review-requests/inbox` 라우트 등록 확인
+- [x] OpenAPI `ReviewRequestResponse`에 `targetSummary`가 있다.
+- [x] OpenAPI `ReviewRequestResponse`에 `targetPreview`가 있다.
+- [x] OpenAPI `ReviewRequestResponse`에 `targetLinkUrl`이 있다.
+- [x] 코치 화면에서 포트폴리오 요청은 학생 전용 `/portfolio`로 이동하지 않는다.
+- [x] 코치 화면에서 포트폴리오 요청은 유효한 GitHub URL이 있으면 새 탭으로 열 수 있다.
+- [x] 코치 상세 패널에 리뷰 대상 미리보기 영역이 있다.
+- [x] 인박스 새로고침 후 선택 요청과 feedback textarea가 같은 요청 기준으로 맞춰진다.
+
+남은 수동 QA:
+
+- 실제 COACH 계정으로 로그인해서 받은 리뷰 요청을 선택한다.
+- 게시글 리뷰 요청에서 원문 보기 버튼이 `/posts/:id`로 이동하는지 확인한다.
+- 포트폴리오 리뷰 요청에서 GitHub 보기 버튼이 실제 repo를 새 탭으로 여는지 확인한다.
+- 피드백 작성 후 STUDENT 계정의 내가 보낸 요청 목록에 피드백이 보이는지 확인한다.
+
+브라우저 QA 추가 결과:
+
+- [x] `http://localhost:5173/coach-review` 진입 시 `코치 리뷰 인박스` 화면 렌더링 확인
+- [x] 현재 DB에 받은 리뷰 요청이 없을 때 빈 인박스 상태가 표시됨
+- [x] 화면 본문에 `[object Object]`가 보이지 않음
+- [x] 화면 본문에 `백엔드 DB`, `자동 등록` 같은 개발용 문구가 보이지 않음
+- [x] 관리자 메뉴는 `사용자 승인`, `전체 게시글`, `설정`으로 유지됨
+
+메모:
+
+- 현재 로컬 DB에 코치가 받은 리뷰 요청이 없어 `리뷰 대상 미리보기` 실제 표시까지는 수동 데이터 생성 후 추가 QA가 필요하다.
+- 과거 HMR 시점의 console error 로그가 남아 있었지만, 새로고침 후 화면은 정상 렌더링됐다.

@@ -2080,3 +2080,54 @@ python -m compileall app
 git diff --check
 python -c "from app.main import app; paths=[route.path for route in app.routes]; print('/me/profile' in paths); print('/uploads' in paths)"
 ```
+
+## 2026-06-15 코치 리뷰 인박스 미리보기 개선
+
+상태: QA 통과
+
+작업 배경:
+
+- 코치가 리뷰 요청을 열었을 때 학생 메시지와 일반 체크리스트만 보이면 무엇을 기준으로 피드백해야 하는지 약하다.
+- 포트폴리오 리뷰 요청에서 `원문 보기`가 `/portfolio`로 이동하면 코치 권한으로 접근할 수 없는 학생 전용 관리 화면으로 가는 문제가 있었다.
+- 인박스 새로고침 후 선택된 요청과 피드백 textarea 값이 첫 번째 요청 기준으로 엇갈릴 수 있었다.
+
+작업 내용:
+
+- `backend/app/schemas/review.py`
+  - 리뷰 요청 응답에 `targetSummary`, `targetPreview`, `targetLinkUrl`을 추가했다.
+- `backend/app/services/review_service.py`
+  - 게시글 리뷰는 게시글 `summary/content/related_github_url` 기준으로 미리보기 데이터를 만든다.
+  - 포트폴리오 리뷰는 프로젝트 `summary/saved_portfolio_draft/readme_summary/github_url` 기준으로 미리보기 데이터를 만든다.
+- `frontend/src/app/api/reviews.ts`
+  - 새 응답 필드를 `ReviewRequestApiItem` 타입에 반영했다.
+- `frontend/src/app/pages/coach/CoachReview.tsx`
+  - 코치 상세 패널에 리뷰 대상 미리보기 영역을 추가했다.
+  - 포트폴리오 요청은 학생 전용 `/portfolio` 화면으로 보내지 않고 GitHub 링크를 열도록 바꿨다.
+  - 선택한 요청과 피드백 textarea가 어긋나지 않도록 selected request 기준으로 상태를 동기화했다.
+  - 사용자에게 보이는 개발용 문구를 서비스 문구로 정리했다.
+
+QA 결과:
+
+- [x] `npm run build` 성공
+- [x] `python -m compileall app` 성공
+- [x] `/review-requests` 라우트 등록 확인
+- [x] OpenAPI `ReviewRequestResponse`에 `targetSummary`, `targetPreview`, `targetLinkUrl` 반영 확인
+
+추천 커밋 제목:
+
+```txt
+feat: 코치 리뷰 인박스 미리보기 개선
+```
+
+브라우저 QA 추가 결과:
+
+- [x] `http://localhost:5173/coach-review` 진입 시 `코치 리뷰 인박스` 화면 렌더링 확인
+- [x] 현재 DB에 받은 리뷰 요청이 없을 때 빈 인박스 상태가 표시됨
+- [x] 화면 본문에 `[object Object]`가 보이지 않음
+- [x] 화면 본문에 `백엔드 DB`, `자동 등록` 같은 개발용 문구가 보이지 않음
+- [x] 관리자 메뉴는 `사용자 승인`, `전체 게시글`, `설정`으로 유지됨
+
+메모:
+
+- 현재 로컬 DB에 코치가 받은 리뷰 요청이 없어 `리뷰 대상 미리보기` 실제 표시까지는 수동 데이터 생성 후 추가 QA가 필요하다.
+- 과거 HMR 시점의 console error 로그가 남아 있었지만, 새로고침 후 화면은 정상 렌더링됐다.

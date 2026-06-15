@@ -1,6 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useOutletContext } from "react-router";
-import { AlertCircle, CheckCircle2, ChevronRight, MessageSquare, RefreshCw, Search, Send, ShieldCheck, XCircle } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronRight,
+  ExternalLink,
+  MessageSquare,
+  RefreshCw,
+  Search,
+  Send,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
@@ -44,6 +55,19 @@ function formatDate(dateText: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function isValidExternalUrl(url?: string | null) {
+  if (!url) {
+    return false;
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 function Avatar({ name, imageUrl }: { name: string; imageUrl?: string | null }) {
@@ -281,7 +305,7 @@ function StudentReviewView() {
                 </div>
 
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs text-slate-500">요청은 백엔드 DB에 저장되고 코치 인박스에 표시됩니다.</p>
+                  <p className="text-xs text-slate-500">요청을 보내면 선택한 코치님 인박스에 표시됩니다.</p>
                   <Button onClick={() => void submitReviewRequest()} disabled={isSubmitting || !selectedTarget || selectedCoachIds.length === 0}>
                     <Send className="mr-2 h-4 w-4" />
                     {isSubmitting ? "전송 중" : "리뷰 요청 보내기"}
@@ -376,8 +400,11 @@ function CoachInboxView() {
       const data = await getReviewInbox();
 
       setRequests(data.items);
-      setSelectedId((prev) => prev ?? data.items[0]?.id ?? null);
-      setFeedback(data.items[0]?.feedback ?? "");
+      setSelectedId((prev) => {
+        const hasPreviousRequest = data.items.some((request) => request.id === prev);
+
+        return hasPreviousRequest ? prev : data.items[0]?.id ?? null;
+      });
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "리뷰 인박스를 불러오지 못했습니다.");
     } finally {
@@ -391,6 +418,10 @@ function CoachInboxView() {
 
   const selectedRequest = requests.find((request) => request.id === selectedId) ?? requests[0] ?? null;
   const categoryOptions = Array.from(new Set(requests.map((request) => request.category)));
+
+  useEffect(() => {
+    setFeedback(selectedRequest?.feedback ?? "");
+  }, [selectedRequest?.feedback, selectedRequest?.id]);
 
   const filteredRequests = useMemo(
     () =>
@@ -540,17 +571,52 @@ function CoachInboxView() {
                         {selectedRequest.requesterName} · 담당 코치 {selectedRequest.coachNames.join(", ")}
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={selectedRequest.targetType === "post" ? `/posts/${selectedRequest.targetId}` : "/portfolio"}>
-                        원문 보기 <ChevronRight className="ml-1 h-4 w-4" />
-                      </Link>
-                    </Button>
+                    {selectedRequest.targetType === "post" ? (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to={`/posts/${selectedRequest.targetId}`}>
+                          원문 보기 <ChevronRight className="ml-1 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    ) : isValidExternalUrl(selectedRequest.targetLinkUrl) ? (
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={selectedRequest.targetLinkUrl ?? "#"} target="_blank" rel="noreferrer">
+                          GitHub 보기 <ExternalLink className="ml-1 h-4 w-4" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button variant="outline" size="sm" disabled>
+                        링크 없음
+                      </Button>
+                    )}
                   </div>
 
                   <div className="flex-1 overflow-y-auto bg-white p-6">
                     <div className="mb-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
                       <p className="mb-1 text-xs font-semibold text-slate-500">학생 요청 메시지</p>
                       <p className="text-sm text-slate-700">{selectedRequest.message}</p>
+                    </div>
+
+                    <div className="mb-5 rounded-lg border border-emerald-100 bg-emerald-50/40 p-4">
+                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-xs font-semibold text-emerald-700">리뷰 대상 미리보기</p>
+                        <Badge variant="secondary">{selectedRequest.targetType === "post" ? "게시글" : "포트폴리오 프로젝트"}</Badge>
+                      </div>
+                      {selectedRequest.targetSummary && <p className="mb-3 text-sm font-medium text-slate-800">{selectedRequest.targetSummary}</p>}
+                      {selectedRequest.targetPreview ? (
+                        <p className="line-clamp-8 whitespace-pre-line text-sm leading-6 text-slate-600">{selectedRequest.targetPreview}</p>
+                      ) : (
+                        <p className="text-sm text-slate-500">저장된 미리보기 내용이 없습니다. 필요한 경우 원문 또는 GitHub 링크를 함께 확인해 주세요.</p>
+                      )}
+                      {isValidExternalUrl(selectedRequest.targetLinkUrl) && (
+                        <a
+                          href={selectedRequest.targetLinkUrl ?? "#"}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 inline-flex items-center text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                        >
+                          관련 링크 열기 <ExternalLink className="ml-1 h-3 w-3" />
+                        </a>
+                      )}
                     </div>
 
                     <div className="prose prose-sm prose-slate max-w-none">
@@ -593,7 +659,7 @@ function CoachInboxView() {
                       </Button>
                     </div>
                     <p className="text-xs text-slate-400">
-                      피드백은 리뷰 요청에 저장됩니다. 원문 댓글 자동 등록은 다음 단계에서 정책을 정해 연결합니다.
+                      피드백은 학생의 리뷰 요청 현황에 표시됩니다. 원문 댓글로도 남겨야 하는 내용은 원문 보기에서 별도로 작성해 주세요.
                     </p>
                   </CardContent>
                 </Card>

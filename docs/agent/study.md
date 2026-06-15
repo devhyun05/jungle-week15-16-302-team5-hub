@@ -3427,3 +3427,55 @@ Google 계정 선택과 동의 화면은 실제 개인 계정 인증 과정이�
 - optimistic UI와 refetch
 - API error parsing
 - side effect가 있는 GET 요청의 장단점
+
+## 2026-06-15 코치 리뷰 인박스 미리보기 학습 기록
+
+이번 구현을 이해하려면 알아야 하는 개념:
+
+### 수정한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/schemas/review.py` | 프론트로 내려줄 리뷰 요청 응답 필드를 정의한다. |
+| `backend/app/services/review_service.py` | DB 모델을 화면에 필요한 응답 형태로 조립한다. |
+| `frontend/src/app/api/reviews.ts` | 리뷰 요청 API 응답 타입을 TypeScript로 정의한다. |
+| `frontend/src/app/pages/coach/CoachReview.tsx` | 코치 인박스, 요청 상세, 피드백 작성 UI를 담당한다. |
+
+### 핵심 흐름
+
+```txt
+코치가 /coach-review 접속
+-> getReviewInbox() 호출
+-> FastAPI /review-requests/inbox
+-> review_service.build_review_request_response()
+-> targetSummary / targetPreview / targetLinkUrl 포함 응답
+-> CoachReview.tsx에서 요청 상세 패널에 미리보기 표시
+```
+
+### 백엔드 개념
+
+- API 응답은 DB 테이블 그대로 내려주는 것이 아니라, 화면이 읽기 좋은 형태로 조립해서 내려준다.
+- `ReviewRequest`는 post 또는 portfolio 중 하나를 target으로 가진다.
+- 같은 응답 필드라도 target type에 따라 채우는 기준이 달라질 수 있다.
+  - post: `summary`, `content`, 관련 GitHub URL
+  - portfolio: `summary`, 저장된 포트폴리오 초안, GitHub URL
+
+### React 개념
+
+- 선택된 요청 id와 textarea 상태는 따로 관리되므로, 선택 요청이 바뀌면 feedback state를 다시 맞춰야 한다.
+- 포트폴리오 리뷰는 코치가 학생의 관리 화면에 들어가는 것이 아니라, 코치 인박스 안에서 필요한 미리보기를 보는 흐름이 더 자연스럽다.
+- 외부 링크는 `target="_blank"`와 `rel="noreferrer"`를 함께 사용한다.
+
+### 내가 이해해야 할 포인트
+
+- 프론트에서 필요한 데이터가 부족하면 무조건 새 API를 만들기보다, 기존 응답에 화면이 필요한 필드를 추가할 수 있다.
+- 권한이 다른 사용자는 같은 대상이라도 다른 화면으로 접근해야 한다.
+- 코치 피드백은 리뷰 요청에 저장되는 별도 피드백이고, 게시글 댓글과는 다른 기능이다.
+
+### 추가 학습 키워드
+
+- DTO / response schema
+- selectinload
+- 조건부 렌더링
+- 상태 동기화
+- 권한별 읽기 전용 화면

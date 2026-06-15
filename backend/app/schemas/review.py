@@ -46,6 +46,9 @@ class ReviewRequestResponse(FrontendResponseModel):
     target_type: str = Field(alias="targetType")
     target_id: int = Field(alias="targetId")
     target_title: str = Field(alias="targetTitle")
+    target_summary: str | None = Field(default=None, alias="targetSummary")
+    target_preview: str | None = Field(default=None, alias="targetPreview")
+    target_link_url: str | None = Field(default=None, alias="targetLinkUrl")
     category: str
     category_slug: str = Field(alias="categorySlug")
     message: str | None
