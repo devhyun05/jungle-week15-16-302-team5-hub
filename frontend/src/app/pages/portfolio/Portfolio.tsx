@@ -81,12 +81,23 @@ function parseGithubRepoFullName(githubUrl: string) {
   }
 }
 
-function isValidGithubUrl(githubUrl: string) {
+function getGithubHref(githubUrl: string) {
+  const trimmedGithubUrl = githubUrl.trim();
+
+  if (!trimmedGithubUrl) {
+    return null;
+  }
+
+  const href = trimmedGithubUrl.includes("://") ? trimmedGithubUrl : `https://${trimmedGithubUrl}`;
+
   try {
-    const parsedUrl = new URL(githubUrl);
-    return parsedUrl.protocol.startsWith("http") && parsedUrl.hostname.includes("github.com");
+    const parsedUrl = new URL(href);
+    const isHttpUrl = parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
+    const isGithubHost = parsedUrl.hostname === "github.com" || parsedUrl.hostname.endsWith(".github.com");
+
+    return isHttpUrl && isGithubHost ? parsedUrl.toString() : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -104,7 +115,7 @@ export function Portfolio() {
   const [notice, setNotice] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  async function loadPortfolioData(preferredProjectId?: number) {
+  async function loadPortfolioData(preferredProjectId?: number): Promise<PortfolioProjectApiItem[]> {
     setIsLoading(true);
     setErrorMessage("");
 
@@ -125,9 +136,13 @@ export function Portfolio() {
 
       setSelectedProjectId(nextSelectedProject?.id ?? null);
       setSelectedPostIds(nextSelectedProject?.linkedPostIds ?? []);
+
+      return projectData.items;
     } catch (error) {
       console.error(error);
       setErrorMessage("데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+
+      return [];
     } finally {
       setIsLoading(false);
     }
@@ -155,6 +170,7 @@ export function Portfolio() {
 
   const selectedProject =
     projects.find((project) => project.id === selectedProjectId) ?? filteredProjects[0] ?? projects[0] ?? null;
+  const selectedProjectGithubHref = selectedProject ? getGithubHref(selectedProject.githubUrl) : null;
 
   const linkedRecords = useMemo(
     () => (selectedProject ? availablePosts.filter((post) => selectedProject.linkedPostIds.includes(post.id)) : []),
@@ -216,12 +232,28 @@ export function Portfolio() {
       });
 
       setRepoUrl("");
+      setSearchKeyword("");
       await loadPortfolioData(newProject.id);
       setNotice("GitHub 프로젝트가 등록되었습니다. 관련 기록을 연결해 포트폴리오를 정리해보세요.");
     } catch (error) {
       console.error(error);
+      const message = error instanceof Error ? error.message : "GitHub 프로젝트를 등록하지 못했습니다.";
+
+      if (message.includes("이미 등록된")) {
+        setSearchKeyword("");
+        const reloadedProjects = await loadPortfolioData();
+        const reloadedProject = reloadedProjects.find((project) => project.repoFullName.toLowerCase() === repoFullName);
+
+        if (reloadedProject) {
+          selectProject(reloadedProject);
+          setErrorMessage("");
+          setNotice("이미 등록된 GitHub 프로젝트입니다. 기존 프로젝트를 선택했습니다.");
+          return;
+        }
+      }
+
       await loadPortfolioData();
-      setErrorMessage(error instanceof Error ? error.message : "GitHub 프로젝트를 등록하지 못했습니다.");
+      setErrorMessage(message);
     } finally {
       setIsSaving(false);
     }
@@ -357,12 +389,12 @@ export function Portfolio() {
                         <h3 className="min-w-0 flex-1 truncate font-semibold text-slate-900" title={project.title}>
                           {project.title}
                         </h3>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${portfolioStatusClass(project.portfolioStatus)}`}>
+                        <span className={`shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold ${portfolioStatusClass(project.portfolioStatus)}`}>
                           {project.portfolioStatus}
                         </span>
                       </div>
                       <p className="break-all font-mono text-xs leading-5 text-slate-500">{project.repoFullName}</p>
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${feedbackStatusClass(project.coachFeedbackStatus)}`}>
+                      <span className={`inline-flex max-w-full break-words rounded-full px-2 py-0.5 text-[10px] font-semibold ${feedbackStatusClass(project.coachFeedbackStatus)}`}>
                         코치: {project.coachFeedbackStatus}
                       </span>
                       <div className="flex flex-wrap gap-1">
@@ -395,9 +427,11 @@ export function Portfolio() {
                     <div className="min-w-0">
                       <h2 className="text-xl font-bold leading-7 text-slate-900">{selectedProject.title}</h2>
                       <a
-                        href={selectedProject.githubUrl}
+                        href={selectedProjectGithubHref ?? undefined}
                         title={selectedProject.githubUrl}
                         className="mt-1 flex min-w-0 items-start gap-1 font-mono text-sm leading-5 text-emerald-600 hover:underline"
+                        target="_blank"
+                        rel="noreferrer"
                       >
                         <Github className="mt-0.5 h-4 w-4 shrink-0" />
                         <span className="break-all">{selectedProject.repoFullName}</span>
@@ -416,9 +450,9 @@ export function Portfolio() {
                       <Button variant="outline" size="sm" className="whitespace-nowrap" asChild>
                         <Link to="/coach-review">코치 리뷰 요청하기</Link>
                       </Button>
-                      {isValidGithubUrl(selectedProject.githubUrl) ? (
+                      {selectedProjectGithubHref ? (
                         <Button variant="outline" size="sm" className="whitespace-nowrap" asChild>
-                          <a href={selectedProject.githubUrl} target="_blank" rel="noreferrer">
+                          <a href={selectedProjectGithubHref} target="_blank" rel="noreferrer">
                             <ExternalLink className="mr-1 h-3 w-3" />
                             GitHub 보기
                           </a>

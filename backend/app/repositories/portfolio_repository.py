@@ -1,4 +1,4 @@
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
@@ -53,10 +53,12 @@ def get_project_by_owner_and_repo(
     같은 사용자가 같은 GitHub repo를 중복 등록했는지 확인한다.
     """
 
+    normalized_repo_full_name = repo_full_name.lower()
+
     return db.scalar(
         select(PortfolioProject).where(
             PortfolioProject.owner_id == owner_id,
-            PortfolioProject.repo_full_name == repo_full_name,
+            func.lower(PortfolioProject.repo_full_name) == normalized_repo_full_name,
         )
     )
 

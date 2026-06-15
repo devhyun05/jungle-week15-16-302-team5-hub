@@ -1915,3 +1915,41 @@ rg -n "\[object Object\]|String\(\(item as \{ msg: unknown \}\)\.msg\)|fallbackM
 
 - QA용 게시글, 댓글, 리뷰 요청 데이터는 검증 후 삭제한다.
 - 현재 로그인 계정은 ADMIN / 승인 완료 상태로 복구한다.
+
+## 2026-06-15 QA: 포트폴리오 프로젝트 등록/중복/재진입
+
+목표: 포트폴리오 프로젝트 등록 후 화면 목록과 DB 저장 상태가 어긋나지 않는지 확인한다.
+
+API QA:
+
+- [x] 임시 STUDENT 계정으로 `POST /portfolio/projects` 호출 시 201 생성된다.
+- [x] 생성 응답의 `repoFullName`은 소문자 `owner/repo`로 정규화된다.
+- [x] 생성 직후 `GET /portfolio/projects` 목록에 방금 프로젝트가 보인다.
+- [x] 대소문자만 다른 같은 repo를 다시 등록하면 400 중복 응답이 온다.
+- [x] 중복 시 목록 total은 1개로 유지된다.
+- [x] QA용 임시 사용자와 프로젝트를 삭제했다.
+
+브라우저 QA:
+
+- [x] 현재 로그인 계정을 STUDENT / 승인 완료로 임시 전환했다.
+- [x] `/portfolio` 화면이 열린다.
+- [x] 긴 GitHub repo URL을 입력하고 `GitHub 프로젝트 등록`을 누르면 프로젝트가 등록된다.
+- [x] 등록 후 목록에 프로젝트가 1개로 보인다.
+- [x] 같은 repo를 다시 등록하면 기존 프로젝트 선택 안내가 보인다.
+- [x] 다른 화면에 갔다가 `/portfolio`로 돌아와도 프로젝트가 유지된다.
+- [x] `GitHub 보기` 링크가 실제 repo URL을 가리킨다.
+- [x] 긴 repo 이름으로도 페이지 가로 overflow가 없다.
+- [x] 화면에 `Unexpected Application Error`와 `[object Object]`가 보이지 않는다.
+- [x] QA용 프로젝트를 삭제했고 현재 로그인 계정을 ADMIN / 승인 완료로 복구했다.
+
+검증 출력 요약:
+
+```txt
+create_status=201
+created_project_visible=True
+duplicate_status=400
+duplicate_project_count=1
+hasDuplicateNotice=True
+hasRepoAfterReturn=True
+hasHorizontalOverflow=False
+```

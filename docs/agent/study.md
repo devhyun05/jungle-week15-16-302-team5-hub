@@ -3960,3 +3960,60 @@ COACH �α���
 
 - 나중에 OpenAI/RAG로 진짜 요약을 만들면 summary가 content 앞부분 복사본이 아니라 별도 요약이 될 수 있다.
 - 그때도 지금 조건은 안전하다. 진짜 요약이면 content의 시작 부분과 완전히 같지 않으므로 상세에 표시된다.
+
+## 2026-06-15 학습: 포트폴리오 등록 후 목록 유지와 중복 검사
+
+이번에 본 파일:
+
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`
+- `frontend/src/app/api/portfolio.ts`
+- `backend/app/routers/portfolio.py`
+- `backend/app/services/portfolio_service.py`
+- `backend/app/repositories/portfolio_repository.py`
+
+수정한 파일:
+
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`
+- `backend/app/services/portfolio_service.py`
+- `backend/app/repositories/portfolio_repository.py`
+
+핵심 개념:
+
+- 서버 저장 상태와 화면 목록 상태는 항상 같은 기준으로 맞아야 한다.
+- 등록 API가 성공하면 화면 state만 믿지 말고 목록 API를 다시 호출해 DB 기준 최신 상태를 가져오는 편이 안전하다.
+- 검색어가 남아 있으면 실제 데이터가 있어도 화면 목록에서 숨겨질 수 있다.
+- 중복 검사는 프론트에서 한 번 막더라도 백엔드에서 반드시 다시 막아야 한다.
+- GitHub repo 이름은 대소문자 차이만으로 다른 프로젝트가 아니므로 `owner/repo`를 소문자로 정규화했다.
+
+이번 코드 흐름:
+
+1. 학생이 `/portfolio`에서 GitHub repo URL을 입력한다.
+2. `registerGithubProject()`가 URL에서 `owner/repo`를 파싱한다.
+3. 프론트 목록에 이미 같은 repo가 있으면 기존 프로젝트를 선택하고 등록 요청을 보내지 않는다.
+4. 프론트 목록이 오래됐을 수도 있으므로 백엔드도 `owner_id + lower(repo_full_name)` 기준으로 중복을 다시 확인한다.
+5. 새 프로젝트 등록 성공 후 `loadPortfolioData(newProject.id)`로 목록을 다시 읽고, 방금 만든 프로젝트를 선택한다.
+6. 중복 응답을 받은 경우에도 목록을 다시 읽고 기존 프로젝트를 선택한다.
+7. 등록/중복 처리 후 `searchKeyword`를 비워서 방금 선택된 프로젝트가 목록에서 숨지 않게 한다.
+
+이번에 이해해야 할 React/TypeScript 포인트:
+
+- `useState`: `projects`, `selectedProjectId`, `searchKeyword`, `notice`, `errorMessage`가 화면 상태를 만든다.
+- async function return: `loadPortfolioData()`가 이제 불러온 프로젝트 배열을 반환해, 중복 응답 후 기존 프로젝트를 바로 찾을 수 있다.
+- 조건부 렌더링: `selectedProjectGithubHref`가 있을 때만 `GitHub 보기` 버튼을 활성화한다.
+- URL normalization: 사용자가 `github.com/owner/repo`처럼 scheme 없이 입력해도 화면 링크는 `https://github.com/owner/repo`로 만든다.
+
+백엔드 포인트:
+
+- service layer는 GitHub URL을 `owner/repo`로 정규화한다.
+- repository layer는 DB에서 중복 프로젝트를 조회한다.
+- `func.lower()`를 사용해 PostgreSQL에서 저장된 repo 이름도 소문자로 비교한다.
+- DB unique constraint만 믿으면 대소문자 차이 중복을 놓칠 수 있으므로 application layer에서도 정규화가 필요하다.
+
+추가로 공부할 키워드:
+
+- optimistic state vs server source of truth
+- normalization
+- case-insensitive duplicate check
+- SQLAlchemy `func.lower`
+- React controlled input
+- empty/error state UX

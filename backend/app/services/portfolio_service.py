@@ -156,7 +156,7 @@ def parse_repo_full_name(github_url: str) -> str:
     if len(parts) < 2:
         raise ValueError("GitHub URL은 owner/repository 형식이어야 합니다.")
 
-    return f"{parts[0]}/{parts[1]}"
+    return f"{parts[0]}/{parts[1]}".lower()
 
 
 def serialize_text_list(items: list[str]) -> str:
