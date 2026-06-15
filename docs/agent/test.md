@@ -2403,3 +2403,26 @@ legacy_filtered_tech_stack=['GitHub']
 legacy_placeholder_removed=True
 cleanup=True
 ```
+
+---
+
+## 2026-06-16 QA: 파트 단위 커밋 운영 기준
+
+목표: 이후 작업이 구현만 되고 기록 없이 넘어가지 않도록 커밋 운영 기준을 문서화했는지 확인한다.
+
+체크리스트:
+
+- [x] `docs/agent/agent.md`에 파트 단위 커밋 순서를 추가했다.
+- [x] 구현/문서/QA가 끝난 뒤 커밋한다는 기준을 남겼다.
+- [x] `backend/.env`는 절대 커밋하지 않는다는 주의사항을 남겼다.
+- [x] 문서 변경 후 `npm run build`를 실행했다.
+- [x] 문서 변경 후 백엔드 compile을 실행했다.
+- [x] `git diff --check`를 실행했다.
+
+검증 결과:
+
+```txt
+npm run build: 성공
+python -m compileall app: 성공
+git diff --check: 공백 오류 없음, Windows 줄바꿈 경고만 표시
+```
