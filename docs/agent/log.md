@@ -1792,3 +1792,26 @@ docs: README 현재 구현 상태로 정리
 ```txt
 fix: OAuth 실패 로그인 안내 추가
 ```
+
+## 2026-06-15 브라우저 메타/레거시 UI 흔적 정리
+
+상태: 완료
+
+작업 내용:
+
+- `frontend/index.html`의 문서 언어를 `ko`로 바꿨다.
+- 브라우저 탭 제목을 `JungleLog`로 정리했다.
+- description 메타 정보를 JungleLog 서비스 설명으로 바꿨다.
+- 실제 라우트에서 사용하지 않는 `frontend/src/app/components/Layout.tsx`를 삭제했다.
+- README 현재 구현 상태와 QA 항목에 브라우저 메타 정리 내용을 추가했다.
+
+이유:
+
+- 실제 서비스처럼 보이려면 로그인 화면에 들어가기 전 브라우저 탭과 메타 정보도 서비스 이름과 맞아야 한다.
+- 사용하지 않는 예전 Layout 파일에는 오래된 라우트(`/my-logs`, `/ai-helper`, `/coach`)와 mock 이메일이 남아 있어 이후 학습과 유지보수에 혼란을 줄 수 있다.
+
+추천 커밋 제목:
+
+```txt
+fix: JungleLog 브라우저 메타 정보 정리
+```

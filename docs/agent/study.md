@@ -3136,3 +3136,31 @@ Google OAuth callback 실패
 - OAuth callback은 브라우저가 직접 방문하는 URL이라 실패 시 프론트 화면으로 돌려보내는 편이 자연스럽다.
 - `urlencode`를 사용하면 한글 에러 메시지도 URL query string으로 안전하게 전달할 수 있다.
 - 실패한 OAuth state cookie는 다시 사용하지 못하게 삭제하는 편이 안전하다.
+
+## 2026-06-15 브라우저 메타/레거시 Layout 정리
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/index.html` | 브라우저 탭 제목, HTML 언어, 검색/공유용 description 메타 정보를 정의한다. |
+| `frontend/src/app/components/Layout.tsx` | 실제 라우트에서 사용하지 않는 이전 mock 레이아웃 파일이라 삭제했다. |
+| `README.md` | 현재 구현 상태와 QA 결과에 브라우저 메타 정리 내용을 반영했다. |
+
+### 이해해야 할 개념
+
+- `index.html`은 React 앱이 마운트되기 전 브라우저가 먼저 읽는 HTML 진입점이다.
+- `<title>`은 브라우저 탭 이름으로 보이고, 서비스 이름이 잘못 남아 있으면 실제 서비스처럼 보이지 않는다.
+- `<html lang="ko">`는 현재 화면 언어가 한국어임을 브라우저와 접근성 도구에 알려준다.
+- 사용하지 않는 컴포넌트 파일은 빌드에는 영향이 없을 수 있지만, 오래된 라우트와 mock 데이터가 남아 있으면 학습/유지보수 과정에서 혼란을 만든다.
+
+### 이번 작업의 핵심
+
+- 예전 이름인 정글포트폴리오 흔적을 JungleLog로 정리했다.
+- 실제로 import되지 않는 레거시 `DashboardLayout`, `AuthLayout` 파일을 삭제했다.
+- 실제 로그인/권한 흐름은 `layouts/MainLayout.tsx`, `layouts/AuthLayout.tsx`, `RoleGate.tsx`, `AuthContext.tsx`가 담당한다.
+
+### 다음에 확인할 것
+
+- 실제 Google 계정으로 로그인했을 때 브라우저 탭 제목이 `JungleLog`로 보이는지 확인한다.
+- 관리자 계정 로그인 후 승인 화면, 학생/코치 승인 후 각 역할 화면 분기가 자연스러운지 확인한다.

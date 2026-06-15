@@ -1297,3 +1297,23 @@ README 정리 QA 결과:
 - [x] 브라우저 console error가 없다.
 - [x] `npm run build` 성공.
 - [x] `python -m compileall app` 성공.
+
+## 2026-06-15 브라우저 메타/레거시 Layout QA
+
+목표: 브라우저 진입점과 사용하지 않는 레거시 UI 파일이 현재 JungleLog 서비스 흐름과 충돌하지 않는지 확인한다.
+
+체크리스트:
+
+- [x] `frontend/index.html`의 `<title>`이 `JungleLog`다.
+- [x] `frontend/index.html`의 `<html lang>`이 `ko`다.
+- [x] description 메타 정보가 JungleLog 설명이다.
+- [x] `DashboardLayout`, `AuthLayout`를 export하던 레거시 `components/Layout.tsx`가 실제 라우트에서 사용되지 않음을 확인했다.
+- [x] 사용하지 않는 레거시 `components/Layout.tsx`를 삭제했다.
+- [x] `npm run build`
+- [x] `python -m compileall app`
+- [x] `git diff --check`
+
+수동 QA:
+
+- [ ] 실제 브라우저에서 `http://localhost:5173/login` 접속 시 탭 제목이 `JungleLog`로 보이는지 확인한다.
+- [ ] 실제 Google 로그인 후 승인 대기/관리자/학생/코치 화면에서도 탭 제목이 유지되는지 확인한다.
