@@ -4821,3 +4821,26 @@ GitHub ������Ʈ ���
 - React 화면 QA에서는 로딩 타이밍 때문에 한 번의 텍스트 체크가 흔들릴 수 있다. 의심되는 부분은 직접 해당 화면으로 다시 들어가 충분히 기다리고 재확인해야 한다.
 - 사용자의 “눌러봤을 때 이상한 부분”은 API 단위 테스트보다 브라우저 smoke QA에서 더 잘 드러난다.
 - 자동화 QA 결과는 `test.md`에 체크리스트와 출력 요약을 같이 남겨야 나중에 왜 완료라고 판단했는지 설명할 수 있다.
+
+---
+
+## 2026-06-16 학습 기록: 긴 텍스트 UI QA
+
+이번 QA는 긴 repo 이름이 카드 안에서 레이아웃을 깨뜨리지 않는지 브라우저의 실제 bounding box로 확인한 작업이다.
+
+관련 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | 프로젝트 카드에서 제목은 `truncate`, repo 이름은 `break-all`, 상태 badge는 `shrink-0`으로 배치한다. |
+
+핵심 개념:
+
+- 긴 텍스트 UI 문제는 단순히 문자열이 화면에 보이는지만 확인하면 부족하다.
+- `getBoundingClientRect()`로 카드와 badge 위치를 비교하면 요소가 부모 안에 들어오는지 수치로 확인할 수 있다.
+- `document.documentElement.scrollWidth > clientWidth`를 보면 긴 텍스트 때문에 가로 스크롤이 생겼는지 확인할 수 있다.
+
+이번에 다시 배운 점:
+
+- UI QA는 텍스트 존재 여부와 레이아웃 수치 검사를 같이 보면 더 단단하다.
+- badge처럼 작은 상태 표시 요소는 `shrink-0`과 `whitespace-nowrap`가 없으면 긴 제목 옆에서 찌그러질 수 있다.

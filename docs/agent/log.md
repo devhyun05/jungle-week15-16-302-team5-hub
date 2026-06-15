@@ -3149,3 +3149,37 @@ cleanup_done=True
 ```txt
 docs: 학생 화면 브라우저 QA 기록
 ```
+
+---
+
+## 2026-06-16 긴 repo 카드 레이아웃 QA
+
+상태: 완료
+
+목표: 포트폴리오 프로젝트 카드에서 긴 repo 이름 때문에 상태 badge가 카드 밖으로 밀리거나 가로 스크롤이 생기지 않는지 브라우저 DOM 수치로 확인했다.
+
+진행한 것:
+
+- 매우 긴 GitHub repo 이름을 가진 QA 프로젝트를 임시 생성했다.
+- 학생 세션으로 `/portfolio`를 열었다.
+- repo 이름을 포함한 프로젝트 카드의 bounding box를 찾았다.
+- `작성중` 상태 badge와 `코치` badge의 bounding box가 카드 안에 있는지 계산했다.
+- 문서 전체에 가로 overflow가 생기는지 확인했다.
+- QA 데이터는 검증 후 삭제했다.
+
+검증 결과:
+
+```txt
+found=True
+statusInsideCard=True
+coachInsideCard=True
+horizontalOverflow=False
+bodyHasError=False
+cleanup_done=True
+```
+
+커밋 추천 제목:
+
+```txt
+docs: 긴 repo 카드 레이아웃 QA 기록
+```

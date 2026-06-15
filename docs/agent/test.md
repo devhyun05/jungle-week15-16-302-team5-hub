@@ -2592,3 +2592,29 @@ overall.noUnexpectedErrors=True
 overall.noObjectObjects=True
 cleanup_done=True
 ```
+
+---
+
+## 2026-06-16 QA: 긴 repo 카드 레이아웃
+
+목표: 포트폴리오 카드에서 긴 repo 이름 때문에 상태 badge나 레이아웃이 깨지지 않는지 확인한다.
+
+체크리스트:
+
+- [x] 긴 repo 이름을 가진 프로젝트 카드가 화면에 표시된다.
+- [x] `작성중` 상태 badge가 카드 bounding box 안에 있다.
+- [x] `코치` 상태 badge가 카드 bounding box 안에 있다.
+- [x] 긴 repo 이름 때문에 전체 문서에 가로 스크롤이 생기지 않는다.
+- [x] 화면에 `Unexpected Application Error`와 `[object Object]`가 보이지 않는다.
+- [x] QA 프로젝트와 사용자는 검증 후 삭제했다.
+
+검증 출력 요약:
+
+```txt
+found=True
+statusInsideCard=True
+coachInsideCard=True
+horizontalOverflow=False
+bodyHasError=False
+cleanup_done=True
+```

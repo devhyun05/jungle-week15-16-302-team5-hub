@@ -519,3 +519,8 @@ OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 �
 - `GitHub 보기` 링크가 실제 repo URL과 새 탭 대상(`target="_blank"`)을 갖는지 확인했습니다.
 - 코치 리뷰 요청 화면에서 게시글과 포트폴리오 프로젝트가 모두 리뷰 대상이 되는지 확인했습니다.
 - 확인한 화면에 `Unexpected Application Error`, `[object Object]`, 개발/debug 문구가 보이지 않는지 확인했습니다.
+
+## 최근 변경: 긴 repo 카드 레이아웃 QA 기록
+
+- 긴 GitHub repo 이름을 가진 포트폴리오 카드에서 상태 badge와 코치 badge가 카드 안에 유지되는지 브라우저 bounding box로 확인했습니다.
+- 긴 repo 이름 때문에 전체 화면에 가로 스크롤이 생기지 않는지 확인했습니다.
