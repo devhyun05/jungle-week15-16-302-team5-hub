@@ -1423,3 +1423,36 @@ feat: Google OAuth ���� repository ��� �߰�
 ```txt
 feat: Google OAuth ���� ����� ����
 ```
+
+## 2026-06-15 코치 리뷰 화면 API 연결
+
+상태: 완료
+
+목표: 코치 리뷰 화면에서 mock reviewRequests를 제거하고, 학생/코치 역할별로 실제 백엔드 리뷰 요청 API를 호출하도록 연결한다.
+
+구현한 것:
+
+- `frontend/src/app/api/reviews.ts` 추가
+- 학생 리뷰 요청 화면에서 내 게시글, 포트폴리오 프로젝트, 코치 목록, 내 요청 목록을 API로 조회
+- 학생 리뷰 요청 생성 버튼을 `POST /review-requests`에 연결
+- 대기 중 리뷰 요청 취소 버튼을 `DELETE /review-requests/{id}`에 연결
+- 코치 인박스 화면을 `GET /review-requests/inbox`에 연결
+- 코치 피드백/상태 저장 버튼을 `PATCH /review-requests/{id}`에 연결
+- 코치 인박스 검색/카테고리/상태 필터는 API 응답 목록 기준으로 동작
+
+남긴 것:
+
+- 코치 피드백을 원문 댓글에도 자동 등록할지는 정책 결정 후 별도 구현
+- AI 도우미 화면은 아직 AI 연결 전 샘플 상태
+
+검증:
+
+- `npm run build` 성공
+- `python -m compileall app` 성공
+- `git diff --check` 통과
+
+추천 커밋 제목:
+
+```txt
+feat: 코치 리뷰 화면 API 연결
+```

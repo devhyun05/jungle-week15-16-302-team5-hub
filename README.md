@@ -616,3 +616,30 @@ uvicorn app.main:app --reload
 - `POST /auth/logout`�� refresh token�� ����ϰ� ���� cookie�� �����մϴ�.
 - `backend/app/dependencies/auth.py`�� ���� ����� ��ȸ, ���� ����� ����, role ���� dependency�� �߰��߽��ϴ�.
 - ���� ������ Google �α��� end-to-end Ȯ���� ����Ʈ �α��� ��ư ���� �� ���� �����Դϴ�.
+
+## 2026-06-15 최신 구현: 코치 리뷰 화면 API 연결
+
+코치 리뷰 화면을 mock state 중심에서 실제 백엔드 리뷰 요청 API 기준으로 전환했습니다.
+
+- 학생 화면은 내 게시글, 포트폴리오 프로젝트, 승인된 코치 목록, 내가 보낸 리뷰 요청 목록을 API로 불러옵니다.
+- 학생은 게시글 또는 포트폴리오 프로젝트를 선택해 코치에게 리뷰 요청을 보낼 수 있습니다.
+- 대기 중인 리뷰 요청은 실제 DELETE API로 취소하고 화면 목록에서 제거합니다.
+- 코치/관리자 화면은 받은 리뷰 요청 인박스를 API로 불러오고, 피드백과 상태를 PATCH API로 저장합니다.
+- 원문 댓글 자동 등록은 아직 정책을 정하지 않았으므로 다음 단계 작업으로 남겨두었습니다.
+
+관련 파일:
+
+- `frontend/src/app/api/reviews.ts`
+- `frontend/src/app/pages/coach/CoachReview.tsx`
+
+검증:
+
+- `npm run build` 성공
+- `python -m compileall app` 성공
+- `git diff --check` 통과
+
+다음 작업:
+
+- AI 도우미 화면의 남은 mock 데이터를 실제 포트폴리오 API 기준으로 정리
+- 전체 로그인/OAuth 브라우저 흐름 QA
+- 오늘 날짜 Notion 학습 기록 정리

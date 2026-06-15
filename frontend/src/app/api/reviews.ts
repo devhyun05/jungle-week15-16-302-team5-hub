@@ -1,0 +1,139 @@
+import { API_BASE_URL, getErrorMessage } from "./client";
+
+export type ReviewTargetType = "post" | "portfolio";
+export type ReviewStatus = "대기 중" | "검토 중" | "피드백 완료" | "수정 요청" | "최종 확인";
+
+export type CoachOption = {
+  id: number;
+  name: string;
+  email: string;
+};
+
+export type CoachOptionListResponse = {
+  items: CoachOption[];
+};
+
+export type ReviewRequestApiItem = {
+  id: number;
+  requesterId: number;
+  requesterName: string;
+  coachIds: number[];
+  coachNames: string[];
+  targetType: ReviewTargetType;
+  targetId: number;
+  targetTitle: string;
+  category: string;
+  categorySlug: string;
+  message: string | null;
+  status: ReviewStatus;
+  feedback: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ReviewRequestListResponse = {
+  items: ReviewRequestApiItem[];
+  total: number;
+};
+
+export type ReviewRequestCreatePayload = {
+  targetType: ReviewTargetType;
+  targetId: number;
+  coachIds: number[];
+  message?: string;
+};
+
+export type ReviewRequestUpdatePayload = {
+  status?: ReviewStatus;
+  feedback?: string;
+};
+
+export async function getCoachOptions(): Promise<CoachOptionListResponse> {
+  const response = await fetch(`${API_BASE_URL}/review-requests/coaches`, {
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response);
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function createReviewRequest(payload: ReviewRequestCreatePayload): Promise<ReviewRequestApiItem> {
+  const response = await fetch(`${API_BASE_URL}/review-requests`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response);
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function getMyReviewRequests(): Promise<ReviewRequestListResponse> {
+  const response = await fetch(`${API_BASE_URL}/review-requests/me`, {
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response);
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function getReviewInbox(): Promise<ReviewRequestListResponse> {
+  const response = await fetch(`${API_BASE_URL}/review-requests/inbox`, {
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response);
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function updateReviewRequest(
+  reviewRequestId: number,
+  payload: ReviewRequestUpdatePayload,
+): Promise<ReviewRequestApiItem> {
+  const response = await fetch(`${API_BASE_URL}/review-requests/${reviewRequestId}`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response);
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function cancelReviewRequest(reviewRequestId: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/review-requests/${reviewRequestId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response);
+    throw new Error(message);
+  }
+}

@@ -984,3 +984,29 @@ cd C:\junhee\WEEK15_AI_BOARD\backend
 ```
 
 ����: ���� Google �α��� end-to-end�� ���������� Google ������ ���ľ� �ϹǷ� ����Ʈ �α��� ��ư ���� �� ���� QA�Ѵ�.
+
+## 2026-06-15 코치 리뷰 화면 API 연결 QA
+
+목표: 코치 리뷰 React 화면이 mock state가 아니라 실제 백엔드 리뷰 API 클라이언트를 기준으로 빌드되는지 확인한다.
+
+체크리스트:
+
+- [x] `frontend/src/app/api/reviews.ts`가 존재한다.
+- [x] `getCoachOptions()`가 `GET /review-requests/coaches`를 호출한다.
+- [x] `createReviewRequest()`가 `POST /review-requests`를 호출한다.
+- [x] `getMyReviewRequests()`가 `GET /review-requests/me`를 호출한다.
+- [x] `getReviewInbox()`가 `GET /review-requests/inbox`를 호출한다.
+- [x] `updateReviewRequest()`가 `PATCH /review-requests/{id}`를 호출한다.
+- [x] `cancelReviewRequest()`가 `DELETE /review-requests/{id}`를 호출한다.
+- [x] `CoachReview.tsx`가 `mockData.reviewRequests`를 직접 사용하지 않는다.
+- [x] 학생 화면에서 대기 중 요청 취소는 성공 후 목록에서 제거된다.
+- [x] 코치 화면에서 피드백/상태 저장은 성공 응답으로 목록을 갱신한다.
+- [x] `npm run build` 성공.
+- [x] `python -m compileall app` 성공.
+- [x] `git diff --check` 통과.
+
+추가 수동 QA 예정:
+
+- 브라우저에서 학생 계정으로 로그인 후 리뷰 요청 생성 확인
+- 브라우저에서 코치 계정으로 로그인 후 인박스 수신 확인
+- 코치가 피드백 작성 후 학생 요청 목록에서 피드백 확인

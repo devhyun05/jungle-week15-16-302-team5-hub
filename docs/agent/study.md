@@ -2673,3 +2673,65 @@ refresh token cookie �б�
 - refresh token rotation
 - 401 Unauthorized
 - 403 Forbidden
+
+## 2026-06-15 코치 리뷰 화면 API 연결 학습 기록
+
+이번 단계는 이미 만든 코치 리뷰 백엔드 API를 React 화면에 연결한 작업이다. 학생과 코치가 같은 `/coach-review` 경로를 쓰지만, 로그인한 role에 따라 완전히 다른 데이터 흐름을 사용한다.
+
+### 수정한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/api/reviews.ts` | 코치 목록, 리뷰 요청 생성/조회/수정/취소 API 호출 함수를 모아둔 파일 |
+| `frontend/src/app/pages/coach/CoachReview.tsx` | 학생용 리뷰 요청 화면과 코치용 인박스 화면을 role 기준으로 렌더링하는 페이지 |
+
+### 이번 구현에서 사용한 React 개념
+
+- `useEffect`: 화면이 처음 열릴 때 API 데이터를 불러온다.
+- `useState`: 선택한 리뷰 대상, 선택한 코치, 요청 메시지, 피드백, 로딩/오류 상태를 저장한다.
+- `useMemo`: 코치 인박스 검색어, 카테고리, 상태 필터에 맞는 요청 목록을 다시 계산한다.
+- `useOutletContext`: `MainLayout`에서 내려준 현재 사용자 role을 읽어 학생 화면과 코치 화면을 나눈다.
+- 조건부 렌더링: 로딩, 빈 목록, 오류 메시지, 학생/코치 화면을 상태에 따라 다르게 보여준다.
+
+### 코드 흐름
+
+학생 화면:
+
+```txt
+/coach-review 진입
+-> useOutletContext로 role 확인
+-> STUDENT면 StudentReviewView 렌더링
+-> getMyPosts / getPortfolioProjects / getCoachOptions / getMyReviewRequests 호출
+-> 사용자가 대상과 코치를 선택
+-> createReviewRequest 호출
+-> 성공한 요청을 requests state 맨 앞에 추가
+-> 대기 중 요청 취소 시 cancelReviewRequest 호출 후 state에서 제거
+```
+
+코치 화면:
+
+```txt
+/coach-review 진입
+-> role이 COACH 또는 ADMIN이면 CoachInboxView 렌더링
+-> getReviewInbox 호출
+-> 검색어/카테고리/상태 필터를 useMemo로 적용
+-> 요청 선택 시 상세 패널과 feedback state 변경
+-> updateReviewRequest로 상태와 피드백 저장
+-> 성공한 응답으로 requests state 갱신
+```
+
+### 내가 이해해야 할 핵심 포인트
+
+- 프론트엔드는 DB를 직접 만지지 않고 API 함수만 호출한다.
+- 학생이 보는 요청 목록과 코치가 보는 인박스는 같은 테이블을 기반으로 하지만 API endpoint가 다르다.
+- 상태 변경은 화면 state만 바꾸는 것이 아니라 PATCH API를 호출하고, 성공 응답을 기준으로 화면을 갱신해야 한다.
+- 원문 댓글과 리뷰 피드백은 목적이 다르다. 리뷰 피드백은 `review_requests.feedback`에 저장되고, 댓글 자동 등록은 아직 다음 정책 결정 사항이다.
+
+### 추가 학습 키워드
+
+- React API client 분리
+- Promise.all
+- optimistic update와 server response update 차이
+- role based rendering
+- controlled textarea
+- PATCH / DELETE API

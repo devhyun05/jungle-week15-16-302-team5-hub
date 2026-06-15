@@ -1,5 +1,4 @@
-﻿
-import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useOutletContext } from "react-router";
 import { AlertCircle, CheckCircle2, ChevronRight, MessageSquare, Search, Send, ShieldCheck, XCircle } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
@@ -7,23 +6,21 @@ import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
+import { getMyPosts, type PostListApiItem } from "../../api/posts";
+import { getPortfolioProjects, type PortfolioProjectApiItem } from "../../api/portfolio";
 import {
-  categories,
-  coaches,
-  portfolioProjects,
-  posts,
-  reviewRequests,
-  type MockPost,
-  type PortfolioProject,
-  type ReviewRequest,
+  cancelReviewRequest,
+  createReviewRequest,
+  getCoachOptions,
+  getMyReviewRequests,
+  getReviewInbox,
+  updateReviewRequest,
+  type CoachOption,
+  type ReviewRequestApiItem,
   type ReviewStatus,
-} from "../../data/mockData";
+  type ReviewTargetType,
+} from "../../api/reviews";
 import type { MainLayoutContext } from "../../layouts/MainLayout";
-
-type ReviewRequestStateProps = {
-  requests: ReviewRequest[];
-  setRequests: Dispatch<SetStateAction<ReviewRequest[]>>;
-};
 
 const statusColors: Record<ReviewStatus, string> = {
   "대기 중": "bg-slate-100 text-slate-700",
@@ -39,60 +36,115 @@ function ReviewStatusBadge({ status }: { status: ReviewStatus }) {
   return <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusColors[status]}`}>{status}</span>;
 }
 
-function StudentReviewView({ requests, setRequests }: ReviewRequestStateProps) {
-  // 학생 화면은 리뷰 요청을 생성하고 내가 보낸 요청 목록을 관리합니다.
-  const [targetType, setTargetType] = useState<"post" | "portfolio">("post");
-  const [targetId, setTargetId] = useState(String(posts[0].id));
-  const [selectedCoachIds, setSelectedCoachIds] = useState<string[]>([coaches[0].id]);
+function formatDate(dateText: string) {
+  return new Date(dateText).toLocaleString("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function StudentReviewView() {
+  const [targetType, setTargetType] = useState<ReviewTargetType>("post");
+  const [targetId, setTargetId] = useState<number | null>(null);
+  const [posts, setPosts] = useState<PostListApiItem[]>([]);
+  const [projects, setProjects] = useState<PortfolioProjectApiItem[]>([]);
+  const [coaches, setCoaches] = useState<CoachOption[]>([]);
+  const [requests, setRequests] = useState<ReviewRequestApiItem[]>([]);
+  const [selectedCoachIds, setSelectedCoachIds] = useState<number[]>([]);
   const [message, setMessage] = useState("");
   const [notice, setNotice] = useState("");
-  const studentRequests = useMemo(
-    () => requests.filter((request) => request.requesterId === "student-1"),
-    [requests],
-  );
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 리뷰 대상 유형에 따라 게시글 목록 또는 포트폴리오 프로젝트 목록을 선택지로 사용합니다.
-  const targetOptions: Array<MockPost | PortfolioProject> = targetType === "post" ? posts : portfolioProjects;
-  const selectedTarget = targetOptions.find((item) => String(item.id) === targetId) ?? targetOptions[0];
+  async function loadStudentReviewData() {
+    setIsLoading(true);
+    setErrorMessage("");
 
-  const toggleCoach = (coachId: string) => {
+    try {
+      const [postData, projectData, coachData, requestData] = await Promise.all([
+        getMyPosts({ visibility: "all", size: 100 }),
+        getPortfolioProjects(),
+        getCoachOptions(),
+        getMyReviewRequests(),
+      ]);
+
+      setPosts(postData.items);
+      setProjects(projectData.items);
+      setCoaches(coachData.items);
+      setRequests(requestData.items);
+      setTargetId((prev) => prev ?? postData.items[0]?.id ?? projectData.items[0]?.id ?? null);
+      setSelectedCoachIds((prev) => (prev.length > 0 ? prev : coachData.items[0] ? [coachData.items[0].id] : []));
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "리뷰 요청 데이터를 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadStudentReviewData();
+  }, []);
+
+  const targetOptions = targetType === "post" ? posts : projects;
+  const selectedTarget = targetOptions.find((item) => item.id === targetId) ?? targetOptions[0] ?? null;
+
+  const toggleCoach = (coachId: number) => {
     setSelectedCoachIds((prev) => (prev.includes(coachId) ? prev.filter((id) => id !== coachId) : [...prev, coachId]));
   };
 
-  const createRequest = () => {
-    if (selectedCoachIds.length === 0) {
-      setNotice("리뷰 받을 코치님을 1명 이상 선택해주세요.");
+  const changeTargetType = (nextType: ReviewTargetType) => {
+    setTargetType(nextType);
+    setTargetId(nextType === "post" ? posts[0]?.id ?? null : projects[0]?.id ?? null);
+    setNotice("");
+  };
+
+  const submitReviewRequest = async () => {
+    if (!selectedTarget || targetId === null) {
+      setErrorMessage("리뷰 요청 대상을 먼저 선택해 주세요.");
       return;
     }
 
-    const selectedCoaches = coaches.filter((coach) => selectedCoachIds.includes(coach.id));
-    const newRequest: ReviewRequest = {
-      id: `review-local-${Date.now()}`,
-      requesterId: "student-1",
-      requesterName: "김정글",
-      coachIds: selectedCoaches.map((coach) => coach.id),
-      coachNames: selectedCoaches.map((coach) => coach.name),
-      targetType,
-      targetId: String(selectedTarget.id),
-      targetTitle: selectedTarget.title,
-      category: selectedTarget.category,
-      categorySlug: selectedTarget.categorySlug,
-      message: message.trim() || "리뷰 부탁드립니다.",
-      status: "대기 중",
-      createdAt: "방금 전",
-      feedback: "",
-    };
+    if (selectedCoachIds.length === 0) {
+      setErrorMessage("리뷰 받을 코치님을 1명 이상 선택해 주세요.");
+      return;
+    }
 
-    // TODO backend: 실제 코치 리뷰 요청 생성 API는 백엔드 연결 후 구현 예정.
-    setRequests((prev) => [newRequest, ...prev]);
-    setMessage("");
-    setNotice("mock으로 리뷰 요청을 보냈습니다.");
+    setIsSubmitting(true);
+    setNotice("");
+    setErrorMessage("");
+
+    try {
+      const createdRequest = await createReviewRequest({
+        targetType,
+        targetId,
+        coachIds: selectedCoachIds,
+        message: message.trim() || "리뷰 부탁드립니다.",
+      });
+
+      setRequests((prev) => [createdRequest, ...prev]);
+      setMessage("");
+      setNotice("리뷰 요청을 보냈습니다.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "리뷰 요청을 보내지 못했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const cancelRequest = (requestId: string) => {
-    // TODO backend: 실제 리뷰 요청 삭제 API는 백엔드 연결 후 구현 예정.
-    setRequests((prev) => prev.filter((request) => request.id !== requestId));
-    setNotice("대기 중 리뷰 요청을 mock 목록에서 제거했습니다.");
+  const removePendingRequest = async (requestId: number) => {
+    setErrorMessage("");
+    setNotice("");
+
+    try {
+      await cancelReviewRequest(requestId);
+      setRequests((prev) => prev.filter((request) => request.id !== requestId));
+      setNotice("대기 중 리뷰 요청을 취소했습니다.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "리뷰 요청을 취소하지 못했습니다.");
+    }
   };
 
   return (
@@ -102,172 +154,212 @@ function StudentReviewView({ requests, setRequests }: ReviewRequestStateProps) {
         <p className="mt-1 text-slate-500">내 게시글이나 포트폴리오 프로젝트를 선택해서 코치님에게 리뷰를 요청합니다.</p>
       </div>
 
+      {errorMessage && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{errorMessage}</div>}
       {notice && <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</div>}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
+      {isLoading ? (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">리뷰 요청 생성</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">리뷰 대상 유형</label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { value: "post", label: "게시글" },
-                  { value: "portfolio", label: "포트폴리오 프로젝트" },
-                ].map((item) => (
-                  <button
-                    key={item.value}
-                    type="button"
-                    onClick={() => {
-                      setTargetType(item.value as "post" | "portfolio");
-                      setTargetId(item.value === "post" ? String(posts[0].id) : portfolioProjects[0].id);
-                    }}
-                    className={`rounded-md border px-3 py-2 text-sm font-semibold transition-colors ${
-                      targetType === item.value
-                        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">리뷰 대상 선택</label>
-              <select
-                value={targetId}
-                onChange={(event) => setTargetId(event.target.value)}
-                className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:ring-1 focus:ring-emerald-500"
-              >
-                {targetOptions.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">코치 선택</label>
-              <div className="grid gap-2 md:grid-cols-3">
-                {coaches.map((coach) => {
-                  const isSelected = selectedCoachIds.includes(coach.id);
-                  return (
-                    <button
-                      key={coach.id}
-                      type="button"
-                      onClick={() => toggleCoach(coach.id)}
-                      className={`rounded-lg border p-3 text-left transition-colors ${
-                        isSelected ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white hover:bg-slate-50"
-                      }`}
-                    >
-                      <p className="text-sm font-semibold text-slate-900">{coach.name}</p>
-                      <p className="text-xs text-slate-500">{coach.field}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">요청 메시지</label>
-              <Textarea
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-                placeholder="어떤 부분을 봐주셨으면 하는지 적어주세요."
-                className="min-h-28 resize-none"
-              />
-            </div>
-
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs text-slate-500">현재 단계에서는 서버 저장 없이 화면 상태에만 추가됩니다.</p>
-              <Button onClick={createRequest} disabled={selectedCoachIds.length === 0}>
-                <Send className="mr-2 h-4 w-4" />
-                리뷰 요청 보내기
-              </Button>
-            </div>
-          </CardContent>
+          <CardContent className="p-8 text-center text-sm text-slate-500">리뷰 요청 데이터를 불러오는 중입니다.</CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">선택한 대상 미리보기</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Badge variant="secondary">{selectedTarget.category}</Badge>
-            <h2 className="mt-3 text-lg font-bold text-slate-900">{selectedTarget.title}</h2>
-            <p className="mt-2 line-clamp-5 text-sm text-slate-600">
-              {"readmeSummary" in selectedTarget ? selectedTarget.savedPortfolioDraft : selectedTarget.summary}
-            </p>
-            <Button asChild variant="outline" className="mt-4">
-              <Link to={targetType === "post" ? `/posts/${selectedTarget.id}` : "/portfolio"}>
-                원문 보기 <ChevronRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">내가 보낸 요청 목록</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {studentRequests.map((request) => (
-            <div key={request.id} className="rounded-lg border border-slate-200 p-4">
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary">{request.category}</Badge>
-                  <ReviewStatusBadge status={request.status} />
+      ) : (
+        <>
+          <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">리뷰 요청 생성</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">리뷰 대상 유형</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: "post", label: "게시글" },
+                      { value: "portfolio", label: "포트폴리오 프로젝트" },
+                    ].map((item) => (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => changeTargetType(item.value as ReviewTargetType)}
+                        className={`rounded-md border px-3 py-2 text-sm font-semibold transition-colors ${
+                          targetType === item.value
+                            ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <span className="text-xs text-slate-400">{request.createdAt}</span>
-              </div>
-              <h3 className="font-semibold text-slate-900">{request.targetTitle}</h3>
-              <p className="mt-1 text-sm text-slate-500">담당 코치: {request.coachNames.join(", ")}</p>
-              <p className="mt-2 text-sm text-slate-600">{request.message}</p>
-              {request.feedback && <div className="mt-3 rounded-md bg-emerald-50 p-3 text-sm text-emerald-800">피드백: {request.feedback}</div>}
-              <div className="mt-3 flex justify-end">
-                {request.status === "대기 중" ? (
-                  <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50" onClick={() => cancelRequest(request.id)}>
-                    <XCircle className="mr-1 h-3 w-3" />
-                    요청 취소
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">리뷰 대상 선택</label>
+                  <select
+                    value={targetId ?? ""}
+                    onChange={(event) => setTargetId(Number(event.target.value))}
+                    className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:ring-1 focus:ring-emerald-500"
+                  >
+                    {targetOptions.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.title}
+                      </option>
+                    ))}
+                  </select>
+                  {targetOptions.length === 0 && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      선택할 수 있는 {targetType === "post" ? "내 게시글" : "포트폴리오 프로젝트"}가 없습니다.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">코치 선택</label>
+                  <div className="grid gap-2 md:grid-cols-3">
+                    {coaches.map((coach) => {
+                      const isSelected = selectedCoachIds.includes(coach.id);
+                      return (
+                        <button
+                          key={coach.id}
+                          type="button"
+                          onClick={() => toggleCoach(coach.id)}
+                          className={`rounded-lg border p-3 text-left transition-colors ${
+                            isSelected ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white hover:bg-slate-50"
+                          }`}
+                        >
+                          <p className="text-sm font-semibold text-slate-900">{coach.name}</p>
+                          <p className="text-xs text-slate-500">{coach.email}</p>
+                        </button>
+                      );
+                    })}
+                    {coaches.length === 0 && <p className="text-sm text-slate-500">승인 완료된 코치가 아직 없습니다.</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">요청 메시지</label>
+                  <Textarea
+                    value={message}
+                    onChange={(event) => setMessage(event.target.value)}
+                    placeholder="어떤 부분을 봐주셨으면 하는지 적어주세요."
+                    className="min-h-28 resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-slate-500">요청은 백엔드 DB에 저장되고 코치 인박스에 표시됩니다.</p>
+                  <Button onClick={() => void submitReviewRequest()} disabled={isSubmitting || !selectedTarget || selectedCoachIds.length === 0}>
+                    <Send className="mr-2 h-4 w-4" />
+                    {isSubmitting ? "전송 중" : "리뷰 요청 보내기"}
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">선택한 대상 미리보기</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {selectedTarget ? (
+                  <>
+                    <Badge variant="secondary">{targetType === "post" ? (selectedTarget as PostListApiItem).category : "포트폴리오 관리"}</Badge>
+                    <h2 className="mt-3 text-lg font-bold text-slate-900">{selectedTarget.title}</h2>
+                    <p className="mt-2 line-clamp-5 text-sm text-slate-600">
+                      {targetType === "post"
+                        ? (selectedTarget as PostListApiItem).summary
+                        : (selectedTarget as PortfolioProjectApiItem).savedPortfolioDraft ?? (selectedTarget as PortfolioProjectApiItem).summary}
+                    </p>
+                    <Button asChild variant="outline" className="mt-4">
+                      <Link to={targetType === "post" ? `/posts/${selectedTarget.id}` : "/portfolio"}>
+                        원문 보기 <ChevronRight className="ml-1 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </>
                 ) : (
-                  <span className="text-xs text-slate-400">검토가 시작된 요청은 mock 화면에서도 취소할 수 없습니다.</span>
+                  <p className="text-sm text-slate-500">리뷰 요청 대상을 먼저 만들어 주세요.</p>
                 )}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">내가 보낸 요청 목록</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {requests.map((request) => (
+                <div key={request.id} className="rounded-lg border border-slate-200 p-4">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary">{request.category}</Badge>
+                      <ReviewStatusBadge status={request.status} />
+                    </div>
+                    <span className="text-xs text-slate-400">{formatDate(request.createdAt)}</span>
+                  </div>
+                  <h3 className="font-semibold text-slate-900">{request.targetTitle}</h3>
+                  <p className="mt-1 text-sm text-slate-500">담당 코치: {request.coachNames.join(", ")}</p>
+                  <p className="mt-2 text-sm text-slate-600">{request.message}</p>
+                  {request.feedback && <div className="mt-3 rounded-md bg-emerald-50 p-3 text-sm text-emerald-800">피드백: {request.feedback}</div>}
+                  <div className="mt-3 flex justify-end">
+                    {request.status === "대기 중" ? (
+                      <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50" onClick={() => void removePendingRequest(request.id)}>
+                        <XCircle className="mr-1 h-3 w-3" />
+                        요청 취소
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-slate-400">검토가 시작된 요청은 취소할 수 없습니다.</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {requests.length === 0 && <p className="text-sm text-slate-500">아직 보낸 리뷰 요청이 없습니다.</p>}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
 
-function CoachInboxView({ requests, setRequests, isAdmin = false }: ReviewRequestStateProps & { isAdmin?: boolean }) {
-  // 코치 화면은 들어온 리뷰 요청을 검색/필터링하고 상태와 피드백을 수정합니다.
-  // TODO backend: 실제 코치 id는 로그인/JWT 연결 후 인증 정보에서 가져옵니다.
-  const currentCoachId = "coach-1";
+function CoachInboxView() {
+  const [requests, setRequests] = useState<ReviewRequestApiItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("전체");
-  const [selectedStatus, setSelectedStatus] = useState("전체");
+  const [selectedStatus, setSelectedStatus] = useState<ReviewStatus | "전체">("전체");
   const [keyword, setKeyword] = useState("");
-  const coachRequests = useMemo(
-    () => (isAdmin ? requests : requests.filter((request) => request.coachIds.includes(currentCoachId))),
-    [currentCoachId, isAdmin, requests],
-  );
-  const [selectedId, setSelectedId] = useState(() => coachRequests[0]?.id ?? reviewRequests[0].id);
-  const selectedRequest = coachRequests.find((request) => request.id === selectedId) ?? coachRequests[0] ?? reviewRequests[0];
-  const [feedback, setFeedback] = useState(selectedRequest.feedback);
-  const [feedbackNotice, setFeedbackNotice] = useState("");
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState("");
+  const [notice, setNotice] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // 카테고리, 상태, 검색어 조건을 모두 만족하는 요청만 인박스에 보여줍니다.
+  async function loadInbox() {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      const data = await getReviewInbox();
+
+      setRequests(data.items);
+      setSelectedId((prev) => prev ?? data.items[0]?.id ?? null);
+      setFeedback(data.items[0]?.feedback ?? "");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "리뷰 인박스를 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadInbox();
+  }, []);
+
+  const selectedRequest = requests.find((request) => request.id === selectedId) ?? requests[0] ?? null;
+  const categoryOptions = Array.from(new Set(requests.map((request) => request.category)));
+
   const filteredRequests = useMemo(
     () =>
-      coachRequests.filter((request) => {
+      requests.filter((request) => {
         const categoryMatch = selectedCategory === "전체" || request.category === selectedCategory;
         const statusMatch = selectedStatus === "전체" || request.status === selectedStatus;
         const query = keyword.trim().toLowerCase();
@@ -276,44 +368,45 @@ function CoachInboxView({ requests, setRequests, isAdmin = false }: ReviewReques
           request.requesterName.toLowerCase().includes(query) ||
           request.targetTitle.toLowerCase().includes(query) ||
           request.category.toLowerCase().includes(query) ||
-          request.message.toLowerCase().includes(query) ||
+          (request.message ?? "").toLowerCase().includes(query) ||
           request.coachNames.some((name) => name.toLowerCase().includes(query));
 
         return categoryMatch && statusMatch && keywordMatch;
       }),
-    [coachRequests, keyword, selectedCategory, selectedStatus],
+    [keyword, requests, selectedCategory, selectedStatus],
   );
 
-  const targetPost = posts.find((post) => String(post.id) === selectedRequest.targetId);
-  const targetPortfolio = portfolioProjects.find((project) => project.id === selectedRequest.targetId);
-
-  const selectRequest = (request: ReviewRequest) => {
+  const selectRequest = (request: ReviewRequestApiItem) => {
     setSelectedId(request.id);
-    setFeedback(request.feedback);
-    setFeedbackNotice("");
+    setFeedback(request.feedback ?? "");
+    setNotice("");
+    setErrorMessage("");
   };
 
-  const updateStatus = (status: ReviewStatus) => {
-    const trimmedFeedback = feedback.trim();
-
-    if ((status === "수정 요청" || status === "피드백 완료") && !trimmedFeedback) {
-      setFeedbackNotice("피드백 내용을 입력한 뒤 학생에게 보내주세요.");
+  const saveReview = async (status: ReviewStatus) => {
+    if (!selectedRequest) {
       return;
     }
 
-    const savedFeedback =
-      status === "최종 확인" && !trimmedFeedback
-        ? "이 정도면 만족합니다. 최종 확인 처리했습니다."
-        : trimmedFeedback;
+    setIsSaving(true);
+    setNotice("");
+    setErrorMessage("");
 
-    // TODO backend: 실제 코치 리뷰 상태 변경과 피드백 저장 API는 백엔드 연결 후 구현 예정.
-    setRequests((prev) =>
-      prev.map((request) =>
-        request.id === selectedRequest.id ? { ...request, status, feedback: savedFeedback } : request,
-      ),
-    );
-    setFeedback(savedFeedback);
-    setFeedbackNotice("학생에게 mock 피드백과 상태를 보냈습니다.");
+    try {
+      const updatedRequest = await updateReviewRequest(selectedRequest.id, {
+        status,
+        feedback,
+      });
+
+      setRequests((prev) => prev.map((request) => (request.id === updatedRequest.id ? updatedRequest : request)));
+      setSelectedId(updatedRequest.id);
+      setFeedback(updatedRequest.feedback ?? "");
+      setNotice("피드백과 상태를 학생에게 보냈습니다.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "피드백을 저장하지 못했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -323,166 +416,166 @@ function CoachInboxView({ requests, setRequests, isAdmin = false }: ReviewReques
         <p className="mt-1 text-slate-500">학생들이 보낸 리뷰 요청을 확인하고 피드백 상태를 관리합니다.</p>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
-        <Card className="flex w-full shrink-0 flex-col overflow-hidden border-slate-200 shadow-sm lg:w-[420px]">
-          <div className="shrink-0 space-y-3 border-b border-slate-200 bg-slate-50/50 p-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-              <Input
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-                placeholder="학생, 제목, 카테고리, 메시지 검색"
-                className="h-9 bg-white pl-9"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)} className="h-9 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700">
-                <option>전체</option>
-                {categories.map((category) => (
-                  <option key={category.slug}>{category.label}</option>
-                ))}
-              </select>
-              <select value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value)} className="h-9 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700">
-                <option>전체</option>
-                {reviewStatusOptions.map((status) => (
-                  <option key={status}>{status}</option>
-                ))}
-              </select>
-            </div>
-            <p className="text-xs text-slate-400">고급 DB full-text search는 백엔드 연결 후 구현 예정입니다.</p>
-          </div>
+      {errorMessage && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{errorMessage}</div>}
+      {notice && <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</div>}
 
-          <div className="flex-1 space-y-2 overflow-y-auto p-2">
-            {filteredRequests.map((request) => {
-              const isActive = selectedRequest.id === request.id;
-              return (
-                <button
-                  key={request.id}
-                  type="button"
-                  onClick={() => selectRequest(request)}
-                  className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                    isActive ? "border-emerald-200 bg-emerald-50" : "border-transparent hover:border-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  <div className="mb-1 flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-900">{request.requesterName}</span>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {request.category}
-                      </Badge>
-                    </div>
-                    <span className="text-xs text-slate-400">{request.createdAt}</span>
-                  </div>
-                  <p className="truncate text-sm font-medium text-slate-700">{request.targetTitle}</p>
-                  <div className="mt-2 flex items-center gap-2">
-                    {request.status === "피드백 완료" || request.status === "최종 확인" ? (
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                    ) : (
-                      <AlertCircle className="h-3 w-3 text-amber-500" />
-                    )}
-                    <ReviewStatusBadge status={request.status} />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-8 text-center text-sm text-slate-500">리뷰 인박스를 불러오는 중입니다.</CardContent>
         </Card>
-
-        <div className="flex min-h-0 flex-1 flex-col gap-4">
-          <Card className="flex min-h-0 flex-1 flex-col border-slate-200">
-            <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white p-4 md:p-6">
-              <div>
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary">{selectedRequest.category}</Badge>
-                  <ReviewStatusBadge status={selectedRequest.status} />
-                </div>
-                <h2 className="text-lg font-bold text-slate-900">{selectedRequest.targetTitle}</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  {selectedRequest.requesterName} · 담당 코치 {selectedRequest.coachNames.join(", ")}
-                </p>
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
+          <Card className="flex w-full shrink-0 flex-col overflow-hidden border-slate-200 shadow-sm lg:w-[420px]">
+            <div className="shrink-0 space-y-3 border-b border-slate-200 bg-slate-50/50 p-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                <Input
+                  value={keyword}
+                  onChange={(event) => setKeyword(event.target.value)}
+                  placeholder="학생, 제목, 카테고리, 메시지 검색"
+                  className="h-9 bg-white pl-9"
+                />
               </div>
-              <Button variant="outline" size="sm" asChild>
-                <Link to={selectedRequest.targetType === "post" ? `/posts/${selectedRequest.targetId}` : "/portfolio"}>
-                  원문 보기 <ChevronRight className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)} className="h-9 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700">
+                  <option>전체</option>
+                  {categoryOptions.map((category) => (
+                    <option key={category}>{category}</option>
+                  ))}
+                </select>
+                <select value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value as ReviewStatus | "전체")} className="h-9 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700">
+                  <option>전체</option>
+                  {reviewStatusOptions.map((status) => (
+                    <option key={status}>{status}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto bg-white p-6">
-              <div className="mb-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <p className="mb-1 text-xs font-semibold text-slate-500">학생 요청 메시지</p>
-                <p className="text-sm text-slate-700">{selectedRequest.message}</p>
-              </div>
-
-              <div className="prose prose-sm prose-slate max-w-none">
-                <h3>미리보기</h3>
-                <p>
-                  {targetPortfolio?.savedPortfolioDraft ??
-                    `${targetPost?.summary ?? selectedRequest.targetTitle} 실제 백엔드 연결 전까지는 mock 데이터로 원문 일부만 보여줍니다.`}
-                </p>
-                <h3>코치 확인 포인트</h3>
-                <ul>
-                  <li>문제 정의가 명확한가?</li>
-                  <li>시도한 방법과 최종 해결이 구분되어 있는가?</li>
-                  <li>포트폴리오 문장으로 옮길 수 있는 근거가 있는가?</li>
-                </ul>
-              </div>
+            <div className="flex-1 space-y-2 overflow-y-auto p-2">
+              {filteredRequests.map((request) => {
+                const isActive = selectedRequest?.id === request.id;
+                return (
+                  <button
+                    key={request.id}
+                    type="button"
+                    onClick={() => selectRequest(request)}
+                    className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                      isActive ? "border-emerald-200 bg-emerald-50" : "border-transparent hover:border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="mb-1 flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-slate-900">{request.requesterName}</span>
+                        <Badge variant="secondary" className="text-[10px]">
+                          {request.category}
+                        </Badge>
+                      </div>
+                      <span className="text-xs text-slate-400">{formatDate(request.createdAt)}</span>
+                    </div>
+                    <p className="truncate text-sm font-medium text-slate-700">{request.targetTitle}</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      {request.status === "피드백 완료" || request.status === "최종 확인" ? (
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                      ) : (
+                        <AlertCircle className="h-3 w-3 text-amber-500" />
+                      )}
+                      <ReviewStatusBadge status={request.status} />
+                    </div>
+                  </button>
+                );
+              })}
+              {filteredRequests.length === 0 && <p className="p-4 text-sm text-slate-500">조건에 맞는 리뷰 요청이 없습니다.</p>}
             </div>
           </Card>
 
-          <Card className="shrink-0 border-slate-200 bg-white shadow-sm">
-            <CardContent className="flex flex-col gap-3 p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                <MessageSquare className="h-4 w-4 text-indigo-500" />
-                피드백 작성 및 전송
-              </div>
+          <div className="flex min-h-0 flex-1 flex-col gap-4">
+            {selectedRequest ? (
+              <>
+                <Card className="flex min-h-0 flex-1 flex-col border-slate-200">
+                  <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white p-4 md:p-6">
+                    <div>
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary">{selectedRequest.category}</Badge>
+                        <ReviewStatusBadge status={selectedRequest.status} />
+                      </div>
+                      <h2 className="text-lg font-bold text-slate-900">{selectedRequest.targetTitle}</h2>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {selectedRequest.requesterName} · 담당 코치 {selectedRequest.coachNames.join(", ")}
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={selectedRequest.targetType === "post" ? `/posts/${selectedRequest.targetId}` : "/portfolio"}>
+                        원문 보기 <ChevronRight className="ml-1 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </div>
 
-              {feedbackNotice && (
-                <div className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-                  {feedbackNotice}
-                </div>
-              )}
+                  <div className="flex-1 overflow-y-auto bg-white p-6">
+                    <div className="mb-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                      <p className="mb-1 text-xs font-semibold text-slate-500">학생 요청 메시지</p>
+                      <p className="text-sm text-slate-700">{selectedRequest.message}</p>
+                    </div>
 
-              <Textarea
-                value={feedback}
-                onChange={(event) => setFeedback(event.target.value)}
-                placeholder="학생에게 전달할 피드백을 작성하세요."
-                className="h-24 resize-none border-slate-300 focus-visible:ring-indigo-500"
-              />
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" className="h-8 text-xs" onClick={() => updateStatus("검토 중")}>
-                  검토 중으로 변경
-                </Button>
-                <Button variant="outline" className="h-8 border-amber-200 bg-amber-50 text-xs text-amber-700" onClick={() => updateStatus("수정 요청")}>
-                  <AlertCircle className="mr-1 h-3 w-3" />
-                  수정 요청 보내기
-                </Button>
-                <Button className="h-8 bg-indigo-600 px-4 text-xs text-white hover:bg-indigo-700" onClick={() => updateStatus("피드백 완료")}>
-                  피드백 완료 보내기
-                </Button>
-                <Button variant="outline" className="h-8 border-emerald-200 bg-emerald-50 text-xs text-emerald-700" onClick={() => updateStatus("최종 확인")}>
-                  <ShieldCheck className="mr-1 h-3 w-3" />
-                  최종 확인 보내기
-                </Button>
-              </div>
-              <p className="text-xs text-slate-400">최종 확인은 코치가 “이 정도면 만족합니다”라고 판단한 상태입니다. 원문 댓글 자동 등록은 백엔드 연결 후 구현 예정입니다.</p>
-            </CardContent>
-          </Card>
+                    <div className="prose prose-sm prose-slate max-w-none">
+                      <h3>코치 확인 포인트</h3>
+                      <ul>
+                        <li>문제 정의가 명확한가?</li>
+                        <li>시도한 방법과 최종 해결이 구분되어 있는가?</li>
+                        <li>포트폴리오 문장으로 옮길 수 있는 근거가 있는가?</li>
+                      </ul>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="shrink-0 border-slate-200 bg-white shadow-sm">
+                  <CardContent className="flex flex-col gap-3 p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                      <MessageSquare className="h-4 w-4 text-indigo-500" />
+                      피드백 작성 및 전송
+                    </div>
+                    <Textarea
+                      value={feedback}
+                      onChange={(event) => setFeedback(event.target.value)}
+                      placeholder="학생에게 전달할 피드백을 작성하세요."
+                      className="h-24 resize-none border-slate-300 focus-visible:ring-indigo-500"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" className="h-8 text-xs" onClick={() => void saveReview("검토 중")} disabled={isSaving}>
+                        검토 중으로 변경
+                      </Button>
+                      <Button variant="outline" className="h-8 border-amber-200 bg-amber-50 text-xs text-amber-700" onClick={() => void saveReview("수정 요청")} disabled={isSaving}>
+                        <AlertCircle className="mr-1 h-3 w-3" />
+                        수정 요청 보내기
+                      </Button>
+                      <Button className="h-8 bg-indigo-600 px-4 text-xs text-white hover:bg-indigo-700" onClick={() => void saveReview("피드백 완료")} disabled={isSaving}>
+                        피드백 완료 보내기
+                      </Button>
+                      <Button variant="outline" className="h-8 border-emerald-200 bg-emerald-50 text-xs text-emerald-700" onClick={() => void saveReview("최종 확인")} disabled={isSaving}>
+                        <ShieldCheck className="mr-1 h-3 w-3" />
+                        최종 확인 보내기
+                      </Button>
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      피드백은 리뷰 요청에 저장됩니다. 원문 댓글 자동 등록은 다음 단계에서 정책을 정해 연결합니다.
+                    </p>
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center text-sm text-slate-500">받은 리뷰 요청이 없습니다.</CardContent>
+              </Card>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
 export function CoachReview() {
-  // 같은 /coach-review 주소라도 role에 따라 완전히 다른 화면을 보여줍니다.
   const { role } = useOutletContext<MainLayoutContext>();
 
-  const [requests, setRequests] = useState<ReviewRequest[]>(reviewRequests);
-
-  return role === "STUDENT" ? (
-    <StudentReviewView requests={requests} setRequests={setRequests} />
-  ) : (
-    <CoachInboxView requests={requests} setRequests={setRequests} isAdmin={role === "ADMIN"} />
-  );
+  return role === "STUDENT" ? <StudentReviewView /> : <CoachInboxView />;
 }
