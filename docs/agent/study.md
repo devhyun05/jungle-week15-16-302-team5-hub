@@ -3046,3 +3046,31 @@ PendingApproval 렌더링
 - Role-based access control
 - Approval workflow
 - API scenario testing
+
+## 2026-06-15 브라우저 로그인 UX QA 학습 기록
+
+이번 QA는 코드와 API 테스트만으로는 알 수 없는 실제 브라우저 라우팅 흐름을 확인한 작업이다.
+
+### 확인한 흐름
+
+```txt
+브라우저에서 / 접속
+-> AuthContext가 /auth/me 확인
+-> 비로그인으로 판단
+-> MainLayout이 /login으로 redirect
+-> Login 화면 표시
+```
+
+```txt
+브라우저에서 /posts/new 직접 접속
+-> MainLayout 진입 전 인증 확인
+-> user가 없으므로 /login으로 redirect
+-> 보호된 글쓰기 화면은 렌더링되지 않음
+```
+
+### 이해해야 할 핵심
+
+- 프론트 라우터 보호는 백엔드 API 보호와 별개로 사용자 경험을 좋게 만든다.
+- 실제 보안은 백엔드 `get_current_approved_user`, `require_roles`가 담당한다.
+- 프론트 redirect는 사용자가 막힌 이유를 자연스럽게 이해하도록 돕는 역할이다.
+- 콘솔 error가 없는지도 화면 QA에서 중요한 확인 항목이다.
