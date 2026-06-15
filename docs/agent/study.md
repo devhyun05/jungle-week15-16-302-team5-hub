@@ -5127,3 +5127,31 @@ GitHub ������Ʈ ���
 - derived UI
 - category-specific rendering
 - markdown-like text parsing
+
+---
+
+## 2026-06-16 학습 기록: 포트폴리오 UI 개선 최종 정리
+
+이번 묶음에서 배운 핵심은 `데이터 구조를 크게 바꾸지 않고도 화면 렌더링과 정보 배치를 바꾸면 서비스 완성도가 크게 달라진다`는 점이다.
+
+파일별 역할:
+
+| 파일 | 이번 작업에서 본 역할 |
+| --- | --- |
+| `Portfolio.tsx` | 프로젝트 관리 화면의 액션 배치와 GitHub 참고 정보 설명 담당 |
+| `AIAssistant.tsx` | AI 도우미 참고자료 패널에서 README와 기술/문서 유형 설명 담당 |
+| `PostDetail.tsx` | 일반 게시글과 포트폴리오 게시글의 상세 렌더링 분기 담당 |
+
+핵심 포인트:
+
+- 버튼은 기능 위치보다 사용자 목적 위치에 가까워야 한다.
+- `Markdown` 같은 원천 데이터 값은 그대로 보여주면 사용자가 의미를 이해하기 어렵다.
+- 포트폴리오 게시글은 일반 게시글과 같은 DB 테이블에 있어도 전용 상세 UI로 보여줄 수 있다.
+- 저장된 문자열을 파싱해 카드 UI로 바꾸면 백엔드 변경 없이 화면 품질을 높일 수 있다.
+
+다음에 이해할 개념:
+
+- 컴포넌트 분리 기준
+- Markdown parser와 직접 parser의 차이
+- category-specific component rendering
+- 백엔드 응답 DTO를 화면용 view model로 바꾸는 방식

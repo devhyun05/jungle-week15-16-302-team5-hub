@@ -2875,3 +2875,35 @@ hasPortfolioText=true
 titleLooksClean=true
 /posts/1 normal detail smoke: success, no Unexpected Application Error, no missing post page
 ```
+
+---
+
+## 2026-06-16 QA: 포트폴리오 UI 개선 최종 점검
+
+체크리스트:
+
+- [x] 프론트엔드 `npm run build` 성공
+- [x] 백엔드 `python -m compileall app` 성공
+- [x] `/posts/47` 포트폴리오 상세가 에러 없이 열림
+- [x] `/posts/47` 제목에 `[포트폴리오]` prefix가 보이지 않음
+- [x] `/posts/47` 본문에 `## GitHub`, `###` 같은 Markdown 기호가 보이지 않음
+- [x] `/posts/47`에 프로젝트 개요, GitHub 정보, 기술 스택, 연결된 학습 기록, 최근 커밋 요약, 코치 피드백 상태, 포트폴리오 글 섹션이 보임
+- [x] `/posts/1` 일반 게시글 상세가 에러 없이 열림
+
+검증 출력 요약:
+
+```txt
+npm run build: success
+backend compileall: success
+portfolio detail hasPortfolioPrefix=false
+portfolio detail hasRawHeadingMarker=false
+portfolio detail hasOverview=true
+portfolio detail hasGithubInfo=true
+portfolio detail hasTechStack=true
+portfolio detail hasLinkedRecords=true
+portfolio detail hasRecentCommits=true
+portfolio detail hasCoachStatus=true
+portfolio detail hasPortfolioText=true
+normal detail hasError=false
+normal detail hasPostMissing=false
+```
