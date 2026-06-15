@@ -1421,3 +1421,34 @@ DB 초기화 demo seed 제거 QA 결과:
 - [x] `python -m compileall app` 성공
 - [x] `git diff --check` 통과
 - [x] `legacy_demo_user_count=0` 확인
+
+## 2026-06-15 OAuth 기존 이메일 사용자 연결 QA
+
+목표: Google sub가 아직 연결되지 않은 기존 이메일 사용자가 실제 OAuth 로그인 시 같은 user row로 연결되는지 확인한다.
+
+체크리스트:
+
+- [x] 테스트용 기존 이메일 사용자를 생성했다.
+- [x] 같은 이메일과 새 Google sub로 `get_or_create_google_user()`를 호출했다.
+- [x] 기존 user id가 유지됐다.
+- [x] `google_sub`가 새 값으로 갱신됐다.
+- [x] 기존 role이 유지됐다.
+- [x] 기존 approvalStatus가 유지됐다.
+- [x] 테스트용 사용자를 cleanup했다.
+- [x] cleanup 후 테스트용 사용자 count가 0임을 확인했다.
+- [ ] `npm run build`
+- [ ] `python -m compileall app`
+- [ ] `git diff --check`
+
+수동 QA:
+
+- [ ] 실제 관리자 Google 계정으로 로그인했을 때 기존 관리자 사용자 row가 재사용되는지 확인한다.
+- [ ] 로그인 후 `/auth/me`가 ADMIN / 승인 완료를 반환하는지 확인한다.
+
+OAuth 기존 이메일 사용자 연결 QA 결과:
+
+- [x] `npm run build` 성공
+- [x] `python -m compileall app` 성공
+- [x] `git diff --check` 통과
+- [x] 기존 이메일 사용자에 새 Google sub 연결 테스트 성공
+- [x] 테스트용 사용자 cleanup 완료

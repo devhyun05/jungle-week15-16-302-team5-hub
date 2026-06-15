@@ -3289,3 +3289,32 @@ user 확인
 - DB cleanup은 코드 수정과 달리 git에 남지 않는 로컬 상태 변경이다.
 - 그래서 log/test 문서에 무엇을 지웠고 왜 지웠는지 남겨야 한다.
 - 실제 운영 환경에서는 이런 삭제를 직접 DB에서 하기보다 migration, admin 기능, 운영 스크립트로 관리한다.
+
+## 2026-06-15 OAuth 기존 이메일 사용자 매칭 학습 기록
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/repositories/user_repository.py` | Google OAuth profile을 JungleLog `users` row로 연결하거나 새로 생성한다. |
+| `README.md` | 현재 구현 상태에 기존 이메일 사용자와 Google sub 연결 처리를 반영했다. |
+
+### 왜 수정했는가
+
+OAuth 로그인은 보통 Google의 `sub` 값을 기준으로 사용자를 찾는다. 그런데 관리자 초기 계정처럼 같은 이메일의 사용자가 DB에 이미 있을 수 있다. 이때 `google_sub`만 보고 새 사용자를 만들면 `users.email` unique 제약에 걸릴 수 있다.
+
+### 바뀐 매칭 순서
+
+```txt
+1. google_sub로 사용자 조회
+2. 없으면 verified email로 사용자 조회
+3. email 사용자가 있으면 그 row에 google_sub 연결
+4. 둘 다 없으면 새 사용자 생성
+```
+
+### 이해해야 할 핵심
+
+- Google `sub`는 가장 안정적인 로그인 식별자다.
+- 이메일은 unique 제약이 있으므로 같은 이메일 row가 이미 있을 때 새 row를 만들면 안 된다.
+- Google userinfo에서 email_verified를 확인한 뒤 받은 이메일이므로 기존 계정 연결 기준으로 사용할 수 있다.
+- 기존 관리자 role과 승인 상태는 유지하고, Google sub와 마지막 로그인 정보만 갱신한다.

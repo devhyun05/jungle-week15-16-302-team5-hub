@@ -1941,3 +1941,37 @@ legacy_demo_user_count=0
 - 이제 로컬 관리자 사용자 목록에 과거 개발용 `demo.student@junglelog.local` 계정이 섞이지 않는다.
 - 앞으로 DB 초기화 코드는 개발용 사용자를 새로 만들지 않는다.
 - 실제 사용자 데이터는 Google OAuth 로그인과 관리자 승인 흐름으로만 생성된다.
+
+## 2026-06-15 OAuth 기존 이메일 사용자 연결 개선
+
+상태: 완료
+
+문제:
+
+- 로컬 DB에 `ADMIN_EMAILS`에 해당하는 승인 완료 관리자 사용자가 이미 있었다.
+- 기존 로직은 `google_sub`로만 사용자를 찾고, 없으면 새 사용자를 생성했다.
+- 실제 Google 로그인에서 기존 관리자 이메일과 다른 sub가 들어오면 email unique 충돌 가능성이 있었다.
+
+해결:
+
+- `get_or_create_google_user()` 매칭 순서를 개선했다.
+- 먼저 `google_sub`로 찾고, 없으면 verified email로 기존 사용자를 찾는다.
+- 이메일 사용자가 있으면 그 row에 `google_sub`를 연결한다.
+- 기존 role과 approvalStatus는 보존한다.
+
+검증:
+
+```txt
+same_user_id=True
+google_sub_updated=True
+role_preserved=True
+approval_status_preserved=True
+deleted_test_users=1
+remaining_test_users=0
+```
+
+추천 커밋 제목:
+
+```txt
+fix: OAuth 기존 이메일 사용자 연결 처리
+```

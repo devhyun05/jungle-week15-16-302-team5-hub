@@ -120,6 +120,7 @@ def update_google_login_user(
     db: Session,
     user: User,
     email: str,
+    google_sub: str,
     profile_image_url: str | None,
 ) -> User:
     """
@@ -131,6 +132,7 @@ def update_google_login_user(
     """
 
     user.email = email.lower()
+    user.google_sub = google_sub
     user.profile_image_url = profile_image_url
     user.last_login_at = datetime.now(timezone.utc)
 
@@ -152,14 +154,35 @@ def get_or_create_google_user(
 
     OAuth callback에서는 Google에게서 받은 profile이 DB에 이미 있으면 기존 사용자를 쓰고,
     없으면 새 users row를 만든다.
+
+    ADMIN_EMAILS로 먼저 만들어진 관리자처럼 같은 email의 사용자가 이미 있을 수 있다.
+    그래서 google_sub로 찾지 못했을 때 verified email로 한 번 더 찾고,
+    해당 계정에 현재 Google sub를 연결한다.
     """
 
+    normalized_email = email.lower()
     user = get_user_by_google_sub(db=db, google_sub=google_sub)
+
+    if user is not None:
+        email_user = get_user_by_email(db=db, email=normalized_email)
+
+        if email_user is not None and email_user.id != user.id:
+            raise RuntimeError("같은 이메일을 가진 다른 사용자가 이미 존재합니다.")
+
+        return update_google_login_user(
+            db=db,
+            user=user,
+            email=normalized_email,
+            google_sub=google_sub,
+            profile_image_url=profile_image_url,
+        )
+
+    user = get_user_by_email(db=db, email=normalized_email)
 
     if user is None:
         return create_google_user(
             db=db,
-            email=email,
+            email=normalized_email,
             google_sub=google_sub,
             name=name,
             profile_image_url=profile_image_url,
@@ -168,6 +191,7 @@ def get_or_create_google_user(
     return update_google_login_user(
         db=db,
         user=user,
-        email=email,
+        email=normalized_email,
+        google_sub=google_sub,
         profile_image_url=profile_image_url,
     )

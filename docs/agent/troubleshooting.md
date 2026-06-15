@@ -468,3 +468,24 @@ OAuth/JWT를 붙인 뒤에도 DB 초기화 코드가 개발용 사용자를 자�
 - 코드 상태와 DB 상태는 다르다.
 - 실제 서비스 QA 전에는 이전 개발 단계에서 넣은 샘플 데이터가 남아 있는지 확인해야 한다.
 - FK가 있는 데이터는 부모 row보다 자식 row를 먼저 삭제해야 한다.
+
+## 2026-06-15 Troubleshooting: OAuth sub만 보고 사용자 생성하면 email unique 충돌 가능
+
+문제:
+
+기존 로직은 Google OAuth callback에서 받은 `google_sub`로만 사용자를 찾았다. 그런데 같은 이메일의 사용자가 이미 DB에 있으면 새 사용자 생성 시 `users.email` unique 제약에 걸릴 수 있다.
+
+원인:
+
+초기 관리자 계정, 수동 생성 계정, 이전 개발 과정에서 만들어진 계정은 이메일은 같지만 Google sub 연결이 아직 없거나 다를 수 있다.
+
+해결:
+
+- `google_sub` 조회 후 없으면 verified email로 한 번 더 조회한다.
+- 이메일 사용자가 있으면 새 row를 만들지 않고 기존 row에 `google_sub`를 연결한다.
+- role과 approvalStatus는 보존한다.
+
+배운 점:
+
+- OAuth 식별자는 `sub`가 안정적이지만, 계정 migration/초기 관리자 등록 상황에서는 email fallback이 필요할 수 있다.
+- email fallback은 Google에서 `email_verified=True`를 확인한 뒤에만 사용해야 안전하다.
