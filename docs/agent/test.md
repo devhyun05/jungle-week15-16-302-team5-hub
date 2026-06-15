@@ -1135,3 +1135,55 @@ curl.exe -s -o NUL -w "%{http_code}" http://localhost:8000/auth/me
 ```powershell
 curl.exe -s http://localhost:8000/openapi.json
 ```
+## 2026-06-15 OAuth/JWT callback mock QA
+
+목표: 실제 Google 서버를 호출하지 않고도 백엔드 인증 흐름을 검증한다.
+
+검증 방식:
+
+- FastAPI `TestClient` 사용
+- DB 세션은 테스트용 트랜잭션에 묶고 마지막에 rollback
+- `exchange_google_code_for_access_token()`과 `get_google_profile()`만 fake 함수로 교체
+- 실제 `.env` 값은 읽히지만 출력하지 않음
+- 실제 Google Client Secret이나 JWT secret은 출력하지 않음
+
+체크리스트:
+
+- [x] `/auth/google/login`이 307 redirect를 반환한다.
+- [x] redirect 대상이 Google OAuth URL이다.
+- [x] OAuth state cookie가 생성된다.
+- [x] state cookie와 query state가 같을 때 `/auth/google/callback`이 303 redirect를 반환한다.
+- [x] callback 성공 후 access cookie가 설정된다.
+- [x] callback 성공 후 refresh cookie가 설정된다.
+- [x] `/auth/me`가 현재 사용자를 반환한다.
+- [x] 최초 OAuth 사용자는 `승인 대기` 상태다.
+- [x] `/auth/refresh`가 새 token 묶음을 발급한다.
+- [x] refresh 이후 `/auth/me`가 계속 성공한다.
+- [x] `/auth/logout`이 성공한다.
+- [x] logout 이후 `/auth/me`가 401을 반환한다.
+
+검증 결과 요약:
+
+```txt
+login_status 307
+login_redirect_is_google True
+state_cookie_exists True
+callback_status 303
+callback_redirect http://localhost:5173
+access_cookie_set True
+refresh_cookie_set True
+me_status 200
+me_email qa-oauth-local@example.com
+me_approval_status 승인 대기
+refresh_status 200
+refreshed_me_status 200
+logout_status 200
+logged_out_me_status 401
+```
+
+남은 QA:
+
+- [ ] 실제 브라우저에서 Google 계정 선택과 동의 화면을 통과한다.
+- [ ] 실제 로그인 후 승인 대기 화면이 보인다.
+- [ ] 관리자 이메일 계정으로 로그인했을 때 관리자 메뉴가 보인다.
+- [ ] 관리자가 학생/코치 승인 후 해당 사용자의 화면 분기가 바뀐다.

@@ -1606,3 +1606,37 @@ fix: 레거시 mockData 의존 제거
 ```txt
 docs: 최종 QA 기록 업데이트
 ```
+## 2026-06-15 OAuth/JWT mock callback QA
+
+상태: 완료
+
+목표: 실제 Google 계정 선택 전에도 백엔드 OAuth/JWT 내부 흐름이 맞는지 검증한다. 실제 `backend/.env` 값은 읽거나 출력하지 않고, Google 서버 응답만 테스트 코드에서 가짜로 대체했다.
+
+확인한 것:
+
+- `GET /auth/google/login` -> 307 redirect
+- redirect 대상이 Google OAuth URL로 시작함
+- OAuth state cookie가 생성됨
+- `GET /auth/google/callback?code=...&state=...` -> 303 redirect
+- callback 성공 후 프론트 주소 `http://localhost:5173`로 돌아감
+- access token cookie와 refresh token cookie가 설정됨
+- `GET /auth/me` -> 200
+- 최초 로그인 사용자의 `approvalStatus`가 `승인 대기`로 반환됨
+- `POST /auth/refresh` -> 200
+- refresh 이후에도 `GET /auth/me` -> 200
+- `POST /auth/logout` -> 200
+- logout 이후 `GET /auth/me` -> 401
+
+남은 수동 확인:
+
+- Google Cloud OAuth 동의 화면에서 테스트 사용자에 실제 Gmail이 들어가 있는지 확인
+- 승인된 JavaScript 원본: `http://localhost:5173`
+- 승인된 리디렉션 URI: `http://localhost:8000/auth/google/callback`
+- `.env`의 `ADMIN_EMAILS`가 실제 관리자 Gmail과 일치하는지 확인
+- 브라우저에서 실제 Google 계정 선택 후 승인 대기/관리자/학생/코치 화면 분기 확인
+
+추천 커밋 제목:
+
+```txt
+docs: OAuth callback QA 기록 업데이트
+```

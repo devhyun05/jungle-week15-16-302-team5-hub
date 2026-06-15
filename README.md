@@ -748,3 +748,24 @@ Swagger/OpenAPI에서 주요 API 등록을 확인했습니다.
 오늘 날짜 Notion 학습 기록도 구현 내용, 막힌 점, 해결 방법, 다음 작업 기준으로 업데이트했습니다.
 
 수동으로 남은 확인은 실제 Google 계정 선택 후 callback 성공과 관리자 승인 후 역할별 화면 분기입니다.
+### OAuth/JWT QA 상태
+
+Google OAuth Client ID/Secret, JWT secret은 `backend/.env`에 직접 설정한다. 이 파일은 비밀값이므로 커밋하지 않는다.
+
+현재 검증된 인증 흐름:
+
+- `/auth/google/login`에서 Google OAuth URL로 redirect
+- OAuth state cookie 발급
+- `/auth/google/callback`에서 state 검증 후 JungleLog access/refresh token 발급
+- access token과 refresh token을 HttpOnly cookie로 저장
+- `/auth/me`로 현재 사용자 조회
+- `/auth/refresh`로 refresh token rotation
+- `/auth/logout`으로 refresh token 폐기 및 cookie 삭제
+- 최초 로그인 사용자는 `승인 대기` 상태
+
+실제 브라우저에서 추가 확인할 설정:
+
+- Google Cloud 승인된 JavaScript 원본: `http://localhost:5173`
+- Google Cloud 승인된 리디렉션 URI: `http://localhost:8000/auth/google/callback`
+- OAuth 동의 화면 테스트 사용자에 실제 Gmail 등록
+- `.env`의 `ADMIN_EMAILS`에 관리자 Gmail 등록

@@ -2897,3 +2897,59 @@ post detail API 호출
 - 레거시 코드 제거
 - TypeScript type source of truth
 - RAG 연결 전 대체 UI
+## 2026-06-15 OAuth/JWT callback QA 학습 기록
+
+이번 단계는 Google OAuth를 실제로 누르기 전, 백엔드 내부 인증 흐름을 테스트 코드로 검증한 작업이다.
+
+### 관련 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/routers/auth.py` | `/auth/google/login`, `/auth/google/callback`, `/auth/me`, `/auth/refresh`, `/auth/logout` 라우터 |
+| `backend/app/services/auth_service.py` | Google OAuth URL 생성, Google token/profile 요청, JungleLog token 발급/교체 |
+| `backend/app/core/security.py` | JWT 생성/검증, refresh token 랜덤 생성, refresh token hash 처리 |
+| `backend/app/repositories/auth_token_repository.py` | refresh token hash 저장, 활성 여부 확인, 폐기 처리 |
+| `backend/app/repositories/user_repository.py` | Google profile 기반 사용자 생성/갱신, 관리자 이메일 판별 |
+| `backend/app/core/config.py` | OAuth/JWT/cookie 환경 변수 설정 |
+| `backend/.env.example` | 사용자가 직접 채워야 하는 OAuth/JWT 설정 예시 |
+
+### 흐름 이해
+
+```txt
+/login 화면 Google 버튼 클릭
+-> 프론트가 /auth/google/login으로 이동
+-> 백엔드가 OAuth state cookie 저장
+-> Google OAuth URL로 redirect
+-> Google 로그인 성공 후 /auth/google/callback 호출
+-> 백엔드가 state 검증
+-> Google code를 Google access token으로 교환
+-> Google profile에서 sub/email/name을 읽음
+-> JungleLog user 생성 또는 갱신
+-> access token JWT 발급
+-> refresh token 원문 발급 후 DB에는 hash만 저장
+-> access/refresh token을 HttpOnly cookie로 내려줌
+-> 프론트로 redirect
+-> 프론트가 /auth/me로 현재 사용자 상태 확인
+```
+
+### 이번에 이해해야 할 핵심
+
+- Google OAuth의 `code`는 JungleLog 로그인 토큰이 아니라, Google token을 받기 위한 임시 교환권이다.
+- `state`는 CSRF 방어용 값이다. 로그인 시작 때 cookie에 저장하고 callback 때 query 값과 비교한다.
+- access token은 짧게 쓰는 JWT다. 지금 설정은 15분이다.
+- refresh token은 길게 쓰는 랜덤 문자열이다. DB에는 원문을 저장하지 않고 hash만 저장한다.
+- refresh token rotation은 refresh 할 때마다 새 refresh token을 발급하고 기존 token을 폐기하는 방식이다.
+- HttpOnly cookie를 쓰면 프론트 JavaScript가 token 값을 직접 읽지 않는다. 대신 `credentials: "include"` 요청으로 브라우저가 자동 전송한다.
+- 최초 로그인 사용자는 바로 서비스 권한을 받지 않고 `승인 대기` 상태가 된다.
+
+### 추가로 공부할 키워드
+
+- OAuth 2.0 Authorization Code Flow
+- CSRF state parameter
+- JWT access token
+- refresh token rotation
+- HttpOnly cookie
+- SameSite cookie
+- token hashing
+- FastAPI TestClient
+- dependency override
