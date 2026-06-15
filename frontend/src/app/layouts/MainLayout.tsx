@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useNavigate } from "react-router";
 import {
   Bell,
@@ -17,6 +17,12 @@ import {
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { resolveApiAssetUrl } from "../api/client";
+import {
+  getNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  type NotificationApiItem,
+} from "../api/notifications";
 import { useAuth } from "../contexts/AuthContext";
 import type { ApprovalStatus, CurrentUser, UserRole } from "../api/auth";
 
@@ -47,11 +53,7 @@ const pendingNavItems = [
   { name: "승인 상태", path: "/pending-approval", icon: Clock },
 ];
 
-const sampleNotifications = [
-  { id: "notification-feedback", message: "코치 피드백이 도착했습니다.", time: "방금 전" },
-  { id: "notification-review", message: "포트폴리오 리뷰 요청이 승인되었습니다.", time: "1시간 전" },
-  { id: "notification-ai", message: "AI 초안 생성이 완료되었습니다.", time: "어제" },
-];
+const APPROVAL_APPROVED = "승인 완료";
 
 export type MainLayoutContext = {
   user: CurrentUser;
@@ -74,10 +76,71 @@ function getProfileInitial(name: string) {
   return name.trim().slice(0, 1).toUpperCase() || "J";
 }
 
+function formatNotificationTime(dateText: string) {
+  const createdAt = new Date(dateText).getTime();
+  const diffMinutes = Math.floor((Date.now() - createdAt) / 1000 / 60);
+
+  if (Number.isNaN(createdAt)) {
+    return "";
+  }
+
+  if (diffMinutes < 1) {
+    return "방금 전";
+  }
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes}분 전`;
+  }
+
+  if (diffMinutes < 60 * 24) {
+    return `${Math.floor(diffMinutes / 60)}시간 전`;
+  }
+
+  return new Date(dateText).toLocaleDateString("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
+
+function isExternalUrl(url: string) {
+  return url.startsWith("http://") || url.startsWith("https://");
+}
+
 export function MainLayout() {
   const navigate = useNavigate();
   const { user, isLoading, logout, refreshCurrentUser } = useAuth();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationApiItem[]>([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [isNotificationLoading, setIsNotificationLoading] = useState(false);
+  const [notificationError, setNotificationError] = useState("");
+
+  const loadNotifications = async () => {
+    if (!user || user.approvalStatus !== APPROVAL_APPROVED) {
+      setNotifications([]);
+      setUnreadNotificationCount(0);
+      return;
+    }
+
+    setIsNotificationLoading(true);
+    setNotificationError("");
+
+    try {
+      const data = await getNotifications(10);
+
+      setNotifications(data.items);
+      setUnreadNotificationCount(data.unreadCount);
+    } catch (error) {
+      console.error(error);
+      setNotificationError("알림을 불러오지 못했습니다.");
+    } finally {
+      setIsNotificationLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadNotifications();
+  }, [user?.id, user?.approvalStatus]);
 
   if (isLoading) {
     return (
@@ -93,7 +156,7 @@ export function MainLayout() {
     return <Navigate to="/login" replace />;
   }
 
-  const isApproved = user.approvalStatus === "승인 완료";
+  const isApproved = user.approvalStatus === APPROVAL_APPROVED;
   const navItems = !isApproved
     ? pendingNavItems
     : user.role === "STUDENT"
@@ -111,6 +174,48 @@ export function MainLayout() {
   const handleLogout = async () => {
     await logout();
     navigate("/login", { replace: true });
+  };
+
+  const toggleNotifications = () => {
+    setIsNotificationOpen((prev) => !prev);
+
+    if (!isNotificationOpen) {
+      void loadNotifications();
+    }
+  };
+
+  const openNotification = async (notification: NotificationApiItem) => {
+    if (!notification.isRead) {
+      try {
+        const updatedNotification = await markNotificationRead(notification.id);
+
+        setNotifications((prev) => prev.map((item) => (item.id === updatedNotification.id ? updatedNotification : item)));
+        setUnreadNotificationCount((prev) => Math.max(prev - 1, 0));
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    if (notification.linkUrl) {
+      if (isExternalUrl(notification.linkUrl)) {
+        window.open(notification.linkUrl, "_blank", "noreferrer");
+      } else {
+        navigate(notification.linkUrl);
+      }
+    }
+
+    setIsNotificationOpen(false);
+  };
+
+  const readAllNotifications = async () => {
+    try {
+      await markAllNotificationsRead();
+      setNotifications((prev) => prev.map((notification) => ({ ...notification, isRead: true })));
+      setUnreadNotificationCount(0);
+    } catch (error) {
+      console.error(error);
+      setNotificationError("알림 상태를 변경하지 못했습니다.");
+    }
   };
 
   return (
@@ -191,27 +296,49 @@ export function MainLayout() {
                 size="icon"
                 className="relative"
                 aria-label="알림 열기"
-                onClick={() => setIsNotificationOpen((prev) => !prev)}
+                onClick={toggleNotifications}
               >
                 <Bell className="h-5 w-5 text-slate-600" />
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
+                {unreadNotificationCount > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />}
               </Button>
 
               {isNotificationOpen && (
                 <div className="absolute right-0 top-11 z-20 w-80 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
-                  <div className="border-b border-slate-100 px-4 py-3">
-                    <p className="text-sm font-semibold text-slate-900">알림</p>
-                    <p className="text-xs text-slate-500">알림 API 연결 전 샘플 데이터입니다.</p>
+                  <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">알림</p>
+                      <p className="text-xs text-slate-500">
+                        {unreadNotificationCount > 0 ? `읽지 않은 알림 ${unreadNotificationCount}개` : "새 알림이 없습니다."}
+                      </p>
+                    </div>
+                    {unreadNotificationCount > 0 && (
+                      <button type="button" className="text-xs font-semibold text-emerald-700 hover:text-emerald-800" onClick={() => void readAllNotifications()}>
+                        모두 읽음
+                      </button>
+                    )}
                   </div>
-                  <div className="divide-y divide-slate-100">
-                    {sampleNotifications.map((notification) => (
+                  <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
+                    {isNotificationLoading && <p className="px-4 py-6 text-center text-sm text-slate-500">알림을 불러오는 중입니다.</p>}
+                    {!isNotificationLoading && notificationError && <p className="px-4 py-6 text-center text-sm text-red-600">{notificationError}</p>}
+                    {!isNotificationLoading && !notificationError && notifications.length === 0 && (
+                      <p className="px-4 py-6 text-center text-sm text-slate-500">아직 도착한 알림이 없습니다.</p>
+                    )}
+                    {!isNotificationLoading && !notificationError && notifications.map((notification) => (
                       <button
                         key={notification.id}
                         type="button"
                         className="block w-full px-4 py-3 text-left transition-colors hover:bg-slate-50"
+                        onClick={() => void openNotification(notification)}
                       >
-                        <p className="text-sm font-medium text-slate-800">{notification.message}</p>
-                        <p className="mt-1 text-xs text-slate-400">{notification.time}</p>
+                        <div className="flex items-start gap-2">
+                          {!notification.isRead && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />}
+                          <div className="min-w-0">
+                            <p className={`text-sm ${notification.isRead ? "font-medium text-slate-600" : "font-semibold text-slate-900"}`}>
+                              {notification.message}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-400">{formatNotificationTime(notification.createdAt)}</p>
+                          </div>
+                        </div>
                       </button>
                     ))}
                   </div>

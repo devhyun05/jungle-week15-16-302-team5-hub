@@ -39,6 +39,8 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 - 포트폴리오 프로젝트 중복 등록 방지와 GitHub 링크 이동 UI
 - 코치 리뷰 요청 생성/취소/목록/인박스/피드백 API와 화면 연결
 - 코치 리뷰 인박스에서 게시글/포트폴리오 리뷰 대상 미리보기 제공
+- 알림 조회/읽음 처리 API와 헤더 알림 드롭다운 연결
+- 관리자 승인, 리뷰 요청, 리뷰 피드백 이벤트 알림 생성
 - 게시글 상세 조회 시 조회수 증가 처리
 - 대시보드 주요 통계 API 기반 정리
 - AI 도우미 화면을 포트폴리오 API 데이터 기반 샘플로 정리
@@ -53,7 +55,7 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 - GitHub API 또는 MCP 기반 repo 분석 자동화
 - MCP server 구현
 - Agent 추론 루프 구현
-- 알림 API와 실시간 알림
+- 실시간 알림
 - 실제 Google 계정 선택/동의 화면 수동 QA
 
 ## 주요 사용자 흐름
@@ -381,7 +383,7 @@ Google Cloud Console 설정:
 ### 현재 한계
 
 - 실제 Google 계정 선택 후 callback 수동 QA가 아직 남아 있다.
-- 알림 API는 아직 샘플 UI 상태다.
+- 알림은 현재 API 기반 조회/읽음 처리까지 지원하며, 실시간 push는 아직 없다.
 - GitHub repo 분석은 아직 실제 GitHub API/MCP와 연결되지 않았다.
 - AI 도우미는 아직 OpenAI/RAG/MCP/Agent를 호출하지 않는다.
 
@@ -390,7 +392,7 @@ Google Cloud Console 설정:
 - pgvector 기반 RAG 검색 추가
 - GitHub MCP server 구현
 - OpenAI function calling 기반 Agent 구현
-- 알림 API와 실시간 알림 추가
+- WebSocket 또는 SSE 기반 실시간 알림 추가
 - 테스트 자동화 파일 분리
 - Playwright 기반 프론트 E2E 테스트 추가
 

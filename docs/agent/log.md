@@ -2131,3 +2131,52 @@ feat: 코치 리뷰 인박스 미리보기 개선
 
 - 현재 로컬 DB에 코치가 받은 리뷰 요청이 없어 `리뷰 대상 미리보기` 실제 표시까지는 수동 데이터 생성 후 추가 QA가 필요하다.
 - 과거 HMR 시점의 console error 로그가 남아 있었지만, 새로고침 후 화면은 정상 렌더링됐다.
+
+## 2026-06-15 알림 API 연결
+
+상태: QA 통과
+
+작업 배경:
+
+- 헤더 알림 드롭다운이 프론트 상수 샘플 데이터로 동작하고 있었다.
+- 실제 서비스처럼 보이려면 알림 목록, 읽음 처리, 이벤트 발생 시 알림 생성이 API 기준으로 연결되어야 한다.
+
+작업 내용:
+
+- `backend/app/schemas/notification.py`
+  - 알림 목록/아이템 응답 스키마를 추가했다.
+- `backend/app/repositories/notification_repository.py`
+  - 알림 생성, 목록 조회, 읽지 않은 알림 수 조회, 읽음 처리를 담당한다.
+- `backend/app/services/notification_service.py`
+  - 현재 사용자 기준 알림 응답을 조립한다.
+- `backend/app/routers/notifications.py`
+  - `GET /notifications`
+  - `PATCH /notifications/{notification_id}/read`
+  - `PATCH /notifications/read-all`
+- `backend/app/services/review_service.py`
+  - 학생이 리뷰 요청을 보내면 담당 코치에게 알림을 만든다.
+  - 코치가 상태/피드백을 저장하면 학생에게 알림을 만든다.
+- `backend/app/services/admin_user_service.py`
+  - 관리자가 승인 상태/역할을 변경하면 대상 사용자에게 알림을 만든다.
+- `frontend/src/app/api/notifications.ts`
+  - 알림 조회/읽음 API 클라이언트를 추가했다.
+- `frontend/src/app/layouts/MainLayout.tsx`
+  - 샘플 알림 상수를 제거하고 실제 알림 API를 연결했다.
+  - 읽지 않은 알림 개수, 빈 상태, 모두 읽음, 알림 클릭 이동을 처리한다.
+
+QA 결과:
+
+- [x] `npm run build` 성공
+- [x] `python -m compileall app` 성공
+- [x] `git diff --check` 통과
+- [x] FastAPI 앱에 `/notifications`, `/notifications/{notification_id}/read`, `/notifications/read-all` 등록 확인
+- [x] OpenAPI에 `NotificationListResponse`, `NotificationItemResponse` 반영 확인
+- [x] PostgreSQL에 `notifications` 테이블 존재 확인
+- [x] 브라우저에서 알림 드롭다운이 API 기반 빈 상태로 표시됨
+- [x] 화면에 `샘플 데이터`, `API 연결 전`, `[object Object]` 문구가 보이지 않음
+
+추천 커밋 제목:
+
+```txt
+feat: 알림 API 연결
+```

@@ -3479,3 +3479,65 @@ Google 계정 선택과 동의 화면은 실제 개인 계정 인증 과정이�
 - 조건부 렌더링
 - 상태 동기화
 - 권한별 읽기 전용 화면
+
+## 2026-06-15 알림 API 연결 학습 기록
+
+이번 구현을 이해하려면 알아야 하는 개념:
+
+### 수정/추가한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/db/models/notification.py` | 알림 테이블 모델. 기존에 준비되어 있던 모델을 사용했다. |
+| `backend/app/schemas/notification.py` | 알림 API 응답 형태를 정의한다. |
+| `backend/app/repositories/notification_repository.py` | notifications 테이블을 직접 조회/수정한다. |
+| `backend/app/services/notification_service.py` | 현재 사용자 기준 응답을 조립한다. |
+| `backend/app/routers/notifications.py` | 알림 조회/읽음 처리 HTTP endpoint를 제공한다. |
+| `backend/app/services/review_service.py` | 리뷰 요청/피드백 이벤트에서 알림을 생성한다. |
+| `backend/app/services/admin_user_service.py` | 관리자 승인/역할 변경 이벤트에서 알림을 생성한다. |
+| `frontend/src/app/api/notifications.ts` | 프론트에서 알림 API를 호출한다. |
+| `frontend/src/app/layouts/MainLayout.tsx` | 헤더 알림 드롭다운을 실제 API 데이터로 렌더링한다. |
+
+### 백엔드 흐름
+
+```txt
+이벤트 발생
+예: 리뷰 요청 생성 / 코치 피드백 저장 / 관리자 승인 변경
+-> notification_repository.create_notification()
+-> notifications 테이블에 row 저장
+-> 헤더에서 GET /notifications 호출
+-> 최근 알림과 unreadCount 반환
+```
+
+### 프론트 흐름
+
+```txt
+MainLayout 렌더링
+-> 승인 완료 사용자면 GET /notifications 호출
+-> unreadCount가 있으면 종 아이콘에 빨간 점 표시
+-> 알림 드롭다운 열기
+-> 알림 클릭 시 PATCH /notifications/{id}/read
+-> linkUrl이 있으면 해당 화면으로 이동
+```
+
+### 알아야 할 개념
+
+- 알림은 독립적인 기능이지만 실제로는 다른 도메인 이벤트에서 생성된다.
+- repository는 DB row를 직접 다루고, service는 화면/API에 맞는 응답으로 조립한다.
+- `isRead` 같은 화면 상태도 DB에 저장해야 다른 화면에 갔다 와도 유지된다.
+- 프론트에서 빈 상태는 mock 문구가 아니라 실제 API 응답 `items.length === 0` 기준으로 보여준다.
+
+### 나중에 개선할 부분
+
+- 지금은 사용자가 새로고침하거나 드롭다운을 열 때 알림을 가져온다.
+- 실시간으로 도착하는 알림은 WebSocket 또는 SSE 단계에서 구현한다.
+- 알림 종류별 아이콘/색상 분기는 이후 UX 개선으로 추가할 수 있다.
+
+### 추가 학습 키워드
+
+- notification table
+- unread count
+- event driven notification
+- REST PATCH
+- WebSocket
+- SSE

@@ -1602,3 +1602,30 @@ python -c "from app.main import app; paths=[route.path for route in app.routes];
 
 - 현재 로컬 DB에 코치가 받은 리뷰 요청이 없어 `리뷰 대상 미리보기` 실제 표시까지는 수동 데이터 생성 후 추가 QA가 필요하다.
 - 과거 HMR 시점의 console error 로그가 남아 있었지만, 새로고침 후 화면은 정상 렌더링됐다.
+
+## 2026-06-15 알림 API 연결 QA
+
+목표: 헤더 알림 드롭다운이 샘플 배열이 아니라 실제 notifications API 기준으로 동작하는지 확인한다.
+
+체크리스트:
+
+- [x] `npm run build` 성공
+- [x] `python -m compileall app` 성공
+- [x] `git diff --check` 통과
+- [x] `/notifications` 라우트 등록 확인
+- [x] `/notifications/{notification_id}/read` 라우트 등록 확인
+- [x] `/notifications/read-all` 라우트 등록 확인
+- [x] OpenAPI에 `NotificationListResponse`가 있다.
+- [x] OpenAPI에 `NotificationItemResponse`가 있다.
+- [x] PostgreSQL에 `notifications` 테이블이 있다.
+- [x] `sampleNotifications` 상수가 제거됐다.
+- [x] 헤더 알림 드롭다운에 `샘플 데이터`, `API 연결 전` 문구가 보이지 않는다.
+- [x] 헤더 알림 드롭다운에 `[object Object]`가 보이지 않는다.
+- [x] 알림이 없으면 `아직 도착한 알림이 없습니다.` 빈 상태가 보인다.
+
+남은 수동 QA:
+
+- 학생 계정으로 리뷰 요청을 보내고 코치 계정 알림에 표시되는지 확인한다.
+- 코치가 피드백을 저장하고 학생 계정 알림에 표시되는지 확인한다.
+- 관리자가 승인/역할 변경을 했을 때 대상 사용자 알림에 표시되는지 확인한다.
+- 알림 클릭 시 linkUrl 화면으로 이동하고 읽음 상태가 유지되는지 확인한다.

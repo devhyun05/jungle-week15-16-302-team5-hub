@@ -1,13 +1,23 @@
 from sqlalchemy.orm import Session
 
 from app.db.models import User
-from app.repositories import admin_user_repository
+from app.repositories import admin_user_repository, notification_repository
 from app.schemas.admin import AdminUserItemResponse, AdminUserListResponse, AdminUserUpdateRequest
 
 
 ROLE_ADMIN = "ADMIN"
 VALID_ROLES = {"STUDENT", "COACH", "ADMIN"}
 VALID_APPROVAL_STATUSES = {"승인 대기", "승인 완료", "거절", "정지"}
+
+
+def get_role_label(role: str) -> str:
+    labels = {
+        "STUDENT": "학생",
+        "COACH": "코치",
+        "ADMIN": "관리자",
+    }
+
+    return labels.get(role, role)
 
 
 def get_admin_users(
@@ -67,6 +77,9 @@ def update_admin_user(
     if user.id == actor.id and (next_role != ROLE_ADMIN or next_status != "승인 완료"):
         raise ValueError("본인 관리자 권한은 해제하거나 정지할 수 없습니다.")
 
+    before_role = user.role
+    before_status = user.approval_status
+
     updated_user = admin_user_repository.update_user_approval(
         db=db,
         user=user,
@@ -75,6 +88,15 @@ def update_admin_user(
         approval_status=next_status,
         approval_note=request.approval_note,
     )
+
+    if before_role != updated_user.role or before_status != updated_user.approval_status:
+        notification_repository.create_notification(
+            db=db,
+            user_id=updated_user.id,
+            notification_type="approval",
+            message=f"서비스 접근 상태가 {updated_user.approval_status}, 역할이 {get_role_label(updated_user.role)}로 변경되었습니다.",
+            link_url="/" if updated_user.approval_status == "승인 완료" else "/pending-approval",
+        )
 
     return build_admin_user_item(db=db, user=updated_user)
 

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.db.models import ReviewRequest, User
-from app.repositories import review_repository
+from app.repositories import notification_repository, review_repository
 from app.schemas.review import (
     CoachOptionListResponse,
     CoachOptionResponse,
@@ -91,6 +91,15 @@ def create_review_request(
         coaches=coaches,
     )
 
+    for coach in coaches:
+        notification_repository.create_notification(
+            db=db,
+            user_id=coach.id,
+            notification_type="review-request",
+            message=f"{current_user.name}님이 리뷰 요청을 보냈습니다.",
+            link_url="/coach-review",
+        )
+
     return build_review_request_response(review_request)
 
 
@@ -152,6 +161,20 @@ def update_review_request(
         status=request.status,
         feedback=feedback,
     )
+
+    if request.status is not None or feedback is not None:
+        notification_message = (
+            f"{current_user.name}님의 리뷰 피드백이 도착했습니다."
+            if feedback
+            else f"리뷰 요청 상태가 {request.status}으로 변경되었습니다."
+        )
+        notification_repository.create_notification(
+            db=db,
+            user_id=updated_request.requester_id,
+            notification_type="review-feedback",
+            message=notification_message,
+            link_url="/coach-review",
+        )
 
     return build_review_request_response(updated_request)
 
