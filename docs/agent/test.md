@@ -2036,3 +2036,49 @@ hasPending=True
 결론:
 
 - 게시글 작성 후 코치 리뷰 대상 목록에 나타나는 흐름은 실제 API와 브라우저 기준으로 정상이다.
+
+## 2026-06-15 QA: AI 도우미 보관함 UX와 복사 버튼
+
+목표: AI 연결 전 화면에서도 AI 도우미가 실제 서비스처럼 보이고, 결과 관리/복사 버튼이 자연스럽게 동작하는지 확인한다.
+
+소스 QA:
+
+- [x] 프론트 소스에서 `AI 단계 예정` 문구가 사라졌다.
+- [x] 프론트 소스에서 `AI 연결 단계` 문구가 사라졌다.
+- [x] 프론트 소스에서 사용자 화면에 보일 수 있는 `mock`, `debug`, `backend/uploads`, `S3`, `로컬 개발` 문구가 잡히지 않았다.
+- [x] 포트폴리오 상세의 면접 질문 badge는 `준비 중`으로 보인다.
+- [x] AI 도우미의 보관함 제목은 `생성 결과 보관함`이다.
+
+브라우저 QA:
+
+- [x] `/ai-assistant` 빈 상태에서 `Unexpected Application Error`가 보이지 않았다.
+- [x] `/ai-assistant` 빈 상태에서 `[object Object]`가 보이지 않았다.
+- [x] `/portfolio` 빈 상태에서 개발/debug 문구가 보이지 않았다.
+- [x] QA용 포트폴리오 프로젝트를 임시 생성했다.
+- [x] `/ai-assistant?project=...&type=interview`에서 `생성 결과 보관함`이 보였다.
+- [x] 면접 질문 결과 유형에서 `현재 생성된 면접 질문` 영역이 보였다.
+- [x] 복사 버튼은 1개로 명확하게 잡혔다.
+- [x] 복사 버튼 클릭 후 클립보드에 생성 결과 텍스트가 들어갔다.
+- [x] 복사 성공 안내 `결과를 복사했습니다.`가 보였다.
+- [x] QA용 임시 포트폴리오 프로젝트를 삭제했다.
+
+검증 출력 요약:
+
+```txt
+hasDebugText=[]
+hasObjectObject=false
+hasStorageTitle=true
+hasInterviewStorage=true
+copyCount=1
+clipboardLength=486
+hasSuccessNotice=true
+```
+
+빌드 QA:
+
+- [x] `npm run build` 성공
+- [x] `git diff --check` 통과
+
+결론:
+
+- AI 도우미는 아직 실제 OpenAI/RAG/MCP/Agent를 호출하지 않지만, 프로젝트 기반 생성 결과 보관함과 복사 흐름은 UI 기준으로 자연스럽게 동작한다.

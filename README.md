@@ -408,6 +408,7 @@ Google Cloud Console 설정:
 - 알림은 현재 API 기반 조회/읽음 처리까지 지원하며, 실시간 push는 아직 없다.
 - GitHub repo 분석은 아직 실제 GitHub API/MCP와 연결되지 않았다.
 - AI 도우미는 아직 OpenAI/RAG/MCP/Agent를 호출하지 않는다.
+- AI 도우미 화면은 프로젝트 기반 생성 결과 보관함과 클립보드 복사 흐름까지 UI 기준으로 정리했다.
 
 ### 개선 아이디어
 

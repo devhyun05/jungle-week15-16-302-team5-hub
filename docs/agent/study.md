@@ -4128,3 +4128,71 @@ COACH �α���
 - role based API guard
 - join table
 - notification side effect
+
+## 2026-06-15 학습: AI 도우미 보관함과 클립보드 복사 흐름
+
+이번에 본 파일:
+
+- `frontend/src/app/pages/ai/AIAssistant.tsx`
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`
+- `frontend/src/app/api/portfolio.ts`
+- `backend/app/schemas/portfolio.py`
+- `backend/app/db/models/portfolio_project.py`
+
+파일별 역할:
+
+- `AIAssistant.tsx`: 포트폴리오 프로젝트를 선택하고, 선택 프로젝트 기준으로 포트폴리오 글/면접 예상 질문 결과를 구성하는 화면이다.
+- `Portfolio.tsx`: GitHub 프로젝트 등록, 연결 기록, 저장된 포트폴리오 초안, 면접 질문 진입 버튼을 보여준다.
+- `portfolio.ts`: 프론트에서 포트폴리오 API를 호출하고 응답 타입을 정의한다.
+- `portfolio.py`: 백엔드 포트폴리오 요청/응답 schema다.
+- `portfolio_project.py`: DB의 `portfolio_projects` 테이블 구조다.
+
+이번 구현에서 사용한 React 개념:
+
+- `useState`: 선택 프로젝트, 결과 유형, 저장 안내, 복사 안내 상태를 관리한다.
+- `useMemo`: 선택 프로젝트와 연결된 게시글 목록을 계산한다.
+- 조건부 렌더링: 프로젝트가 없으면 빈 상태를 보여주고, 있으면 생성 기준/보관함/결과 패널을 보여준다.
+- controlled input: 프로젝트 select와 결과 유형 radio가 state를 기준으로 움직인다.
+- 이벤트 핸들러: 복사 버튼과 다시 구성 버튼을 눌렀을 때 각각 함수가 실행된다.
+
+이번 구현에서 사용한 브라우저 API:
+
+- `navigator.clipboard.writeText(text)`: 브라우저 클립보드에 텍스트를 복사한다.
+- `document.createElement("textarea")`: clipboard API가 막혔을 때 fallback 복사용 임시 textarea를 만든다.
+- `document.execCommand("copy")`: 선택된 textarea 내용을 복사하는 오래된 방식이다. 최신 방식이 실패할 때 보조로 사용했다.
+
+코드 흐름:
+
+1. AI 도우미 화면이 열리면 `getPortfolioProjects()`와 `getMyPosts()`를 함께 호출한다.
+2. query string의 `project` 값이 있으면 해당 프로젝트를 우선 선택한다.
+3. 선택 프로젝트와 연결된 게시글을 `linkedRecords`로 계산한다.
+4. 결과 유형이 `portfolio`이면 포트폴리오 초안 문자열을 구성한다.
+5. 결과 유형이 `interview`이면 면접 예상 질문 문자열을 구성한다.
+6. `생성 결과 보관함`은 저장된 포트폴리오 초안과 현재 생성된 면접 질문 상태를 보여준다.
+7. 복사 버튼을 누르면 먼저 `navigator.clipboard.writeText()`를 시도한다.
+8. 실패하면 임시 textarea를 만들어 선택하고 `execCommand("copy")`로 다시 복사를 시도한다.
+
+내가 이해해야 할 핵심 포인트:
+
+- 화면에 `AI 단계 예정`, `mock`, `debug` 같은 말이 보이면 개발자는 편하지만 사용자는 서비스가 덜 완성된 것처럼 느낀다.
+- 실제 AI 호출이 없어도 사용자가 이해할 수 있는 흐름은 만들 수 있다.
+- 버튼은 보이면 눌렀을 때 최소한 기대되는 동작이 있어야 한다.
+- `navigator.clipboard`는 보안/권한/브라우저 정책에 따라 실패할 수 있으므로 fallback을 둘 수 있다.
+- 지금 DB에는 `savedPortfolioDraft`만 있으므로 면접 질문 영구 저장은 이후 별도 테이블 또는 컬럼 설계가 필요하다.
+
+나중에 백엔드/AI와 연결될 부분:
+
+- OpenAI API 호출로 실제 포트폴리오 글 생성
+- RAG로 연결된 게시글과 README를 검색해 참고 문맥 구성
+- MCP로 GitHub repo/README/커밋 정보 가져오기
+- Agent가 포트폴리오 글, 요약, 면접 질문 중 필요한 도구를 선택하는 흐름
+- 면접 예상 질문 저장용 테이블 또는 AI 생성 결과 테이블 설계
+
+추가로 공부할 키워드:
+
+- Clipboard API
+- graceful fallback
+- derived state
+- query string 기반 초기 선택
+- optimistic UI와 persisted UI 차이
+- AI result history table

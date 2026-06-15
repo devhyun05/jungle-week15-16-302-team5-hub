@@ -502,7 +502,7 @@ export function Portfolio() {
                     <div className="rounded-lg border border-slate-200 bg-white p-4">
                       <div className="mb-2 flex items-center justify-between gap-2">
                         <p className="text-sm font-semibold text-slate-900">면접 예상 질문</p>
-                        <Badge variant="outline">AI 단계 예정</Badge>
+                        <Badge variant="outline">준비 중</Badge>
                       </div>
                       <p className="text-sm leading-6 text-slate-600">
                         AI 도우미에서 이 프로젝트를 선택하면 GitHub repo와 연결 기록을 기준으로 면접 예상 질문을 확인할 수 있습니다.

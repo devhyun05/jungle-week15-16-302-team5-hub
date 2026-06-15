@@ -161,8 +161,37 @@ export function AIAssistant() {
     }
   };
 
-  const copyResult = () => {
-    setCopyNotice("결과를 복사했습니다.");
+  const refreshResult = () => {
+    setSavedNotice("선택한 프로젝트 정보를 기준으로 결과를 다시 구성했습니다.");
+  };
+
+  const copyResultWithFallback = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      const textarea = document.createElement("textarea");
+
+      textarea.value = text;
+      textarea.setAttribute("readonly", "true");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+
+      try {
+        return document.execCommand("copy");
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+  };
+
+  const copyResult = async () => {
+    const isCopied = await copyResultWithFallback(resultText);
+
+    setCopyNotice(isCopied ? "결과를 복사했습니다." : "복사 권한을 확인해주세요.");
+
     window.setTimeout(() => setCopyNotice(""), 1400);
   };
 
@@ -265,24 +294,24 @@ export function AIAssistant() {
                 </div>
               </div>
 
-              <Button className="mt-2 h-12 w-full text-base" onClick={() => setSavedNotice("결과를 다시 구성했습니다.")}>
+              <Button className="mt-2 h-12 w-full text-base" onClick={refreshResult}>
                 <Sparkles className="mr-2 h-5 w-5" />
                 결과 다시 구성
               </Button>
               <p className="text-xs text-slate-400">
-                선택한 프로젝트와 연결 기록을 기준으로 결과를 구성합니다. 자동 생성 품질은 AI 연결 단계에서 더 정교해집니다.
+                선택한 프로젝트와 연결 기록을 기준으로 결과를 구성합니다. 저장된 기록이 많을수록 더 구체적인 결과를 만들 수 있습니다.
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-lg">포트폴리오 초안 보관함</CardTitle>
+              <CardTitle className="text-lg">생성 결과 보관함</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pt-4">
               <div className="rounded-lg border border-slate-200 bg-white p-3">
                 <div className="mb-1 flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-900">저장된 포트폴리오 글</p>
+                  <p className="text-sm font-semibold text-slate-900">저장된 포트폴리오 초안</p>
                   <Badge variant={selectedProject.aiDraftSaved ? "success" : "secondary"}>
                     {selectedProject.aiDraftSaved ? "저장됨" : "저장 전"}
                   </Badge>
@@ -293,11 +322,11 @@ export function AIAssistant() {
               </div>
               <div className="rounded-lg border border-slate-200 bg-white p-3">
                 <div className="mb-1 flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-900">면접 예상 질문</p>
-                  <Badge variant="outline">AI 단계 예정</Badge>
+                  <p className="text-sm font-semibold text-slate-900">현재 생성된 면접 질문</p>
+                  <Badge variant="outline">{outputType === "interview" ? "확인 중" : "대기"}</Badge>
                 </div>
                 <p className="line-clamp-4 text-xs leading-5 text-slate-500">
-                  선택한 프로젝트 기준으로 질문을 구성합니다. 저장된 질문 관리 기능은 이후 AI 결과 관리 영역으로 확장합니다.
+                  {outputType === "interview" ? resultText : "면접 예상 질문을 선택하면 이 프로젝트 기준의 질문과 답변 포인트를 확인할 수 있습니다."}
                 </p>
               </div>
             </CardContent>
@@ -403,7 +432,7 @@ export function AIAssistant() {
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500" title="복사하기" onClick={copyResult}>
                     <Copy className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500" title="다시 생성">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500" title="다시 구성" onClick={refreshResult}>
                     <RefreshCw className="h-4 w-4" />
                   </Button>
                 </div>
