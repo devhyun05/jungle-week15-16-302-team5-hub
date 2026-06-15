@@ -3108,3 +3108,31 @@ PendingApproval 렌더링
 - 오래된 계획이나 이전 mock 설명은 log/study 문서에 남기고, README는 최신 상태 중심으로 유지하는 편이 좋다.
 - 아직 구현하지 않은 기능은 `완료`처럼 쓰지 말고 `다음 단계` 또는 `예정`으로 명확히 구분해야 한다.
 - AI 과제 제출물에서는 RAG/MCP/Agent를 실제 구현 여부와 설계 예정 상태로 분리해서 설명해야 한다.
+
+## 2026-06-15 OAuth 실패 UX 학습 기록
+
+이번 작업은 성공한 로그인 흐름이 아니라 실패한 OAuth 흐름을 사용자 경험 관점에서 다듬은 작업이다.
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/routers/auth.py` | OAuth 실패를 프론트 로그인 화면으로 redirect |
+| `frontend/src/app/pages/auth/Login.tsx` | `authError` query string을 읽어 실패 안내 표시 |
+
+### 코드 흐름
+
+```txt
+Google OAuth callback 실패
+-> FastAPI가 HTTPException JSON을 직접 보여주지 않음
+-> /login?authError=... 로 303 redirect
+-> Login.tsx가 useSearchParams로 authError 읽음
+-> 로그인 실패 안내 + Google 로그인 버튼 표시
+```
+
+### 이해해야 할 핵심
+
+- API 에러가 항상 JSON으로 보이는 것이 좋은 UX는 아니다.
+- OAuth callback은 브라우저가 직접 방문하는 URL이라 실패 시 프론트 화면으로 돌려보내는 편이 자연스럽다.
+- `urlencode`를 사용하면 한글 에러 메시지도 URL query string으로 안전하게 전달할 수 있다.
+- 실패한 OAuth state cookie는 다시 사용하지 못하게 삭제하는 편이 안전하다.

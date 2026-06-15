@@ -383,3 +383,11 @@ Google Cloud Console 설정:
 - [트러블슈팅](docs/agent/troubleshooting.md)
 - [DB 설계](docs/agent/db-design.md)
 - [API 설계](docs/agent/api-design.md)
+
+### OAuth 실패 UX
+
+OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 않고 `/login?authError=...`로 돌아가도록 처리했습니다.
+
+- callback 값 부족, state 불일치, Google token/profile 처리 실패 시 로그인 화면으로 redirect
+- 로그인 화면에서 실패 안내와 `Google로 계속하기` 버튼 표시
+- 실패 시 OAuth state cookie 삭제

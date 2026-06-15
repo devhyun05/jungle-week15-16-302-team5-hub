@@ -1763,3 +1763,32 @@ docs: 실제 API 시나리오 QA 기록
 ```txt
 docs: README 현재 구현 상태로 정리
 ```
+
+## 2026-06-15 OAuth 실패 UX 개선
+
+상태: 완료
+
+목표: Google OAuth callback 실패 시 사용자가 백엔드 JSON 에러 화면을 보지 않고 프론트 로그인 화면에서 다시 시도 안내를 볼 수 있게 한다.
+
+구현한 것:
+
+- `backend/app/routers/auth.py`에 `get_login_error_redirect_response()`를 추가했다.
+- Google OAuth 설정 오류, callback 값 부족, state 불일치, Google token/profile 처리 실패를 `/login?authError=...`로 redirect하도록 변경했다.
+- 실패 시 OAuth state cookie를 삭제한다.
+- `Login.tsx`에서 `authError` query string을 읽어 로그인 실패 안내를 보여준다.
+
+검증:
+
+- `GET /auth/google/callback` 값 없이 호출 -> 303 redirect
+- redirect 위치: `http://localhost:5173/login?authError=...`
+- 로그인 실패 안내 UI 브라우저 표시 확인
+- 로그인 화면의 `Google로 계속하기` 버튼 유지 확인
+- 브라우저 console error 없음
+- `npm run build` 성공
+- `python -m compileall app` 성공
+
+추천 커밋 제목:
+
+```txt
+fix: OAuth 실패 로그인 안내 추가
+```

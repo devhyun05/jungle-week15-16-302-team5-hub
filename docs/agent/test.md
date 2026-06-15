@@ -1282,3 +1282,18 @@ README 정리 QA 결과:
 - [x] `npm run build` 성공
 - [x] `python -m compileall app` 성공
 - [x] `git diff --check` 통과
+
+## 2026-06-15 OAuth 실패 UX QA
+
+목표: OAuth 실패 상황에서도 사용자에게 자연스러운 로그인 재시도 화면을 보여준다.
+
+체크리스트:
+
+- [x] `/auth/google/callback`에 `code/state` 없이 접근하면 303 redirect를 반환한다.
+- [x] redirect 위치는 `/login?authError=...`이다.
+- [x] 실패 redirect 응답에서 OAuth state cookie를 삭제한다.
+- [x] `/login?authError=...` 화면에 로그인 실패 안내가 보인다.
+- [x] 실패 안내 화면에서도 `Google로 계속하기` 버튼이 보인다.
+- [x] 브라우저 console error가 없다.
+- [x] `npm run build` 성공.
+- [x] `python -m compileall app` 성공.

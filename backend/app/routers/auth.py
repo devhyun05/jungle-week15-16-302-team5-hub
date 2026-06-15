@@ -1,4 +1,5 @@
 import secrets
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -13,6 +14,29 @@ from app.services import auth_service
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def get_login_error_redirect_response(message: str) -> RedirectResponse:
+    """
+    OAuth 실패를 백엔드 JSON 에러가 아니라 프론트 로그인 화면 안내로 연결한다.
+
+    사용자가 Google 로그인 중 취소하거나 state 검증에 실패했을 때
+    `localhost:8000`의 JSON 응답을 보는 것보다 `/login` 화면에서 다시 시도 안내를 보는 편이 자연스럽다.
+    """
+
+    query_string = urlencode({"authError": message})
+    response = RedirectResponse(
+        url=f"{settings.frontend_url}/login?{query_string}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+    response.delete_cookie(
+        key=settings.oauth_state_cookie_name,
+        path="/",
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+    )
+
+    return response
 
 
 def get_request_ip_address(request: Request) -> str | None:
@@ -95,7 +119,7 @@ def start_google_login() -> RedirectResponse:
     try:
         google_login_url = auth_service.get_google_login_url(state=oauth_state)
     except RuntimeError as error:
-        raise HTTPException(status_code=500, detail=str(error)) from error
+        return get_login_error_redirect_response(message=str(error))
 
     response = RedirectResponse(
         url=google_login_url,
@@ -129,18 +153,12 @@ async def handle_google_callback(
     """
 
     if code is None or state is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Google OAuth callback 값이 부족합니다.",
-        )
+        return get_login_error_redirect_response(message="Google OAuth callback 값이 부족합니다.")
 
     saved_state = request.cookies.get(settings.oauth_state_cookie_name)
 
     if saved_state is None or saved_state != state:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Google OAuth state가 일치하지 않습니다.",
-        )
+        return get_login_error_redirect_response(message="Google OAuth state가 일치하지 않습니다.")
 
     try:
         google_access_token = await auth_service.exchange_google_code_for_access_token(code=code)
@@ -158,10 +176,7 @@ async def handle_google_callback(
             ip_address=get_request_ip_address(request),
         )
     except RuntimeError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(error),
-        ) from error
+        return get_login_error_redirect_response(message=str(error))
 
     response = RedirectResponse(
         url=settings.frontend_url,
