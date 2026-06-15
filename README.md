@@ -408,3 +408,11 @@ OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 �
 - callback 값 부족, state 불일치, Google token/profile 처리 실패 시 로그인 화면으로 redirect
 - 로그인 화면에서 실패 안내와 `Google로 계속하기` 버튼 표시
 - 실패 시 OAuth state cookie 삭제
+
+### 관리자 메뉴 정리
+
+관리자 화면은 사용자 승인 관리가 중심이므로 사이드바에서 대시보드 메뉴를 제거했습니다.
+
+- ADMIN 기본 진입 화면: `/admin/users`
+- ADMIN 메뉴: 사용자 승인, 전체 게시글, 설정
+- `/`에 직접 접근하면 관리자 사용자는 사용자 승인 화면으로 이동합니다.

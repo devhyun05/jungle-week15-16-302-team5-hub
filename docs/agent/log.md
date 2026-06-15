@@ -2005,3 +2005,24 @@ http://localhost:5173/posts/new 직접 접근
 - OAuth 동의 화면 통과
 - callback 후 JungleLog로 복귀
 - `/auth/me` 기준 ADMIN / STUDENT / COACH 화면 분기 확인
+
+## 2026-06-15 관리자 사이드바 메뉴 정리
+
+### 작업 배경
+
+관리자 화면에서 대시보드 메뉴가 다시 보이는 문제가 있었다.
+코드 확인 결과 관리자 전용 대시보드가 새로 생긴 것은 아니고, `MainLayout.tsx`의 `adminNavItems` 배열에 `대시보드` 메뉴가 남아 있었다.
+
+### 작업 내용
+
+- `frontend/src/app/layouts/MainLayout.tsx`
+  - `adminNavItems`에서 `대시보드` 항목 제거
+  - 관리자 메뉴를 `사용자 승인`, `전체 게시글`, `설정`으로 정리
+- `README.md`
+  - 관리자 기본 화면과 메뉴 정책 추가
+
+### 학습 포인트
+
+- 화면에 메뉴가 보인다고 해서 실제 페이지 기능이 새로 구현된 것은 아닐 수 있다.
+- React 사이드바 메뉴는 route 설정이 아니라 `navItems` 배열 렌더링 결과다.
+- ADMIN의 `/` 접근은 `Dashboard.tsx`에서 `/admin/users`로 redirect되므로, 이번 문제는 route보다 메뉴 배열 문제였다.

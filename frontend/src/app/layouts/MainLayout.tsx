@@ -37,7 +37,6 @@ const coachNavItems = [
 ];
 
 const adminNavItems = [
-  { name: "대시보드", path: "/", icon: LayoutDashboard },
   { name: "사용자 승인", path: "/admin/users", icon: Users },
   { name: "전체 게시글", path: "/posts", icon: List },
   { name: "설정", path: "/settings", icon: Settings },

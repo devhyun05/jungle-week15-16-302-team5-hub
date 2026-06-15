@@ -3341,3 +3341,34 @@ OAuth 로그인은 보통 Google의 `sub` 값을 기준으로 사용자를 찾�
 ### 아직 사람이 직접 해야 하는 이유
 
 Google 계정 선택과 동의 화면은 실제 개인 계정 인증 과정이다. 계정 선택, 2단계 인증, 권한 동의 같은 부분은 자동화보다 사용자가 직접 확인하는 것이 안전하다.
+
+## 2026-06-15 관리자 메뉴와 라우트 보호 학습
+
+### 수정한 파일
+
+- `frontend/src/app/layouts/MainLayout.tsx`
+  - 로그인한 사용자의 role에 따라 사이드바 메뉴를 고르는 파일이다.
+  - `adminNavItems` 배열에서 관리자용 대시보드 메뉴를 제거했다.
+- `README.md`
+  - 관리자 메뉴 정책을 현재 구현 상태에 맞게 정리했다.
+
+### 코드 흐름
+
+1. `useAuth()`가 현재 로그인 사용자의 `user.role`과 `approvalStatus`를 가져온다.
+2. `MainLayout`은 승인 완료 여부를 먼저 본다.
+3. 승인 완료 사용자라면 role에 따라 `studentNavItems`, `coachNavItems`, `adminNavItems` 중 하나를 고른다.
+4. 고른 배열을 `NavLink`로 반복 렌더링해서 사이드바 메뉴가 된다.
+5. 따라서 화면에 메뉴가 보이는지 여부는 route보다 먼저 `navItems` 배열을 확인해야 한다.
+
+### 이번에 이해해야 할 React 개념
+
+- 배열 렌더링: `navItems.map(...)`
+- 조건부 렌더링: role에 따라 다른 메뉴 배열 선택
+- `NavLink`: 현재 URL과 메뉴 path를 비교해서 active 스타일을 주는 라우터 컴포넌트
+- redirect: ADMIN이 `/`에 접근하면 `Dashboard.tsx`에서 `/admin/users`로 이동한다.
+
+### 백엔드/AI 전까지 남은 구분
+
+- 관리자 메뉴, OAuth/JWT, 게시글/댓글/포트폴리오/코치 리뷰 API 연결은 AI 전 단계 범위다.
+- 실제 AI 도우미, RAG, MCP, Agent 호출은 다음 큰 단계에서 구현한다.
+- 알림 API와 GitHub 실제 분석도 AI/외부 연동 단계로 남아 있다.

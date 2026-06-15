@@ -1483,3 +1483,37 @@ OAuth 기존 이메일 사용자 연결 QA 결과:
 - [x] `/login` 화면 title `JungleLog` 확인
 - [x] Google 로그인 버튼 클릭 시 `accounts.google.com` 이동 확인
 - [x] `/posts/new` 비로그인 접근 시 `/login` redirect 확인
+
+## 2026-06-15 관리자 사이드바 메뉴 QA
+
+목표: 관리자 승인 화면에서 대시보드 메뉴가 다시 보이지 않는지 확인한다.
+
+체크리스트:
+
+- [ ] ADMIN 로그인 상태에서 `/admin/users` 접속
+- [ ] 왼쪽 사이드바에 `대시보드` 메뉴가 없는지 확인
+- [ ] 왼쪽 사이드바에 `사용자 승인`, `전체 게시글`, `설정`만 보이는지 확인
+- [ ] `/` 직접 접근 시 관리자 사용자는 `/admin/users`로 이동하는지 확인
+- [ ] `npm run build`
+- [ ] `python -m compileall app`
+- [ ] `git diff --check`
+
+판단 기준:
+
+- 관리자 전용 대시보드 화면은 현재 MVP에서 쓰지 않는다.
+- 관리자의 기본 업무는 사용자 승인 관리이므로 `/admin/users`가 중심 화면이다.
+
+관리자 사이드바 메뉴 QA 결과:
+
+- [x] ADMIN 로그인 상태에서 `/admin/users` 접속 확인
+- [x] 왼쪽 사이드바에 `대시보드` 메뉴가 없음
+- [x] 왼쪽 사이드바에 `사용자 승인`, `전체 게시글`, `설정`만 표시됨
+- [x] 브라우저 DOM 기준 h1은 `사용자 승인 관리`
+- [x] `npm run build` 성공
+- [x] `python -m compileall app` 성공
+- [x] `git diff --check` 통과
+
+남은 판단:
+
+- 실제 AI 기능은 아직 시작 전이다.
+- AI 전 단계 중 실제 Google 로그인 callback 수동 QA와 알림 API/GitHub 실제 분석은 남아 있다.
