@@ -11,6 +11,7 @@ from app.services.comment_service import (
     list_comments_by_post,
     update_comment,
 )
+from app.services.rate_limit_service import check_rate_limit
 
 
 router = APIRouter(prefix="/api", tags=["comments"])
@@ -38,6 +39,12 @@ def create_comment_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    check_rate_limit(
+        key=f"rate:comments:create:{current_user.id}",
+        limit=5,
+        window_seconds=60,
+    )
+
     return create_comment(db, post_id, comment_request, current_user)
 
 
