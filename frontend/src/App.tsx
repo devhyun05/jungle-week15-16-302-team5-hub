@@ -1,5 +1,7 @@
 import { Link, Route, Routes, useNavigate } from 'react-router-dom'
+
 import { useAuthStore } from './stores/authStore'
+import { logout as logoutRequest } from './api/auth'
 
 import { LoginPage } from './pages/LoginPage'
 import { PostDetailPage } from './pages/PostDetailPage'
@@ -14,9 +16,13 @@ function App() {
   const token = useAuthStore((state) => state.token)
   const logout = useAuthStore((state) => state.logout)
 
-  function handleLogout() {
-    logout()
-    navigate('/')
+  async function handleLogout() {
+    try {
+      await logoutRequest()
+    } finally {
+      logout()
+      navigate('/')
+    }
   }
 
   return (
