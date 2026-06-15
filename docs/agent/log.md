@@ -1815,3 +1815,35 @@ fix: OAuth 실패 로그인 안내 추가
 ```txt
 fix: JungleLog 브라우저 메타 정보 정리
 ```
+
+## 2026-06-15 OAuth 설정 존재 여부 QA
+
+상태: 완료
+
+작업 내용:
+
+- `backend/.env` 값은 출력하지 않고 필수 설정의 존재 여부만 확인했다.
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `JWT_SECRET_KEY`, `ADMIN_EMAILS`가 모두 설정되어 있음을 확인했다.
+- `/auth/google/login`이 `accounts.google.com/o/oauth2/v2/auth`로 redirect를 생성하는지 확인했다.
+- OAuth state cookie가 응답에 포함되는지 확인했다.
+
+결과:
+
+```txt
+GOOGLE_CLIENT_ID: set
+GOOGLE_CLIENT_SECRET: set
+GOOGLE_REDIRECT_URI: set
+JWT_SECRET_KEY: set
+ADMIN_EMAILS: set
+redirect_uri_expected: True
+login_status: 307
+login_redirect_host: accounts.google.com
+login_redirect_path: /o/oauth2/v2/auth
+oauth_state_cookie_set: True
+```
+
+남은 일:
+
+- 실제 브라우저에서 Google 계정 선택/동의 화면을 통과한다.
+- 관리자 이메일로 로그인했을 때 관리자 메뉴가 보이는지 확인한다.
+- 일반 신규 사용자 로그인 시 승인 대기 화면이 보이는지 확인한다.

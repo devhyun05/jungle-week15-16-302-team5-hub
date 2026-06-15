@@ -3164,3 +3164,31 @@ Google OAuth callback 실패
 
 - 실제 Google 계정으로 로그인했을 때 브라우저 탭 제목이 `JungleLog`로 보이는지 확인한다.
 - 관리자 계정 로그인 후 승인 화면, 학생/코치 승인 후 각 역할 화면 분기가 자연스러운지 확인한다.
+
+## 2026-06-15 OAuth 설정 검증 학습 기록
+
+### 이번에 확인한 것
+
+- `.env` 값 자체는 읽거나 출력하지 않고, 설정이 비어 있는지 여부만 확인했다.
+- `/auth/google/login`은 실제 Google 서버로 요청을 보내는 API가 아니라, 브라우저를 Google OAuth URL로 보내는 redirect 응답을 만든다.
+- OAuth 로그인 시작 시 서버는 `state` 값을 cookie에 저장한다.
+- callback에서 돌아온 `state`와 cookie의 `state`를 비교해서 CSRF 계열 공격을 줄인다.
+
+### 코드 흐름
+
+```txt
+프론트 로그인 버튼 클릭
+-> GET /auth/google/login
+-> 백엔드가 Google OAuth URL 생성
+-> OAuth state cookie 저장
+-> 브라우저가 accounts.google.com으로 이동
+-> 사용자가 Google 계정 선택/동의
+-> Google이 /auth/google/callback으로 code/state 전달
+```
+
+### 이해해야 할 포인트
+
+- `client_id`는 앱을 식별하는 값이고, `client_secret`은 백엔드에서만 보관해야 하는 비밀값이다.
+- redirect URI는 Google Cloud Console에 등록된 값과 백엔드 설정값이 정확히 같아야 한다.
+- `ADMIN_EMAILS`는 최초 관리자 계정을 자동 승인하기 위한 로컬 초기 설정이다.
+- 자동 QA로는 redirect URL 생성까지 확인할 수 있고, 실제 Google 계정 선택/동의는 수동 QA가 필요하다.

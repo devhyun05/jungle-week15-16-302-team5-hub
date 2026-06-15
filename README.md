@@ -313,6 +313,8 @@ Google Cloud Console 설정:
 - `git diff --check` 통과
 - Swagger/OpenAPI 주요 API 등록 확인
 - Google OAuth/JWT callback 흐름 TestClient 검증
+- 비밀값 출력 없이 OAuth/JWT 환경변수 설정 여부 확인
+- `/auth/google/login`이 Google OAuth URL과 state cookie를 생성하는지 확인
 - 관리자/학생/코치 실제 API 시나리오 검증
 - 비로그인 브라우저 진입 시 `/login` 이동 확인
 - 비로그인 사용자의 `/posts/new` 직접 접근 시 `/login` 이동 확인

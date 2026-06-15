@@ -1317,3 +1317,25 @@ README 정리 QA 결과:
 
 - [ ] 실제 브라우저에서 `http://localhost:5173/login` 접속 시 탭 제목이 `JungleLog`로 보이는지 확인한다.
 - [ ] 실제 Google 로그인 후 승인 대기/관리자/학생/코치 화면에서도 탭 제목이 유지되는지 확인한다.
+
+## 2026-06-15 OAuth 설정 존재 여부 QA
+
+목표: 실제 비밀값을 출력하지 않고 OAuth/JWT 설정이 들어갔는지, 로그인 시작 API가 Google OAuth URL을 생성하는지 확인한다.
+
+체크리스트:
+
+- [x] `GOOGLE_CLIENT_ID`가 설정되어 있다.
+- [x] `GOOGLE_CLIENT_SECRET`이 설정되어 있다.
+- [x] `GOOGLE_REDIRECT_URI`가 설정되어 있다.
+- [x] `JWT_SECRET_KEY`가 설정되어 있다.
+- [x] `ADMIN_EMAILS`가 설정되어 있다.
+- [x] `GOOGLE_REDIRECT_URI`가 `http://localhost:8000/auth/google/callback`와 일치한다.
+- [x] `GET /auth/google/login` 응답 status가 redirect 계열이다.
+- [x] redirect host가 `accounts.google.com`이다.
+- [x] OAuth state cookie가 설정된다.
+
+수동 QA:
+
+- [ ] 실제 브라우저에서 Google 계정 선택/동의 화면을 통과한다.
+- [ ] 최초 관리자 이메일 계정으로 로그인했을 때 관리자 화면에 접근할 수 있다.
+- [ ] 일반 신규 사용자 계정으로 로그인했을 때 승인 대기 화면이 보인다.

@@ -1021,3 +1021,31 @@ cd C:\junhee\WEEK15_AI_BOARD\backend
 
 `.env`���� Google OAuth Client ID/Secret, redirect URI, JWT secret�� �����Ѵ�.
 ����: `GOOGLE_CLIENT_SECRET`, `JWT_SECRET_KEY`�� ���� README, agent ����, GitHub, ä�ÿ� �������� �ʴ´�.
+
+## 2026-06-15 Google OAuth 설정 검증 방법
+
+실제 비밀값은 출력하지 않고 아래 항목이 비어 있지 않은지만 확인했다.
+
+필수 설정:
+
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REDIRECT_URI`
+- `JWT_SECRET_KEY`
+- `ADMIN_EMAILS`
+- `FRONTEND_URL`
+- `BACKEND_CORS_ORIGINS`
+
+자동 확인 결과:
+
+- 모든 필수 설정이 `set` 상태였다.
+- `GOOGLE_REDIRECT_URI`는 `http://localhost:8000/auth/google/callback`와 일치했다.
+- `/auth/google/login` 호출 시 Google OAuth 인증 URL로 redirect가 생성됐다.
+- OAuth state cookie가 응답에 포함됐다.
+
+남은 수동 설정/QA:
+
+- Google Cloud Console의 승인된 JavaScript 원본에 `http://localhost:5173`이 들어 있어야 한다.
+- 승인된 리디렉션 URI에 `http://localhost:8000/auth/google/callback`이 들어 있어야 한다.
+- OAuth 동의 화면 테스트 사용자에 실제 로그인할 Gmail이 들어 있어야 한다.
+- 브라우저에서 실제 Google 계정 선택과 동의 화면을 통과해야 한다.
