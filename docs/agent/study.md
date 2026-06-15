@@ -4608,3 +4608,54 @@ GitHub 프로젝트 등록
 - permission check
 - role based API
 - notification side effect
+
+---
+
+## 2026-06-16 학습: 실제 동작 UI와 placeholder 데이터 분리
+
+이번에 본 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/posts/PostEdit.tsx` | 게시글 작성/수정 폼과 발행 API 호출을 담당한다. |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | GitHub 프로젝트 등록 요청 payload를 만든다. |
+| `backend/app/services/portfolio_service.py` | 포트폴리오 프로젝트 생성 기본값과 응답 변환을 담당한다. |
+
+핵심 개념:
+
+- 화면에 버튼이 있으면 사용자는 실제 기능으로 기대한다.
+- 실제 API가 없는 기능은 버튼을 남겨 “준비 중”이라고 말하기보다, 현재 동작 가능한 핵심 흐름만 남기는 편이 낫다.
+- 기술 스택은 실제 프로젝트 기술 정보여야 하므로 `분석 예정` 같은 상태 문구를 데이터로 저장하면 안 된다.
+- 이미 저장된 placeholder 값은 service layer에서 응답 전에 제거할 수 있다.
+
+코드 흐름:
+
+```txt
+게시글 작성 화면
+-> 제목/본문/GitHub repo 입력
+-> 발행하기 클릭
+-> POST /posts 또는 PATCH /posts/{id}
+-> 상세 화면 이동
+```
+
+```txt
+GitHub 프로젝트 등록
+-> 프론트가 techStack 기본값으로 GitHub만 전송
+-> 백엔드도 payload가 없으면 GitHub만 기본 저장
+-> 과거 tech_stack에 분석 예정이 있어도 API 응답에서는 제거
+```
+
+이번에 이해해야 할 포인트:
+
+1. UI 버튼은 실제로 가능한 행동만 남기는 것이 서비스 완성도를 높인다.
+2. placeholder는 화면 표현이지 DB에 저장할 핵심 데이터가 아니다.
+3. 프론트와 백엔드 기본값이 서로 다르면 시간이 지나며 데이터가 꼬일 수 있으므로 같이 맞춰야 한다.
+4. 과거 데이터 호환은 service layer에서 정리할 수 있다.
+
+추가 공부 키워드:
+
+- progressive disclosure
+- disabled feature
+- placeholder cleanup
+- source of truth
+- API payload default

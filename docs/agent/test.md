@@ -2379,3 +2379,27 @@ cleanup=True
 메모:
 
 - PowerShell pipe에서 한글 상태 문자열이 깨질 수 있어 QA 스크립트에서는 `피드백 완료`를 유니코드 escape로 넣어 검증했다.
+
+---
+
+## 2026-06-16 QA: 남은 연결 공백 UI 정리
+
+목표: 실제 API가 없는 UI 요소와 placeholder 데이터가 사용자 화면에 실제 기능/데이터처럼 보이지 않는지 확인한다.
+
+체크리스트:
+
+- [x] 게시글 작성 화면에 `임시저장` 버튼이 없다.
+- [x] 게시글 작성 화면에 `임시저장은 준비 중입니다` 문구가 없다.
+- [x] 게시글 작성 화면은 실제 API로 연결된 `발행하기` 또는 `수정 완료` 버튼만 제공한다.
+- [x] 포트폴리오 프로젝트 생성 시 기본 `techStack`은 `['GitHub']`이다.
+- [x] 과거 `GitHub\n분석 예정` 기술 스택도 API 응답에서는 `['GitHub']`로 정리된다.
+- [x] 사용자 화면 검색에서 `임시저장`, `준비 중입니다`, `TODO backend`가 남지 않았다.
+
+검증 출력 요약:
+
+```txt
+created_tech_stack=['GitHub']
+legacy_filtered_tech_stack=['GitHub']
+legacy_placeholder_removed=True
+cleanup=True
+```

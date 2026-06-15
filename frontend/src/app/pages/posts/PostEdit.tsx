@@ -1,7 +1,7 @@
 ﻿
 import { type FormEvent, type KeyboardEvent, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
-import { Lightbulb, Link as LinkIcon, Save, Send, Sparkles } from "lucide-react";
+import { Lightbulb, Link as LinkIcon, Send, Sparkles } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
@@ -178,12 +178,6 @@ export function PostEdit() {
     }
   };
 
-  const saveDraft = () => {
-    // TODO backend: 실제 임시저장 API는 백엔드 연결 후 구현 예정.
-    setError("");
-    setNotice("임시저장은 준비 중입니다. 작성 중인 내용은 발행 전까지 이 화면에서만 유지됩니다.");
-  };
-
   return (
     <form onSubmit={handleSubmit} className="mx-auto flex max-w-6xl flex-col gap-6 lg:flex-row">
       <div className="flex-1 space-y-6">
@@ -195,10 +189,6 @@ export function PostEdit() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button type="button" variant="outline" className="text-slate-600" onClick={saveDraft}>
-              <Save className="mr-2 h-4 w-4" />
-              임시저장
-            </Button>
             <Button type="submit" disabled={isSubmitting || isPostLoading}>
               <Send className="mr-2 h-4 w-4" />
               {isSubmitting ? (isEditMode ? "수정 중" : "발행 중") : isEditMode ? "수정 완료" : "발행하기"}

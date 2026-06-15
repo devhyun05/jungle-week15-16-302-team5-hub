@@ -17,6 +17,7 @@ VALID_PORTFOLIO_STATUSES = {"작성중", "보완 필요", "정리 완료"}
 LEGACY_README_PLACEHOLDERS = {"GitHub README는 AI 생성 단계에서 참고 자료로 사용할 예정입니다."}
 LEGACY_COMMIT_PLACEHOLDERS = {"GitHub 프로젝트 등록 완료. 실제 커밋 분석은 MCP/GitHub API 연결 후 갱신합니다."}
 LEGACY_DRAFT_PLACEHOLDERS = {"아직 저장된 포트폴리오 글 초안이 없습니다. AI 도우미에서 초안을 생성해보세요."}
+LEGACY_TECH_STACK_PLACEHOLDERS = {"분석 예정"}
 
 
 def get_portfolio_projects(db: Session, current_user: User) -> PortfolioProjectListResponse:
@@ -46,7 +47,7 @@ def create_portfolio_project(
 
     repo_full_name = parse_repo_full_name(request.github_url)
     title = request.title.strip() if request.title else repo_full_name.split("/")[-1]
-    tech_stack = serialize_text_list(request.tech_stack or ["GitHub", "분석 예정"])
+    tech_stack = serialize_text_list(request.tech_stack or ["GitHub"])
 
     existing_project = portfolio_repository.get_project_by_owner_and_repo(
         db=db,
@@ -206,6 +207,14 @@ def parse_recent_commit_summary(text: str | None) -> list[str]:
     return [line for line in parse_text_list(text) if line not in LEGACY_COMMIT_PLACEHOLDERS]
 
 
+def parse_tech_stack(text: str | None) -> list[str]:
+    """
+    기술 스택 응답에서 과거 placeholder 성격의 값을 제거한다.
+    """
+
+    return [line for line in parse_text_list(text) if line not in LEGACY_TECH_STACK_PLACEHOLDERS]
+
+
 def build_project_response(project: PortfolioProject) -> PortfolioProjectResponse:
     """
     PortfolioProject model을 프론트가 바로 쓰기 좋은 JSON 응답으로 바꾼다.
@@ -219,7 +228,7 @@ def build_project_response(project: PortfolioProject) -> PortfolioProjectRespons
         repo_full_name=project.repo_full_name,
         github_url=project.github_url,
         summary=project.summary,
-        tech_stack=parse_text_list(project.tech_stack),
+        tech_stack=parse_tech_stack(project.tech_stack),
         readme_summary=normalize_optional_text(project.readme_summary, LEGACY_README_PLACEHOLDERS),
         recent_commit_summary=parse_recent_commit_summary(project.recent_commit_summary),
         saved_portfolio_draft=normalize_optional_text(project.saved_portfolio_draft, LEGACY_DRAFT_PLACEHOLDERS),

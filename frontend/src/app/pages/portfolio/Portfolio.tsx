@@ -228,7 +228,7 @@ export function Portfolio() {
     try {
       const newProject = await createPortfolioProject({
         githubUrl: trimmedRepoUrl,
-        techStack: ["GitHub", "분석 예정"],
+        techStack: ["GitHub"],
       });
 
       setRepoUrl("");
