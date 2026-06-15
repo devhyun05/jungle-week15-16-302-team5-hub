@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.routers.admin import router as admin_router
 from app.routers.auth import router as auth_router
 from app.routers.comments import router as comments_router
 from app.routers.health import router as health_router
@@ -30,3 +31,4 @@ app.include_router(posts_router)
 app.include_router(comments_router)
 app.include_router(me_router)
 app.include_router(auth_router)
+app.include_router(admin_router)

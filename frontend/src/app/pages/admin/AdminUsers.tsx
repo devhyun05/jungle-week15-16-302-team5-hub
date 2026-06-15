@@ -1,12 +1,16 @@
-import { useMemo, useState } from "react";
-import { ShieldCheck, UserCheck, UserX } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { RefreshCw, ShieldCheck, UserCheck, UserX } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import { userAccounts, type ApprovalStatus, type UserAccount, type UserRole } from "../../data/mockData";
+import { getAdminUsers, updateAdminUser, type AdminUser } from "../../api/admin";
+import type { ApprovalStatus, UserRole } from "../../api/auth";
 
 const roleOptions: UserRole[] = ["STUDENT", "COACH", "ADMIN"];
 const statusOptions: ApprovalStatus[] = ["승인 대기", "승인 완료", "거절", "정지"];
+const statusFilterOptions = ["전체", ...statusOptions] as const;
+
+type StatusFilter = (typeof statusFilterOptions)[number];
 
 function getStatusLabel(status: ApprovalStatus) {
   return status;
@@ -29,13 +33,48 @@ function getStatusVariant(status: ApprovalStatus) {
   return "secondary";
 }
 
+function formatDate(dateText: string | null) {
+  if (!dateText) {
+    return "없음";
+  }
+
+  return new Date(dateText).toLocaleString("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function AdminUsers() {
-  const [users, setUsers] = useState<UserAccount[]>(userAccounts);
-  const [roleDrafts, setRoleDrafts] = useState<Record<string, UserRole>>(() =>
-    Object.fromEntries(userAccounts.map((user) => [user.id, user.role])),
-  );
-  const [statusFilter, setStatusFilter] = useState<ApprovalStatus | "전체">("승인 대기");
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [roleDrafts, setRoleDrafts] = useState<Record<number, UserRole>>({});
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("승인 대기");
   const [query, setQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
+
+  async function loadUsers() {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      const data = await getAdminUsers();
+
+      setUsers(data.items);
+      setRoleDrafts(Object.fromEntries(data.items.map((user) => [user.id, user.role])));
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "사용자 목록을 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadUsers();
+  }, []);
 
   const filteredUsers = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -44,7 +83,7 @@ export function AdminUsers() {
       const statusMatches = statusFilter === "전체" || user.approvalStatus === statusFilter;
       const textMatches =
         !normalizedQuery ||
-        [user.name, user.email, user.role, user.track ?? "", user.coachField ?? ""]
+        [user.name, user.email, user.role, user.approvalStatus, user.approvalNote ?? ""]
           .join(" ")
           .toLowerCase()
           .includes(normalizedQuery);
@@ -57,34 +96,36 @@ export function AdminUsers() {
   const approvedCount = users.filter((user) => user.approvalStatus === "승인 완료").length;
   const coachCount = users.filter((user) => user.role === "COACH" && user.approvalStatus === "승인 완료").length;
 
-  const updateUser = (userId: string, nextValues: Partial<UserAccount>) => {
-    // TODO backend: 실제 사용자 승인/권한 변경 API는 Google OAuth/JWT 인증 구현 후 연결한다.
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === userId
-          ? {
-              ...user,
-              ...nextValues,
-              approvedAt: nextValues.approvalStatus === "승인 완료" ? "방금 전" : user.approvedAt,
-              approvedBy: nextValues.approvalStatus === "승인 완료" ? "정글 운영자" : user.approvedBy,
-            }
-          : user,
-      ),
-    );
-  };
-
-  const setRoleDraft = (userId: string, role: UserRole) => {
+  const setRoleDraft = (userId: number, role: UserRole) => {
     setRoleDrafts((prev) => ({
       ...prev,
       [userId]: role,
     }));
   };
 
-  const approveUser = (user: UserAccount) => {
-    updateUser(user.id, {
-      role: roleDrafts[user.id] ?? user.role,
-      approvalStatus: "승인 완료",
-    });
+  const updateUser = async (user: AdminUser, nextValues: { role?: UserRole; approvalStatus?: ApprovalStatus; approvalNote?: string }) => {
+    setUpdatingUserId(user.id);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      const updatedUser = await updateAdminUser(user.id, {
+        role: nextValues.role ?? roleDrafts[user.id] ?? user.role,
+        approvalStatus: nextValues.approvalStatus,
+        approvalNote: nextValues.approvalNote ?? null,
+      });
+
+      setUsers((prev) => prev.map((item) => (item.id === updatedUser.id ? updatedUser : item)));
+      setRoleDrafts((prev) => ({
+        ...prev,
+        [updatedUser.id]: updatedUser.role,
+      }));
+      setSuccessMessage(`${updatedUser.name}님의 권한 상태를 저장했습니다.`);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "사용자 권한을 변경하지 못했습니다.");
+    } finally {
+      setUpdatingUserId(null);
+    }
   };
 
   return (
@@ -94,9 +135,13 @@ export function AdminUsers() {
           <Badge variant="success">관리자</Badge>
           <h1 className="mt-3 text-2xl font-bold text-slate-900">사용자 승인 관리</h1>
           <p className="mt-1 text-sm text-slate-500">
-            역할을 선택한 뒤 승인 적용을 누르면 해당 권한과 승인 상태가 함께 적용됩니다.
+            Google 로그인으로 들어온 사용자를 학생, 코치, 관리자로 승인하고 서비스 접근 상태를 관리합니다.
           </p>
         </div>
+        <Button type="button" variant="outline" className="gap-2" onClick={() => void loadUsers()} disabled={isLoading}>
+          <RefreshCw className="h-4 w-4" />
+          새로고침
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -108,17 +153,25 @@ export function AdminUsers() {
         </Card>
         <Card>
           <CardContent className="p-5">
-              <p className="text-sm text-slate-500">승인 완료 사용자</p>
-              <p className="mt-2 text-3xl font-bold text-slate-900">{approvedCount}</p>
+            <p className="text-sm text-slate-500">승인 완료 사용자</p>
+            <p className="mt-2 text-3xl font-bold text-slate-900">{approvedCount}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-5">
-              <p className="text-sm text-slate-500">승인 완료 코치</p>
+            <p className="text-sm text-slate-500">승인 완료 코치</p>
             <p className="mt-2 text-3xl font-bold text-slate-900">{coachCount}</p>
           </CardContent>
         </Card>
       </div>
+
+      {errorMessage && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{errorMessage}</div>
+      )}
+
+      {successMessage && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{successMessage}</div>
+      )}
 
       <Card>
         <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
@@ -132,65 +185,89 @@ export function AdminUsers() {
             />
             <select
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as ApprovalStatus | "전체")}
+              onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
               className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-500"
             >
-              <option value="전체">전체 상태</option>
-              {statusOptions.map((status) => (
+              {statusFilterOptions.map((status) => (
                 <option key={status} value={status}>
-                  {getStatusLabel(status)}
+                  {status === "전체" ? "전체 상태" : getStatusLabel(status)}
                 </option>
               ))}
             </select>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {filteredUsers.map((user) => (
-            <div key={user.id} className="rounded-lg border border-slate-200 p-4">
-              <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-semibold text-slate-900">{user.name}</p>
-                    <Badge variant="outline">{getRoleLabel(user.role)}</Badge>
-                    <Badge variant={getStatusVariant(user.approvalStatus)}>{getStatusLabel(user.approvalStatus)}</Badge>
-                  </div>
-                  <p className="mt-1 text-sm text-slate-500">{user.email}</p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    신청일 {user.requestedAt}
-                    {user.approvedAt ? ` · 승인 ${user.approvedAt}` : ""}
-                  </p>
-                </div>
+          {isLoading && <div className="rounded-lg border border-slate-200 p-8 text-center text-sm text-slate-500">사용자를 불러오는 중입니다.</div>}
 
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <select
-                    value={roleDrafts[user.id] ?? user.role}
-                    onChange={(event) => setRoleDraft(user.id, event.target.value as UserRole)}
-                    className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-500"
-                  >
-                    {roleOptions.map((role) => (
-                      <option key={role} value={role}>
-                        {getRoleLabel(role)}
-                      </option>
-                    ))}
-                  </select>
-                  <Button type="button" size="sm" className="gap-1" onClick={() => approveUser(user)}>
-                    <UserCheck className="h-3.5 w-3.5" />
-                    승인 적용
-                  </Button>
-                  <Button type="button" size="sm" variant="outline" className="gap-1" onClick={() => updateUser(user.id, { approvalStatus: "정지" })}>
-                    <UserX className="h-3.5 w-3.5" />
-                    정지
-                  </Button>
-                  <Button type="button" size="sm" variant="destructive" className="gap-1" onClick={() => updateUser(user.id, { approvalStatus: "거절" })}>
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                    거절
-                  </Button>
+          {!isLoading &&
+            filteredUsers.map((user) => (
+              <div key={user.id} className="rounded-lg border border-slate-200 p-4">
+                <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-slate-900">{user.name}</p>
+                      <Badge variant="outline">{getRoleLabel(user.role)}</Badge>
+                      <Badge variant={getStatusVariant(user.approvalStatus)}>{getStatusLabel(user.approvalStatus)}</Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-500">{user.email}</p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      요청 {formatDate(user.requestedAt)}
+                      {user.approvedAt ? ` · 처리 ${formatDate(user.approvedAt)}` : ""}
+                      {user.approvedBy ? ` · 담당 ${user.approvedBy}` : ""}
+                    </p>
+                    {user.approvalNote && <p className="mt-2 text-xs text-slate-500">메모: {user.approvalNote}</p>}
+                  </div>
+
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <select
+                      value={roleDrafts[user.id] ?? user.role}
+                      onChange={(event) => setRoleDraft(user.id, event.target.value as UserRole)}
+                      className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-500"
+                    >
+                      {roleOptions.map((role) => (
+                        <option key={role} value={role}>
+                          {getRoleLabel(role)}
+                        </option>
+                      ))}
+                    </select>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="gap-1"
+                      onClick={() => void updateUser(user, { approvalStatus: "승인 완료", approvalNote: "관리자 승인" })}
+                      disabled={updatingUserId === user.id}
+                    >
+                      <UserCheck className="h-3.5 w-3.5" />
+                      승인 적용
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="gap-1"
+                      onClick={() => void updateUser(user, { approvalStatus: "정지", approvalNote: "관리자 정지 처리" })}
+                      disabled={updatingUserId === user.id}
+                    >
+                      <UserX className="h-3.5 w-3.5" />
+                      정지
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      className="gap-1"
+                      onClick={() => void updateUser(user, { approvalStatus: "거절", approvalNote: "관리자 거절 처리" })}
+                      disabled={updatingUserId === user.id}
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      거절
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
 
-          {filteredUsers.length === 0 && (
+          {!isLoading && filteredUsers.length === 0 && (
             <div className="rounded-lg border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
               조건에 맞는 사용자가 없습니다.
             </div>
