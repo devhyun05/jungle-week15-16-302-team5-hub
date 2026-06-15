@@ -2180,3 +2180,49 @@ QA 결과:
 ```txt
 feat: 알림 API 연결
 ```
+
+## 2026-06-15 리뷰 요청-피드백-알림 왕복 QA
+
+상태: QA 통과
+
+목표:
+
+- 학생이 작성한 게시글이 리뷰 요청 대상이 되는지 확인한다.
+- 학생이 코치에게 리뷰 요청을 보내면 코치 알림이 생성되는지 확인한다.
+- 코치가 인박스에서 요청을 조회할 수 있는지 확인한다.
+- 코치가 피드백을 저장하면 학생 알림이 생성되는지 확인한다.
+
+검증 방식:
+
+- 로컬 PostgreSQL에 임시 학생, 임시 코치, 임시 게시글을 생성했다.
+- `review_service.create_review_request()`로 실제 서비스 레이어를 통과해 리뷰 요청을 만들었다.
+- `review_service.get_review_inbox()`로 코치 인박스 응답을 확인했다.
+- `review_service.update_review_request()`로 코치 피드백을 저장했다.
+- `notifications` 테이블에서 코치/학생 알림 생성을 확인했다.
+- 검증 종료 후 `qa-roundtrip-20260615` prefix로 만든 임시 데이터는 정리했다.
+
+검증 결과:
+
+```txt
+created_request_status= 대기 중
+created_request_target_title= QA review target post
+coach_notification_count= 1
+coach_notification_message= QA Student님이 리뷰 요청을 보냈습니다.
+inbox_total= 1
+inbox_target_preview_exists= True
+updated_request_status= 피드백 완료
+student_notification_count= 1
+student_notification_message= QA Coach님의 리뷰 피드백이 도착했습니다.
+```
+
+확인한 연결:
+
+- 게시글 -> 리뷰 요청 대상 연결 정상
+- 리뷰 요청 -> 담당 코치 알림 생성 정상
+- 코치 인박스 -> 리뷰 대상 미리보기 응답 정상
+- 코치 피드백 -> 학생 알림 생성 정상
+
+주의한 점:
+
+- PowerShell에서 Python stdin으로 한글 리터럴을 넘기면 인코딩이 깨질 수 있었다.
+- QA 스크립트에서는 `review_repository.APPROVAL_APPROVED` 같은 코드 상수와 unicode escape를 사용해 실제 DB 값과 일치시켰다.

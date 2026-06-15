@@ -1629,3 +1629,38 @@ python -c "from app.main import app; paths=[route.path for route in app.routes];
 - 코치가 피드백을 저장하고 학생 계정 알림에 표시되는지 확인한다.
 - 관리자가 승인/역할 변경을 했을 때 대상 사용자 알림에 표시되는지 확인한다.
 - 알림 클릭 시 linkUrl 화면으로 이동하고 읽음 상태가 유지되는지 확인한다.
+
+## 2026-06-15 리뷰 요청-피드백-알림 왕복 QA
+
+목표: 실제 DB와 서비스 레이어 기준으로 학생/코치/알림 연결이 한 흐름으로 동작하는지 확인한다.
+
+체크리스트:
+
+- [x] 임시 학생 사용자를 생성했다.
+- [x] 임시 코치 사용자를 생성했다.
+- [x] 임시 학생 게시글을 생성했다.
+- [x] 학생 게시글로 리뷰 요청을 생성했다.
+- [x] 리뷰 요청 생성 후 담당 코치 알림이 1개 생성됐다.
+- [x] 코치 인박스에서 해당 리뷰 요청이 조회됐다.
+- [x] 코치 인박스 응답에 `targetPreview`가 포함됐다.
+- [x] 코치가 `피드백 완료` 상태와 피드백 내용을 저장했다.
+- [x] 피드백 저장 후 학생 알림이 1개 생성됐다.
+- [x] QA용 임시 데이터는 검증 후 정리했다.
+
+검증 출력:
+
+```txt
+created_request_status= 대기 중
+created_request_target_title= QA review target post
+coach_notification_count= 1
+inbox_total= 1
+inbox_target_preview_exists= True
+updated_request_status= 피드백 완료
+student_notification_count= 1
+```
+
+남은 수동 QA:
+
+- 실제 브라우저에서 STUDENT 계정으로 게시글 작성 후 코치 리뷰 요청 대상에 즉시 보이는지 확인한다.
+- 실제 COACH 계정으로 로그인해 인박스에서 피드백을 저장한다.
+- 다시 STUDENT 계정으로 로그인해 알림과 내가 보낸 요청 목록에 피드백이 보이는지 확인한다.

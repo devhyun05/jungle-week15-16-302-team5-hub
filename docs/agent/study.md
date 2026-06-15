@@ -3541,3 +3541,52 @@ MainLayout 렌더링
 - REST PATCH
 - WebSocket
 - SSE
+
+## 2026-06-15 리뷰 요청-피드백-알림 왕복 QA 학습 기록
+
+이번 QA를 이해하려면 알아야 하는 개념:
+
+### 검증한 흐름
+
+```txt
+학생 게시글 생성
+-> 학생이 코치 리뷰 요청 생성
+-> 코치에게 알림 생성
+-> 코치 인박스에서 요청 조회
+-> 코치가 피드백 저장
+-> 학생에게 알림 생성
+```
+
+### 왜 서비스 레이어로 검증했나
+
+- 이 흐름은 단순 UI 표시가 아니라 여러 도메인이 연결된다.
+- 게시글, 리뷰 요청, 리뷰 요청-코치 연결, 알림이 모두 함께 움직여야 한다.
+- API만 보는 것보다 서비스 레이어를 직접 통과시키면 DB 연결과 비즈니스 규칙을 함께 확인할 수 있다.
+
+### 확인한 파일 역할
+
+| 파일 | 확인한 역할 |
+| --- | --- |
+| `backend/app/services/review_service.py` | 리뷰 요청 생성, 코치 피드백 저장, 알림 생성 트리거 |
+| `backend/app/repositories/review_repository.py` | 리뷰 대상 게시글/코치 조회, 인박스 조회 |
+| `backend/app/repositories/notification_repository.py` | 알림 row 생성과 조회 |
+| `backend/app/db/models/review_request.py` | 리뷰 요청 본문 테이블 |
+| `backend/app/db/models/review_request_coach.py` | 한 요청에 여러 코치를 연결하는 중간 테이블 |
+| `backend/app/db/models/notification.py` | 사용자별 알림 저장 테이블 |
+
+### 배운 점
+
+- 하나의 사용자 행동은 여러 테이블 변경을 만들 수 있다.
+- 리뷰 요청은 학생 관점에서는 “보낸 요청”이고, 코치 관점에서는 “받은 인박스”다.
+- 같은 review_requests row를 역할별로 다르게 조회한다.
+- 알림은 실제 이벤트가 성공한 뒤 생성해야 사용자에게 거짓 알림이 가지 않는다.
+- PowerShell에서 Python stdin으로 한글을 넘길 때 인코딩이 깨질 수 있어, QA 스크립트에서는 코드 상수 사용이 더 안전하다.
+
+### 추가 학습 키워드
+
+- integration test
+- service layer test
+- many-to-many table
+- event side effect
+- test data cleanup
+- character encoding
