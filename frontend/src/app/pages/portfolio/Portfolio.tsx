@@ -54,11 +54,11 @@ function formatDate(dateText: string | null) {
   });
 }
 
-function parseGithubRepoFullName(githubUrl: string) {
+function parseGithubProjectReference(githubUrl: string) {
   const normalizedUrl = githubUrl.trim().replace(/\.git$/, "");
 
   if (!normalizedUrl) {
-    return "";
+    return null;
   }
 
   try {
@@ -66,19 +66,25 @@ function parseGithubRepoFullName(githubUrl: string) {
     const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
 
     if (!parsedUrl.hostname.includes("github.com") || pathParts.length < 2) {
-      return "";
+      return null;
     }
 
-    return `${pathParts[0]}/${pathParts[1]}`.toLowerCase();
+    return {
+      repoFullName: `${pathParts[0]}/${pathParts[1]}`.toLowerCase(),
+      githubBranch: pathParts.length >= 4 && ["tree", "blob"].includes(pathParts[2]) ? pathParts.slice(3).join("/") : null,
+    };
   } catch {
     const cleanedUrl = normalizedUrl.replace("github.com/", "").replace(/^\/+/, "");
     const pathParts = cleanedUrl.split("/").filter(Boolean);
 
     if (pathParts.length < 2) {
-      return "";
+      return null;
     }
 
-    return `${pathParts[0]}/${pathParts[1]}`.toLowerCase();
+    return {
+      repoFullName: `${pathParts[0]}/${pathParts[1]}`.toLowerCase(),
+      githubBranch: pathParts.length >= 4 && ["tree", "blob"].includes(pathParts[2]) ? pathParts.slice(3).join("/") : null,
+    };
   }
 }
 
@@ -162,6 +168,7 @@ export function Portfolio() {
         return (
           project.title.toLowerCase().includes(keyword) ||
           project.repoFullName.toLowerCase().includes(keyword) ||
+          project.githubBranch.toLowerCase().includes(keyword) ||
           project.githubUrl.toLowerCase().includes(keyword) ||
           project.techStack.some((stack) => stack.toLowerCase().includes(keyword))
         );
@@ -201,19 +208,26 @@ export function Portfolio() {
 
   const registerGithubProject = async () => {
     const trimmedRepoUrl = repoUrl.trim();
-    const repoFullName = parseGithubRepoFullName(trimmedRepoUrl);
+    const projectReference = parseGithubProjectReference(trimmedRepoUrl);
 
     if (!trimmedRepoUrl) {
       setErrorMessage("GitHub repo URL을 입력해 주세요.");
       return;
     }
 
-    if (!repoFullName) {
-      setErrorMessage("github.com의 owner/repository 형식 URL을 입력해주세요.");
+    if (!projectReference) {
+      setErrorMessage("github.com의 owner/repository 또는 owner/repository/tree/branch 형식 URL을 입력해주세요.");
       return;
     }
 
-    const existingProject = projects.find((project) => project.repoFullName.toLowerCase() === repoFullName);
+    const existingProject = projects.find((project) => {
+      const isSameRepo = project.repoFullName.toLowerCase() === projectReference.repoFullName;
+      const isSameBranch = projectReference.githubBranch
+        ? project.githubBranch.toLowerCase() === projectReference.githubBranch.toLowerCase()
+        : false;
+
+      return isSameRepo && isSameBranch;
+    });
 
     if (existingProject) {
       setSearchKeyword("");
@@ -242,7 +256,14 @@ export function Portfolio() {
       if (message.includes("이미 등록된")) {
         setSearchKeyword("");
         const reloadedProjects = await loadPortfolioData();
-        const reloadedProject = reloadedProjects.find((project) => project.repoFullName.toLowerCase() === repoFullName);
+        const reloadedProject = reloadedProjects.find((project) => {
+          const isSameRepo = project.repoFullName.toLowerCase() === projectReference.repoFullName;
+          const isSameBranch = projectReference.githubBranch
+            ? project.githubBranch.toLowerCase() === projectReference.githubBranch.toLowerCase()
+            : true;
+
+          return isSameRepo && isSameBranch;
+        });
 
         if (reloadedProject) {
           selectProject(reloadedProject);
@@ -345,7 +366,7 @@ export function Portfolio() {
               <Input
                 value={repoUrl}
                 onChange={(event) => setRepoUrl(event.target.value)}
-                placeholder="https://github.com/username/repository"
+                placeholder="https://github.com/username/repository 또는 /tree/branch"
                 className="h-10 border-slate-200 bg-white pl-10"
               />
             </div>
@@ -355,7 +376,7 @@ export function Portfolio() {
             </Button>
           </div>
           <p className="mt-3 text-xs text-emerald-700">
-            GitHub repo를 등록한 뒤 학습 기록을 연결하면 포트폴리오 초안과 리뷰 요청 흐름에 활용할 수 있습니다.
+            branch URL을 넣으면 해당 branch 기준으로, repo URL만 넣으면 default branch 기준으로 분석합니다.
           </p>
         </CardContent>
       </Card>
@@ -379,7 +400,7 @@ export function Portfolio() {
               <Input
                 value={searchKeyword}
                 onChange={(event) => setSearchKeyword(event.target.value)}
-                placeholder="프로젝트, repo, 기술 검색"
+                placeholder="프로젝트, repo, branch, 기술 검색"
                 className="bg-white pl-9"
               />
             </div>
@@ -407,7 +428,12 @@ export function Portfolio() {
                           {project.portfolioStatus}
                         </span>
                       </div>
-                      <p className="break-all font-mono text-xs leading-5 text-slate-500">{project.repoFullName}</p>
+                      <div className="space-y-1">
+                        <p className="break-all font-mono text-xs leading-5 text-slate-500">{project.repoFullName}</p>
+                        <span className="inline-flex max-w-full rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-600">
+                          branch: {project.githubBranch}
+                        </span>
+                      </div>
                       <span className={`inline-flex max-w-full break-words rounded-full px-2 py-0.5 text-[10px] font-semibold ${feedbackStatusClass(project.coachFeedbackStatus)}`}>
                         코치: {project.coachFeedbackStatus}
                       </span>
@@ -420,7 +446,7 @@ export function Portfolio() {
                       </div>
                       <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-xs text-slate-500">
                         <span className="flex items-center gap-1">
-                          <BookOpen className="h-3 w-3" /> 연결 기록 {project.linkedPostIds.length}개
+                          <BookOpen className="h-3 w-3" /> 기록 {project.linkedPostIds.length}개
                         </span>
                         <span className="flex items-center gap-1">
                           <GitCommit className="h-3 w-3" /> {formatDate(project.lastCommitAt)}
@@ -448,7 +474,12 @@ export function Portfolio() {
                         rel="noreferrer"
                       >
                         <Github className="mt-0.5 h-4 w-4 shrink-0" />
-                        <span className="break-all">{selectedProject.repoFullName}</span>
+                        <span className="break-all">
+                          {selectedProject.repoFullName}
+                          <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 font-sans text-xs font-semibold text-slate-600">
+                            {selectedProject.githubBranch}
+                          </span>
+                        </span>
                       </a>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -505,10 +536,12 @@ export function Portfolio() {
                   <div>
                     <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
                       <FileText className="h-4 w-4 text-emerald-600" />
-                      저장된 포트폴리오 글 초안
+                      포트폴리오 글
                     </h3>
                     <div className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-4 text-sm leading-6 text-slate-700">
-                      {selectedProject.savedPortfolioDraft ?? "아직 저장된 포트폴리오 글 초안이 없습니다."}
+                      <p className="line-clamp-5 whitespace-pre-line">
+                        {selectedProject.savedPortfolioDraft ?? "아직 저장된 포트폴리오 글이 없습니다."}
+                      </p>
                     </div>
                   </div>
 
@@ -536,7 +569,7 @@ export function Portfolio() {
                         </span>
                       </div>
                       <p className="text-sm leading-6 text-slate-600">
-                        포트폴리오 초안을 저장한 뒤 코치 리뷰를 요청하면 피드백 이력과 상태를 이 프로젝트 기준으로 관리하는 흐름으로 확장합니다.
+                        포트폴리오 글을 저장한 뒤 코치 리뷰를 요청하면 피드백 이력과 상태를 이 프로젝트 기준으로 관리합니다.
                       </p>
                       <Button asChild variant="outline" size="sm" className="mt-3">
                         <Link to="/coach-review">코치 리뷰 요청하기</Link>
@@ -559,7 +592,7 @@ export function Portfolio() {
                           ))}
                         </div>
                         <ul className="space-y-2">
-                          {selectedProject.recentCommitSummary.map((commit) => (
+                          {selectedProject.recentCommitSummary.slice(0, 3).map((commit) => (
                             <li key={commit} className="flex gap-2 text-sm text-slate-700">
                               <GitCommit className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
                               <span>{commit}</span>
@@ -573,7 +606,7 @@ export function Portfolio() {
                         </ul>
                         <details className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                           <summary className="cursor-pointer text-xs font-semibold text-slate-600">
-                            README 요약은 AI 참고 자료로만 보기
+                            README는 AI 참고 자료로만 보기
                           </summary>
                           <p className="mt-2 text-sm leading-6 text-slate-600">
                             {selectedProject.readmeSummary ?? "아직 README 요약이 없습니다."}

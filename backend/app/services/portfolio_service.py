@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from sqlalchemy.orm import Session
@@ -21,6 +22,16 @@ LEGACY_DRAFT_PLACEHOLDERS = {"아직 저장된 포트폴리오 글 초안이 없
 LEGACY_TECH_STACK_PLACEHOLDERS = {"분석 예정"}
 
 
+@dataclass
+class GitHubProjectReference:
+    """
+    사용자가 입력한 GitHub URL에서 포트폴리오 등록에 필요한 repo/branch를 분리한 값이다.
+    """
+
+    repo_full_name: str
+    github_branch: str | None
+
+
 def get_portfolio_projects(db: Session, current_user: User) -> PortfolioProjectListResponse:
     """
     현재 사용자의 포트폴리오 프로젝트 목록을 응답으로 만든다.
@@ -30,10 +41,46 @@ def get_portfolio_projects(db: Session, current_user: User) -> PortfolioProjectL
         db=db,
         owner_id=current_user.id,
     )
+    projects = [ensure_project_branch(project=project, db=db) for project in projects]
 
     return PortfolioProjectListResponse(
         items=[build_project_response(project) for project in projects],
         total=len(projects),
+    )
+
+
+def ensure_project_branch(project: PortfolioProject, db: Session) -> PortfolioProject:
+    """
+    과거 branch 컬럼이 없던 시절에 등록된 프로젝트를 GitHub default branch 기준으로 보정한다.
+
+    외부 API 실패 때문에 목록 화면 전체가 깨지면 안 되므로,
+    보정에 실패하면 현재 프로젝트 값을 그대로 사용한다.
+    """
+
+    if project.github_branch:
+        return project
+
+    try:
+        analysis = github_service.analyze_repository(project.repo_full_name)
+    except (github_service.GitHubApiError, github_service.GitHubRepositoryNotFoundError):
+        return portfolio_repository.update_project_branch(
+            db=db,
+            project=project,
+            github_branch="main",
+        )
+
+    return portfolio_repository.update_github_analysis(
+        db=db,
+        project=project,
+        title=analysis.title,
+        repo_full_name=analysis.repo_full_name,
+        github_branch=analysis.github_branch,
+        github_url=analysis.github_url,
+        summary=analysis.summary,
+        tech_stack=serialize_text_list(analysis.tech_stack),
+        readme_summary=analysis.readme_summary,
+        recent_commit_summary=serialize_text_list(analysis.recent_commit_summary),
+        last_commit_at=analysis.last_commit_at,
     )
 
 
@@ -46,18 +93,22 @@ def create_portfolio_project(
     GitHub repo URL을 프로젝트로 등록한다.
     """
 
-    repo_full_name = parse_repo_full_name(request.github_url)
+    project_reference = parse_github_project_reference(request.github_url)
+    analysis = github_service.analyze_repository(
+        repo_full_name=project_reference.repo_full_name,
+        github_branch=project_reference.github_branch,
+    )
 
     existing_project = portfolio_repository.get_project_by_owner_and_repo(
         db=db,
         owner_id=current_user.id,
-        repo_full_name=repo_full_name,
+        repo_full_name=analysis.repo_full_name,
+        github_branch=analysis.github_branch,
     )
 
     if existing_project is not None:
         raise ValueError("이미 등록된 GitHub 프로젝트입니다.")
 
-    analysis = github_service.analyze_repository(repo_full_name)
     title = request.title.strip() if request.title else analysis.title
     summary = request.summary if request.summary is not None else analysis.summary
     tech_stack = request.tech_stack or analysis.tech_stack
@@ -67,6 +118,7 @@ def create_portfolio_project(
         owner=current_user,
         title=title,
         repo_full_name=analysis.repo_full_name,
+        github_branch=analysis.github_branch,
         github_url=analysis.github_url,
         summary=summary,
         tech_stack=serialize_text_list(tech_stack),
@@ -96,12 +148,16 @@ def refresh_github_project(
     if project is None:
         return None
 
-    analysis = github_service.analyze_repository(project.repo_full_name)
+    analysis = github_service.analyze_repository(
+        repo_full_name=project.repo_full_name,
+        github_branch=project.github_branch,
+    )
     updated_project = portfolio_repository.update_github_analysis(
         db=db,
         project=project,
         title=analysis.title,
         repo_full_name=analysis.repo_full_name,
+        github_branch=analysis.github_branch,
         github_url=analysis.github_url,
         summary=analysis.summary,
         tech_stack=serialize_text_list(analysis.tech_stack),
@@ -178,9 +234,9 @@ def link_project_posts(
     return build_project_response(updated_project)
 
 
-def parse_repo_full_name(github_url: str) -> str:
+def parse_github_project_reference(github_url: str) -> GitHubProjectReference:
     """
-    GitHub URL에서 owner/repo 값을 추출한다.
+    GitHub URL에서 owner/repo와 선택적 branch 값을 추출한다.
     """
 
     normalized_url = github_url.strip().removesuffix(".git")
@@ -203,7 +259,23 @@ def parse_repo_full_name(github_url: str) -> str:
     if len(parts) < 2:
         raise ValueError("GitHub URL은 owner/repository 형식이어야 합니다.")
 
-    return f"{parts[0]}/{parts[1]}".lower()
+    github_branch = None
+
+    if len(parts) >= 4 and parts[2] in {"tree", "blob"}:
+        github_branch = "/".join(parts[3:]).strip() or None
+
+    return GitHubProjectReference(
+        repo_full_name=f"{parts[0]}/{parts[1]}".lower(),
+        github_branch=github_branch,
+    )
+
+
+def parse_repo_full_name(github_url: str) -> str:
+    """
+    기존 호출부와 테스트 호환을 위해 owner/repo만 반환한다.
+    """
+
+    return parse_github_project_reference(github_url).repo_full_name
 
 
 def serialize_text_list(items: list[str]) -> str:
@@ -268,6 +340,7 @@ def build_project_response(project: PortfolioProject) -> PortfolioProjectRespons
         id=project.id,
         title=project.title,
         repo_full_name=project.repo_full_name,
+        github_branch=project.github_branch or "main",
         github_url=project.github_url,
         summary=project.summary,
         tech_stack=parse_tech_stack(project.tech_stack),

@@ -50,17 +50,20 @@ def get_project_by_owner_and_repo(
     db: Session,
     owner_id: int,
     repo_full_name: str,
+    github_branch: str,
 ) -> PortfolioProject | None:
     """
-    같은 사용자가 같은 GitHub repo를 중복 등록했는지 확인한다.
+    같은 사용자가 같은 GitHub repo/branch를 중복 등록했는지 확인한다.
     """
 
     normalized_repo_full_name = repo_full_name.lower()
+    normalized_github_branch = github_branch.lower()
 
     return db.scalar(
         select(PortfolioProject).where(
             PortfolioProject.owner_id == owner_id,
             func.lower(PortfolioProject.repo_full_name) == normalized_repo_full_name,
+            func.lower(PortfolioProject.github_branch) == normalized_github_branch,
         )
     )
 
@@ -70,6 +73,7 @@ def create_project(
     owner: User,
     title: str,
     repo_full_name: str,
+    github_branch: str,
     github_url: str,
     summary: str | None,
     tech_stack: str | None,
@@ -85,6 +89,7 @@ def create_project(
         owner=owner,
         title=title,
         repo_full_name=repo_full_name,
+        github_branch=github_branch,
         github_url=github_url,
         summary=summary,
         tech_stack=tech_stack,
@@ -116,6 +121,7 @@ def update_github_analysis(
     project: PortfolioProject,
     title: str,
     repo_full_name: str,
+    github_branch: str,
     github_url: str,
     summary: str | None,
     tech_stack: str | None,
@@ -132,6 +138,7 @@ def update_github_analysis(
 
     project.title = title
     project.repo_full_name = repo_full_name
+    project.github_branch = github_branch
     project.github_url = github_url
     project.summary = summary
     project.tech_stack = tech_stack
@@ -139,6 +146,23 @@ def update_github_analysis(
     project.recent_commit_summary = recent_commit_summary
     project.last_commit_at = last_commit_at
     project.github_connected = True
+
+    db.commit()
+    db.refresh(project)
+
+    return project
+
+
+def update_project_branch(
+    db: Session,
+    project: PortfolioProject,
+    github_branch: str,
+) -> PortfolioProject:
+    """
+    과거 데이터 보정용으로 branch 값만 저장한다.
+    """
+
+    project.github_branch = github_branch
 
     db.commit()
     db.refresh(project)

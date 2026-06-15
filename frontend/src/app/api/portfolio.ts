@@ -6,6 +6,7 @@ export type PortfolioProjectApiItem = {
   id: number;
   title: string;
   repoFullName: string;
+  githubBranch: string;
   githubUrl: string;
   summary: string | null;
   techStack: string[];

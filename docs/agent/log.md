@@ -3262,3 +3262,62 @@ portfolio.hasRepoInput=True
 portfolio.hasRegisterButton=True
 portfolio.hasWideContainer=True
 ```
+
+---
+
+## 2026-06-16 1차 작업: GitHub branch 지원과 포트폴리오 관리 화면 정리
+
+상태: 완료
+
+목표:
+
+- GitHub 프로젝트 등록을 repo 단위에서 repo/branch 단위로 확장한다.
+- branch URL을 입력하면 branch를 파싱하고, branch가 없으면 GitHub default branch를 저장한다.
+- README, 최근 커밋, 기술 스택 참고 정보를 branch 기준으로 조회한다.
+- 포트폴리오 관리 화면을 전체 상세 노출보다 프로젝트 관리 대시보드/preview 느낌으로 정리한다.
+
+진행한 것:
+
+- `portfolio_projects.github_branch` 컬럼을 추가했다.
+- 중복 기준을 `owner_id + repo_full_name`에서 `owner_id + repo_full_name + github_branch`로 바꿨다.
+- 기존 개발 DB는 `init_db()`에서 `github_branch` 컬럼과 unique index를 보강한다.
+- GitHub URL 파싱에서 `/tree/{branch}`와 `/blob/{branch}`를 읽도록 변경했다.
+- branch가 없는 URL은 GitHub repository metadata의 `default_branch`를 사용한다.
+- README는 `ref`, commits는 `sha` query로 branch를 지정한다.
+- GitHub languages API는 repo 단위라 branch별 tree를 조회해 파일 확장자 기반 기술 스택을 우선 추정한다.
+- 포트폴리오 관리 화면에 branch badge를 추가했다.
+- 포트폴리오 관리 화면의 `저장된 포트폴리오 글 초안` 표현을 `포트폴리오 글`로 바꿨다.
+- 포트폴리오 글은 관리 화면에서 preview로 보이도록 정리했다.
+- 최근 커밋은 상세 화면에서 상위 3개만 preview로 보여준다.
+- README는 계속 접힌 참고 자료로 유지했다.
+
+검증:
+
+```txt
+.\.venv\Scripts\python.exe -m compileall app
+npm run build
+init_db smoke test
+GitHub analyze_repository("octocat/Hello-World") smoke test
+parse_github_project_reference("https://github.com/octocat/Hello-World/tree/master") smoke test
+브라우저 /portfolio 화면 smoke test
+```
+
+결과:
+
+- 백엔드 compile 성공
+- 프론트엔드 build 성공
+- `octocat/Hello-World` default branch가 `master`로 저장되는 것 확인
+- `/tree/master` URL 파싱 결과가 repo=`octocat/hello-world`, branch=`master`인지 확인
+- `init_db()` 실행 성공
+- `/portfolio` 화면에서 branch URL 안내, GitHub 프로젝트 등록 버튼, branch 검색 placeholder 확인
+
+다음 작업:
+
+- 2차: 포트폴리오 관리 게시글을 프로젝트 기반 게시글로 정리한다.
+- 2차: AI 도우미 UI를 프로젝트 선택 -> 참고 자료 -> 결과 생성/저장 흐름으로 더 깔끔하게 재구성한다.
+
+커밋 추천 제목:
+
+```txt
+feat: GitHub branch 기준 포트폴리오 관리 연결
+```

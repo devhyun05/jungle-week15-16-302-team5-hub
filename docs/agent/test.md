@@ -2687,3 +2687,43 @@ portfolio.hasWideContainer=True
 
 - [ ] 학생 계정으로 실제 public repo URL을 입력해 등록 버튼까지 클릭한다.
 - [ ] 등록된 프로젝트의 README/최근 커밋/언어가 화면에 반영되는지 확인한다.
+
+---
+
+## 2026-06-16 QA: GitHub branch 기준 포트폴리오 관리
+
+목표: GitHub branch 지원과 포트폴리오 관리 화면 정리가 기존 흐름을 깨지 않는지 확인한다.
+
+체크리스트:
+
+- [x] 백엔드 compile이 성공한다.
+- [x] 프론트엔드 `npm run build`가 성공한다.
+- [x] `init_db()`가 `github_branch` 컬럼과 unique index 보강 후 정상 종료된다.
+- [x] branch 없는 repo 분석 시 GitHub default branch가 저장된다.
+- [x] `https://github.com/octocat/Hello-World/tree/master`에서 repo와 branch가 분리된다.
+- [x] `/portfolio` 화면이 에러 없이 열린다.
+- [x] `/portfolio` 화면에 branch URL 입력 안내가 보인다.
+- [x] `/portfolio` 화면에 GitHub 프로젝트 등록 버튼이 보인다.
+- [x] `/portfolio` 화면에서 검색 placeholder에 branch가 포함된다.
+- [x] 화면에 `Unexpected Application Error`와 `[object Object]`가 보이지 않는다.
+
+검증 출력 요약:
+
+```txt
+python compile: success
+npm run build: success
+init_db ok
+analyze_repository repo=octocat/hello-world
+analyze_repository branch=master
+recent_commit_count=3
+has_readme=True
+parse repo=octocat/hello-world
+parse branch=master
+portfolio screen has heading/input/register button/branch text
+```
+
+남은 수동 QA:
+
+- [ ] 학생 계정으로 실제 `/tree/{branch}` URL을 등록한다.
+- [ ] 같은 repo의 다른 branch를 별도 프로젝트로 등록할 수 있는지 확인한다.
+- [ ] 등록 후 README와 최근 커밋이 branch 기준으로 바뀌는지 비교한다.

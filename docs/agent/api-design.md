@@ -920,3 +920,42 @@ Response:
 
 - public repo는 `GITHUB_TOKEN` 없이 조회 가능하다.
 - private repo 또는 rate limit 대응이 필요하면 백엔드 `.env`에 `GITHUB_TOKEN`을 추가한다.
+
+---
+
+## 2026-06-16 추가: 포트폴리오 프로젝트 branch 필드
+
+### PortfolioProjectResponse 변경
+
+응답 필드가 추가됐다.
+
+```json
+{
+  "repoFullName": "owner/repo",
+  "githubBranch": "main"
+}
+```
+
+### POST /portfolio/projects
+
+입력 예시:
+
+```json
+{
+  "githubUrl": "https://github.com/owner/repo/tree/dev"
+}
+```
+
+처리 기준:
+
+- `/tree/dev` 또는 `/blob/dev`가 있으면 `githubBranch=dev`로 저장한다.
+- branch가 없는 repo URL이면 GitHub repository metadata의 `default_branch`를 저장한다.
+- 중복 기준은 `owner_id + repo_full_name + github_branch`다.
+
+### POST /portfolio/projects/{project_id}/github/refresh
+
+처리 기준:
+
+- 저장된 `githubBranch` 기준으로 README와 최근 커밋을 다시 조회한다.
+- README는 GitHub contents API의 `ref` query를 사용한다.
+- commits는 GitHub commits API의 `sha` query를 사용한다.

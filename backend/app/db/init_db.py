@@ -59,6 +59,18 @@ def ensure_schema_columns() -> None:
         connection.execute(
             text("ALTER TABLE portfolio_projects ADD COLUMN IF NOT EXISTS saved_interview_questions TEXT"),
         )
+        connection.execute(
+            text("ALTER TABLE portfolio_projects ADD COLUMN IF NOT EXISTS github_branch VARCHAR(200)"),
+        )
+        connection.execute(
+            text("ALTER TABLE portfolio_projects DROP CONSTRAINT IF EXISTS uq_portfolio_projects_owner_repo"),
+        )
+        connection.execute(
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_portfolio_projects_owner_repo_branch "
+                "ON portfolio_projects (owner_id, repo_full_name, github_branch)",
+            ),
+        )
 
 
 def init_db() -> None:

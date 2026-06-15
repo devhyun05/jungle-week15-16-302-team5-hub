@@ -982,3 +982,29 @@ JWT 구현, DB 설계 문서, API 설계 문서는 팀원에게 공유해야 하
 - 백엔드 service가 GitHub JSON을 받아 JungleLog 도메인 모델에 맞게 정리한 뒤 repository가 저장한다.
 - 지금은 public repo 기준이고, private repo는 `GITHUB_TOKEN`을 넣어야 한다.
 - AI 단계에서는 이 GitHub 분석 결과가 RAG/Agent의 근거 자료가 된다.
+
+---
+
+## 2026-06-16 백엔드 키워드: GitHub branch와 unique index
+
+관련 구현:
+
+- `portfolio_projects.github_branch`
+- `uq_portfolio_projects_owner_repo_branch`
+- `github_service.analyze_repository(repo_full_name, github_branch)`
+
+키워드 연결:
+
+| 키워드 | 이번 구현에서 나온 부분 |
+| --- | --- |
+| Primary Key / Foreign Key / Index | 같은 사용자에게 같은 repo/branch 중복 등록을 막기 위해 unique index를 사용했다. |
+| API Design | 프론트에는 `githubBranch`로 내려주고, DB는 `github_branch`로 저장한다. |
+| REST API | GitHub README의 `ref`, commits의 `sha`, git tree의 `recursive` query를 사용했다. |
+| Data Modeling | repo와 branch를 분리해 저장해 같은 repo의 다른 branch를 표현할 수 있게 했다. |
+| Migration | Alembic 전 단계라 `ALTER TABLE ADD COLUMN IF NOT EXISTS`로 기존 DB를 보강했다. |
+
+내가 이해해야 하는 점:
+
+- branch를 저장하지 않으면 같은 repo의 어느 시점/흐름을 분석했는지 알 수 없다.
+- 중복 기준도 branch를 포함해야 같은 repo의 다른 branch를 등록할 수 있다.
+- DB 컬럼 추가는 모델만 바꾸면 끝이 아니라 기존 DB 보강 코드도 필요하다.

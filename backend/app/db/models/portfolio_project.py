@@ -3,7 +3,7 @@ from datetime import datetime
 
 # BigInteger는 큰 정수 id, Boolean은 연결/저장 여부, DateTime은 시간,
 # ForeignKey는 owner_id 연결, String은 짧은 문자열, Text는 긴 요약/초안,
-# UniqueConstraint는 같은 사용자의 같은 repo 중복 등록을 막고, func는 now() 기본값에 사용한다.
+# UniqueConstraint는 같은 사용자의 같은 repo/branch 중복 등록을 막고, func는 now() 기본값에 사용한다.
 from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, String, Text, UniqueConstraint, func
 # Mapped/mapped_column은 ORM 컬럼 선언, relationship은 다른 모델과 객체 관계를 만든다.
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -13,14 +13,14 @@ from app.db.base import Base
 
 
 # portfolio_projects 테이블 모델이다.
-# GitHub repo 하나를 JungleLog 포트폴리오 프로젝트 하나로 관리한다.
+# GitHub repo의 branch 하나를 JungleLog 포트폴리오 프로젝트 하나로 관리한다.
 class PortfolioProject(Base):
     # 실제 테이블 이름이다.
     __tablename__ = "portfolio_projects"
     # 테이블 레벨 제약 조건이다.
-    # 같은 학생(owner_id)이 같은 repo_full_name을 두 번 등록하지 못하게 한다.
+    # 같은 학생(owner_id)이 같은 repo_full_name/github_branch 조합을 두 번 등록하지 못하게 한다.
     __table_args__ = (
-        UniqueConstraint("owner_id", "repo_full_name", name="uq_portfolio_projects_owner_repo"),
+        UniqueConstraint("owner_id", "repo_full_name", "github_branch", name="uq_portfolio_projects_owner_repo_branch"),
     )
 
     # 포트폴리오 프로젝트 고유 id다.
@@ -31,6 +31,8 @@ class PortfolioProject(Base):
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     # GitHub owner/repo 형태의 고유 repo 이름이다.
     repo_full_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    # GitHub 분석 기준 branch 이름이다.
+    github_branch: Mapped[str] = mapped_column(String(200), nullable=False, default="main")
     # GitHub repo URL이다.
     github_url: Mapped[str] = mapped_column(String(500), nullable=False)
     # 프로젝트 카드의 짧은 설명이다.

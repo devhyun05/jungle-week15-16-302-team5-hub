@@ -31,6 +31,7 @@ class PortfolioProjectResponse(FrontendResponseModel):
     id: int
     title: str
     repo_full_name: str = Field(alias="repoFullName")
+    github_branch: str = Field(alias="githubBranch")
     github_url: str = Field(alias="githubUrl")
     summary: str | None
     tech_stack: list[str] = Field(alias="techStack")

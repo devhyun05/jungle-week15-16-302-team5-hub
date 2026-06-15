@@ -38,7 +38,7 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 - 내 기록 조회 API와 화면 연결
 - 프로필 이름/이미지 수정 API와 설정 화면 연결
 - 포트폴리오 프로젝트 등록/수정/목록 API와 화면 연결
-- GitHub REST API 기반 repo 등록, README 요약, 사용 언어, 최근 커밋 조회 연결
+- GitHub REST API 기반 repo/branch 등록, README 요약, 사용 언어, 최근 커밋 조회 연결
 - 등록된 프로젝트의 GitHub 정보 새로고침 API와 화면 연결
 - 포트폴리오 프로젝트와 게시글 연결 API
 - 포트폴리오 프로젝트 중복 등록 방지와 GitHub 링크 이동 UI
@@ -77,7 +77,7 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 2. 최초 로그인 시 `승인 대기` 상태가 된다.
 3. 관리자가 학생으로 승인하면 서비스 화면에 접근한다.
 4. 학습 로그, 트러블슈팅, 프로젝트 회고, 면접 질문, 포트폴리오 관리 글을 작성한다.
-5. GitHub repo URL로 포트폴리오 프로젝트를 등록하고 README, 사용 언어, 최근 커밋을 가져온다.
+5. GitHub repo 또는 `/tree/{branch}` URL로 포트폴리오 프로젝트를 등록하고 README, 사용 언어, 최근 커밋을 가져온다.
 6. 프로젝트와 자신의 기록을 연결한다.
 7. AI 도우미에서 포트폴리오 글/면접 예상 질문 샘플을 생성한다.
 8. 게시글 또는 포트폴리오 프로젝트를 선택해 코치 리뷰를 요청한다.
@@ -123,6 +123,7 @@ Service Layer
   | - 역할별 권한 확인
   | - 게시글/댓글/리뷰 상태 검증
   | - GitHub REST API 조회 결과 정리
+  | - branch 기준 README/commit/tree 정보 정리
   v
 Repository Layer
   |
@@ -134,9 +135,9 @@ External API
   |
   | GitHub REST API
   | - Repository metadata
-  | - README
-  | - Languages
-  | - Recent commits
+  | - Branch README
+  | - Branch tree based tech stack
+  | - Branch recent commits
 ```
 
 ## 폴더 구조
@@ -244,7 +245,7 @@ WEEK15_AI_BOARD/
 
 ### RAG 예정 기능
 
-- 데이터 소스: JungleLog 게시글, 댓글, 포트폴리오 프로젝트, GitHub REST API로 가져온 README/커밋 요약
+- 데이터 소스: JungleLog 게시글, 댓글, 포트폴리오 프로젝트, GitHub REST API로 가져온 branch별 README/커밋 요약
 - 검색 대상: 학생이 작성한 학습 로그, 트러블슈팅, 회고, 면접 질문, 포트폴리오 관리 글
 - 예정 Vector DB: PostgreSQL pgvector 또는 ChromaDB
 - 예정 기능:
@@ -547,3 +548,11 @@ OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 �
 - public repo는 `GITHUB_TOKEN` 없이 조회할 수 있고, private repo 또는 rate limit 대응이 필요하면 백엔드 `.env`에 `GITHUB_TOKEN`을 설정합니다.
 - 사이드바 JungleLog 로고를 누르면 역할별 기본 화면으로 이동합니다.
 - 주요 업무 화면의 최대 폭을 `max-w-7xl`로 넓혀 데스크톱 여백을 줄였습니다.
+
+## 최근 변경: GitHub branch 기준 포트폴리오 관리
+
+- GitHub 프로젝트 등록 시 `/tree/{branch}` 또는 `/blob/{branch}` URL에서 branch를 파싱합니다.
+- branch가 없는 repo URL은 GitHub repository metadata의 `default_branch`를 저장합니다.
+- README는 GitHub contents API의 `ref`, 최근 커밋은 commits API의 `sha`를 사용해 branch 기준으로 조회합니다.
+- GitHub languages API는 repo 단위라 branch별 값을 직접 제공하지 않으므로, branch tree를 조회해 파일 확장자 기반 기술 스택을 우선 추정합니다.
+- 포트폴리오 관리 화면은 repo와 branch를 함께 보여주고, 포트폴리오 글은 preview 중심으로 표시합니다.

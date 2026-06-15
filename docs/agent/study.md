@@ -4916,3 +4916,59 @@ GitHub ������Ʈ ���
 - base64
 - environment variable
 - GitHub REST API
+
+---
+
+## 2026-06-16 학습 기록: GitHub branch 기준 포트폴리오 관리
+
+이번 구현은 GitHub repo URL만 저장하던 구조를 repo/branch 기준으로 확장한 작업이다.
+
+관련 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/db/models/portfolio_project.py` | `github_branch` 컬럼과 repo/branch unique 기준 추가 |
+| `backend/app/db/init_db.py` | Alembic 전 단계에서 기존 DB에 `github_branch` 컬럼과 unique index 보강 |
+| `backend/app/services/github_service.py` | branch 기준 GitHub README/commits/tree 조회 |
+| `backend/app/services/portfolio_service.py` | GitHub URL에서 repo/branch 파싱, default branch 보정, 응답 변환 |
+| `backend/app/repositories/portfolio_repository.py` | branch를 포함한 중복 조회/생성/분석 결과 저장 |
+| `backend/app/schemas/portfolio.py` | API 응답에 `githubBranch` 추가 |
+| `frontend/src/app/api/portfolio.ts` | 프론트 타입에 `githubBranch` 추가 |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | branch 표시, branch 검색, 포트폴리오 글 preview UI 정리 |
+
+핵심 흐름:
+
+1. 사용자가 `https://github.com/owner/repo/tree/dev`를 입력한다.
+2. 백엔드는 URL에서 `owner/repo`와 `dev` branch를 분리한다.
+3. GitHub API로 repository metadata를 조회한다.
+4. branch가 없으면 metadata의 `default_branch`를 사용한다.
+5. README는 `ref=branch`, commits는 `sha=branch`로 조회한다.
+6. branch tree를 조회해 파일 확장자 기반 기술 스택을 추정한다.
+7. DB에는 `repo_full_name`과 `github_branch`를 함께 저장한다.
+8. 프론트는 repo와 branch를 같이 보여준다.
+
+중요 개념:
+
+- repo와 branch는 다른 개념이다. 같은 repo라도 branch가 다르면 README와 최근 커밋이 달라질 수 있다.
+- GitHub README API는 `ref` query로 branch를 지정한다.
+- GitHub commits API는 `sha` query에 branch 이름을 넣어 시작 지점을 지정할 수 있다.
+- GitHub languages API는 branch별 API가 아니므로 branch tree를 이용한 추정이 필요하다.
+- 기존 DB에 컬럼을 추가할 때 `create_all()`만으로는 부족해서 `ALTER TABLE ADD COLUMN IF NOT EXISTS`가 필요하다.
+
+내가 조심해야 할 점:
+
+- DB 필드를 추가하면 backend schema, frontend type, UI 사용 위치까지 같이 맞춰야 한다.
+- unique 기준을 바꾸지 않으면 같은 repo의 다른 branch를 등록할 수 없다.
+- branch 이름에는 `/`가 들어갈 수 있으므로 URL path segment 인코딩이 필요하다.
+- 기존 데이터 보정은 화면 목록 조회가 깨지지 않는 방향으로 처리해야 한다.
+
+추가 학습 키워드:
+
+- Git branch
+- GitHub default branch
+- URL parsing
+- query parameter
+- unique index
+- DB migration
+- Git tree
+- file extension based language inference

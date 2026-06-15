@@ -936,3 +936,24 @@ AI ����̰� ���� ���� ���� ������ ������Ʈ���� �����ϱ� ���� `portfolio_projects
 
 - ������ AI ���� �� ���� ����� ����������, ���߿� OpenAI/RAG/MCP/Agent ����� ���� �ʵ忡 ������ �� �ִ�.
 - �� ������ ���� ������ �ʿ������� v2���� `ai_generation_results` ���� ���� ���̺��� �и��� �� �ִ�.
+
+---
+
+## 2026-06-16 DB 설계 추가: portfolio_projects.github_branch
+
+`portfolio_projects`에 `github_branch` 필드를 추가했다.
+
+| 필드 | 타입 | 이유 |
+| --- | --- | --- |
+| `github_branch` | varchar(200) | 같은 repo라도 branch마다 README와 최근 커밋이 달라질 수 있으므로 분석 기준 branch를 저장한다. |
+
+관계/제약 변경:
+
+- 기존 중복 기준: `owner_id + repo_full_name`
+- 변경 중복 기준: `owner_id + repo_full_name + github_branch`
+
+왜 필요한가:
+
+- 사용자가 `main`, `dev`, `feature/...` branch를 각각 포트폴리오 프로젝트로 관리할 수 있다.
+- GitHub README와 commit 조회 시 어떤 branch를 기준으로 가져왔는지 명확해진다.
+- AI 도우미가 나중에 포트폴리오 글을 만들 때 정확한 branch 자료를 참고할 수 있다.

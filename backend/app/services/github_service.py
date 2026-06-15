@@ -3,6 +3,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
@@ -32,6 +33,7 @@ class GitHubRepositoryAnalysis:
 
     title: str
     repo_full_name: str
+    github_branch: str
     github_url: str
     summary: str | None
     tech_stack: list[str]
@@ -40,7 +42,7 @@ class GitHubRepositoryAnalysis:
     last_commit_at: datetime | None
 
 
-def analyze_repository(repo_full_name: str) -> GitHubRepositoryAnalysis:
+def analyze_repository(repo_full_name: str, github_branch: str | None = None) -> GitHubRepositoryAnalysis:
     """
     GitHub repo 하나를 조회해서 JungleLog 포트폴리오에 필요한 정보로 변환한다.
 
@@ -55,9 +57,23 @@ def analyze_repository(repo_full_name: str) -> GitHubRepositoryAnalysis:
 
     with httpx.Client(base_url=settings.github_api_base_url, timeout=10.0, headers=build_github_headers()) as client:
         repository_data = get_github_json(client, f"/repos/{normalized_repo_full_name}")
-        readme_data = get_optional_github_json(client, f"/repos/{normalized_repo_full_name}/readme")
-        commit_data = get_optional_github_json(client, f"/repos/{normalized_repo_full_name}/commits?per_page=5")
+        effective_branch = get_effective_branch(repository_data=repository_data, github_branch=github_branch)
+        readme_data = get_optional_github_json(
+            client,
+            f"/repos/{normalized_repo_full_name}/readme",
+            params={"ref": effective_branch},
+        )
+        commit_data = get_github_json(
+            client,
+            f"/repos/{normalized_repo_full_name}/commits",
+            params={"per_page": 5, "sha": effective_branch},
+        )
         language_data = get_optional_github_json(client, f"/repos/{normalized_repo_full_name}/languages")
+        tree_data = get_optional_github_json(
+            client,
+            f"/repos/{normalized_repo_full_name}/git/trees/{quote(effective_branch, safe='')}",
+            params={"recursive": 1},
+        )
 
     repository_name = str(repository_data.get("name") or normalized_repo_full_name.split("/")[-1])
     full_name = str(repository_data.get("full_name") or normalized_repo_full_name).lower()
@@ -67,13 +83,35 @@ def analyze_repository(repo_full_name: str) -> GitHubRepositoryAnalysis:
     return GitHubRepositoryAnalysis(
         title=repository_name,
         repo_full_name=full_name,
+        github_branch=effective_branch,
         github_url=github_url,
         summary=str(summary).strip() if summary else None,
-        tech_stack=build_tech_stack(repository_data=repository_data, language_data=language_data),
+        tech_stack=build_tech_stack(
+            repository_data=repository_data,
+            language_data=language_data,
+            tree_data=tree_data,
+        ),
         readme_summary=build_readme_summary(readme_data),
         recent_commit_summary=build_recent_commit_summary(commit_data),
         last_commit_at=get_last_commit_at(commit_data),
     )
+
+
+def get_effective_branch(repository_data: dict[str, Any] | list[dict[str, Any]], github_branch: str | None) -> str:
+    """
+    사용자가 branch를 입력하지 않았으면 GitHub repository의 default branch를 사용한다.
+    """
+
+    if github_branch and github_branch.strip():
+        return github_branch.strip()
+
+    if isinstance(repository_data, dict):
+        default_branch = repository_data.get("default_branch")
+
+        if default_branch:
+            return str(default_branch).strip()
+
+    return "main"
 
 
 def build_github_headers() -> dict[str, str]:
@@ -96,13 +134,17 @@ def build_github_headers() -> dict[str, str]:
     return headers
 
 
-def get_github_json(client: httpx.Client, path: str) -> dict[str, Any] | list[dict[str, Any]]:
+def get_github_json(
+    client: httpx.Client,
+    path: str,
+    params: dict[str, str | int] | None = None,
+) -> dict[str, Any] | list[dict[str, Any]]:
     """
     GitHub API를 호출하고 JSON 응답을 반환한다.
     """
 
     try:
-        response = client.get(path)
+        response = client.get(path, params=params)
     except httpx.HTTPError as error:
         raise GitHubApiError("GitHub API에 연결하지 못했습니다.") from error
 
@@ -121,13 +163,17 @@ def get_github_json(client: httpx.Client, path: str) -> dict[str, Any] | list[di
         raise GitHubApiError("GitHub API 응답을 해석하지 못했습니다.") from error
 
 
-def get_optional_github_json(client: httpx.Client, path: str) -> dict[str, Any] | list[dict[str, Any]] | None:
+def get_optional_github_json(
+    client: httpx.Client,
+    path: str,
+    params: dict[str, str | int] | None = None,
+) -> dict[str, Any] | list[dict[str, Any]] | None:
     """
     README, commits, languages처럼 없어도 프로젝트 등록은 가능한 정보를 조회한다.
     """
 
     try:
-        return get_github_json(client, path)
+        return get_github_json(client, path, params=params)
     except GitHubRepositoryNotFoundError:
         return None
 
@@ -135,13 +181,20 @@ def get_optional_github_json(client: httpx.Client, path: str) -> dict[str, Any] 
 def build_tech_stack(
     repository_data: dict[str, Any],
     language_data: dict[str, Any] | list[dict[str, Any]] | None,
+    tree_data: dict[str, Any] | list[dict[str, Any]] | None,
 ) -> list[str]:
     """
-    GitHub languages API 응답을 기술 스택 후보로 바꾼다.
+    GitHub tree 또는 languages API 응답을 기술 스택 후보로 바꾼다.
 
-    languages 응답은 {"TypeScript": 1000, "Python": 700} 같은 byte 수 기반 dict라
-    값이 큰 순서대로 정렬해서 상위 언어를 보여준다.
+    languages API는 repo 전체 기준이라 branch별 언어를 직접 제공하지 않는다.
+    그래서 branch tree를 읽을 수 있으면 파일 확장자 기반으로 먼저 추정하고,
+    tree 조회가 어렵거나 정보가 부족하면 languages API 결과를 fallback으로 사용한다.
     """
+
+    branch_tech_stack = build_tech_stack_from_tree(tree_data)
+
+    if branch_tech_stack:
+        return branch_tech_stack
 
     if isinstance(language_data, dict) and language_data:
         sorted_languages = sorted(language_data.items(), key=lambda item: int(item[1]), reverse=True)
@@ -153,6 +206,78 @@ def build_tech_stack(
         return [str(primary_language)]
 
     return ["GitHub"]
+
+
+def build_tech_stack_from_tree(tree_data: dict[str, Any] | list[dict[str, Any]] | None) -> list[str]:
+    """
+    선택된 branch의 git tree에서 파일 확장자를 보고 기술 스택을 추정한다.
+    """
+
+    if not isinstance(tree_data, dict):
+        return []
+
+    tree_items = tree_data.get("tree")
+
+    if not isinstance(tree_items, list):
+        return []
+
+    extension_counts: dict[str, int] = {}
+
+    for item in tree_items:
+        if not isinstance(item, dict):
+            continue
+
+        if item.get("type") != "blob":
+            continue
+
+        path = str(item.get("path") or "")
+        language = get_language_from_path(path)
+
+        if language:
+            extension_counts[language] = extension_counts.get(language, 0) + 1
+
+    sorted_languages = sorted(extension_counts.items(), key=lambda item: item[1], reverse=True)
+
+    return [language for language, _count in sorted_languages[:5]]
+
+
+def get_language_from_path(path: str) -> str | None:
+    """
+    파일 경로를 간단한 기술 스택 이름으로 매핑한다.
+    """
+
+    extension_map = {
+        ".py": "Python",
+        ".ts": "TypeScript",
+        ".tsx": "TypeScript",
+        ".js": "JavaScript",
+        ".jsx": "JavaScript",
+        ".java": "Java",
+        ".kt": "Kotlin",
+        ".go": "Go",
+        ".rs": "Rust",
+        ".c": "C",
+        ".cpp": "C++",
+        ".cs": "C#",
+        ".php": "PHP",
+        ".rb": "Ruby",
+        ".swift": "Swift",
+        ".html": "HTML",
+        ".css": "CSS",
+        ".scss": "SCSS",
+        ".sql": "SQL",
+        ".md": "Markdown",
+        ".yml": "YAML",
+        ".yaml": "YAML",
+        ".json": "JSON",
+    }
+    lowered_path = path.lower()
+
+    for extension, language in extension_map.items():
+        if lowered_path.endswith(extension):
+            return language
+
+    return None
 
 
 def build_readme_summary(readme_data: dict[str, Any] | list[dict[str, Any]] | None) -> str | None:
