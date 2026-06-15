@@ -3,7 +3,7 @@ import { Link, useOutletContext } from "react-router";
 import { ShieldAlert } from "lucide-react";
 import { Button } from "./ui/Button";
 import { Card, CardContent } from "./ui/Card";
-import type { UserRole } from "../data/mockData";
+import type { UserRole } from "../api/auth";
 import type { MainLayoutContext } from "../layouts/MainLayout";
 
 type RoleGateProps = {
@@ -22,18 +22,17 @@ function getRoleLabel(role: UserRole) {
 }
 
 export function RoleGate({ allowedRoles, children }: RoleGateProps) {
-  // MainLayout의 Outlet context에서 현재 mock role을 가져옵니다.
+  // MainLayout이 /auth/me 응답을 Outlet context로 내려준다.
+  // 이제 접근 제어는 mock role이 아니라 실제 로그인 사용자의 role/approvalStatus로 판단한다.
   const { role, approvalStatus } = useOutletContext<MainLayoutContext>();
   const isApproved = approvalStatus === "승인 완료";
   const hasAllowedRole = allowedRoles.includes(role);
   const canAccess = isApproved && hasAllowedRole;
 
   if (canAccess) {
-    // 허용된 role이면 감싸고 있던 실제 페이지를 그대로 보여줍니다.
     return <>{children}</>;
   }
 
-  // 접근할 수 없는 role 또는 승인 상태이면 역할에 맞는 기본 화면으로 돌려보냅니다.
   const fallbackPath = !isApproved ? "/pending-approval" : role === "ADMIN" ? "/admin/users" : role === "COACH" ? "/coach-review" : "/";
   const fallbackLabel =
     !isApproved
@@ -57,16 +56,17 @@ export function RoleGate({ allowedRoles, children }: RoleGateProps) {
           </h1>
           {isApproved ? (
             <p className="mt-2 text-sm text-slate-600">
-              현재 mock role은 <span className="font-semibold">{getRoleLabel(role)}</span>입니다. 이 화면은{" "}
+              현재 역할은 <span className="font-semibold">{getRoleLabel(role)}</span>입니다. 이 화면은{" "}
               <span className="font-semibold">{allowedRoleLabels}</span> 역할에서 사용할 수 있습니다.
             </p>
           ) : (
             <p className="mt-2 text-sm text-amber-700">
-              현재 승인 상태는 <span className="font-semibold">{approvalStatus}</span>입니다. 운영자 승인 후 서비스 화면에 접근할 수 있습니다.
+              현재 승인 상태는 <span className="font-semibold">{approvalStatus}</span>입니다. 관리자 승인 후 서비스 화면에
+              접근할 수 있습니다.
             </p>
           )}
           <p className="mt-3 text-xs text-slate-500">
-            백엔드 연결 후 Google OAuth, 승인 상태, JWT 기반 라우트 보호로 교체할 예정입니다.
+            현재 화면 보호는 Google OAuth 로그인과 JWT cookie를 통해 확인한 사용자 정보로 동작합니다.
           </p>
           <Button asChild className="mt-5">
             <Link to={fallbackPath}>{fallbackLabel}</Link>

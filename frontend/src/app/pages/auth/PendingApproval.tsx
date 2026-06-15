@@ -3,17 +3,17 @@ import { Link, useOutletContext } from "react-router";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
-import type { UserRole } from "../../data/mockData";
+import type { ApprovalStatus, UserRole } from "../../api/auth";
 import type { MainLayoutContext } from "../../layouts/MainLayout";
 
-const statusMessages = {
+const statusMessages: Record<ApprovalStatus, { title: string; description: string }> = {
   "승인 대기": {
-    title: "운영자 승인을 기다리고 있습니다",
-    description: "Google 로그인은 완료됐지만, JungleLog 사용 권한은 아직 승인되지 않았습니다.",
+    title: "운영자의 승인을 기다리고 있습니다",
+    description: "Google 로그인은 완료됐지만 JungleLog 사용 권한은 아직 승인되지 않았습니다.",
   },
   거절: {
     title: "사용 권한이 승인되지 않았습니다",
-    description: "정글 운영자에게 계정 상태를 문의해주세요.",
+    description: "계정 상태 확인이 필요합니다. 정글 운영자에게 문의해 주세요.",
   },
   정지: {
     title: "사용 권한이 일시 정지되었습니다",
@@ -36,7 +36,7 @@ function getRoleLabel(role: UserRole) {
 }
 
 export function PendingApproval() {
-  const { approvalStatus, role } = useOutletContext<MainLayoutContext>();
+  const { user, approvalStatus, role } = useOutletContext<MainLayoutContext>();
   const message = statusMessages[approvalStatus];
 
   return (
@@ -49,9 +49,14 @@ export function PendingApproval() {
           <Badge variant={approvalStatus === "승인 완료" ? "success" : "warning"}>{approvalStatus}</Badge>
           <h1 className="mt-4 text-xl font-bold text-slate-900">{message.title}</h1>
           <p className="mt-2 text-sm leading-6 text-slate-600">{message.description}</p>
-          <p className="mt-3 text-xs text-slate-400">
-            현재 mock role은 {getRoleLabel(role)}이며, 실제 권한은 Google OAuth 로그인 후 백엔드 승인 상태로 판단합니다.
-          </p>
+          <div className="mt-5 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm text-slate-600">
+            <p>
+              <span className="font-semibold text-slate-900">계정:</span> {user.email}
+            </p>
+            <p className="mt-1">
+              <span className="font-semibold text-slate-900">현재 역할:</span> {getRoleLabel(role)}
+            </p>
+          </div>
           <Button asChild className="mt-6 gap-2">
             <Link to={approvalStatus === "승인 완료" ? "/" : "/login"}>
               <LogIn className="h-4 w-4" />

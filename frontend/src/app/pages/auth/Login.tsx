@@ -1,32 +1,42 @@
-import { useNavigate } from "react-router";
+import { Navigate } from "react-router";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card";
+import { useAuth } from "../../contexts/AuthContext";
 
 export function Login() {
-  // TODO backend: 실제 Google OAuth redirect와 JWT 발급은 인증 API 구현 단계에서 연결한다.
-  const navigate = useNavigate();
+  const { user, isLoading, loginWithGoogle } = useAuth();
 
-  const handleGoogleLogin = () => {
-    window.localStorage.setItem("junglelog-mock-role", "STUDENT");
-    window.localStorage.setItem("junglelog-mock-approval-status", "승인 대기");
-    navigate("/pending-approval");
-  };
+  if (isLoading) {
+    return (
+      <Card className="w-full max-w-md">
+        <CardContent className="p-6 text-sm text-slate-600">로그인 상태를 확인하고 있습니다.</CardContent>
+      </Card>
+    );
+  }
+
+  if (user?.approvalStatus === "승인 완료") {
+    return <Navigate to="/" replace />;
+  }
+
+  if (user) {
+    return <Navigate to="/pending-approval" replace />;
+  }
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle>로그인</CardTitle>
-        <CardDescription>Google 계정으로 JungleLog 학습 기록을 이어갑니다.</CardDescription>
+        <CardDescription>Google 계정으로 JungleLog 학습 기록과 포트폴리오를 관리합니다.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <Button type="button" variant="outline" className="h-11 w-full gap-3" onClick={handleGoogleLogin}>
+      <CardContent className="space-y-4">
+        <Button type="button" variant="outline" className="h-11 w-full gap-3" onClick={loginWithGoogle}>
           <span className="text-base font-semibold text-slate-700">G</span>
           Google로 계속하기
         </Button>
-        <p className="text-sm leading-6 text-slate-500">
-          처음 로그인한 Google 계정은 학생 계정으로 자동 등록됩니다.
-          mock 단계에서는 승인 대기 상태로 이동하며, 코치 권한은 운영자가 별도로 지정합니다.
-        </p>
+        <div className="rounded-md border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900">
+          처음 로그인한 계정은 승인 대기 상태가 됩니다. 관리자가 학생, 코치, 관리자 역할을 승인하면 서비스 화면을
+          사용할 수 있습니다.
+        </div>
       </CardContent>
     </Card>
   );
