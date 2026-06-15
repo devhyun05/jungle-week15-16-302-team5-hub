@@ -24,6 +24,10 @@ class Post(Base):
         default=utc_now,
         onupdate=utc_now,
     )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     hidden_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,

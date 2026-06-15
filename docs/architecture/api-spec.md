@@ -60,7 +60,7 @@ Auth/session 상세 정책은 `docs/architecture/auth-session-design.md`를 따�
 | GET | `/posts` | optional | q?, tag?, board?, page?, size? | paginated posts | 400 |
 | GET | `/posts/{post_id}` | optional | none | post detail | 404 |
 | PUT | `/posts/{post_id}` | owner | title?, body?, tags? | post | 401, 403, 404, 422 |
-| DELETE | `/posts/{post_id}` | owner | none | success | 401, 403, 404 |
+| DELETE | `/posts/{post_id}` | owner | none | soft delete success | 401, 403, 404 |
 | GET | `/posts/{post_id}/similar` | optional | limit? | similar posts | 404 |
 
 ## Comment APIs
@@ -504,6 +504,7 @@ Response:
 Policy:
 
 - public post list/detail excludes posts where `hidden_at IS NOT NULL`.
+- author post deletion uses `posts.deleted_at`; public post list/detail excludes posts where `deleted_at IS NOT NULL`.
 - public comment list and comment update/delete lookup exclude comments where `hidden_at IS NOT NULL`.
 - author comment deletion still uses `deleted_at`; admin hide uses separate `hidden_at`.
 - future vector search/RAG retrieval must exclude hidden posts and hidden comments.

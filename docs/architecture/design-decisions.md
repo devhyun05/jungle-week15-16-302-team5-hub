@@ -78,6 +78,7 @@
 | Admin role is stored as `users.role` with `"user"` and `"admin"`. | It is more extensible than `is_admin` but much smaller than a permissions table for the current MVP. |
 | Admin routes use `require_admin`, which depends on `get_current_user`. | Missing/invalid token stays 401, while logged-in non-admin users get 403. |
 | `/api/admin/health` is the first admin smoke endpoint. | It proves backend authorization before adding moderation behavior with larger side effects. |
+| Author post deletion uses `posts.deleted_at` soft delete. | It preserves rows for audit/consistency and matches the comment deletion direction while keeping public lookup behavior as 404. |
 | Admin moderation uses `hidden_at`, `hidden_by_id`, and `hidden_reason` on posts and comments. | It keeps author deletion separate from admin visibility control and gives RAG a simple exclusion condition. |
 | Comment author deletion remains `deleted_at`; admin hide is separate `hidden_at`. | Admin restore must not accidentally revive a comment the author deleted. |
 | Admin hide/restore writes compact rows to `admin_action_logs`. | Moderation needs traceability without storing raw content snapshots. |

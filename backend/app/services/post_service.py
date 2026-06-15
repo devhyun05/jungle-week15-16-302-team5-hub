@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.models.post import Post
+from app.models.post import Post, utc_now
 from app.models.user import User
 from app.models.tag import Tag
 from app.schemas.post import PostCreateRequest, PostPageResponse, PostUpdateRequest
@@ -37,7 +37,10 @@ def list_posts(
     page: int = 1,
     size: int = 10,
 ) -> PostPageResponse:
-    query = db.query(Post).filter(Post.hidden_at.is_(None))
+    query = db.query(Post).filter(
+        Post.deleted_at.is_(None),
+        Post.hidden_at.is_(None),
+    )
 
     search_text = q.strip() if q else None
 
@@ -94,6 +97,7 @@ def get_post(
         db.query(Post)
         .filter(
             Post.id == post_id,
+            Post.deleted_at.is_(None),
             Post.hidden_at.is_(None),
         )
         .first()
@@ -158,5 +162,5 @@ def delete_post(db: Session,
             detail="Not allowed to delete this post",
         )
     
-    db.delete(post)
+    post.deleted_at = utc_now()
     db.commit()

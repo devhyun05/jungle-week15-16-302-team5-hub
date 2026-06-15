@@ -23,7 +23,14 @@ def normalize_reason(request: ModerationRequest | None) -> str | None:
 
 
 def get_post_for_admin(db: Session, post_id: int) -> Post:
-    post = db.query(Post).filter(Post.id == post_id).first()
+    post = (
+        db.query(Post)
+        .filter(
+            Post.id == post_id,
+            Post.deleted_at.is_(None),
+        )
+        .first()
+    )
 
     if post is None:
         raise HTTPException(

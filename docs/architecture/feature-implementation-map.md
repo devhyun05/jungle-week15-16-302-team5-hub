@@ -670,6 +670,7 @@ Completed first slice:
 - admin soft hide/restore for posts and comments.
 - public post/comment lookup excludes admin-hidden content.
 - compact `admin_action_logs` rows for hide/restore.
+- author post delete changed from hard delete to `posts.deleted_at` soft delete.
 
 Postponed until after Day 4~6 unless it blocks AI work:
 
@@ -687,13 +688,14 @@ Next required AI-adjacent follow-up before RAG retrieval:
 |---|---|
 | `backend/app/models/user.py` | implemented `role` field with default `"user"` |
 | `backend/app/models/post.py` | implemented post admin hidden fields |
+| `backend/app/services/post_service.py` | public list/detail exclude deleted/hidden posts; author delete sets `deleted_at` |
 | `backend/app/models/comment.py` | implemented comment admin hidden fields separate from `deleted_at` |
 | `backend/app/models/admin_action_log.py` | implemented compact admin action log |
 | `backend/app/api/deps.py` | implemented `require_admin` |
 | `backend/app/api/routes/admin.py` | implemented `/api/admin/health`, post hide/restore, comment hide/restore |
 | `backend/app/main.py` | registered `admin_router` |
 | `backend/app/services/admin_service.py` | implemented moderation rules and audit log writes |
-| `backend/app/services/post_service.py` | public list/detail exclude hidden posts |
+| `backend/tests/test_posts.py` | verifies author post delete preserves row and sets `deleted_at` |
 | `backend/app/services/comment_service.py` | public comment lookup excludes hidden comments |
 | `backend/tests/test_admin.py` | implemented admin auth and moderation tests |
 | `frontend/src/pages/AdminPage.tsx` | not yet created; admin UI postponed |
@@ -716,6 +718,7 @@ regular user token -> 403
 admin user token -> 200 { status, admin_user_id }
 admin hide -> hidden fields set, public lookup excludes target
 admin restore -> hidden fields cleared, public lookup includes target again
+author post delete -> deleted_at set, public lookup returns 404
 ```
 
 ### DB / ERD
@@ -724,6 +727,7 @@ Implemented:
 
 ```text
 users.role
+posts.deleted_at
 posts.hidden_at
 posts.hidden_by_id
 posts.hidden_reason

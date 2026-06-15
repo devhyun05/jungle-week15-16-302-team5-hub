@@ -122,6 +122,8 @@ Fill this during implementation and again during Day 8/Day 9.
 | 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest` | 58 passed | admin role guard added; backend full regression |
 | 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest tests/test_admin.py` | 6 passed | admin post/comment hide/restore, public lookup exclusion, audit log writes |
 | 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest` | 61 passed | admin moderation added; backend full regression |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest tests/test_posts.py tests/test_admin.py` | 21 passed | post author delete sets `deleted_at`; admin cannot hide author-deleted post |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest` | 62 passed | post soft delete added; backend full regression |
 | TBD | `npm test` | TBD | frontend unit tests are not set up yet |
 | TBD | `npx playwright test` | TBD | automated E2E is not set up yet |
 

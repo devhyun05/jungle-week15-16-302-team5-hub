@@ -365,6 +365,7 @@ Migration note:
 
 ```text
 posts
+- deleted_at: datetime, nullable
 - hidden_at: datetime, nullable
 - hidden_by_id: FK -> users.id, nullable
 - hidden_reason: string/text, nullable
@@ -386,6 +387,8 @@ admin_action_logs
 
 Policy target:
 
+- Author post deletion uses `posts.deleted_at`; row is preserved.
+- Public post list/detail should exclude posts where `deleted_at IS NOT NULL`.
 - Public post list/detail should exclude posts where `hidden_at IS NOT NULL`.
 - Public comment list and comment update/delete lookup should exclude comments where `hidden_at IS NOT NULL`.
 - Author comment deletion still uses `comments.deleted_at`; admin hide uses `comments.hidden_at`.
@@ -396,6 +399,7 @@ Development DB update applied on 2026-06-16:
 
 ```text
 users.role
+posts.deleted_at
 posts.hidden_at / hidden_by_id / hidden_reason
 comments.hidden_at / hidden_by_id / hidden_reason
 admin_action_logs
