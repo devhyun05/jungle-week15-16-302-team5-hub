@@ -3866,3 +3866,29 @@ COACH �α���
 - 화면 문구는 기능 설명서가 아니라 사용자의 다음 행동을 돕는 장치다.
 - 개발 단계가 덜 끝났다는 사실을 숨기는 것이 아니라, 사용자가 지금 할 수 있는 행동을 중심으로 표현해야 한다.
 - 기술 키워드는 README/study/api 문서에 자세히 쓰고, 서비스 화면에는 꼭 필요한 만큼만 남긴다.
+## 2026-06-15 학습: 공통 API 에러 처리
+
+이번에 본 파일:
+
+- `frontend/src/app/api/client.ts`
+
+핵심 개념:
+
+- `unknown`: 어떤 타입인지 아직 모르는 값을 안전하게 다루기 위한 TypeScript 타입이다.
+- type narrowing: `typeof`, `Array.isArray`, `in` 연산자로 값의 형태를 좁혀가며 안전하게 접근하는 방식이다.
+- FastAPI validation error: 422 응답의 `detail`은 문자열 하나가 아니라 배열이나 객체 구조로 내려올 수 있다.
+- 공통 함수: 여러 API 파일에서 같은 에러 처리 규칙을 쓰게 하면 화면마다 다른 방식으로 깨지는 일을 줄일 수 있다.
+
+코드 흐름:
+
+1. 각 API 함수는 `fetch()` 후 `response.ok`가 아니면 `getErrorMessage(response)`를 호출한다.
+2. `getErrorMessage()`는 response JSON의 `detail`을 읽는다.
+3. `detail`이 배열이면 각 item에서 읽을 수 있는 메시지만 추출한다.
+4. `detail`이 객체이면 `msg` 또는 `message` 필드를 찾아 다시 읽는다.
+5. 끝까지 문자열을 찾지 못하면 `데이터를 처리하지 못했습니다. 잠시 후 다시 시도해주세요.`를 반환한다.
+
+왜 필요한가:
+
+- JavaScript에서 객체를 억지로 문자열로 바꾸면 `[object Object]`가 된다.
+- 사용자는 내부 응답 구조가 아니라 사람이 읽을 수 있는 안내를 봐야 한다.
+- 백엔드 validation 구조가 조금 달라져도 프론트가 안전하게 fallback할 수 있어야 한다.

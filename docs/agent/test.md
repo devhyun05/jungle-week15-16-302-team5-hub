@@ -1822,3 +1822,22 @@ rg -n "백엔드|API|샘플|mock|debug|MCP|RAG|OpenAI|다음 단계|구현 예�
 
 - 남은 검색 결과는 코드 주석 중심이다.
 - 실제 UI 문자열은 서비스 문구로 정리했다.
+## 2026-06-15 공통 API 에러 메시지 QA
+
+목표: API 에러 응답 객체가 사용자 화면에 raw object로 노출되지 않도록 공통 처리 흐름을 확인한다.
+
+체크리스트:
+
+- [x] `getErrorMessage()`가 문자열 detail을 그대로 반환한다.
+- [x] `getErrorMessage()`가 배열 detail에서 읽을 수 있는 메시지만 모은다.
+- [x] `{ msg: ... }` 형태의 FastAPI validation item을 처리한다.
+- [x] `{ message: ... }` 형태도 처리한다.
+- [x] 읽을 수 없는 객체는 `String(object)`로 변환하지 않는다.
+- [x] 기본 fallback 문구는 사용자 친화적인 문장이다.
+- [x] `rg`로 `[object Object]`와 과거 `String((item as { msg: unknown }).msg)` 패턴이 사라진 것을 확인했다.
+
+검증 명령:
+
+```txt
+rg -n "\[object Object\]|String\(\(item as \{ msg: unknown \}\)\.msg\)|fallbackMessage" frontend/src/app/api/client.ts
+```
