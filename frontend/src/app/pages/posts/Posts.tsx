@@ -124,7 +124,7 @@ export function Posts() {
         })}
       </div>
 
-      <p className="text-xs text-slate-400">현재 목록과 검색은 백엔드 `GET /posts` API 응답 기준으로 동작합니다.</p>
+      <p className="text-xs text-slate-400">검색어와 카테고리를 바꾸면 공개 게시글 목록이 갱신됩니다.</p>
 
       <div className="space-y-3">
         {isLoading && (

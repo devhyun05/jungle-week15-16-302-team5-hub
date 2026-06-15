@@ -222,7 +222,7 @@ export function PostDetail() {
         <Card className="w-full">
           <CardContent className="p-8 text-center">
             <h1 className="text-xl font-bold text-slate-900">게시글을 불러오는 중입니다</h1>
-            <p className="mt-2 text-sm text-slate-500">백엔드 게시글 상세 API 응답을 기다리고 있습니다.</p>
+            <p className="mt-2 text-sm text-slate-500">게시글을 불러오는 중입니다.</p>
           </CardContent>
         </Card>
       </div>
@@ -467,7 +467,7 @@ export function PostDetail() {
             ))}
           {relatedPosts.length === 0 && <li className="text-emerald-700">같은 카테고리의 공개 기록이 아직 없습니다.</li>}
         </ul>
-        <p className="mt-3 text-xs text-emerald-700">현재는 같은 카테고리의 공개 기록을 보여주며, 실제 유사도 추천은 RAG 연결 후 구현 예정입니다.</p>
+        <p className="mt-3 text-xs text-emerald-700">같은 카테고리의 공개 기록을 함께 확인해보세요.</p>
       </section>
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">

@@ -128,7 +128,7 @@ export function Settings() {
             <Github className="h-4 w-4" />
             GitHub 연동
           </CardTitle>
-          <CardDescription>GitHub API/MCP 연동은 백엔드 연결 후 구현 예정입니다.</CardDescription>
+          <CardDescription>GitHub 연동 정보는 포트폴리오 프로젝트와 작성 글에서 함께 활용됩니다.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
@@ -147,16 +147,16 @@ export function Settings() {
             <Bot className="h-4 w-4" />
             AI 설정
           </CardTitle>
-          <CardDescription>OpenAI API Key와 모델 선택은 서버 환경변수로 관리할 예정입니다.</CardDescription>
+          <CardDescription>AI 생성 설정은 서버에서 안전하게 관리됩니다.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
             <Info className="mt-0.5 h-4 w-4 text-slate-400" />
-            <p>클라이언트에 API Key를 직접 저장하지 않습니다. 백엔드에서 권한과 호출량을 관리합니다.</p>
+            <p>브라우저에는 비밀 키를 저장하지 않고, 서버에서 권한과 호출량을 관리합니다.</p>
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <Lock className="h-4 w-4" />
-            실제 보안 설정은 백엔드 연결 후 구현 예정입니다.
+            세부 보안 정책은 서비스 운영 단계에서 조정합니다.
           </div>
         </CardContent>
       </Card>

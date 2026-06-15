@@ -181,7 +181,7 @@ export function PostEdit() {
   const saveDraft = () => {
     // TODO backend: 실제 임시저장 API는 백엔드 연결 후 구현 예정.
     setError("");
-    setNotice("임시저장 API 연결 전 화면 안내입니다. 현재 입력값은 브라우저 새로고침 시 유지되지 않습니다.");
+    setNotice("임시저장은 준비 중입니다. 작성 중인 내용은 발행 전까지 이 화면에서만 유지됩니다.");
   };
 
   return (
@@ -191,7 +191,7 @@ export function PostEdit() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">{isEditMode ? "게시글 수정" : "새 게시글 작성"}</h1>
             <p className="mt-1 text-sm text-slate-500">
-              새 글 발행과 수정은 백엔드 API에 저장되고, GitHub repo 정보는 나중에 GitHub API 분석에 활용합니다.
+              학습 기록과 해결 과정을 남기고, 관련 GitHub repo를 함께 연결할 수 있습니다.
             </p>
           </div>
           <div className="flex gap-2">
@@ -309,7 +309,7 @@ export function PostEdit() {
               />
             </div>
             <p className="text-xs text-slate-500">
-              이 repo URL은 다음 AI 단계에서 GitHub API/MCP 분석 기준으로 사용합니다.
+              이 repo URL은 포트폴리오 정리와 GitHub 정보 분석에 활용됩니다.
             </p>
           </div>
         </Card>
@@ -324,7 +324,7 @@ export function PostEdit() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="mb-3 text-xs text-slate-500">작성 중인 내용 분석 태그 추천은 백엔드/AI 연결 후 구현 예정입니다.</p>
+            <p className="mb-3 text-xs text-slate-500">작성 중인 내용과 어울리는 태그를 빠르게 추가해보세요.</p>
             <div className="flex flex-wrap gap-2">
               {["Authentication", "Python", "Security"].map((tag) => (
                 <button
@@ -348,7 +348,7 @@ export function PostEdit() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-xs text-slate-500">현재는 백엔드 게시글 API의 최근 공개 기록을 보여주며, 실제 유사 글 검색은 RAG 연결 후 구현 예정입니다.</p>
+            <p className="text-xs text-slate-500">최근 공개 기록을 참고해 비슷한 주제의 글 흐름을 확인할 수 있습니다.</p>
             {referencePosts.map((post) => (
               <Link
                 key={post.id}

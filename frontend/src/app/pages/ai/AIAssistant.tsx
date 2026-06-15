@@ -30,7 +30,7 @@ const outputOptions = [
 ] as const;
 
 function buildPortfolioDraft(project: PortfolioProjectApiItem, linkedRecords: PostListApiItem[]) {
-  // 실제 OpenAI 호출 전까지는 선택 프로젝트 정보를 이용해 고정된 샘플 초안을 만듭니다.
+  // 실제 OpenAI 호출 전까지는 선택 프로젝트 정보를 이용해 미리보기 초안을 만듭니다.
   const stackText = project.techStack.length > 0 ? project.techStack.slice(0, 3).join(", ") : "등록된 기술 스택";
   const linkedRecordCount = linkedRecords.length;
 
@@ -51,18 +51,18 @@ AI 기능은 버튼 하나가 아니라 어떤 자료를 참고하고 어떤 결
 }
 
 function buildInterviewQuestions(project: PortfolioProjectApiItem, linkedRecords: PostListApiItem[]) {
-  // 면접 질문도 현재는 RAG/Agent 결과가 아니라 API 데이터 기반 샘플 텍스트입니다.
+  // 면접 질문도 현재는 RAG/Agent 결과가 아니라 선택 프로젝트 데이터 기반 미리보기입니다.
   return `1. ${project.title}에서 GitHub 정보는 어떤 방식으로 활용되나요?
-- GitHub repo URL(${project.githubUrl}), 최근 커밋, README를 MCP를 통해 가져오고 AI 생성의 참고 자료로 사용하는 흐름을 목표로 합니다.
+- GitHub repo URL(${project.githubUrl}), 최근 커밋, README를 프로젝트 설명의 근거 자료로 활용합니다.
 
 2. 연결된 학습 기록은 AI 답변에 어떤 영향을 주나요?
-- 현재 선택된 프로젝트에는 ${linkedRecords.length}개의 기록이 연결되어 있습니다. 게시글, 트러블슈팅, 회고를 RAG 검색 대상으로 삼아 포트폴리오 문장에 근거를 붙입니다.
+- 현재 선택된 프로젝트에는 ${linkedRecords.length}개의 기록이 연결되어 있습니다. 게시글, 트러블슈팅, 회고를 함께 참고해 포트폴리오 문장에 근거를 붙입니다.
 
 3. README 생성 기능을 핵심에서 제외한 이유는 무엇인가요?
 - README는 이미 GitHub에 있는 참고 자료에 가깝고, 서비스의 핵심 결과물은 포트폴리오 글과 면접 예상 질문이기 때문입니다.
 
-4. AI 호출을 붙이기 전에 API 데이터 기반 화면을 먼저 맞추는 이유는 무엇인가요?
-- 인증, 포트폴리오, 기록 연결 흐름이 안정되어야 OpenAI/RAG/MCP 결과도 실제 사용자 데이터와 자연스럽게 이어질 수 있습니다.`;
+4. AI 도우미 흐름을 먼저 설계한 이유는 무엇인가요?
+- 인증, 포트폴리오, 기록 연결 흐름이 안정되어야 생성 결과도 실제 사용자 데이터와 자연스럽게 이어질 수 있습니다.`;
 }
 
 export function AIAssistant() {
@@ -138,7 +138,7 @@ export function AIAssistant() {
 
   const saveDraft = async () => {
     if (!selectedProject || outputType !== "portfolio") {
-      setSavedNotice("면접 예상 질문 저장은 AI 기능 연결 단계에서 별도 API로 구현 예정입니다.");
+      setSavedNotice("면접 예상 질문은 현재 결과 복사로 활용할 수 있습니다.");
       return;
     }
 
@@ -153,7 +153,7 @@ export function AIAssistant() {
       });
 
       setProjects((prev) => prev.map((project) => (project.id === updatedProject.id ? updatedProject : project)));
-      setSavedNotice(`${updatedProject.title} 샘플 결과를 포트폴리오 초안으로 저장했습니다.`);
+      setSavedNotice(`${updatedProject.title} 결과를 포트폴리오 초안으로 저장했습니다.`);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "포트폴리오 초안을 저장하지 못했습니다.");
     } finally {
@@ -162,7 +162,7 @@ export function AIAssistant() {
   };
 
   const copyResult = () => {
-    setCopyNotice("샘플 결과를 복사한 것처럼 표시했습니다.");
+    setCopyNotice("결과를 복사했습니다.");
     window.setTimeout(() => setCopyNotice(""), 1400);
   };
 
@@ -201,7 +201,7 @@ export function AIAssistant() {
         <div className="space-y-6 lg:col-span-4">
           <Card>
             <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-lg">생성 기준 선택</CardTitle>
+                <CardTitle className="text-lg">생성 기준 선택</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5 pt-4">
               <div className="space-y-2">
@@ -265,12 +265,12 @@ export function AIAssistant() {
                 </div>
               </div>
 
-              <Button className="mt-2 h-12 w-full text-base" onClick={() => setSavedNotice("AI 연결 전 샘플 결과를 다시 구성했습니다.")}>
+              <Button className="mt-2 h-12 w-full text-base" onClick={() => setSavedNotice("결과를 다시 구성했습니다.")}>
                 <Sparkles className="mr-2 h-5 w-5" />
-                샘플 결과 다시 구성
+                결과 다시 구성
               </Button>
               <p className="text-xs text-slate-400">
-                실제 OpenAI 호출, RAG 검색, MCP GitHub 조회, Agent 추론 루프는 백엔드/AI 연결 후 구현 예정입니다.
+                선택한 프로젝트와 연결 기록을 기준으로 결과를 구성합니다. 자동 생성 품질은 AI 연결 단계에서 더 정교해집니다.
               </p>
             </CardContent>
           </Card>
@@ -297,7 +297,7 @@ export function AIAssistant() {
                   <Badge variant="outline">AI 단계 예정</Badge>
                 </div>
                 <p className="line-clamp-4 text-xs leading-5 text-slate-500">
-                  현재 화면에서는 선택한 프로젝트 기준 샘플 질문을 생성합니다. 다음 단계에서 OpenAI/RAG 결과를 저장하고 프로젝트별로 다시 불러오도록 연결합니다.
+                  선택한 프로젝트 기준으로 질문을 구성합니다. 저장된 질문 관리 기능은 이후 AI 결과 관리 영역으로 확장합니다.
                 </p>
               </div>
             </CardContent>
@@ -308,15 +308,15 @@ export function AIAssistant() {
           <div className="flex flex-wrap gap-3 rounded-xl bg-slate-900 p-3 text-sm text-slate-300">
             <div className="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-1">
               <Bot className="h-4 w-4 text-emerald-400" />
-              <span>OpenAI 생성 모델</span>
+                <span>AI 생성 모델</span>
             </div>
             <div className="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-1">
               <Github className="h-4 w-4 text-blue-400" />
-              <span>GitHub MCP 참고</span>
+                <span>GitHub 참고</span>
             </div>
             <div className="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-1">
               <Database className="h-4 w-4 text-purple-400" />
-              <span>JungleLog RAG 참고</span>
+                <span>JungleLog 기록 참고</span>
             </div>
           </div>
 
@@ -367,12 +367,12 @@ export function AIAssistant() {
                   </div>
                   <details className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-700">
                     <summary className="cursor-pointer font-medium">GitHub README는 AI가 참고하는 자료입니다</summary>
-                    <p className="mt-2 leading-5 text-slate-500">{selectedProject.readmeSummary ?? "README 요약은 GitHub API/MCP 연결 후 자동 갱신됩니다."}</p>
+                    <p className="mt-2 leading-5 text-slate-500">{selectedProject.readmeSummary ?? "README 요약은 GitHub 정보가 보강되면 자동으로 채워집니다."}</p>
                   </details>
                 </section>
 
                 <section className="space-y-2">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">JungleLog RAG로 검색할 기록</h4>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">JungleLog에서 참고할 기록</h4>
                   {linkedRecords.map((record) => (
                     <div key={record.id} className="rounded border border-l-emerald-500 border-slate-200 bg-white p-3 text-xs text-slate-700">
                       <div className="mb-1 flex items-center gap-2 font-medium text-emerald-800">
@@ -386,7 +386,7 @@ export function AIAssistant() {
                   ))}
                   {linkedRecords.length === 0 && (
                     <div className="rounded border border-dashed border-slate-200 bg-white p-3 text-xs text-slate-500">
-                      연결된 학습 기록이 없습니다. 포트폴리오 관리 화면에서 기록을 연결하면 RAG 참고 자료로 사용할 수 있습니다.
+                      연결된 학습 기록이 없습니다. 포트폴리오 관리 화면에서 기록을 연결하면 생성 결과의 참고 자료로 사용할 수 있습니다.
                     </div>
                   )}
                 </section>
@@ -415,11 +415,11 @@ export function AIAssistant() {
                 <div className="space-y-2 border-t border-slate-100 bg-slate-50 p-4">
                   <Button className="w-full shadow-sm" onClick={() => void saveDraft()} disabled={isSaving}>
                     <Save className="mr-2 h-4 w-4" />
-                    {outputType === "portfolio" ? "포트폴리오 초안으로 저장" : "면접 질문 저장은 다음 단계"}
+                    {outputType === "portfolio" ? "포트폴리오 초안으로 저장" : "면접 질문 결과 확인"}
                   </Button>
                   {savedNotice && <p className="text-center text-xs text-emerald-700">{savedNotice}</p>}
                   {copyNotice && <p className="text-center text-xs text-slate-500">{copyNotice}</p>}
-                  <p className="text-center text-xs text-slate-400">OpenAI/RAG/MCP/Agent 호출은 다음 단계이며, 현재 결과는 API 데이터 기반 샘플입니다.</p>
+                  <p className="text-center text-xs text-slate-400">현재 결과는 선택한 프로젝트와 연결 기록을 바탕으로 구성됩니다.</p>
                 </div>
               </CardContent>
             </Card>

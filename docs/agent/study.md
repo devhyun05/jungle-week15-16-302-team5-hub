@@ -3836,3 +3836,33 @@ COACH �α���
 - 프론트가 임의로 큰 페이지 크기를 요청하면 서버가 거절할 수 있다.
 - API 응답이 실패했을 때 화면에 표시되는 메시지만 보지 말고 Network 응답의 status code와 detail을 확인해야 한다.
 - 같은 API를 여러 화면에서 쓰면 요청 파라미터 규칙을 공통 상수나 API 함수 레벨에서 관리하는 것도 고려할 수 있다.
+## 2026-06-15 학습: 화면 문구와 개발 주석을 분리하기
+
+이번에 본 파일:
+
+- `frontend/src/app/pages/ai/AIAssistant.tsx`
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`
+- `frontend/src/app/pages/posts/PostEdit.tsx`
+- `frontend/src/app/pages/posts/PostDetail.tsx`
+- `frontend/src/app/pages/posts/Posts.tsx`
+- `frontend/src/app/pages/settings/Settings.tsx`
+
+핵심 개념:
+
+- 사용자 문구: 실제 사용자가 서비스를 이해하고 행동할 수 있게 돕는 문장이다.
+- 개발 주석: 구현 이유, API 계약, 나중에 연결될 구조처럼 코드를 읽는 개발자를 위한 설명이다.
+- 같은 내용이라도 화면에는 `게시글을 불러오는 중입니다`, 주석에는 `GET /posts/{id} 응답을 기다린다`처럼 다르게 써야 한다.
+- AI 연결 전 화면은 `mock`, `샘플`, `구현 예정`이라는 단어를 과하게 보여주기보다 `미리보기`, `결과 구성`, `참고 자료`처럼 현재 사용자가 이해할 수 있는 흐름으로 표현하는 편이 자연스럽다.
+
+코드 흐름에서 기억할 점:
+
+1. `AIAssistant.tsx`는 아직 실제 OpenAI를 호출하지 않지만 프로젝트와 연결 기록으로 결과 미리보기를 만든다.
+2. 그래서 주석에는 OpenAI/RAG/MCP 연결 예정 구조를 남기고, 화면에는 사용자가 누를 수 있는 버튼과 결과 중심 문구를 둔다.
+3. `PostEdit.tsx`는 실제 게시글 저장 API와 연결되어 있으므로 사용자는 저장 사실만 알면 된다.
+4. `Portfolio.tsx`는 GitHub repo 등록 이후 기록 연결과 AI 도우미 이동이 핵심이므로 내부 구현 방식보다 다음 행동을 안내해야 한다.
+
+내가 이해해야 할 포인트:
+
+- 화면 문구는 기능 설명서가 아니라 사용자의 다음 행동을 돕는 장치다.
+- 개발 단계가 덜 끝났다는 사실을 숨기는 것이 아니라, 사용자가 지금 할 수 있는 행동을 중심으로 표현해야 한다.
+- 기술 키워드는 README/study/api 문서에 자세히 쓰고, 서비스 화면에는 꼭 필요한 만큼만 남긴다.

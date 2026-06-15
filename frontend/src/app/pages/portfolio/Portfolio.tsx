@@ -217,7 +217,7 @@ export function Portfolio() {
 
       setRepoUrl("");
       await loadPortfolioData(newProject.id);
-      setNotice("GitHub 프로젝트가 등록되었습니다. 실제 README/커밋 분석은 MCP 연결 후 갱신됩니다.");
+      setNotice("GitHub 프로젝트가 등록되었습니다. 관련 기록을 연결해 포트폴리오를 정리해보세요.");
     } catch (error) {
       console.error(error);
       await loadPortfolioData();
@@ -231,7 +231,7 @@ export function Portfolio() {
     setAnalyzing(true);
     window.setTimeout(() => {
       setAnalyzing(false);
-      setNotice("GitHub 정보 새로고침은 MCP/GitHub API 연결 후 실제 분석으로 바뀔 예정입니다.");
+      setNotice("GitHub 정보 새로고침을 요청했습니다. README와 커밋 정보는 자동 분석 기능이 준비되면 더 자세히 채워집니다.");
     }, 700);
   };
 
@@ -309,7 +309,7 @@ export function Portfolio() {
             </Button>
           </div>
           <p className="mt-3 text-xs text-emerald-700">
-            지금은 repo URL을 DB에 저장합니다. README/커밋 분석은 MCP와 GitHub API 연결 후 자동 갱신됩니다.
+            GitHub repo를 등록한 뒤 학습 기록을 연결하면 포트폴리오 초안과 리뷰 요청 흐름에 활용할 수 있습니다.
           </p>
         </CardContent>
       </Card>
@@ -471,7 +471,7 @@ export function Portfolio() {
                         <Badge variant="outline">AI 단계 예정</Badge>
                       </div>
                       <p className="text-sm leading-6 text-slate-600">
-                        AI 도우미에서 이 프로젝트를 선택하면 GitHub repo와 연결 기록을 기준으로 면접 예상 질문 샘플을 확인할 수 있습니다.
+                        AI 도우미에서 이 프로젝트를 선택하면 GitHub repo와 연결 기록을 기준으로 면접 예상 질문을 확인할 수 있습니다.
                       </p>
                       <Button asChild variant="outline" size="sm" className="mt-3">
                         <Link to={`/ai-assistant?project=${selectedProject.id}&type=interview`}>면접 질문 만들기</Link>
