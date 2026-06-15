@@ -1,7 +1,7 @@
 ﻿
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router";
-import { FileText, Github, Globe, Lightbulb, Lock, MessageSquare, Trash2 } from "lucide-react";
+import { BookOpen, FileText, Github, GitCommit, Globe, Lightbulb, Lock, MessageSquare, Trash2 } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
@@ -19,6 +19,19 @@ type CommentItem = {
   role: UserRole;
   createdAt: string;
   content: string;
+};
+
+type PortfolioPostSections = {
+  projectTitle: string;
+  repository: string;
+  branch: string;
+  githubUrl: string;
+  techStack: string[];
+  description: string;
+  linkedRecords: string[];
+  recentCommits: string[];
+  coachFeedbackStatus: string;
+  portfolioText: string;
 };
 
 function getRoleLabel(role: UserRole) {
@@ -71,6 +84,194 @@ function shouldShowSummary(summary: string | null | undefined, content: string) 
   const normalizedContent = content.replace(/\s+/g, " ").trim();
 
   return Boolean(normalizedSummary) && normalizedSummary !== normalizedContent && !normalizedContent.startsWith(normalizedSummary);
+}
+
+function getDisplayTitle(post: PostDetailApiResponse) {
+  if (post.categorySlug !== "portfolio") {
+    return post.title;
+  }
+
+  return post.title.replace(/^\[포트폴리오]\s*/, "").trim() + " 포트폴리오";
+}
+
+function cleanMarkdownText(text: string) {
+  return text
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^\s*[-*]\s+/gm, "")
+    .replace(/\*\*/g, "")
+    .trim();
+}
+
+function parsePortfolioList(sectionText: string) {
+  const lines = sectionText
+    .split(/\r?\n/)
+    .map((line) => cleanMarkdownText(line))
+    .filter(Boolean);
+
+  return lines.length > 0 ? lines : ["아직 등록된 내용이 없습니다."];
+}
+
+function parsePortfolioPostContent(content: string): PortfolioPostSections {
+  const sectionMap = new Map<string, string[]>();
+  let projectTitle = "";
+  let currentSection = "프로젝트 개요";
+
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trimEnd();
+
+    if (line.startsWith("# ")) {
+      projectTitle = cleanMarkdownText(line);
+      continue;
+    }
+
+    if (line.startsWith("## ")) {
+      currentSection = cleanMarkdownText(line);
+      sectionMap.set(currentSection, []);
+      continue;
+    }
+
+    sectionMap.set(currentSection, [...(sectionMap.get(currentSection) ?? []), line]);
+  }
+
+  const getSectionText = (name: string) => cleanMarkdownText((sectionMap.get(name) ?? []).join("\n"));
+  const githubLines = parsePortfolioList(getSectionText("GitHub"));
+  const githubValue = (label: string) => {
+    const matchedLine = githubLines.find((line) => line.toLowerCase().startsWith(label.toLowerCase()));
+    return matchedLine?.split(":").slice(1).join(":").trim() ?? "";
+  };
+
+  return {
+    projectTitle: projectTitle || "포트폴리오 프로젝트",
+    repository: githubValue("Repository") || "등록된 repository 정보가 없습니다.",
+    branch: githubValue("Branch") || "main",
+    githubUrl: githubValue("URL"),
+    techStack: getSectionText("기술 스택")
+      .split(",")
+      .map((stack) => stack.trim())
+      .filter(Boolean),
+    description: getSectionText("프로젝트 설명") || "아직 프로젝트 설명이 없습니다.",
+    linkedRecords: parsePortfolioList(getSectionText("연결된 학습 기록")),
+    recentCommits: parsePortfolioList(getSectionText("최근 커밋 요약")),
+    coachFeedbackStatus: getSectionText("코치 피드백 상태") || "요청 전",
+    portfolioText: getSectionText("포트폴리오 글") || "아직 작성된 포트폴리오 글이 없습니다.",
+  };
+}
+
+function PortfolioTextBlock({ text }: { text: string }) {
+  const paragraphs = cleanMarkdownText(text)
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+
+  return (
+    <div className="space-y-4">
+      {paragraphs.map((paragraph) => (
+        <p key={paragraph} className="whitespace-pre-line text-sm leading-7 text-slate-700">
+          {paragraph}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function PortfolioPostDetail({ post }: { post: PostDetailApiResponse }) {
+  const portfolio = parsePortfolioPostContent(post.content);
+  const githubUrl = portfolio.githubUrl || post.relatedGitHubUrl;
+
+  return (
+    <div className="space-y-6 py-6">
+      <section className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-5">
+        <p className="text-xs font-semibold text-emerald-700">프로젝트 개요</p>
+        <h2 className="mt-2 text-xl font-bold text-slate-900">{portfolio.projectTitle}</h2>
+        <p className="mt-3 text-sm leading-7 text-slate-700">{portfolio.description}</p>
+      </section>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
+            <Github className="h-4 w-4 text-slate-500" />
+            GitHub 정보
+          </h3>
+          <dl className="space-y-3 text-sm">
+            <div>
+              <dt className="text-xs font-semibold text-slate-400">Repository</dt>
+              <dd className="mt-1 break-all font-mono text-slate-700">{portfolio.repository}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold text-slate-400">Branch</dt>
+              <dd className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-1 font-mono text-xs text-slate-700">
+                {portfolio.branch}
+              </dd>
+            </div>
+          </dl>
+          {githubUrl && isValidExternalUrl(githubUrl) && (
+            <Button asChild variant="outline" size="sm" className="mt-4 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+              <a href={githubUrl} target="_blank" rel="noreferrer">
+                GitHub 보기
+              </a>
+            </Button>
+          )}
+        </section>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
+            <FileText className="h-4 w-4 text-emerald-600" />
+            기술 스택
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {portfolio.techStack.map((stack) => (
+              <Badge key={stack} variant="secondary">
+                {stack}
+              </Badge>
+            ))}
+            {portfolio.techStack.length === 0 && <p className="text-sm text-slate-500">아직 기술 스택이 등록되지 않았습니다.</p>}
+          </div>
+        </section>
+      </div>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-5">
+        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
+          <BookOpen className="h-4 w-4 text-emerald-600" />
+          연결된 학습 기록
+        </h3>
+        <ul className="space-y-2">
+          {portfolio.linkedRecords.map((record) => (
+            <li key={record} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm leading-6 text-slate-700">
+              {record}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
+            <GitCommit className="h-4 w-4 text-emerald-600" />
+            최근 커밋 요약
+          </h3>
+          <ul className="space-y-2">
+            {portfolio.recentCommits.map((commit) => (
+              <li key={commit} className="text-sm leading-6 text-slate-700">
+                {commit}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <h3 className="mb-4 text-sm font-semibold text-slate-900">코치 피드백 상태</h3>
+          <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
+            {portfolio.coachFeedbackStatus}
+          </span>
+        </section>
+      </div>
+
+      <section className="rounded-xl border border-emerald-100 bg-white p-5">
+        <h3 className="mb-4 text-sm font-semibold text-slate-900">포트폴리오 글</h3>
+        <PortfolioTextBlock text={portfolio.portfolioText} />
+      </section>
+    </div>
+  );
 }
 
 function Avatar({ name, imageUrl, className }: { name: string; imageUrl?: string | null; className: string }) {
@@ -344,6 +545,7 @@ export function PostDetail() {
 
   const canManagePost = role === "ADMIN" || post.authorId === user.id;
   const hasValidGitHubUrl = isValidExternalUrl(post.relatedGitHubUrl);
+  const isPortfolioPost = post.categorySlug === "portfolio";
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -409,7 +611,7 @@ export function PostDetail() {
           </div>
         )}
 
-        <h1 className="mb-4 text-3xl font-bold text-slate-900">{post.title}</h1>
+        <h1 className="mb-4 text-3xl font-bold text-slate-900">{getDisplayTitle(post)}</h1>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-6 text-sm text-slate-500">
           <div className="flex items-center gap-3">
@@ -429,13 +631,17 @@ export function PostDetail() {
           </div>
         </div>
 
-        {shouldShowSummary(post.summary, post.content) && (
+        {!isPortfolioPost && shouldShowSummary(post.summary, post.content) && (
           <p className="mt-6 rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-700">{post.summary}</p>
         )}
 
-        <div className="prose prose-slate max-w-none py-6">
-          <div className="whitespace-pre-line text-sm leading-7 text-slate-700">{post.content}</div>
-        </div>
+        {isPortfolioPost ? (
+          <PortfolioPostDetail post={post} />
+        ) : (
+          <div className="prose prose-slate max-w-none py-6">
+            <div className="whitespace-pre-line text-sm leading-7 text-slate-700">{post.content}</div>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-6">
           {post.tags.map((tag) => (
@@ -446,7 +652,7 @@ export function PostDetail() {
         </div>
       </article>
 
-      {post.relatedGitHubUrl && (
+      {!isPortfolioPost && post.relatedGitHubUrl && (
         <Card className="border-slate-200 bg-slate-50">
           <CardContent className="flex items-center justify-between gap-4 p-4">
             <div className="flex items-center gap-3">

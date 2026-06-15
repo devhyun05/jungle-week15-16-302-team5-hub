@@ -5089,3 +5089,41 @@ GitHub ������Ʈ ���
 - data labeling
 - GitHub README
 - reference material UI
+
+---
+
+## 2026-06-16 학습 기록: 포트폴리오 게시글 상세 전용 UI 개선
+
+이번 구현은 같은 게시글 상세 화면에서도 카테고리에 따라 다른 렌더링을 적용하는 작업이다.
+
+관련 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/posts/PostDetail.tsx` | 일반 게시글과 포트폴리오 게시글 상세 렌더링 분기 |
+| `README.md` | 현재 구현 상태 반영 |
+| `docs/agent/log.md` | 작업 진행 기록 |
+| `docs/agent/test.md` | QA 체크리스트 기록 |
+
+핵심 흐름:
+
+1. 백엔드는 포트폴리오 게시글 본문을 Markdown 비슷한 문자열로 저장한다.
+2. 프론트는 `post.categorySlug === "portfolio"`인지 확인한다.
+3. 포트폴리오 글이면 저장 문자열을 섹션별로 파싱한다.
+4. 파싱한 값을 카드 UI로 보여준다.
+5. 일반 글이면 기존 상세 화면 렌더링을 그대로 사용한다.
+
+중요 개념:
+
+- 저장 형식과 화면 표시 형식은 꼭 같을 필요가 없다.
+- DB에 저장된 문자열을 유지하면서 프론트 렌더링만 바꾸면 기존 API와 데이터 흐름을 안전하게 보존할 수 있다.
+- 카테고리 기반 조건부 렌더링은 기능별 화면 완성도를 높일 때 유용하다.
+- `parsePortfolioPostContent` 같은 파서는 저장 형식이 바뀌면 같이 수정해야 하는 부분이다.
+
+추가 학습 키워드:
+
+- conditional rendering
+- parser function
+- derived UI
+- category-specific rendering
+- markdown-like text parsing

@@ -2836,3 +2836,42 @@ npm run build: success
 current session: project count 0, so README detail area is verified by source label check
 source label check: 감지된 기술/문서 유형, GitHub README 참고 자료 labels are present
 ```
+
+---
+
+## 2026-06-16 QA: 포트폴리오 게시글 상세 전용 UI 개선
+
+목표: 포트폴리오 게시글 상세가 Markdown 문자열이 아니라 정돈된 포트폴리오 화면으로 보이는지 확인한다.
+
+체크리스트:
+
+- [ ] 프론트엔드 `npm run build`가 성공한다.
+- [ ] `/posts/{portfolio_post_id}` 화면이 에러 없이 열린다.
+- [ ] 제목에 `[포트폴리오]` prefix가 보이지 않는다.
+- [ ] 본문에 `## GitHub`, `###` 같은 Markdown 기호가 그대로 보이지 않는다.
+- [ ] 프로젝트 개요, GitHub 정보, 기술 스택, 연결된 학습 기록, 최근 커밋 요약, 코치 피드백 상태, 포트폴리오 글 섹션이 보인다.
+- [ ] 일반 게시글 상세 렌더링은 기존 흐름을 유지한다.
+
+검증 출력 요약:
+
+```txt
+아직 실행 전
+```
+
+검증 결과 업데이트:
+
+```txt
+npm run build: success
+/posts/47 portfolio detail smoke: success
+hasPortfolioPrefix=false
+hasRawHeadingMarker=false
+hasOverview=true
+hasGithubInfo=true
+hasTechStack=true
+hasLinkedRecords=true
+hasRecentCommits=true
+hasCoachStatus=true
+hasPortfolioText=true
+titleLooksClean=true
+/posts/1 normal detail smoke: success, no Unexpected Application Error, no missing post page
+```
