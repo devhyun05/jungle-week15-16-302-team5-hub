@@ -1763,3 +1763,38 @@ student_notification_count= 1
 
 - ��Ʈ������ ������Ʈ ���/�ߺ�/��/AI ����� ������ ��ð� ��� �帧������ �����Ǵ��� �ٽ� �ȴ´�.
 - ���� Google OAuth �ű� ����� ���� �帧�� ���������� ���� Ȯ���Ѵ�.
+## 2026-06-15 포트폴리오 프로젝트/AI 도우미 연결 QA
+
+목표: 학생 포트폴리오 관리 화면에서 등록된 프로젝트가 AI 도우미와 자연스럽게 이어지고, API validation 오류 없이 동작하는지 확인한다.
+
+체크리스트:
+
+- [x] 현재 로그인 사용자를 STUDENT / 승인 완료로 전환한다.
+- [x] `/portfolio` 화면이 오류 없이 열린다.
+- [x] `/portfolio`에서 `/me/posts` 조회 시 `size <= 50` 계약을 지킨다.
+- [x] QA용 포트폴리오 프로젝트를 실제 service layer로 생성한다.
+- [x] QA용 게시글을 프로젝트에 연결한다.
+- [x] 프로젝트 카드에 긴 repo 이름이 깨지지 않고 표시된다.
+- [x] 상세 영역에 GitHub 보기 링크가 새 탭 대상으로 준비되어 있다.
+- [x] `/ai-assistant?project={id}&type=portfolio`로 이동하면 선택 프로젝트가 유지된다.
+- [x] AI 도우미 참고 자료 패널에 프로젝트, 기술 스택, 연결 기록이 표시된다.
+- [x] `포트폴리오 초안으로 저장` 후 DB의 `saved_portfolio_draft`와 `portfolio_status`가 갱신된다.
+- [x] 동일 repo 중복 등록은 백엔드 service에서 차단된다.
+- [x] QA용 임시 프로젝트와 게시글을 삭제한다.
+- [x] 현재 로그인 사용자를 ADMIN / 승인 완료로 복구한다.
+- [ ] 브라우저 자동화 입력 제한이 풀리면 repo URL 입력부터 중복 등록 UX까지 실제 클릭 E2E로 다시 확인한다.
+
+발견한 결함:
+
+- `Portfolio.tsx`와 `AIAssistant.tsx`에서 `/me/posts`를 `size=100`으로 요청해 FastAPI의 `maximum: 50` 검증에 걸렸다.
+
+수정 확인:
+
+- `PORTFOLIO_LINKABLE_POST_PAGE_SIZE = 50` 적용.
+- `AI_ASSISTANT_REFERENCE_POST_PAGE_SIZE = 50` 적용.
+- 포트폴리오 화면과 AI 도우미 화면에서 `Input should be less than or equal to 50` 오류가 사라졌다.
+
+검증 한계:
+
+- 현재 브라우저 자동화 도구에서 텍스트 입력 시 virtual clipboard 오류가 발생한다.
+- 그래서 이번에는 화면 읽기와 실제 service/API 기반 데이터 생성으로 검증했고, repo URL 입력 UI 자체는 다음 수동 QA 대상으로 남긴다.

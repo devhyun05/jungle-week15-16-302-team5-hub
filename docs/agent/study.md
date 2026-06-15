@@ -3800,3 +3800,39 @@ COACH �α���
 - role based view
 - integration QA
 - service layer
+## 2026-06-15 학습: 프론트가 백엔드 API 계약을 지켜야 하는 이유
+
+이번에 본 파일:
+
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`
+- `frontend/src/app/pages/ai/AIAssistant.tsx`
+
+핵심 개념:
+
+- FastAPI query validation: 백엔드가 `size`의 최대값을 `50`으로 정하면 그보다 큰 값은 422 validation error가 된다.
+- API 계약: 프론트는 화면에서 필요한 데이터를 요청하더라도 백엔드가 허용한 파라미터 범위를 지켜야 한다.
+- 상수화: 여러 곳에서 직접 숫자 `50`을 반복하기보다 의미 있는 이름의 상수로 두면 왜 그 값인지 이해하기 쉽다.
+- `Promise.all`: 프로젝트 목록과 내 게시글 목록처럼 서로 독립적인 요청을 동시에 보내는 방식이다.
+- `useEffect`: 화면이 처음 열리거나 query string의 project 값이 바뀔 때 데이터를 다시 불러온다.
+- `useMemo`: 선택된 프로젝트의 `linkedPostIds`와 전체 게시글 목록을 비교해 연결된 기록만 계산한다.
+
+코드 흐름:
+
+1. 포트폴리오 화면이 열리면 `loadPortfolioData()`가 실행된다.
+2. `getPortfolioProjects()`로 내 프로젝트 목록을 가져온다.
+3. `getMyPosts({ visibility: "all", size: 50 })`로 기록 연결에 사용할 내 게시글을 가져온다.
+4. 프로젝트를 선택하면 `linkedPostIds`와 게시글 id를 비교해 연결된 기록을 보여준다.
+5. AI 도우미 화면은 URL의 `project` query string을 읽어 선택 프로젝트를 맞춘다.
+6. 선택된 프로젝트와 연결 기록을 기반으로 현재는 OpenAI 호출 전 샘플 포트폴리오 초안을 만든다.
+7. `포트폴리오 초안으로 저장`을 누르면 `PATCH /portfolio/projects/{id}`로 저장된 초안과 상태가 갱신된다.
+
+이번에 막힌 부분:
+
+- 화면에는 단순히 "데이터를 불러오지 못했습니다"처럼 보였지만 원인은 백엔드 validation error였다.
+- Swagger/OpenAPI에서 `size`가 `maximum: 50`으로 표시되므로 프론트 호출값도 이를 맞춰야 한다.
+
+백엔드 연결 후에도 기억할 점:
+
+- 프론트가 임의로 큰 페이지 크기를 요청하면 서버가 거절할 수 있다.
+- API 응답이 실패했을 때 화면에 표시되는 메시지만 보지 말고 Network 응답의 status code와 detail을 확인해야 한다.
+- 같은 API를 여러 화면에서 쓰면 요청 파라미터 규칙을 공통 상수나 API 함수 레벨에서 관리하는 것도 고려할 수 있다.

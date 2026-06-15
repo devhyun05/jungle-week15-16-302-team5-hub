@@ -10,6 +10,10 @@ import { getPortfolioProjects, updatePortfolioProject, type PortfolioProjectApiI
 
 type OutputType = "portfolio" | "interview";
 
+// /me/posts API는 한 번에 최대 50개까지만 조회할 수 있다.
+// AI 도우미 참고 기록도 이 API 계약을 지켜야 프로젝트 로딩 전체가 실패하지 않는다.
+const AI_ASSISTANT_REFERENCE_POST_PAGE_SIZE = 50;
+
 const outputOptions = [
   {
     value: "portfolio",
@@ -87,7 +91,7 @@ export function AIAssistant() {
       try {
         const [projectData, postData] = await Promise.all([
           getPortfolioProjects(),
-          getMyPosts({ visibility: "all", size: 100 }),
+          getMyPosts({ visibility: "all", size: AI_ASSISTANT_REFERENCE_POST_PAGE_SIZE }),
         ]);
 
         if (!isActive) {

@@ -16,6 +16,9 @@ import {
 } from "../../api/portfolio";
 
 const portfolioStatuses: PortfolioStatus[] = ["작성중", "보완 필요", "정리 완료"];
+// /me/posts API는 한 번에 최대 50개까지만 허용한다.
+// 포트폴리오 기록 연결 목록도 같은 제한을 지켜야 422 validation error가 나지 않는다.
+const PORTFOLIO_LINKABLE_POST_PAGE_SIZE = 50;
 
 function portfolioStatusClass(status: string) {
   if (status === "정리 완료") return "bg-emerald-100 text-emerald-700";
@@ -108,7 +111,7 @@ export function Portfolio() {
     try {
       const [projectData, postData] = await Promise.all([
         getPortfolioProjects(),
-        getMyPosts({ visibility: "all", size: 100 }),
+        getMyPosts({ visibility: "all", size: PORTFOLIO_LINKABLE_POST_PAGE_SIZE }),
       ]);
 
       setProjects(projectData.items);
