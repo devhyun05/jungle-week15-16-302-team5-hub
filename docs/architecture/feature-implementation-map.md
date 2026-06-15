@@ -671,10 +671,10 @@ Completed first slice:
 - public post/comment lookup excludes admin-hidden content.
 - compact `admin_action_logs` rows for hide/restore.
 - author post delete changed from hard delete to `posts.deleted_at` soft delete.
+- MyPage activity endpoint and frontend page.
 
 Postponed until after Day 4~6 unless it blocks AI work:
 
-- MyPage.
 - Admin UI.
 - full post/comment moderation screens.
 
@@ -698,6 +698,13 @@ Next required AI-adjacent follow-up before RAG retrieval:
 | `backend/tests/test_posts.py` | verifies author post delete preserves row and sets `deleted_at` |
 | `backend/app/services/comment_service.py` | public comment lookup excludes hidden comments |
 | `backend/tests/test_admin.py` | implemented admin auth and moderation tests |
+| `backend/app/api/routes/users.py` | implemented current user activity endpoint |
+| `backend/app/schemas/user.py` | implemented MyPage activity response shape |
+| `backend/app/services/user_service.py` | implemented current user's visible posts/comments query |
+| `backend/tests/test_users.py` | implemented MyPage activity tests |
+| `frontend/src/api/users.ts` | implemented MyPage API client |
+| `frontend/src/pages/MyPage.tsx` | implemented profile, my posts, my comments view |
+| `frontend/src/types/user.ts` | implemented MyPage frontend type |
 | `frontend/src/pages/AdminPage.tsx` | not yet created; admin UI postponed |
 
 ### Implemented API
@@ -708,6 +715,7 @@ POST /api/admin/posts/{post_id}/hide
 POST /api/admin/posts/{post_id}/restore
 POST /api/admin/comments/{comment_id}/hide
 POST /api/admin/comments/{comment_id}/restore
+GET /api/users/me/activity
 ```
 
 Behavior:
@@ -719,6 +727,7 @@ admin user token -> 200 { status, admin_user_id }
 admin hide -> hidden fields set, public lookup excludes target
 admin restore -> hidden fields cleared, public lookup includes target again
 author post delete -> deleted_at set, public lookup returns 404
+my activity -> returns current user, visible own posts, visible own comments
 ```
 
 ### DB / ERD

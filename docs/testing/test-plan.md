@@ -124,6 +124,9 @@ Fill this during implementation and again during Day 8/Day 9.
 | 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest` | 61 passed | admin moderation added; backend full regression |
 | 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest tests/test_posts.py tests/test_admin.py` | 21 passed | post author delete sets `deleted_at`; admin cannot hide author-deleted post |
 | 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest` | 62 passed | post soft delete added; backend full regression |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest tests/test_users.py tests/test_auth.py` | 19 passed | MyPage activity endpoint and auth response role |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest` | 65 passed | MyPage activity added; backend full regression |
+| 2026-06-16 | `cd frontend && npm run build` | passed | MyPage route, API client, and type build check |
 | TBD | `npm test` | TBD | frontend unit tests are not set up yet |
 | TBD | `npx playwright test` | TBD | automated E2E is not set up yet |
 

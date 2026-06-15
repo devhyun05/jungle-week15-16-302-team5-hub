@@ -90,6 +90,14 @@ Auth/session 상세 정책은 `docs/architecture/auth-session-design.md`를 따�
 
 Admin auth is enforced by the backend `require_admin` dependency. Missing or invalid token returns 401 through `get_current_user`; a logged-in non-admin user returns 403.
 
+## User APIs
+
+| Method | Path | Auth | Request | Response | Error |
+|---|---|---|---|---|---|
+| GET | `/api/users/me/activity` | yes | none | user, posts, comments | 401 |
+
+`/api/users/me/activity` returns the current user profile, visible posts written by the current user, and visible comments written by the current user. Deleted or admin-hidden posts/comments are excluded.
+
 ## AI APIs
 
 | Method | Path | Auth | Request | Response | Error |

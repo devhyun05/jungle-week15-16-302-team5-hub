@@ -9,6 +9,7 @@ import { PostListPage } from './pages/PostListPage'
 import { PostCreatePage } from './pages/PostCreatePage'
 import { PostEditPage } from './pages/PostEditPage'
 import { SignupPage } from './pages/SignupPage'
+import { MyPage } from './pages/MyPage'
 import './index.css'
 
 function App() {
@@ -35,9 +36,12 @@ function App() {
 
         <nav>
           {token ? (
-            <button type="button" onClick={handleLogout}>
-              Log out
-            </button>
+            <>
+              <Link to="/me">My page</Link>
+              <button type="button" onClick={handleLogout}>
+                Log out
+              </button>
+            </>
           ) : (
             <>
               <Link to="/signup">Sign up</Link>
@@ -54,6 +58,7 @@ function App() {
         <Route path="/posts/:postId" element={<PostDetailPage />} />
         <Route path="/posts/new" element={<PostCreatePage />} />
         <Route path="/posts/:postId/edit" element={<PostEditPage />} />
+        <Route path="/me" element={<MyPage />} />
       </Routes>
     </div>
   )
