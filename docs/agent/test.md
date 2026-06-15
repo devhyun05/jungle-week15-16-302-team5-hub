@@ -2534,3 +2534,61 @@ static_upload_status=200
 google_login_does_not_overwrite_name=True
 google_login_does_not_overwrite_uploaded_image=True
 ```
+
+---
+
+## 2026-06-16 QA: 학생 화면 브라우저 최종 smoke
+
+목표: 학생 role로 실제 브라우저 화면을 눌러보며 학생 화면 안정화 완료 기준을 검증한다.
+
+체크리스트:
+
+- [x] 학생 세션으로 대시보드가 열린다.
+- [x] 학생 메뉴에 내 기록, 포트폴리오 관리, AI 도우미, 코치 리뷰 요청이 보인다.
+- [x] 전체 게시글 화면이 열린다.
+- [x] 게시글 작성 화면에서 관련 커밋 없이 관련 GitHub repo만 입력할 수 있다.
+- [x] 게시글 발행 후 상세 화면으로 이동한다.
+- [x] 상세 화면에서 댓글 작성이 화면에 반영된다.
+- [x] 상세 화면에 `관련 커밋` 문구가 보이지 않는다.
+- [x] 내 기록 화면에서 방금 작성한 게시글이 보인다.
+- [x] 포트폴리오 관리에서 긴 GitHub repo URL을 등록할 수 있다.
+- [x] 포트폴리오 관리에서 저장된 포트폴리오 초안 영역과 면접 예상 질문 영역이 보인다.
+- [x] 다른 화면으로 이동했다가 돌아와도 등록한 프로젝트가 목록에 유지된다.
+- [x] 같은 repo를 다시 등록하면 중복 안내가 보이고 기존 프로젝트가 선택/표시된다.
+- [x] `GitHub 보기` 링크는 실제 repo URL을 가리키고 새 탭 대상이다.
+- [x] 포트폴리오 관리에서 AI 도우미로 이동할 수 있다.
+- [x] AI 도우미에 생성 결과 보관함이 보인다.
+- [x] 코치 리뷰 요청 화면에서 작성한 게시글이 리뷰 대상에 보인다.
+- [x] 코치 리뷰 요청 화면에서 포트폴리오 프로젝트 유형으로 전환하면 등록한 프로젝트가 리뷰 대상에 보인다.
+- [x] 설정 화면이 열린다.
+- [x] 확인한 화면에 `Unexpected Application Error`가 보이지 않는다.
+- [x] 확인한 화면에 `[object Object]`가 보이지 않는다.
+- [x] 확인한 화면에 `mock`, `debug`, `로그인됨`, `백엔드 데이터` 같은 개발 확인 문구가 보이지 않는다.
+- [x] QA 사용자, 토큰, 게시글, 댓글, 프로젝트는 검증 후 삭제했다.
+
+검증 출력 요약:
+
+```txt
+dashboard.hasStudentMenu=True
+createdPostId=46
+commentAdded=True
+detailHasGithubLink=True
+detailNoRelatedCommit=True
+myRecords.hasCreatedPost=True
+portfolioAfterRegister.hasLongRepo=True
+portfolioAfterRegister.hasGithubButton=True
+portfolioAfterRegister.hasSavedDraftArea=True
+portfolioAfterRegister.hasInterviewArea=True
+portfolioDirectAfterPriorRegistration.hasRepoNeedle=True
+portfolioDuplicate.hasDuplicateNotice=True
+portfolioDuplicate.stillShowsProject=True
+githubView.validHref=True
+githubView.opensNewTab=True
+aiAssistant.hasStorage=True
+aiAssistant.hasProjectSelected=True
+coachReview.hasCreatedPostTarget=True
+reviewPortfolioTarget.hasRepoNeedle=True
+overall.noUnexpectedErrors=True
+overall.noObjectObjects=True
+cleanup_done=True
+```

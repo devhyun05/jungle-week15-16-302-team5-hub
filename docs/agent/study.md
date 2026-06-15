@@ -4788,3 +4788,36 @@ GitHub ������Ʈ ���
 - TestClient에서 쿠키 인증을 검증할 때는 쿠키 jar보다 요청 `Cookie` header가 더 명확할 수 있다.
 - 업로드 QA는 DB 값만 보지 말고 실제 정적 URL이 200으로 열리는지도 확인해야 한다.
 - 사용자가 직접 수정한 프로필은 외부 OAuth profile보다 우선순위가 높다.
+
+---
+
+## 2026-06-16 학습 기록: 학생 화면 브라우저 smoke QA
+
+이번 QA는 API 함수만 보는 검증이 아니라, 실제 사용자가 브라우저에서 눌러보는 흐름을 자동화해 확인한 작업이다.
+
+관련 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/layouts/MainLayout.tsx` | 학생 사이드바 메뉴와 공통 레이아웃을 제공한다. |
+| `frontend/src/app/pages/dashboard/Dashboard.tsx` | 로그인 후 학생 첫 화면 역할을 한다. |
+| `frontend/src/app/pages/posts/PostEdit.tsx` | 게시글 작성/수정 폼, 관련 GitHub repo 입력 흐름을 담당한다. |
+| `frontend/src/app/pages/posts/PostDetail.tsx` | 게시글 상세, GitHub 보기, 댓글 작성/삭제를 담당한다. |
+| `frontend/src/app/pages/posts/MyRecords.tsx` | 현재 로그인 학생의 게시글 목록을 보여준다. |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | GitHub 프로젝트 등록, 중복 처리, 기록 연결, AI 도우미 이동을 담당한다. |
+| `frontend/src/app/pages/ai/AIAssistant.tsx` | 프로젝트 기반 포트폴리오 초안/면접 질문 보관함을 보여준다. |
+| `frontend/src/app/pages/coach/CoachReview.tsx` | 학생의 리뷰 요청 생성 화면과 코치의 인박스 화면을 role별로 나눈다. |
+| `frontend/src/app/pages/settings/Settings.tsx` | 프로필 이름/이미지 수정 화면이다. |
+
+핵심 개념:
+
+- Smoke QA는 모든 세부 기능을 완벽히 증명하는 테스트는 아니지만, 주요 화면이 실제 사용자 흐름에서 깨지지 않는지 빠르게 확인한다.
+- `href`와 `target` 검사만으로도 외부 링크가 새 탭으로 열리도록 구성됐는지 확인할 수 있다.
+- 포트폴리오 프로젝트 유지 문제는 DB 저장, 목록 API 재조회, 화면 렌더링을 함께 봐야 한다.
+- 리뷰 대상 문제는 단순 select option만 볼 것이 아니라 대상 유형 전환 UI까지 눌러봐야 한다.
+
+이번에 다시 배운 점:
+
+- React 화면 QA에서는 로딩 타이밍 때문에 한 번의 텍스트 체크가 흔들릴 수 있다. 의심되는 부분은 직접 해당 화면으로 다시 들어가 충분히 기다리고 재확인해야 한다.
+- 사용자의 “눌러봤을 때 이상한 부분”은 API 단위 테스트보다 브라우저 smoke QA에서 더 잘 드러난다.
+- 자동화 QA 결과는 `test.md`에 체크리스트와 출력 요약을 같이 남겨야 나중에 왜 완료라고 판단했는지 설명할 수 있다.

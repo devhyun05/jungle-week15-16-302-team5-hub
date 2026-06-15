@@ -3090,3 +3090,62 @@ google_login_does_not_overwrite_uploaded_image=True
 ```txt
 docs: 프로필 업로드 QA 기록
 ```
+
+---
+
+## 2026-06-16 학생 화면 브라우저 최종 smoke QA
+
+상태: 완료
+
+목표: 학생 계정으로 URL 직접 입력 없이 주요 메뉴와 화면 흐름을 실제 브라우저에서 눌러보며, 학생 화면 안정화 완료 기준을 최종 확인했다.
+
+진행한 것:
+
+- QA 학생/코치 사용자와 seed 게시글을 임시 생성했다.
+- 학생 access/refresh cookie를 브라우저 컨텍스트에 넣어 실제 학생 세션으로 접속했다.
+- 사이드바/화면 링크를 통해 다음 흐름을 확인했다.
+  - 대시보드
+  - 전체 게시글
+  - 게시글 작성
+  - 게시글 상세
+  - 댓글 작성
+  - 내 기록
+  - 포트폴리오 관리
+  - AI 도우미 진입
+  - 코치 리뷰 요청
+  - 설정
+- 브라우저에서 새 게시글을 작성하고 상세 화면으로 이동되는지 확인했다.
+- 상세 화면에서 댓글을 작성하고 화면에 반영되는지 확인했다.
+- 내 기록에서 방금 작성한 게시글이 보이는지 확인했다.
+- 포트폴리오 관리에서 긴 GitHub repo URL을 등록했다.
+- 다른 화면으로 갔다가 돌아와도 등록된 프로젝트가 유지되는지 확인했다.
+- 같은 repo를 다시 등록하면 기존 프로젝트 선택/중복 안내가 보이는지 확인했다.
+- `GitHub 보기` 링크의 `href`가 실제 repo URL이고 `target="_blank"`인지 확인했다.
+- 포트폴리오 관리에서 AI 도우미로 이동해 생성 결과 보관함 구조가 보이는지 확인했다.
+- 코치 리뷰 요청 화면에서 게시글 대상과 포트폴리오 프로젝트 대상이 모두 표시되는지 확인했다.
+- 확인한 화면에서 `Unexpected Application Error`, `[object Object]`, 개발/debug 문구가 보이지 않는지 확인했다.
+- QA 데이터는 검증 후 삭제했다.
+
+검증 결과 요약:
+
+```txt
+dashboard: 에러 없음, 학생 메뉴 확인
+posts: 에러 없음
+created post detail: 에러 없음, 댓글 작성 반영
+my-records: 작성한 게시글 표시
+portfolio: 긴 repo 등록 표시, 저장된 초안/면접 질문 영역 표시
+portfolio return: 등록 프로젝트 유지 확인
+portfolio duplicate: 중복 안내와 기존 프로젝트 표시
+GitHub 보기: href=repo URL, target=_blank
+AI assistant: 생성 결과 보관함 표시, 선택 프로젝트 반영
+coach review: 게시글 대상 표시, 포트폴리오 프로젝트 대상 표시
+settings: 프로필/설정 화면 표시
+overall: Unexpected Application Error 없음, [object Object] 없음
+cleanup_done=True
+```
+
+커밋 추천 제목:
+
+```txt
+docs: 학생 화면 브라우저 QA 기록
+```
