@@ -3591,3 +3591,53 @@ QA data cleanup: success
 ```txt
 fix: 포트폴리오 게시글 발행 상태 구분
 ```
+
+---
+
+## 2026-06-16 작업: UX 안내 방식과 최고관리자 보호 개선
+
+상태: 완료
+
+목표:
+
+- 로그인 화면을 Google 로그인 중심으로 정리했습니다.
+- 화면을 밀어내던 발행/삭제 안내를 toast와 dialog 중심으로 바꿨습니다.
+- 포트폴리오 게시글 발행 시 공개/비공개를 사용자가 선택하게 했습니다.
+- `ADMIN_EMAILS` 최고관리자 계정의 role/status 변경을 프론트와 백엔드 양쪽에서 막았습니다.
+
+수정 파일:
+
+- `frontend/src/app/App.tsx`
+- `frontend/src/app/pages/auth/Login.tsx`
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`
+- `frontend/src/app/pages/posts/PostDetail.tsx`
+- `frontend/src/app/pages/admin/AdminUsers.tsx`
+- `frontend/src/app/api/portfolio.ts`
+- `frontend/src/app/api/admin.ts`
+- `backend/app/routers/portfolio.py`
+- `backend/app/schemas/portfolio.py`
+- `backend/app/schemas/admin.py`
+- `backend/app/services/portfolio_service.py`
+- `backend/app/services/admin_user_service.py`
+
+QA 결과:
+
+```txt
+npm run build: success
+backend compileall: success
+git diff --check: success
+portfolio_created=created public=True
+portfolio_unchanged_public=unchanged
+portfolio_visibility_updated=updated public=False
+portfolio_unchanged_private=unchanged
+portfolio_no_prefix=True
+super_admin_flag=True
+super_admin_blocked=True
+normal_user_update=COACH 승인 완료
+```
+
+커밋 추천 제목:
+
+```txt
+feat: 포트폴리오 발행 설정과 관리자 보호 UX 개선
+```

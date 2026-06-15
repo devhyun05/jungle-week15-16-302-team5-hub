@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.db.models import User
-from app.repositories import admin_user_repository, notification_repository
+from app.repositories import admin_user_repository, notification_repository, user_repository
 from app.schemas.admin import AdminUserItemResponse, AdminUserListResponse, AdminUserUpdateRequest
 
 
@@ -73,6 +73,9 @@ def update_admin_user(
     if next_status not in VALID_APPROVAL_STATUSES:
         raise ValueError("존재하지 않는 승인 상태입니다.")
 
+    if user_repository.is_initial_admin_email(user.email) and (next_role != ROLE_ADMIN or next_status != "승인 완료"):
+        raise ValueError("최고관리자 계정의 역할이나 승인 상태는 변경할 수 없습니다.")
+
     # 본인 계정을 ADMIN/승인 완료 상태에서 빼면 관리자 화면에 다시 접근하지 못할 수 있다.
     if user.id == actor.id and (next_role != ROLE_ADMIN or next_status != "승인 완료"):
         raise ValueError("본인 관리자 권한은 해제하거나 정지할 수 없습니다.")
@@ -118,4 +121,5 @@ def build_admin_user_item(db: Session, user: User) -> AdminUserItemResponse:
         approved_at=user.approved_at,
         approved_by=admin_user_repository.get_user_name(db=db, user_id=user.approved_by),
         last_login_at=user.last_login_at,
+        is_super_admin=user_repository.is_initial_admin_email(user.email),
     )

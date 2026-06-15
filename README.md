@@ -605,3 +605,18 @@ OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 �
 - 포트폴리오 게시글 제목 생성 기준을 `[포트폴리오] 프로젝트명`에서 `프로젝트명 포트폴리오`로 바꿨습니다.
 - 포트폴리오 게시글 재발행 시 기존 게시글과 제목/요약/본문/태그/GitHub URL이 같으면 DB update를 생략합니다.
 - 발행 API 응답에 `publishStatus`를 추가해 `created`, `updated`, `unchanged` 상태별 안내 문구를 다르게 보여줍니다.
+
+## 2026-06-16 UX/권한 안전성 업데이트
+
+- 로그인 화면에서 승인 대기/역할 승인 설명 문구를 제거하고, Google 로그인 중심 화면으로 정리했습니다.
+- 포트폴리오 게시글 발행은 공개/비공개 선택 모달을 거친 뒤 실행됩니다.
+- 포트폴리오 게시글 발행 결과는 `created`, `updated`, `unchanged` 상태에 따라 toast로 안내합니다.
+- 게시글 삭제 확인은 화면을 밀어내는 inline block 대신 dialog로 표시합니다.
+- `.env`의 `ADMIN_EMAILS`에 포함된 최고관리자 계정은 프론트에서 역할/승인 상태 변경 UI가 비활성화되고, 백엔드에서도 변경 요청을 거부합니다.
+- 백엔드 API가 필요한 실제 저장/권한 판단은 기존 Google OAuth/JWT cookie 흐름을 유지합니다.
+
+검증:
+
+- `frontend`: `npm run build` 성공
+- `backend`: `.venv\Scripts\python.exe -m compileall app` 성공
+- 서비스 QA: 포트폴리오 공개 발행, 동일 내용 unchanged, 공개 여부 변경 updated, 최고관리자 변경 차단, 일반 사용자 승인 성공 확인

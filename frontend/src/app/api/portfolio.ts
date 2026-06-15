@@ -6,6 +6,7 @@ export type PortfolioProjectApiItem = {
   id: number;
   title: string;
   publishedPostId: number | null;
+  publishedPostIsPublic: boolean | null;
   publishStatus?: "created" | "updated" | "unchanged" | null;
   repoFullName: string;
   githubBranch: string;
@@ -133,10 +134,14 @@ export async function refreshPortfolioProjectGithubInfo(projectId: number): Prom
   return response.json();
 }
 
-export async function publishPortfolioProjectPost(projectId: number): Promise<PortfolioProjectApiItem> {
+export async function publishPortfolioProjectPost(projectId: number, isPublic: boolean): Promise<PortfolioProjectApiItem> {
   const response = await apiFetch(`${API_BASE_URL}/portfolio/projects/${projectId}/publish-post`, {
     method: "POST",
     credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ isPublic }),
   });
 
   if (!response.ok) {

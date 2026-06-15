@@ -13,6 +13,7 @@ export type AdminUser = {
   approvedAt: string | null;
   approvedBy: string | null;
   lastLoginAt: string | null;
+  isSuperAdmin: boolean;
 };
 
 export type AdminUserListResponse = {

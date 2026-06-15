@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { BookOpen, ExternalLink, FileText, Github, GitCommit, Link2, Plus, RefreshCw, Search, Sparkles, X } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { Input } from "../../components/ui/Input";
+import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { getMyPosts, type PostListApiItem } from "../../api/posts";
 import {
   createPortfolioProject,
@@ -124,8 +127,9 @@ export function Portfolio() {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [isConnectOpen, setIsConnectOpen] = useState(false);
+  const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+  const [publishVisibility, setPublishVisibility] = useState<"public" | "private">("public");
   const [selectedPostIds, setSelectedPostIds] = useState<number[]>([]);
-  const [notice, setNotice] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
   async function loadPortfolioData(preferredProjectId?: number): Promise<PortfolioProjectApiItem[]> {
@@ -195,7 +199,6 @@ export function Portfolio() {
   const selectProject = (project: PortfolioProjectApiItem) => {
     setSelectedProjectId(project.id);
     setSelectedPostIds(project.linkedPostIds);
-    setNotice("");
     setErrorMessage("");
   };
 
@@ -239,13 +242,12 @@ export function Portfolio() {
     if (existingProject) {
       setSearchKeyword("");
       selectProject(existingProject);
-      setNotice("이미 등록된 GitHub 프로젝트입니다. 기존 프로젝트를 선택했습니다.");
+      toast.info("이미 등록된 GitHub 프로젝트입니다. 기존 프로젝트를 선택했습니다.");
       return;
     }
 
     setIsSaving(true);
     setErrorMessage("");
-    setNotice("");
 
     try {
       const newProject = await createPortfolioProject({
@@ -255,7 +257,7 @@ export function Portfolio() {
       setRepoUrl("");
       setSearchKeyword("");
       await loadPortfolioData(newProject.id);
-      setNotice("GitHub 프로젝트를 등록하고 README, 언어, 최근 커밋 정보를 가져왔습니다.");
+      toast.success("GitHub 프로젝트를 등록하고 README, 언어, 최근 커밋 정보를 가져왔습니다.");
     } catch (error) {
       console.error(error);
       const message = error instanceof Error ? error.message : "GitHub 프로젝트를 등록하지 못했습니다.";
@@ -275,7 +277,7 @@ export function Portfolio() {
         if (reloadedProject) {
           selectProject(reloadedProject);
           setErrorMessage("");
-          setNotice("이미 등록된 GitHub 프로젝트입니다. 기존 프로젝트를 선택했습니다.");
+          toast.info("이미 등록된 GitHub 프로젝트입니다. 기존 프로젝트를 선택했습니다.");
           return;
         }
       }
@@ -294,13 +296,12 @@ export function Portfolio() {
 
     setAnalyzing(true);
     setErrorMessage("");
-    setNotice("");
 
     try {
       const updatedProject = await refreshPortfolioProjectGithubInfo(selectedProject.id);
 
       upsertProject(updatedProject);
-      setNotice("GitHub README, 언어, 최근 커밋 정보를 새로 가져왔습니다.");
+      toast.success("GitHub README, 언어, 최근 커밋 정보를 새로 가져왔습니다.");
     } catch (error) {
       console.error(error);
       setErrorMessage(error instanceof Error ? error.message : "GitHub 정보를 새로고침하지 못했습니다.");
@@ -323,7 +324,7 @@ export function Portfolio() {
       });
 
       upsertProject(updatedProject);
-      setNotice("포트폴리오 상태를 저장했습니다.");
+      toast.success("포트폴리오 상태를 저장했습니다.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "포트폴리오 상태를 저장하지 못했습니다.");
     } finally {
@@ -348,12 +349,21 @@ export function Portfolio() {
 
       upsertProject(updatedProject);
       setIsConnectOpen(false);
-      setNotice("연결된 학습 기록을 저장했습니다.");
+      toast.success("연결된 학습 기록을 저장했습니다.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "학습 기록 연결을 저장하지 못했습니다.");
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const openPublishDialog = () => {
+    if (!selectedProject) {
+      return;
+    }
+
+    setPublishVisibility(selectedProject.publishedPostIsPublic === false ? "private" : "public");
+    setIsPublishDialogOpen(true);
   };
 
   const publishPortfolioPost = async () => {
@@ -363,10 +373,9 @@ export function Portfolio() {
 
     setIsSaving(true);
     setErrorMessage("");
-    setNotice("");
 
     try {
-      const updatedProject = await publishPortfolioProjectPost(selectedProject.id);
+      const updatedProject = await publishPortfolioProjectPost(selectedProject.id, publishVisibility === "public");
       const publishNoticeMap = {
         created: "포트폴리오 게시글을 발행했습니다.",
         updated: "포트폴리오 게시글을 최신 내용으로 갱신했습니다.",
@@ -374,9 +383,19 @@ export function Portfolio() {
       };
 
       upsertProject(updatedProject);
-      setNotice(publishNoticeMap[updatedProject.publishStatus ?? "updated"]);
+      setIsPublishDialogOpen(false);
+
+      const publishMessage = publishNoticeMap[updatedProject.publishStatus ?? "updated"];
+      if (updatedProject.publishStatus === "unchanged") {
+        toast.info(publishMessage);
+      } else {
+        toast.success(publishMessage);
+      }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "포트폴리오 게시글을 발행하지 못했습니다.");
+      const message = error instanceof Error ? error.message : "포트폴리오 게시글을 발행하지 못했습니다.";
+
+      setErrorMessage(message);
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }
@@ -415,7 +434,6 @@ export function Portfolio() {
       </Card>
 
       {errorMessage && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{errorMessage}</div>}
-      {notice && <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</div>}
 
       {isLoading ? (
         <Card>
@@ -520,7 +538,7 @@ export function Portfolio() {
                       </a>
                     </div>
                     <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-                      <Button variant="outline" size="sm" className={`whitespace-nowrap ${sectionActionClass}`} onClick={() => void publishPortfolioPost()} disabled={isSaving}>
+                      <Button variant="outline" size="sm" className={`whitespace-nowrap ${sectionActionClass}`} onClick={openPublishDialog} disabled={isSaving}>
                         포트폴리오 게시글로 발행
                       </Button>
                       {selectedProject.publishedPostId && (
@@ -717,6 +735,45 @@ export function Portfolio() {
           </section>
         </div>
       )}
+
+      <Dialog open={isPublishDialogOpen} onOpenChange={setIsPublishDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>포트폴리오 게시글 발행 설정</DialogTitle>
+            <DialogDescription>
+              발행할 포트폴리오 게시글의 공개 범위를 선택합니다. 비공개로 발행하면 내 기록에서만 확인할 수 있습니다.
+            </DialogDescription>
+          </DialogHeader>
+          <RadioGroup
+            value={publishVisibility}
+            onValueChange={(value) => setPublishVisibility(value as "public" | "private")}
+            className="grid gap-3"
+          >
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <RadioGroupItem value="public" className="mt-1" />
+              <span>
+                <span className="block text-sm font-semibold text-slate-900">공개</span>
+                <span className="mt-1 block text-xs leading-5 text-slate-600">전체 게시글과 내 기록에 함께 보입니다.</span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-4">
+              <RadioGroupItem value="private" className="mt-1" />
+              <span>
+                <span className="block text-sm font-semibold text-slate-900">비공개</span>
+                <span className="mt-1 block text-xs leading-5 text-slate-600">내 기록에서만 확인할 수 있습니다.</span>
+              </span>
+            </label>
+          </RadioGroup>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsPublishDialogOpen(false)} disabled={isSaving}>
+              취소
+            </Button>
+            <Button type="button" onClick={() => void publishPortfolioPost()} disabled={isSaving}>
+              {isSaving ? "발행 중" : "선택한 범위로 발행"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {isConnectOpen && selectedProject && (
         <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/40 p-4">

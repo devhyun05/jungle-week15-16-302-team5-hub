@@ -2,9 +2,11 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router";
 import { BookOpen, FileText, Github, GitCommit, Globe, Lightbulb, Lock, MessageSquare, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { createPostComment, deleteComment, getPostComments } from "../../api/comments";
 import { deletePost, getPostDetail, getPosts, type PostDetailApiResponse, type PostListApiItem } from "../../api/posts";
 import type { UserRole } from "../../api/auth";
@@ -179,6 +181,9 @@ function PortfolioTextBlock({ text }: { text: string }) {
           {paragraph}
         </p>
       ))}
+
+
+
     </div>
   );
 }
@@ -304,7 +309,6 @@ export function PostDetail() {
   const [postLoadError, setPostLoadError] = useState("");
   // 삭제 확인 UI는 local state로 관리하고, 실제 삭제 처리는 DELETE /posts/{id} API가 담당합니다.
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [deleteNotice, setDeleteNotice] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [commentInput, setCommentInput] = useState("");
@@ -482,7 +486,6 @@ export function PostDetail() {
 
     setIsDeleting(true);
     setDeleteError("");
-    setDeleteNotice("");
 
     try {
       await deletePost(id);
@@ -597,28 +600,6 @@ export function PostDetail() {
             </Button>
           )}
         </div>
-
-        {isDeleteConfirmOpen && (
-          <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4">
-            <p className="text-sm font-semibold text-red-700">이 게시글을 삭제할까요?</p>
-            <p className="mt-1 text-xs text-red-600">실제 row를 없애지 않고 deleted_at을 채우는 soft delete로 처리합니다.</p>
-            {deleteError && <p className="mt-2 text-xs font-medium text-red-700">{deleteError}</p>}
-            <div className="mt-3 flex gap-2">
-              <Button type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={isDeleting}>
-                {isDeleting ? "삭제 중" : "삭제 확인"}
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsDeleteConfirmOpen(false)} disabled={isDeleting}>
-                취소
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {deleteNotice && (
-          <div className="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            {deleteNotice}
-          </div>
-        )}
 
         <h1 className="mb-4 text-3xl font-bold text-slate-900">{getDisplayTitle(post)}</h1>
 
@@ -795,6 +776,26 @@ export function PostDetail() {
           </div>
         </div>
       </section>
+
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>게시글을 삭제할까요?</DialogTitle>
+            <DialogDescription>
+              삭제하면 목록과 상세 화면에서 보이지 않습니다. 서버에서는 복구 가능성을 위해 soft delete로 처리합니다.
+            </DialogDescription>
+          </DialogHeader>
+          {deleteError && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{deleteError}</p>}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsDeleteConfirmOpen(false)} disabled={isDeleting}>
+              취소
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? "삭제 중" : "삭제 확인"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

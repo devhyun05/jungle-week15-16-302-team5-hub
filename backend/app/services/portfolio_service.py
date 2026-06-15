@@ -238,6 +238,7 @@ def link_project_posts(
 def publish_portfolio_post(
     db: Session,
     project_id: int,
+    is_public: bool,
     current_user: User,
 ) -> PortfolioProjectResponse | None:
     """
@@ -281,7 +282,7 @@ def publish_portfolio_post(
             summary=summary,
             content=content,
             tag_names=tag_names,
-            is_public=True,
+            is_public=is_public,
             related_commit=related_github_url,
         )
         publish_status = "created"
@@ -293,6 +294,7 @@ def publish_portfolio_post(
         content=content,
         tag_names=tag_names,
         related_github_url=related_github_url,
+        is_public=is_public,
     ):
         return build_project_response(project, publish_status="unchanged")
     else:
@@ -304,7 +306,7 @@ def publish_portfolio_post(
             summary=summary,
             content=content,
             tag_names=tag_names,
-            is_public=True,
+            is_public=is_public,
             related_commit=related_github_url,
         )
         publish_status = "updated"
@@ -336,6 +338,7 @@ def is_same_published_post(
     content: str,
     tag_names: list[str],
     related_github_url: str,
+    is_public: bool,
 ) -> bool:
     """
     이미 발행된 포트폴리오 게시글이 새로 만들 내용과 같은지 확인한다.
@@ -350,7 +353,7 @@ def is_same_published_post(
         and post.title == title
         and (post.summary or "") == (summary or "")
         and post.content == content
-        and post.is_public is True
+        and post.is_public == is_public
         and (post.related_commit or "") == related_github_url
         and current_tag_names == set(tag_names)
     )
@@ -526,6 +529,7 @@ def build_project_response(project: PortfolioProject, publish_status: str | None
         id=project.id,
         title=project.title,
         published_post_id=project.published_post_id,
+        published_post_is_public=project.published_post.is_public if project.published_post is not None else None,
         publish_status=publish_status,
         repo_full_name=project.repo_full_name,
         github_branch=project.github_branch or "main",

@@ -5219,3 +5219,42 @@ GitHub ������Ʈ ���
 - dirty check
 - response status field
 - backend-driven UI message
+
+---
+
+## 2026-06-16 학습 기록: toast, dialog, 공개 범위, 최고관리자 보호
+
+이번 구현을 이해하려면 다음 흐름을 보면 됩니다.
+
+### 파일별 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/App.tsx` | 앱 전체에서 toast를 띄울 수 있도록 `Toaster`를 등록합니다. |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | 포트폴리오 게시글 발행 전 공개/비공개 선택 dialog를 띄우고, 결과를 toast로 안내합니다. |
+| `frontend/src/app/pages/posts/PostDetail.tsx` | 게시글 삭제 확인을 inline block이 아니라 dialog로 처리합니다. |
+| `frontend/src/app/pages/admin/AdminUsers.tsx` | 최고관리자 계정 표시와 role/status 변경 비활성화를 담당합니다. |
+| `backend/app/services/portfolio_service.py` | 포트폴리오 게시글 생성/갱신/unchanged 판단을 담당하고 `is_public`도 비교합니다. |
+| `backend/app/services/admin_user_service.py` | `ADMIN_EMAILS` 최고관리자 계정의 role/status 변경을 거부합니다. |
+
+### 이번에 나온 React 개념
+
+- `useState`: dialog 열림 여부, 공개 범위 선택값, 저장 중 상태를 관리합니다.
+- controlled input: RadioGroup의 value를 React state와 연결합니다.
+- conditional rendering: 최고관리자일 때만 `최고관리자` 배지와 안내 문구를 보여줍니다.
+- toast: 성공/정보/오류 안내를 레이아웃 밖에서 짧게 보여줍니다.
+- dialog/modal: 삭제나 발행 설정처럼 사용자의 명확한 선택이 필요한 작업에 사용합니다.
+
+### 이번에 나온 백엔드 개념
+
+- idempotency: 같은 포트폴리오 게시글을 다시 발행해도 중복 생성하지 않습니다.
+- dirty check: 제목/요약/본문/태그/GitHub URL/공개 여부가 모두 같으면 DB update를 생략합니다.
+- defense in depth: 프론트에서 버튼을 disabled 해도, 백엔드 service에서 다시 최고관리자 변경을 막습니다.
+- environment variable: `ADMIN_EMAILS`를 comma-separated 문자열로 관리하고 set으로 변환해 비교합니다.
+
+### 핵심 포인트
+
+- 프론트 UI에서 막는 것은 사용자 실수를 줄이는 장치입니다.
+- 실제 보안/권한 보호는 백엔드에서 반드시 한 번 더 막아야 합니다.
+- toast는 단순 안내, dialog는 확인/선택이 필요한 작업에 어울립니다.
+- 공개/비공개 값도 게시글 내용의 일부로 보고, 변경되면 `updated`로 처리해야 합니다.

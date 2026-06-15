@@ -25,6 +25,7 @@ class AdminUserItemResponse(FrontendResponseModel):
     approved_at: datetime | None = Field(default=None, alias="approvedAt")
     approved_by: str | None = Field(default=None, alias="approvedBy")
     last_login_at: datetime | None = Field(default=None, alias="lastLoginAt")
+    is_super_admin: bool = Field(default=False, alias="isSuperAdmin")
 
 
 class AdminUserListResponse(FrontendResponseModel):

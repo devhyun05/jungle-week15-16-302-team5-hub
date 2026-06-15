@@ -27,10 +27,15 @@ class PortfolioProjectPostLinkRequest(FrontendResponseModel):
     post_ids: list[int] = Field(default_factory=list, alias="postIds")
 
 
+class PortfolioProjectPublishRequest(FrontendResponseModel):
+    is_public: bool = Field(default=True, alias="isPublic")
+
+
 class PortfolioProjectResponse(FrontendResponseModel):
     id: int
     title: str
     published_post_id: int | None = Field(alias="publishedPostId")
+    published_post_is_public: bool | None = Field(default=None, alias="publishedPostIsPublic")
     publish_status: str | None = Field(default=None, alias="publishStatus")
     repo_full_name: str = Field(alias="repoFullName")
     github_branch: str = Field(alias="githubBranch")

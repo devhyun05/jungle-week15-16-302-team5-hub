@@ -2954,3 +2954,48 @@ compare False ...
 third updated
 cleanup ok
 ```
+
+---
+
+## 2026-06-16 QA: UX 안내 방식과 최고관리자 보호
+
+목표: 포트폴리오 게시글 발행 공개 범위, toast/dialog UX, 최고관리자 보호가 기존 로그인/권한 흐름을 깨지 않는지 확인한다.
+
+### 자동 검증
+
+- [x] `frontend`: `npm run build`
+- [x] `backend`: `.venv\Scripts\python.exe -m compileall app`
+- [x] `git diff --check`
+
+### 서비스 QA
+
+- [x] 포트폴리오 게시글 첫 발행은 `created`를 반환한다.
+- [x] 공개로 발행하면 게시글 `is_public=True`가 된다.
+- [x] 같은 내용으로 다시 공개 발행하면 `unchanged`를 반환한다.
+- [x] 공개 여부를 비공개로 바꾸면 `updated`를 반환한다.
+- [x] 비공개 발행 후 게시글 `is_public=False`가 된다.
+- [x] 같은 내용/같은 공개 여부로 다시 발행하면 `unchanged`를 반환한다.
+- [x] 포트폴리오 게시글 제목에 `[포트폴리오]` prefix가 붙지 않는다.
+- [x] `ADMIN_EMAILS` 계정은 `isSuperAdmin=True`로 내려온다.
+- [x] `ADMIN_EMAILS` 계정의 role/status 변경 요청은 백엔드에서 거부된다.
+- [x] 일반 사용자는 관리자가 COACH/승인 완료로 변경할 수 있다.
+
+검증 출력:
+
+```txt
+portfolio_created= created True
+portfolio_unchanged_public= unchanged
+portfolio_visibility_updated= updated False
+portfolio_unchanged_private= unchanged
+portfolio_no_prefix= True QA Visibility Project 포트폴리오
+super_admin_flag= True
+super_admin_blocked= True
+normal_user_update= COACH 승인 완료
+```
+
+### 남은 수동 QA
+
+- [ ] 브라우저에서 포트폴리오 발행 버튼 클릭 시 공개/비공개 선택 dialog가 뜨는지 확인한다.
+- [ ] 발행/갱신/최신 상태 안내가 화면 block이 아니라 toast로 뜨는지 확인한다.
+- [ ] 게시글 삭제 버튼 클릭 시 삭제 확인 dialog가 뜨는지 확인한다.
+- [ ] 관리자 화면에서 최고관리자 배지와 disabled 상태가 보이는지 확인한다.

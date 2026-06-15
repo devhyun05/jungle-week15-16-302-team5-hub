@@ -5,6 +5,7 @@ from app.db.models import User
 from app.db.session import get_db
 from app.dependencies.auth import require_roles
 from app.schemas.portfolio import (
+    PortfolioProjectPublishRequest,
     PortfolioProjectCreateRequest,
     PortfolioProjectListResponse,
     PortfolioProjectPostLinkRequest,
@@ -141,6 +142,7 @@ def link_project_posts(
 @router.post("/{project_id}/publish-post", response_model=PortfolioProjectResponse)
 def publish_portfolio_post(
     project_id: int,
+    request: PortfolioProjectPublishRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles("STUDENT", "ADMIN")),
 ) -> PortfolioProjectResponse:
@@ -152,6 +154,7 @@ def publish_portfolio_post(
         project = portfolio_service.publish_portfolio_post(
             db=db,
             project_id=project_id,
+            is_public=request.is_public,
             current_user=current_user,
         )
     except ValueError as error:
