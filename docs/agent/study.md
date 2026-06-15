@@ -4196,3 +4196,73 @@ COACH �α���
 - query string 기반 초기 선택
 - optimistic UI와 persisted UI 차이
 - AI result history table
+
+## 2026-06-15 학습: 프로필 이미지 업로드와 응답 전파
+
+이번에 본 파일:
+
+- `frontend/src/app/pages/settings/Settings.tsx`
+- `frontend/src/app/api/auth.ts`
+- `backend/app/routers/me.py`
+- `backend/app/repositories/user_repository.py`
+- `backend/app/schemas/auth.py`
+- `backend/app/schemas/post.py`
+- `backend/app/schemas/comment.py`
+- `backend/app/schemas/review.py`
+
+파일별 역할:
+
+- `Settings.tsx`: 사용자가 이름과 프로필 이미지를 선택하고 저장하는 화면이다.
+- `auth.ts`: `FormData`를 만들어 `/me/profile`로 보내는 API client다.
+- `me.py`: FastAPI에서 multipart form 요청을 받아 이름과 이미지 파일을 처리한다.
+- `user_repository.py`: DB의 users row에 수정된 이름과 이미지 URL을 저장한다.
+- `auth.py`: 현재 사용자 응답에 `profileImageUrl`을 포함한다.
+- `post.py`, `comment.py`, `review.py`: 게시글/댓글/리뷰 요청 응답에 작성자 이미지 필드를 포함한다.
+
+이번 구현에서 사용한 프론트 개념:
+
+- `FormData`: JSON이 아니라 파일을 포함한 요청을 보낼 때 사용한다.
+- file input: `<input type="file">`로 브라우저에서 파일을 선택한다.
+- preview URL: `URL.createObjectURL(file)`로 선택한 이미지를 저장 전 미리 보여준다.
+- `credentials: "include"`: HttpOnly cookie 인증을 API 요청에 포함한다.
+- `refreshCurrentUser()`: 저장 후 현재 사용자 정보를 다시 불러와 헤더/사이드바 아바타도 최신 상태로 맞춘다.
+
+이번 구현에서 사용한 백엔드 개념:
+
+- `UploadFile`: FastAPI에서 업로드 파일을 받을 때 사용하는 타입이다.
+- `Form`: multipart form의 일반 문자열 필드를 받을 때 사용한다.
+- `File`: multipart form의 파일 필드를 받을 때 사용한다.
+- content type 검증: png/jpeg/webp/gif만 허용해 잘못된 파일 업로드를 막는다.
+- 파일 크기 제한: 2MB를 넘으면 400을 반환한다.
+- 정적 파일 서빙: `/uploads/...` 경로로 저장된 이미지를 브라우저에서 볼 수 있게 한다.
+
+코드 흐름:
+
+1. 사용자가 설정 화면에서 이름을 수정하고 이미지를 선택한다.
+2. 프론트는 `FormData`에 `name`, `profileImage`를 넣는다.
+3. `PATCH /me/profile` 요청을 보낸다.
+4. 백엔드는 현재 로그인 사용자를 cookie JWT로 찾는다.
+5. 이름을 trim하고 빈 값이면 400을 반환한다.
+6. 이미지가 있으면 타입과 크기를 검사한다.
+7. 파일명을 `user-{id}-{uuid}` 형태로 만들어 `backend/uploads/profiles`에 저장한다.
+8. DB의 `users.name`, `users.profile_image_url`을 갱신한다.
+9. 응답은 `profileImageUrl` camelCase 필드로 내려간다.
+10. 게시글/댓글/리뷰 응답은 관계된 `user.profile_image_url`을 각각 author/requester/coach image 필드로 내려준다.
+
+내가 이해해야 할 핵심 포인트:
+
+- 이미지는 DB에 직접 binary로 저장하지 않고, 파일은 저장소에 두고 DB에는 URL/path만 저장한다.
+- Google profile 이미지는 최초 기본값이고, 사용자가 업로드한 이미지는 재로그인으로 덮어쓰면 안 된다.
+- `profile_image_url`은 DB 컬럼명이고, 프론트 응답에서는 `profileImageUrl`로 받는다.
+- 게시글/댓글/리뷰 화면에서 아바타를 보여주려면 각 API 응답에 이미지 URL이 포함되어야 한다.
+- 로컬 개발에서는 `backend/uploads`를 써도 되지만, 배포 시에는 S3 같은 외부 스토리지로 바꾸는 편이 좋다.
+
+추가로 공부할 키워드:
+
+- multipart/form-data
+- FastAPI UploadFile
+- StaticFiles
+- file validation
+- object storage
+- signed URL
+- DTO field alias

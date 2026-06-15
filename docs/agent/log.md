@@ -2623,3 +2623,36 @@ QA 결과:
 ```txt
 fix: AI 도우미 보관함 UX 정리
 ```
+
+## 2026-06-15 프로필 이미지 업로드와 아바타 전파 QA
+
+목표: 사용자가 설정 화면에서 이름과 프로필 이미지를 수정할 수 있고, 업로드한 이미지가 게시글/댓글/리뷰 요청 응답까지 이어지는지 확인한다.
+
+진행한 것:
+
+- `Settings.tsx`가 `/me/profile` API로 이름과 이미지 파일을 `FormData`로 보내는 구조를 확인했다.
+- `me.py`의 `PATCH /me/profile`이 이미지 타입과 2MB 제한을 검사하고 `/uploads/profiles/...` 경로로 저장하는 구조를 확인했다.
+- 임시 STUDENT/COACH 사용자를 만들고 TestClient로 프로필 이미지 업로드를 실행했다.
+- 업로드 후 `/auth/me`, 게시글 생성, 댓글 생성/조회, 리뷰 요청 생성 응답에 프로필 이미지 URL이 포함되는지 확인했다.
+- Google OAuth 재로그인 동기화 함수가 사용자가 직접 수정한 이름과 업로드 이미지를 덮어쓰지 않는지 확인했다.
+- 브라우저에서 `/settings` 화면에 프로필 이미지 선택, 이름 입력, 저장 버튼이 보이고 개발 문구가 없는지 확인했다.
+- QA용 사용자, 게시글, 댓글, 리뷰 요청, 업로드 파일을 삭제했다.
+
+QA 결과:
+
+- `PATCH /me/profile`은 200을 반환했다.
+- 응답의 `profileImageUrl`은 `/uploads/profiles/...` 경로였다.
+- 실제 업로드 파일이 생성됐다가 QA 종료 후 삭제됐다.
+- `/auth/me`는 수정된 이름과 업로드 이미지 URL을 반환했다.
+- Google profile 재동기화 시 커스텀 이름과 업로드 이미지가 유지됐다.
+- 게시글 응답의 `authorProfileImageUrl`이 업로드 이미지 URL과 일치했다.
+- 댓글 응답과 댓글 목록 응답의 `authorProfileImageUrl`이 업로드 이미지 URL과 일치했다.
+- 리뷰 요청 응답의 `requesterProfileImageUrl`이 업로드 이미지 URL과 일치했다.
+- 리뷰 요청 응답의 `coachProfileImageUrls`도 코치 이미지 URL을 포함했다.
+- 설정 화면에 `Unexpected Application Error`, `[object Object]`, 개발/debug 문구가 보이지 않았다.
+
+추천 커밋 제목:
+
+```txt
+docs: 프로필 이미지 업로드 QA 기록
+```

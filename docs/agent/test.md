@@ -2082,3 +2082,61 @@ hasSuccessNotice=true
 결론:
 
 - AI 도우미는 아직 실제 OpenAI/RAG/MCP/Agent를 호출하지 않지만, 프로젝트 기반 생성 결과 보관함과 복사 흐름은 UI 기준으로 자연스럽게 동작한다.
+
+## 2026-06-15 QA: 프로필 이미지 업로드와 아바타 응답 전파
+
+목표: 프로필 이름/이미지 수정이 실제 API 기준으로 동작하고, 업로드 이미지가 주요 사용자 표시 응답까지 전달되는지 확인한다.
+
+API QA:
+
+- [x] 임시 STUDENT 사용자를 만들었다.
+- [x] 임시 COACH 사용자를 만들었다.
+- [x] STUDENT access token cookie로 `PATCH /me/profile`을 호출했다.
+- [x] 1x1 PNG 파일을 `profileImage` multipart field로 업로드했다.
+- [x] 프로필 수정 응답이 200을 반환했다.
+- [x] 응답 이름이 수정된 이름과 일치했다.
+- [x] 응답 `profileImageUrl`이 `/uploads/profiles/`로 시작했다.
+- [x] 실제 업로드 파일이 생성됐다.
+- [x] `/auth/me` 응답이 수정된 이름과 이미지 URL을 반환했다.
+- [x] Google profile 재동기화가 수정한 이름을 덮어쓰지 않았다.
+- [x] Google profile 재동기화가 업로드 이미지를 덮어쓰지 않았다.
+- [x] 게시글 생성 응답의 `authorProfileImageUrl`이 업로드 이미지 URL과 일치했다.
+- [x] 댓글 생성 응답의 `authorProfileImageUrl`이 업로드 이미지 URL과 일치했다.
+- [x] 댓글 목록 응답의 `authorProfileImageUrl`이 업로드 이미지 URL과 일치했다.
+- [x] 리뷰 요청 생성 응답의 `requesterProfileImageUrl`이 업로드 이미지 URL과 일치했다.
+- [x] 리뷰 요청 생성 응답의 `coachProfileImageUrls`에 코치 이미지 URL이 포함됐다.
+- [x] QA용 사용자, 게시글, 댓글, 리뷰 요청, 업로드 파일을 삭제했다.
+
+브라우저 QA:
+
+- [x] `/settings` 화면이 열린다.
+- [x] 프로필 이미지 선택 UI가 보인다.
+- [x] 이름 입력 UI가 보인다.
+- [x] 프로필 저장 버튼이 보인다.
+- [x] file input이 실제 DOM에 있다.
+- [x] 화면에 `Unexpected Application Error`가 보이지 않는다.
+- [x] 화면에 `[object Object]`가 보이지 않는다.
+- [x] 화면에 개발/debug 문구가 보이지 않는다.
+
+검증 출력 요약:
+
+```txt
+profile_status=200
+profile_image_url_prefix_ok=True
+uploaded_file_exists=True
+me_image_matches=True
+relogin_keeps_custom_name=True
+relogin_keeps_uploaded_image=True
+post_author_image_matches=True
+comment_author_image_matches=True
+comments_list_image_matches=True
+review_requester_image_matches=True
+review_coach_image_matches=True
+qa_profile_users=0
+qa_profile_uploads=0
+```
+
+주의:
+
+- TestClient 실행 중 `StarletteDeprecationWarning`이 출력됐지만 기능 실패는 아니다.
+- 실제 브라우저 파일 선택 자동화는 현재 도구에서 직접 파일 주입 API를 쓰지 않았으므로, 브라우저에서는 설정 화면 UI 존재 여부까지 확인했다.
