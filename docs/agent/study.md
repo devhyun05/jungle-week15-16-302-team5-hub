@@ -2735,3 +2735,50 @@ refresh token cookie �б�
 - role based rendering
 - controlled textarea
 - PATCH / DELETE API
+## 2026-06-15 AI 도우미 API 기반 정리 학습 기록
+
+이번 단계는 AI 호출을 붙이기 전, AI 도우미 화면이 실제 사용자 프로젝트와 기록을 기준으로 움직이게 만든 작업이다.
+
+### 수정한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/ai/AIAssistant.tsx` | 포트폴리오 프로젝트와 내 기록 API를 불러와 AI 참고 자료 패널과 샘플 결과를 구성 |
+| `frontend/src/app/pages/posts/MyRecords.tsx` | 현재 로그인 사용자 기준 조회 문구로 수정 |
+
+### 사용한 React 개념
+
+- `useEffect`: AI 도우미 화면 진입 시 프로젝트 목록과 내 기록을 API로 불러온다.
+- `Promise.all`: 서로 독립적인 `getPortfolioProjects`, `getMyPosts`를 동시에 요청한다.
+- `useMemo`: 선택 프로젝트의 `linkedPostIds`에 맞는 기록만 필터링한다.
+- `useSearchParams`: `/ai-assistant?project=...&type=...` query string으로 초기 프로젝트와 결과 유형을 맞춘다.
+- 조건부 렌더링: 로딩, 프로젝트 없음, 선택 프로젝트 있음 상태를 나누어 보여준다.
+
+### 코드 흐름
+
+```txt
+/ai-assistant 진입
+-> query string에서 project/type 읽기
+-> getPortfolioProjects(), getMyPosts() 동시 호출
+-> query project id가 있으면 해당 프로젝트 선택
+-> 없으면 첫 번째 프로젝트 선택
+-> selectedProject.linkedPostIds와 내 기록 id를 비교
+-> 연결된 기록만 참고 자료 패널에 표시
+-> 포트폴리오 결과 저장 버튼 클릭
+-> updatePortfolioProject()로 savedPortfolioDraft 저장
+```
+
+### 내가 이해해야 할 핵심 포인트
+
+- 아직 OpenAI를 호출하지 않아도 화면 데이터 흐름은 실제 API 기준으로 만들 수 있다.
+- AI 도우미가 직접 프로젝트 이름을 입력받는 방식보다, 포트폴리오 관리에 등록된 프로젝트를 선택하는 방식이 서비스 흐름에 맞다.
+- RAG는 나중에 vector search로 바뀌겠지만, 지금 화면에서는 `linkedPostIds`가 “이 프로젝트와 연결된 기록”을 보여주는 최소 단서 역할을 한다.
+- `PATCH /portfolio/projects/{id}`로 초안을 저장하면 포트폴리오 관리 화면에서도 같은 저장 결과를 볼 수 있다.
+
+### 추가 학습 키워드
+
+- API 기반 UI와 mock UI 차이
+- query string 기반 초기 상태
+- 관계 데이터 연결하기
+- AI 호출 전 데이터 준비 단계
+- RAG 입력 자료 구성

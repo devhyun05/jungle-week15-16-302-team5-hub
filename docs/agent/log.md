@@ -1456,3 +1456,38 @@ feat: Google OAuth ���� ����� ����
 ```txt
 feat: 코치 리뷰 화면 API 연결
 ```
+## 2026-06-15 AI 도우미 포트폴리오 API 기반 정리
+
+상태: 완료
+
+목표: AI 도우미가 포트폴리오 관리 화면과 따로 놀지 않도록, 실제 포트폴리오 API와 내 기록 API를 기준으로 참고 자료를 구성한다.
+
+구현한 것:
+
+- `AIAssistant.tsx`에서 `mockData.portfolioProjects` 직접 사용 제거
+- `GET /portfolio/projects`로 내 프로젝트 목록 조회
+- `GET /me/posts`로 현재 로그인 사용자의 기록 조회
+- 선택 프로젝트의 `linkedPostIds`로 연결된 기록 필터링
+- 등록된 프로젝트가 없을 때 포트폴리오 관리 이동 안내
+- 포트폴리오 글 샘플 결과를 `PATCH /portfolio/projects/{id}`로 저장
+- 면접 예상 질문 저장은 AI 기능 연결 단계로 명확히 분리
+- `MyRecords.tsx`의 demo student 문구 제거
+
+아직 남은 것:
+
+- 실제 OpenAI 호출
+- RAG vector search
+- GitHub MCP를 통한 README/커밋 자동 분석
+- Agent 추론 루프
+
+검증:
+
+- `npm run build` 성공
+- `python -m compileall app` 성공
+- `git diff --check` 통과
+
+추천 커밋 제목:
+
+```txt
+feat: AI 도우미 포트폴리오 API 기반 정리
+```

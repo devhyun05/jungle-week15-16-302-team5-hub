@@ -1,11 +1,12 @@
 ﻿
-import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router";
 import { Bot, Copy, Database, Github, GitCommit, LayoutTemplate, MessageSquare, RefreshCw, Save, Sparkles } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import { portfolioProjects, posts, type PortfolioProject } from "../../data/mockData";
+import { getMyPosts, type PostListApiItem } from "../../api/posts";
+import { getPortfolioProjects, updatePortfolioProject, type PortfolioProjectApiItem } from "../../api/portfolio";
 
 type OutputType = "portfolio" | "interview";
 
@@ -24,67 +25,139 @@ const outputOptions = [
   },
 ] as const;
 
-function buildPortfolioDraft(project: PortfolioProject, linkedRecordCount: number) {
-  // 실제 OpenAI 호출 전까지는 선택 프로젝트 정보를 이용해 고정된 mock 초안을 만듭니다.
+function buildPortfolioDraft(project: PortfolioProjectApiItem, linkedRecords: PostListApiItem[]) {
+  // 실제 OpenAI 호출 전까지는 선택 프로젝트 정보를 이용해 고정된 샘플 초안을 만듭니다.
+  const stackText = project.techStack.length > 0 ? project.techStack.slice(0, 3).join(", ") : "등록된 기술 스택";
+  const linkedRecordCount = linkedRecords.length;
+
   return `1. 프로젝트 한 줄 소개
-${project.title}는 ${project.stack.slice(0, 3).join(", ")} 기반으로 구현한 프로젝트입니다. GitHub 커밋 기록과 JungleLog에 남긴 ${linkedRecordCount}개의 학습 기록을 연결해 구현 과정과 문제 해결 경험을 포트폴리오 글로 정리합니다.
+${project.title}는 ${stackText} 기반으로 구현한 프로젝트입니다. GitHub 커밋 기록과 JungleLog에 남긴 ${linkedRecordCount}개의 학습 기록을 연결해 구현 과정과 문제 해결 경험을 포트폴리오 글로 정리합니다.
 
 2. 문제 정의
 학습 로그, 트러블슈팅, 회고, 면접 질문이 흩어져 있으면 나중에 포트폴리오로 정리할 때 근거를 다시 찾기 어렵습니다.
 
 3. 나의 역할
-React mock UI 단계에서 사용자가 실제 서비스를 누르는 것처럼 이해할 수 있도록 프로젝트 등록, 기록 연결, AI 초안 생성, 코치 리뷰 요청 흐름을 설계했습니다.
+JungleLog 안에서 GitHub 프로젝트 등록, 학습 기록 연결, 포트폴리오 초안 저장, 코치 리뷰 요청까지 이어지는 흐름을 설계했습니다.
 
 4. 기술 스택
-${project.stack.join(", ")}
+${project.techStack.length > 0 ? project.techStack.join(", ") : "아직 기술 스택이 등록되지 않았습니다."}
 
 5. 배운 점
 AI 기능은 버튼 하나가 아니라 어떤 자료를 참고하고 어떤 결과로 저장되는지 UI에서 먼저 설명되어야 한다는 점을 배웠습니다.`;
 }
 
-function buildInterviewQuestions(project: PortfolioProject) {
-  // 면접 질문도 현재는 RAG/Agent 결과가 아니라 mock 텍스트입니다.
+function buildInterviewQuestions(project: PortfolioProjectApiItem, linkedRecords: PostListApiItem[]) {
+  // 면접 질문도 현재는 RAG/Agent 결과가 아니라 API 데이터 기반 샘플 텍스트입니다.
   return `1. ${project.title}에서 GitHub 정보는 어떤 방식으로 활용되나요?
-- GitHub repo URL, 최근 커밋, README를 MCP를 통해 가져오고 AI 생성의 참고 자료로 사용하는 흐름을 목표로 합니다.
+- GitHub repo URL(${project.githubUrl}), 최근 커밋, README를 MCP를 통해 가져오고 AI 생성의 참고 자료로 사용하는 흐름을 목표로 합니다.
 
 2. 연결된 학습 기록은 AI 답변에 어떤 영향을 주나요?
-- 게시글, 트러블슈팅, 회고를 RAG 검색 대상으로 삼아 포트폴리오 문장에 근거를 붙입니다.
+- 현재 선택된 프로젝트에는 ${linkedRecords.length}개의 기록이 연결되어 있습니다. 게시글, 트러블슈팅, 회고를 RAG 검색 대상으로 삼아 포트폴리오 문장에 근거를 붙입니다.
 
 3. README 생성 기능을 핵심에서 제외한 이유는 무엇인가요?
 - README는 이미 GitHub에 있는 참고 자료에 가깝고, 서비스의 핵심 결과물은 포트폴리오 글과 면접 예상 질문이기 때문입니다.
 
-4. 백엔드 연결 전 mock UI를 먼저 만드는 이유는 무엇인가요?
-- 사용자 흐름과 상태 변화를 먼저 검증하면 백엔드 API 명세를 더 안정적으로 만들 수 있습니다.`;
+4. AI 호출을 붙이기 전에 API 데이터 기반 화면을 먼저 맞추는 이유는 무엇인가요?
+- 인증, 포트폴리오, 기록 연결 흐름이 안정되어야 OpenAI/RAG/MCP 결과도 실제 사용자 데이터와 자연스럽게 이어질 수 있습니다.`;
 }
 
 export function AIAssistant() {
   // 포트폴리오 화면에서 넘어올 때 project와 type query string으로 초기 선택값을 맞춥니다.
   const [searchParams] = useSearchParams();
-  const initialProjectId = searchParams.get("project") ?? portfolioProjects[0].id;
   const initialType: OutputType = searchParams.get("type") === "interview" ? "interview" : "portfolio";
 
-  const [selectedProjectId, setSelectedProjectId] = useState(initialProjectId);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [projects, setProjects] = useState<PortfolioProjectApiItem[]>([]);
+  const [records, setRecords] = useState<PostListApiItem[]>([]);
   const [outputType, setOutputType] = useState<OutputType>(initialType);
   const [savedNotice, setSavedNotice] = useState("");
   const [copyNotice, setCopyNotice] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadAIAssistantData() {
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const [projectData, postData] = await Promise.all([
+          getPortfolioProjects(),
+          getMyPosts({ visibility: "all", size: 100 }),
+        ]);
+
+        if (!isActive) {
+          return;
+        }
+
+        const queryProjectId = Number(searchParams.get("project"));
+        const nextSelectedProject =
+          projectData.items.find((project) => project.id === queryProjectId) ?? projectData.items[0] ?? null;
+
+        setProjects(projectData.items);
+        setRecords(postData.items);
+        setSelectedProjectId(nextSelectedProject?.id ?? null);
+      } catch (error) {
+        if (isActive) {
+          setErrorMessage(error instanceof Error ? error.message : "AI 도우미 참고 자료를 불러오지 못했습니다.");
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadAIAssistantData();
+
+    return () => {
+      isActive = false;
+    };
+  }, [searchParams]);
 
   // AI 도우미는 직접 입력 대신 포트폴리오 관리에 등록된 프로젝트를 기준으로 동작합니다.
-  const selectedProject = portfolioProjects.find((project) => project.id === selectedProjectId) ?? portfolioProjects[0];
+  const selectedProject = projects.find((project) => project.id === selectedProjectId) ?? projects[0] ?? null;
   const linkedRecords = useMemo(
-    () => posts.filter((post) => selectedProject.linkedPostIds.includes(post.id)),
-    [selectedProject],
+    () => (selectedProject ? records.filter((post) => selectedProject.linkedPostIds.includes(post.id)) : []),
+    [records, selectedProject],
   );
 
-  const resultText =
-    outputType === "interview" ? buildInterviewQuestions(selectedProject) : buildPortfolioDraft(selectedProject, linkedRecords.length);
+  const resultText = selectedProject
+    ? outputType === "interview"
+      ? buildInterviewQuestions(selectedProject, linkedRecords)
+      : buildPortfolioDraft(selectedProject, linkedRecords)
+    : "";
 
-  const saveDraft = () => {
-    // TODO backend: 실제 OpenAI/RAG/MCP/Agent 호출과 생성 결과 저장은 백엔드/AI 연결 후 구현 예정.
-    setSavedNotice(`${selectedProject.title} 결과를 포트폴리오 초안으로 mock 저장했습니다.`);
+  const saveDraft = async () => {
+    if (!selectedProject || outputType !== "portfolio") {
+      setSavedNotice("면접 예상 질문 저장은 AI 기능 연결 단계에서 별도 API로 구현 예정입니다.");
+      return;
+    }
+
+    setIsSaving(true);
+    setSavedNotice("");
+    setErrorMessage("");
+
+    try {
+      const updatedProject = await updatePortfolioProject(selectedProject.id, {
+        savedPortfolioDraft: resultText,
+        portfolioStatus: "보완 필요",
+      });
+
+      setProjects((prev) => prev.map((project) => (project.id === updatedProject.id ? updatedProject : project)));
+      setSavedNotice(`${updatedProject.title} 샘플 결과를 포트폴리오 초안으로 저장했습니다.`);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "포트폴리오 초안을 저장하지 못했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const copyResult = () => {
-    setCopyNotice("mock 결과를 복사한 것처럼 표시했습니다.");
+    setCopyNotice("샘플 결과를 복사한 것처럼 표시했습니다.");
     window.setTimeout(() => setCopyNotice(""), 1400);
   };
 
@@ -102,6 +175,23 @@ export function AIAssistant() {
         </div>
       </div>
 
+      {errorMessage && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{errorMessage}</div>}
+
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-8 text-center text-sm text-slate-500">AI 도우미 참고 자료를 불러오는 중입니다.</CardContent>
+        </Card>
+      ) : projects.length === 0 ? (
+        <Card>
+          <CardContent className="space-y-3 p-8 text-center">
+            <p className="font-semibold text-slate-900">등록된 포트폴리오 프로젝트가 없습니다.</p>
+            <p className="text-sm text-slate-500">먼저 포트폴리오 관리 화면에서 GitHub 프로젝트를 등록해야 AI 도우미가 참고 자료를 구성할 수 있습니다.</p>
+            <Button asChild>
+              <Link to="/portfolio">포트폴리오 관리로 이동</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : selectedProject ? (
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="space-y-6 lg:col-span-4">
           <Card>
@@ -114,12 +204,12 @@ export function AIAssistant() {
                 <select
                   value={selectedProjectId}
                   onChange={(event) => {
-                    setSelectedProjectId(event.target.value);
+                    setSelectedProjectId(Number(event.target.value));
                     setSavedNotice("");
                   }}
                   className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:ring-1 focus:ring-emerald-500"
                 >
-                  {portfolioProjects.map((project) => (
+                  {projects.map((project) => (
                     <option key={project.id} value={project.id}>
                       {project.title}
                     </option>
@@ -129,9 +219,9 @@ export function AIAssistant() {
 
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <p className="text-sm font-semibold text-slate-900">{selectedProject.title}</p>
-                <p className="mt-1 font-mono text-xs text-slate-500">{selectedProject.repo}</p>
+                <p className="mt-1 font-mono text-xs text-slate-500">{selectedProject.repoFullName}</p>
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {selectedProject.stack.map((stack) => (
+                  {selectedProject.techStack.map((stack) => (
                     <Badge key={stack} variant="secondary" className="text-[10px]">
                       {stack}
                     </Badge>
@@ -170,9 +260,9 @@ export function AIAssistant() {
                 </div>
               </div>
 
-              <Button className="mt-2 h-12 w-full text-base" onClick={() => setSavedNotice("mock 초안을 다시 생성했습니다.")}>
+              <Button className="mt-2 h-12 w-full text-base" onClick={() => setSavedNotice("AI 연결 전 샘플 결과를 다시 구성했습니다.")}>
                 <Sparkles className="mr-2 h-5 w-5" />
-                mock 초안 다시 생성
+                샘플 결과 다시 구성
               </Button>
               <p className="text-xs text-slate-400">
                 실제 OpenAI 호출, RAG 검색, MCP GitHub 조회, Agent 추론 루프는 백엔드/AI 연결 후 구현 예정입니다.
@@ -223,7 +313,7 @@ export function AIAssistant() {
                   <div className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-700">
                     <p className="mb-2 font-medium">기술 스택</p>
                     <div className="flex flex-wrap gap-1">
-                      {selectedProject.stack.map((stack) => (
+                      {selectedProject.techStack.map((stack) => (
                         <Badge key={stack} variant="secondary" className="text-[10px]">
                           {stack}
                         </Badge>
@@ -239,11 +329,12 @@ export function AIAssistant() {
                       {selectedProject.recentCommitSummary.map((commit) => (
                         <li key={commit}>{commit}</li>
                       ))}
+                      {selectedProject.recentCommitSummary.length === 0 && <li>아직 GitHub 커밋 요약이 없습니다.</li>}
                     </ul>
                   </div>
                   <details className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-700">
                     <summary className="cursor-pointer font-medium">GitHub README는 AI가 참고하는 자료입니다</summary>
-                    <p className="mt-2 leading-5 text-slate-500">{selectedProject.readmeSummary}</p>
+                    <p className="mt-2 leading-5 text-slate-500">{selectedProject.readmeSummary ?? "README 요약은 GitHub API/MCP 연결 후 자동 갱신됩니다."}</p>
                   </details>
                 </section>
 
@@ -260,6 +351,11 @@ export function AIAssistant() {
                       <p className="line-clamp-3 text-slate-500">{record.summary}</p>
                     </div>
                   ))}
+                  {linkedRecords.length === 0 && (
+                    <div className="rounded border border-dashed border-slate-200 bg-white p-3 text-xs text-slate-500">
+                      연결된 학습 기록이 없습니다. 포트폴리오 관리 화면에서 기록을 연결하면 RAG 참고 자료로 사용할 수 있습니다.
+                    </div>
+                  )}
                 </section>
               </CardContent>
             </Card>
@@ -284,19 +380,20 @@ export function AIAssistant() {
                   {resultText}
                 </pre>
                 <div className="space-y-2 border-t border-slate-100 bg-slate-50 p-4">
-                  <Button className="w-full shadow-sm" onClick={saveDraft}>
+                  <Button className="w-full shadow-sm" onClick={() => void saveDraft()} disabled={isSaving}>
                     <Save className="mr-2 h-4 w-4" />
-                    포트폴리오 초안으로 mock 저장
+                    {outputType === "portfolio" ? "포트폴리오 초안으로 저장" : "면접 질문 저장은 다음 단계"}
                   </Button>
                   {savedNotice && <p className="text-center text-xs text-emerald-700">{savedNotice}</p>}
                   {copyNotice && <p className="text-center text-xs text-slate-500">{copyNotice}</p>}
-                  <p className="text-center text-xs text-slate-400">실제 생성 결과 저장 API는 백엔드 연결 후 구현 예정입니다.</p>
+                  <p className="text-center text-xs text-slate-400">OpenAI/RAG/MCP/Agent 호출은 다음 단계이며, 현재 결과는 API 데이터 기반 샘플입니다.</p>
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+      ) : null}
     </div>
   );
 }

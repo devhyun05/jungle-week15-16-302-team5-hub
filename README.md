@@ -643,3 +643,25 @@ uvicorn app.main:app --reload
 - AI 도우미 화면의 남은 mock 데이터를 실제 포트폴리오 API 기준으로 정리
 - 전체 로그인/OAuth 브라우저 흐름 QA
 - 오늘 날짜 Notion 학습 기록 정리
+## 2026-06-15 최신 구현: AI 도우미 포트폴리오 API 기반 정리
+
+AI 도우미 화면을 `mockData.portfolioProjects` 대신 실제 포트폴리오 API 응답 기준으로 정리했습니다.
+
+- `GET /portfolio/projects`로 등록된 내 프로젝트 목록을 불러옵니다.
+- `GET /me/posts`로 내 기록을 불러오고, 선택 프로젝트의 `linkedPostIds`와 맞는 기록만 RAG 참고 자료처럼 보여줍니다.
+- 포트폴리오 글/면접 예상 질문 생성 결과는 아직 OpenAI 호출이 아니라 API 데이터 기반 샘플입니다.
+- 포트폴리오 글 샘플은 `PATCH /portfolio/projects/{id}`로 저장된 포트폴리오 초안에 반영할 수 있습니다.
+- 등록된 프로젝트가 없으면 포트폴리오 관리 화면으로 이동하도록 안내합니다.
+- 내 기록 화면의 오래된 “demo student” 문구를 현재 로그인 사용자 기준 설명으로 수정했습니다.
+
+검증:
+
+- `npm run build` 성공
+- `python -m compileall app` 성공
+- `git diff --check` 통과
+
+남은 작업:
+
+- 실제 OpenAI/RAG/MCP/Agent 호출 연결
+- 대시보드의 mock 통계 API 기반 정리
+- OAuth 브라우저 로그인 end-to-end QA

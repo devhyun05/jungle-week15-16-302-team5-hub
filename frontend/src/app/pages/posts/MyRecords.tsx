@@ -165,7 +165,7 @@ export function MyRecords() {
               </button>
             ))}
           </div>
-          <p className="text-xs text-slate-400">현재는 demo student 기준으로 조회하며, JWT 연결 후 실제 로그인 사용자 기준으로 바뀝니다.</p>
+          <p className="text-xs text-slate-400">현재 로그인 사용자의 JWT 쿠키를 기준으로 내 기록을 조회합니다.</p>
         </CardContent>
       </Card>
 

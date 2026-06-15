@@ -1010,3 +1010,26 @@ cd C:\junhee\WEEK15_AI_BOARD\backend
 - 브라우저에서 학생 계정으로 로그인 후 리뷰 요청 생성 확인
 - 브라우저에서 코치 계정으로 로그인 후 인박스 수신 확인
 - 코치가 피드백 작성 후 학생 요청 목록에서 피드백 확인
+## 2026-06-15 AI 도우미 API 기반 정리 QA
+
+목표: AI 도우미 화면이 mock 프로젝트 배열이 아니라 실제 API 응답을 기준으로 빌드되는지 확인한다.
+
+체크리스트:
+
+- [x] `AIAssistant.tsx`가 `portfolioProjects` mock 배열을 import하지 않는다.
+- [x] `AIAssistant.tsx`가 `getPortfolioProjects()`를 호출한다.
+- [x] `AIAssistant.tsx`가 `getMyPosts()`를 호출한다.
+- [x] query string의 `project` 값으로 초기 선택 프로젝트를 맞춘다.
+- [x] 선택 프로젝트의 `linkedPostIds`로 연결 기록을 필터링한다.
+- [x] 프로젝트가 없을 때 포트폴리오 관리 이동 안내가 보인다.
+- [x] 포트폴리오 샘플 결과 저장은 `updatePortfolioProject()`를 호출한다.
+- [x] 면접 예상 질문 저장은 다음 AI 단계로 분리되어 있다.
+- [x] `MyRecords.tsx`에 demo student 문구가 남아 있지 않다.
+- [x] `npm run build` 성공.
+- [x] `python -m compileall app` 성공.
+- [x] `git diff --check` 통과.
+
+추가 수동 QA 예정:
+
+- 브라우저에서 포트폴리오 프로젝트 등록 후 `/ai-assistant?project={id}` 진입 확인
+- 샘플 초안 저장 후 포트폴리오 관리 화면에서 저장된 초안 확인
