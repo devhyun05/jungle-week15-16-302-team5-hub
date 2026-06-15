@@ -86,6 +86,7 @@ def create_project(
         readme_summary="GitHub README는 AI 생성 단계에서 참고 자료로 사용할 예정입니다.",
         recent_commit_summary="GitHub 프로젝트 등록 완료. 실제 커밋 분석은 MCP/GitHub API 연결 후 갱신합니다.",
         saved_portfolio_draft="아직 저장된 포트폴리오 글 초안이 없습니다. AI 도우미에서 초안을 생성해보세요.",
+        saved_interview_questions=None,
         portfolio_status="작성중",
         coach_feedback_status="요청 전",
         github_connected=True,
@@ -112,6 +113,7 @@ def update_project(
     tech_stack: str | None,
     portfolio_status: str | None,
     saved_portfolio_draft: str | None,
+    saved_interview_questions: str | None,
 ) -> PortfolioProject:
     """
     포트폴리오 프로젝트의 학생 관리 필드를 수정한다.
@@ -132,6 +134,9 @@ def update_project(
     if saved_portfolio_draft is not None:
         project.saved_portfolio_draft = saved_portfolio_draft
         project.ai_draft_saved = True
+
+    if saved_interview_questions is not None:
+        project.saved_interview_questions = saved_interview_questions
 
     db.commit()
     db.refresh(project)

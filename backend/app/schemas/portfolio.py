@@ -20,6 +20,7 @@ class PortfolioProjectUpdateRequest(FrontendResponseModel):
     tech_stack: list[str] | None = Field(default=None, alias="techStack", max_length=20)
     portfolio_status: str | None = Field(default=None, alias="portfolioStatus", max_length=30)
     saved_portfolio_draft: str | None = Field(default=None, alias="savedPortfolioDraft")
+    saved_interview_questions: str | None = Field(default=None, alias="savedInterviewQuestions")
 
 
 class PortfolioProjectPostLinkRequest(FrontendResponseModel):
@@ -36,10 +37,12 @@ class PortfolioProjectResponse(FrontendResponseModel):
     readme_summary: str | None = Field(alias="readmeSummary")
     recent_commit_summary: list[str] = Field(alias="recentCommitSummary")
     saved_portfolio_draft: str | None = Field(alias="savedPortfolioDraft")
+    saved_interview_questions: str | None = Field(alias="savedInterviewQuestions")
     portfolio_status: str = Field(alias="portfolioStatus")
     coach_feedback_status: str = Field(alias="coachFeedbackStatus")
     github_connected: bool = Field(alias="githubConnected")
     ai_draft_saved: bool = Field(alias="aiDraftSaved")
+    ai_interview_saved: bool = Field(alias="aiInterviewSaved")
     last_commit_at: datetime | None = Field(alias="lastCommitAt")
     linked_post_ids: list[int] = Field(alias="linkedPostIds")
     linked_record_count: int = Field(alias="linkedRecordCount")

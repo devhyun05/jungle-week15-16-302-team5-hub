@@ -136,9 +136,8 @@ export function AIAssistant() {
       : buildPortfolioDraft(selectedProject, linkedRecords)
     : "";
 
-  const saveDraft = async () => {
-    if (!selectedProject || outputType !== "portfolio") {
-      setSavedNotice("면접 예상 질문은 현재 결과 복사로 활용할 수 있습니다.");
+  const saveResult = async () => {
+    if (!selectedProject) {
       return;
     }
 
@@ -147,15 +146,24 @@ export function AIAssistant() {
     setErrorMessage("");
 
     try {
-      const updatedProject = await updatePortfolioProject(selectedProject.id, {
-        savedPortfolioDraft: resultText,
-        portfolioStatus: "보완 필요",
-      });
+      const updatedProject =
+        outputType === "portfolio"
+          ? await updatePortfolioProject(selectedProject.id, {
+              savedPortfolioDraft: resultText,
+              portfolioStatus: "보완 필요",
+            })
+          : await updatePortfolioProject(selectedProject.id, {
+              savedInterviewQuestions: resultText,
+            });
 
       setProjects((prev) => prev.map((project) => (project.id === updatedProject.id ? updatedProject : project)));
-      setSavedNotice(`${updatedProject.title} 결과를 포트폴리오 초안으로 저장했습니다.`);
+      setSavedNotice(
+        outputType === "portfolio"
+          ? `${updatedProject.title} 결과를 포트폴리오 초안으로 저장했습니다.`
+          : `${updatedProject.title} 면접 질문을 보관함에 저장했습니다.`,
+      );
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "포트폴리오 초안을 저장하지 못했습니다.");
+      setErrorMessage(error instanceof Error ? error.message : "생성 결과를 저장하지 못했습니다.");
     } finally {
       setIsSaving(false);
     }
@@ -322,11 +330,13 @@ export function AIAssistant() {
               </div>
               <div className="rounded-lg border border-slate-200 bg-white p-3">
                 <div className="mb-1 flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-900">현재 생성된 면접 질문</p>
-                  <Badge variant="outline">{outputType === "interview" ? "확인 중" : "대기"}</Badge>
+                  <p className="text-sm font-semibold text-slate-900">저장된 면접 예상 질문</p>
+                  <Badge variant={selectedProject.aiInterviewSaved ? "success" : "secondary"}>
+                    {selectedProject.aiInterviewSaved ? "저장됨" : "저장 전"}
+                  </Badge>
                 </div>
                 <p className="line-clamp-4 text-xs leading-5 text-slate-500">
-                  {outputType === "interview" ? resultText : "면접 예상 질문을 선택하면 이 프로젝트 기준의 질문과 답변 포인트를 확인할 수 있습니다."}
+                  {selectedProject.savedInterviewQuestions ?? "아직 저장된 면접 예상 질문이 없습니다."}
                 </p>
               </div>
             </CardContent>
@@ -442,9 +452,9 @@ export function AIAssistant() {
                   {resultText}
                 </pre>
                 <div className="space-y-2 border-t border-slate-100 bg-slate-50 p-4">
-                  <Button className="w-full shadow-sm" onClick={() => void saveDraft()} disabled={isSaving}>
+                  <Button className="w-full shadow-sm" onClick={() => void saveResult()} disabled={isSaving}>
                     <Save className="mr-2 h-4 w-4" />
-                    {outputType === "portfolio" ? "포트폴리오 초안으로 저장" : "면접 질문 결과 확인"}
+                    {outputType === "portfolio" ? "포트폴리오 초안으로 저장" : "면접 질문 보관함에 저장"}
                   </Button>
                   {savedNotice && <p className="text-center text-xs text-emerald-700">{savedNotice}</p>}
                   {copyNotice && <p className="text-center text-xs text-slate-500">{copyNotice}</p>}

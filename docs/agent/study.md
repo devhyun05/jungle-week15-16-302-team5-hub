@@ -4400,3 +4400,117 @@ COACH ·Î±×ÀÎ
 - browser cache
 - Vite HMR
 - source of truth
+
+---
+
+## 2026-06-16 í•™ìŠµ: AI ë„ìš°ë¯¸ ë©´ì ‘ ì§ˆë¬¸ ì €ìž¥ íë¦„
+
+ì´ë²ˆì— ë³¸ íŒŒì¼:
+
+| íŒŒì¼ | ì—­í•  |
+| --- | --- |
+| `frontend/src/app/pages/ai/AIAssistant.tsx` | í”„ë¡œì íŠ¸ë¥¼ ì„ íƒí•˜ê³  í¬íŠ¸í´ë¦¬ì˜¤ ê¸€ ë˜ëŠ” ë©´ì ‘ ì˜ˆìƒ ì§ˆë¬¸ ê²°ê³¼ë¥¼ ì €ìž¥í•˜ëŠ” í™”ë©´ |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | ì„ íƒí•œ í¬íŠ¸í´ë¦¬ì˜¤ í”„ë¡œì íŠ¸ì˜ ì €ìž¥ëœ ì´ˆì•ˆê³¼ ë©´ì ‘ ì§ˆë¬¸ì„ ë³´ì—¬ì£¼ëŠ” í™”ë©´ |
+| `frontend/src/app/api/portfolio.ts` | í”„ë¡ íŠ¸ì—”ë“œê°€ í¬íŠ¸í´ë¦¬ì˜¤ API ì‘ë‹µ/ìš”ì²­ íƒ€ìž…ì„ ì •ì˜í•˜ëŠ” íŒŒì¼ |
+| `backend/app/schemas/portfolio.py` | FastAPIê°€ í¬íŠ¸í´ë¦¬ì˜¤ ìš”ì²­/ì‘ë‹µ ëª¨ì–‘ì„ ë¬¸ì„œí™”í•˜ê³  ê²€ì¦í•˜ëŠ” Pydantic schema |
+| `backend/app/db/models/portfolio_project.py` | `portfolio_projects` í…Œì´ë¸”ì˜ SQLAlchemy ëª¨ë¸ |
+| `backend/app/repositories/portfolio_repository.py` | DB row ìƒì„±/ìˆ˜ì • ê°™ì€ ì‹¤ì œ ì €ìž¥ ìž‘ì—…ì„ ë‹´ë‹¹í•˜ëŠ” ê³„ì¸µ |
+| `backend/app/services/portfolio_service.py` | í™”ë©´/APIì— ë§žëŠ” ì‘ë‹µì„ ì¡°ë¦½í•˜ëŠ” ë¹„ì¦ˆë‹ˆìŠ¤ ê³„ì¸µ |
+| `backend/app/db/init_db.py` | ë¡œì»¬ ê°œë°œ DB í…Œì´ë¸”ê³¼ v1 ë³´ê°• columnì„ ì¤€ë¹„í•˜ëŠ” íŒŒì¼ |
+
+í•µì‹¬ ê°œë…:
+
+- API ì‘ë‹µ íƒ€ìž…ê³¼ DB columnì€ ì„œë¡œ ì—°ê²°ë˜ì–´ì•¼ í•œë‹¤. í™”ë©´ì—ì„œ `savedInterviewQuestions`ë¥¼ ì“°ë ¤ë©´ ë°±ì—”ë“œ ì‘ë‹µ schemaì™€ DB ëª¨ë¸ì—ë„ ê°™ì€ ì˜ë¯¸ì˜ í•„ë“œê°€ í•„ìš”í•˜ë‹¤.
+- í”„ë¡ íŠ¸ì—”ë“œëŠ” camelCase(`savedInterviewQuestions`)ë¥¼ ì“°ê³ , ë°±ì—”ë“œëŠ” Python ìŠ¤íƒ€ì¼ snake_case(`saved_interview_questions`)ë¥¼ ì“´ë‹¤.
+- Pydantic `alias`ëŠ” ì´ ë‘ ì´ë¦„ ì°¨ì´ë¥¼ ì—°ê²°í•œë‹¤.
+- `Base.metadata.create_all()`ì€ ì—†ëŠ” í…Œì´ë¸”ì€ ë§Œë“¤ì§€ë§Œ, ì´ë¯¸ ì¡´ìž¬í•˜ëŠ” í…Œì´ë¸”ì— ìƒˆ columnì„ ìžë™ìœ¼ë¡œ ì¶”ê°€í•˜ì§€ ì•ŠëŠ”ë‹¤.
+- ê·¸ëž˜ì„œ Alembicì„ ë„ìž…í•˜ê¸° ì „ ë¡œì»¬ í•™ìŠµ ë‹¨ê³„ì—ì„œëŠ” `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`ë¡œ nullable columnì„ ë³´ê°•í–ˆë‹¤.
+
+ì½”ë“œ íë¦„:
+
+```txt
+AI ë„ìš°ë¯¸ì—ì„œ í”„ë¡œì íŠ¸ ì„ íƒ
+-> ê²°ê³¼ ìœ í˜•ì„ í¬íŠ¸í´ë¦¬ì˜¤ ê¸€ ë˜ëŠ” ë©´ì ‘ ì˜ˆìƒ ì§ˆë¬¸ìœ¼ë¡œ ì„ íƒ
+-> ì €ìž¥ ë²„íŠ¼ í´ë¦­
+-> PATCH /portfolio/projects/{project_id}
+-> í¬íŠ¸í´ë¦¬ì˜¤ ê¸€ì´ë©´ savedPortfolioDraft ì €ìž¥
+-> ë©´ì ‘ ì§ˆë¬¸ì´ë©´ savedInterviewQuestions ì €ìž¥
+-> ë°±ì—”ë“œê°€ aiDraftSaved / aiInterviewSaved ìƒíƒœë¥¼ ê³„ì‚°í•´ ì‘ë‹µ
+-> í”„ë¡ íŠ¸ stateì˜ í•´ë‹¹ í”„ë¡œì íŠ¸ë¥¼ updatedProjectë¡œ êµì²´
+-> í¬íŠ¸í´ë¦¬ì˜¤ ê´€ë¦¬ í™”ë©´ì—ì„œ ì €ìž¥ëœ ê²°ê³¼ë¥¼ ë‹¤ì‹œ í‘œì‹œ
+```
+
+ì´ë²ˆì— ì´í•´í•´ì•¼ í•  í¬ì¸íŠ¸:
+
+1. í™”ë©´ì—ì„œ ë³´ì´ëŠ” ê°’ì´ ìƒê¸°ë ¤ë©´ í”„ë¡ íŠ¸ íƒ€ìž…, ë°±ì—”ë“œ schema, DB ëª¨ë¸, service ì‘ë‹µ ì¡°ë¦½ì´ ê°™ì´ ë§žì•„ì•¼ í•œë‹¤.
+2. í¬íŠ¸í´ë¦¬ì˜¤ ê¸€ ì´ˆì•ˆê³¼ ë©´ì ‘ ì§ˆë¬¸ì€ ë‘˜ ë‹¤ AI ê²°ê³¼ë¬¼ì´ì§€ë§Œ ì €ìž¥ ìœ„ì¹˜ì™€ ë²„íŠ¼ ë¬¸êµ¬ë¥¼ ë‹¤ë¥´ê²Œ ë³´ì—¬ì£¼ëŠ” íŽ¸ì´ ì´í•´í•˜ê¸° ì‰½ë‹¤.
+3. ì§€ê¸ˆì€ ì‹¤ì œ OpenAI í˜¸ì¶œ ì „ì´ë¯€ë¡œ ê²°ê³¼ ìƒì„±ì€ ìƒ˜í”Œì´ì§€ë§Œ, ì €ìž¥ íë¦„ì€ ì‹¤ì œ APIì™€ DBë¥¼ íƒ„ë‹¤.
+4. ë‚˜ì¤‘ì— OpenAI/RAG/MCP/Agentë¥¼ ë¶™ì—¬ë„ ì €ìž¥ endpointëŠ” ê·¸ëŒ€ë¡œ ìž¬ì‚¬ìš©í•  ìˆ˜ ìžˆë‹¤.
+
+ì¶”ê°€ ê³µë¶€ í‚¤ì›Œë“œ:
+
+- Pydantic alias
+- DTO / Schema
+- nullable column
+- database migration
+- SQL ALTER TABLE
+- SQLAlchemy model
+- repository pattern
+- service layer
+
+---
+
+## 2026-06-16 ÇÐ½À: AI µµ¿ì¹Ì ¸éÁ¢ Áú¹® ÀúÀå Èå¸§
+
+ÀÌ¹ø¿¡ º» ÆÄÀÏ:
+
+| ÆÄÀÏ | ¿ªÇÒ |
+| --- | --- |
+| `frontend/src/app/pages/ai/AIAssistant.tsx` | ÇÁ·ÎÁ§Æ®¸¦ ¼±ÅÃÇÏ°í Æ÷Æ®Æú¸®¿À ±Û ¶Ç´Â ¸éÁ¢ ¿¹»ó Áú¹® °á°ú¸¦ ÀúÀåÇÏ´Â È­¸é |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | ¼±ÅÃÇÑ Æ÷Æ®Æú¸®¿À ÇÁ·ÎÁ§Æ®ÀÇ ÀúÀåµÈ ÃÊ¾È°ú ¸éÁ¢ Áú¹®À» º¸¿©ÁÖ´Â È­¸é |
+| `frontend/src/app/api/portfolio.ts` | ÇÁ·ÐÆ®¿£µå°¡ Æ÷Æ®Æú¸®¿À API ÀÀ´ä/¿äÃ» Å¸ÀÔÀ» Á¤ÀÇÇÏ´Â ÆÄÀÏ |
+| `backend/app/schemas/portfolio.py` | FastAPI°¡ Æ÷Æ®Æú¸®¿À ¿äÃ»/ÀÀ´ä ¸ð¾çÀ» ¹®¼­È­ÇÏ°í °ËÁõÇÏ´Â Pydantic schema |
+| `backend/app/db/models/portfolio_project.py` | `portfolio_projects` Å×ÀÌºíÀÇ SQLAlchemy ¸ðµ¨ |
+| `backend/app/repositories/portfolio_repository.py` | DB row »ý¼º/¼öÁ¤ °°Àº ½ÇÁ¦ ÀúÀå ÀÛ¾÷À» ´ã´çÇÏ´Â °èÃþ |
+| `backend/app/services/portfolio_service.py` | È­¸é/API¿¡ ¸Â´Â ÀÀ´äÀ» Á¶¸³ÇÏ´Â ºñÁî´Ï½º °èÃþ |
+| `backend/app/db/init_db.py` | ·ÎÄÃ °³¹ß DB Å×ÀÌºí°ú v1 º¸°­ columnÀ» ÁØºñÇÏ´Â ÆÄÀÏ |
+
+ÇÙ½É °³³ä:
+
+- API ÀÀ´ä Å¸ÀÔ°ú DB columnÀº ¼­·Î ¿¬°áµÇ¾î¾ß ÇÑ´Ù. È­¸é¿¡¼­ `savedInterviewQuestions`¸¦ ¾²·Á¸é ¹é¿£µå ÀÀ´ä schema¿Í DB ¸ðµ¨¿¡µµ °°Àº ÀÇ¹ÌÀÇ ÇÊµå°¡ ÇÊ¿äÇÏ´Ù.
+- ÇÁ·ÐÆ®¿£µå´Â camelCase(`savedInterviewQuestions`)¸¦ ¾²°í, ¹é¿£µå´Â Python ½ºÅ¸ÀÏ snake_case(`saved_interview_questions`)¸¦ ¾´´Ù.
+- Pydantic `alias`´Â ÀÌ µÎ ÀÌ¸§ Â÷ÀÌ¸¦ ¿¬°áÇÑ´Ù.
+- `Base.metadata.create_all()`Àº ¾ø´Â Å×ÀÌºíÀº ¸¸µéÁö¸¸, ÀÌ¹Ì Á¸ÀçÇÏ´Â Å×ÀÌºí¿¡ »õ columnÀ» ÀÚµ¿À¸·Î Ãß°¡ÇÏÁö ¾Ê´Â´Ù.
+- ±×·¡¼­ AlembicÀ» µµÀÔÇÏ±â Àü ·ÎÄÃ ÇÐ½À ´Ü°è¿¡¼­´Â `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`·Î nullable columnÀ» º¸°­Çß´Ù.
+
+ÄÚµå Èå¸§:
+
+```txt
+AI µµ¿ì¹Ì¿¡¼­ ÇÁ·ÎÁ§Æ® ¼±ÅÃ
+-> °á°ú À¯ÇüÀ» Æ÷Æ®Æú¸®¿À ±Û ¶Ç´Â ¸éÁ¢ ¿¹»ó Áú¹®À¸·Î ¼±ÅÃ
+-> ÀúÀå ¹öÆ° Å¬¸¯
+-> PATCH /portfolio/projects/{project_id}
+-> Æ÷Æ®Æú¸®¿À ±ÛÀÌ¸é savedPortfolioDraft ÀúÀå
+-> ¸éÁ¢ Áú¹®ÀÌ¸é savedInterviewQuestions ÀúÀå
+-> ¹é¿£µå°¡ aiDraftSaved / aiInterviewSaved »óÅÂ¸¦ °è»êÇØ ÀÀ´ä
+-> ÇÁ·ÐÆ® stateÀÇ ÇØ´ç ÇÁ·ÎÁ§Æ®¸¦ updatedProject·Î ±³Ã¼
+-> Æ÷Æ®Æú¸®¿À °ü¸® È­¸é¿¡¼­ ÀúÀåµÈ °á°ú¸¦ ´Ù½Ã Ç¥½Ã
+```
+
+ÀÌ¹ø¿¡ ÀÌÇØÇØ¾ß ÇÒ Æ÷ÀÎÆ®:
+
+1. È­¸é¿¡¼­ º¸ÀÌ´Â °ªÀÌ »ý±â·Á¸é ÇÁ·ÐÆ® Å¸ÀÔ, ¹é¿£µå schema, DB ¸ðµ¨, service ÀÀ´ä Á¶¸³ÀÌ °°ÀÌ ¸Â¾Æ¾ß ÇÑ´Ù.
+2. Æ÷Æ®Æú¸®¿À ±Û ÃÊ¾È°ú ¸éÁ¢ Áú¹®Àº µÑ ´Ù AI °á°ú¹°ÀÌÁö¸¸ ÀúÀå À§Ä¡¿Í ¹öÆ° ¹®±¸¸¦ ´Ù¸£°Ô º¸¿©ÁÖ´Â ÆíÀÌ ÀÌÇØÇÏ±â ½±´Ù.
+3. Áö±ÝÀº ½ÇÁ¦ OpenAI È£Ãâ ÀüÀÌ¹Ç·Î °á°ú »ý¼ºÀº »ùÇÃÀÌÁö¸¸, ÀúÀå Èå¸§Àº ½ÇÁ¦ API¿Í DB¸¦ Åº´Ù.
+4. ³ªÁß¿¡ OpenAI/RAG/MCP/Agent¸¦ ºÙ¿©µµ ÀúÀå endpoint´Â ±×´ë·Î Àç»ç¿ëÇÒ ¼ö ÀÖ´Ù.
+
+Ãß°¡ °øºÎ Å°¿öµå:
+
+- Pydantic alias
+- DTO / Schema
+- nullable column
+- database migration
+- SQL ALTER TABLE
+- SQLAlchemy model
+- repository pattern
+- service layer

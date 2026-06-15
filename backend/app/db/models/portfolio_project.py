@@ -43,6 +43,7 @@ class PortfolioProject(Base):
     recent_commit_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     # AI 도우미가 만든 포트폴리오 글 초안 저장 위치다.
     saved_portfolio_draft: Mapped[str | None] = mapped_column(Text, nullable=True)
+    saved_interview_questions: Mapped[str | None] = mapped_column(Text, nullable=True)
     # 학생이 직접 관리하는 포트폴리오 상태다.
     portfolio_status: Mapped[str] = mapped_column(String(30), nullable=False, default="작성중")
     # 코치 리뷰 상태다. 학생이 임의로 바꾸는 값이 아니라 리뷰 흐름에서 갱신된다.

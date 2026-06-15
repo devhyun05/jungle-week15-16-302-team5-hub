@@ -97,6 +97,7 @@ def update_portfolio_project(
         tech_stack=serialize_text_list(request.tech_stack) if request.tech_stack is not None else None,
         portfolio_status=request.portfolio_status,
         saved_portfolio_draft=request.saved_portfolio_draft,
+        saved_interview_questions=request.saved_interview_questions,
     )
 
     return build_project_response(updated_project)
@@ -195,10 +196,12 @@ def build_project_response(project: PortfolioProject) -> PortfolioProjectRespons
         readme_summary=project.readme_summary,
         recent_commit_summary=parse_text_list(project.recent_commit_summary),
         saved_portfolio_draft=project.saved_portfolio_draft,
+        saved_interview_questions=project.saved_interview_questions,
         portfolio_status=project.portfolio_status,
         coach_feedback_status=project.coach_feedback_status,
         github_connected=project.github_connected,
         ai_draft_saved=project.ai_draft_saved,
+        ai_interview_saved=bool(project.saved_interview_questions),
         last_commit_at=project.last_commit_at,
         linked_post_ids=linked_post_ids,
         linked_record_count=len(linked_post_ids),

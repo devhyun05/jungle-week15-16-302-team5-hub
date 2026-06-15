@@ -2237,3 +2237,71 @@ restore.user_role=ADMIN
 - °øÅë `apiFetch()`·Î 401 refresh retry¸¦ Ãß°¡Çß´Ù.
 - ÀÎÁõ/Á¶È¸ API¿¡ `cache: "no-store"`¸¦ Àû¿ëÇß´Ù.
 - 6¿ù 13ÀÏºÎÅÍ ¶° ÀÖ´ø Vite dev server¸¦ Àç½ÃÀÛÇß´Ù.
+
+---
+
+## 2026-06-16 QA: AI ë„ìš°ë¯¸ ë©´ì ‘ ì§ˆë¬¸ ì €ìž¥ íë¦„
+
+ëª©í‘œ: AI ë„ìš°ë¯¸ì—ì„œ ìƒì„±í•œ ë©´ì ‘ ì˜ˆìƒ ì§ˆë¬¸ì´ í¬íŠ¸í´ë¦¬ì˜¤ í”„ë¡œì íŠ¸ì— ì €ìž¥ë˜ê³ , í¬íŠ¸í´ë¦¬ì˜¤ ëª©ë¡ ì‘ë‹µì—ì„œ ë‹¤ì‹œ í™•ì¸ë˜ëŠ”ì§€ ê²€ì¦í•œë‹¤.
+
+ì²´í¬ë¦¬ìŠ¤íŠ¸:
+
+- [x] `portfolio_projects.saved_interview_questions` columnì´ ì¤€ë¹„ëœë‹¤.
+- [x] `PATCH /portfolio/projects/{project_id}`ê°€ `savedInterviewQuestions`ë¥¼ ë°›ëŠ”ë‹¤.
+- [x] `GET /portfolio/projects` ì‘ë‹µì— `savedInterviewQuestions`ê°€ í¬í•¨ëœë‹¤.
+- [x] `GET /portfolio/projects` ì‘ë‹µì— `aiInterviewSaved`ê°€ í¬í•¨ëœë‹¤.
+- [x] AI ë„ìš°ë¯¸ì—ì„œ ë©´ì ‘ ì§ˆë¬¸ ê²°ê³¼ ì €ìž¥ ë²„íŠ¼ ë¬¸êµ¬ê°€ `ë©´ì ‘ ì§ˆë¬¸ ë³´ê´€í•¨ì— ì €ìž¥`ìœ¼ë¡œ ë³´ì¸ë‹¤.
+- [x] í¬íŠ¸í´ë¦¬ì˜¤ ê´€ë¦¬ í™”ë©´ì—ì„œ ì €ìž¥ëœ ë©´ì ‘ ì§ˆë¬¸ê³¼ ì €ìž¥ ìƒíƒœ badgeë¥¼ ë³¼ ìˆ˜ ìžˆë‹¤.
+- [x] `python -m compileall app`ê°€ ì„±ê³µí•œë‹¤.
+- [x] `npm run build`ê°€ ì„±ê³µí•œë‹¤.
+
+ê²€ì¦ ì¶œë ¥ ìš”ì•½:
+
+```txt
+init_db_ok
+create_status=201
+patch_status=200
+saved_interview_questions=True
+ai_interview_saved=True
+list_has_saved_interview=True
+cleanup_user=True
+cleanup_project=True
+```
+
+ë‚¨ì€ QA:
+
+- ì‹¤ì œ ë¸Œë¼ìš°ì €ì—ì„œ AI ë„ìš°ë¯¸ -> ë©´ì ‘ ì§ˆë¬¸ ì €ìž¥ -> í¬íŠ¸í´ë¦¬ì˜¤ í™”ë©´ ìž¬í™•ì¸ íë¦„ì„ í´ë¦­ìœ¼ë¡œ í•œ ë²ˆ ë” í™•ì¸í•œë‹¤.
+
+---
+
+## 2026-06-16 QA: AI µµ¿ì¹Ì ¸éÁ¢ Áú¹® ÀúÀå Èå¸§
+
+¸ñÇ¥: AI µµ¿ì¹Ì¿¡¼­ »ý¼ºÇÑ ¸éÁ¢ ¿¹»ó Áú¹®ÀÌ Æ÷Æ®Æú¸®¿À ÇÁ·ÎÁ§Æ®¿¡ ÀúÀåµÇ°í, Æ÷Æ®Æú¸®¿À ¸ñ·Ï ÀÀ´ä¿¡¼­ ´Ù½Ã È®ÀÎµÇ´ÂÁö °ËÁõÇÑ´Ù.
+
+Ã¼Å©¸®½ºÆ®:
+
+- [x] `portfolio_projects.saved_interview_questions` columnÀÌ ÁØºñµÈ´Ù.
+- [x] `PATCH /portfolio/projects/{project_id}`°¡ `savedInterviewQuestions`¸¦ ¹Þ´Â´Ù.
+- [x] `GET /portfolio/projects` ÀÀ´ä¿¡ `savedInterviewQuestions`°¡ Æ÷ÇÔµÈ´Ù.
+- [x] `GET /portfolio/projects` ÀÀ´ä¿¡ `aiInterviewSaved`°¡ Æ÷ÇÔµÈ´Ù.
+- [x] AI µµ¿ì¹Ì¿¡¼­ ¸éÁ¢ Áú¹® °á°ú ÀúÀå ¹öÆ° ¹®±¸°¡ `¸éÁ¢ Áú¹® º¸°üÇÔ¿¡ ÀúÀå`À¸·Î º¸ÀÎ´Ù.
+- [x] Æ÷Æ®Æú¸®¿À °ü¸® È­¸é¿¡¼­ ÀúÀåµÈ ¸éÁ¢ Áú¹®°ú ÀúÀå »óÅÂ badge¸¦ º¼ ¼ö ÀÖ´Ù.
+- [x] `python -m compileall app`°¡ ¼º°øÇÑ´Ù.
+- [x] `npm run build`°¡ ¼º°øÇÑ´Ù.
+
+°ËÁõ Ãâ·Â ¿ä¾à:
+
+```txt
+init_db_ok
+create_status=201
+patch_status=200
+saved_interview_questions=True
+ai_interview_saved=True
+list_has_saved_interview=True
+cleanup_user=True
+cleanup_project=True
+```
+
+³²Àº QA:
+
+- ½ÇÁ¦ ºê¶ó¿ìÀú¿¡¼­ AI µµ¿ì¹Ì -> ¸éÁ¢ Áú¹® ÀúÀå -> Æ÷Æ®Æú¸®¿À È­¸é ÀçÈ®ÀÎ Èå¸§À» Å¬¸¯À¸·Î ÇÑ ¹ø ´õ È®ÀÎÇÑ´Ù.

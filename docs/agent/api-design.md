@@ -820,3 +820,59 @@ POST /agent/run
 - ì—†ëŠ” ê²Œì‹œê¸€ idëŠ” 404ë¥¼ ë°˜í™˜í•œë‹¤.
 - `python -m compileall app`ì´ ì„±ê³µí•œë‹¤.
 - `npm run build`ê°€ ì„±ê³µí•œë‹¤.
+
+---
+
+## 2026-06-16 ì¶”ê°€: í¬íŠ¸í´ë¦¬ì˜¤ AI ê²°ê³¼ ì €ì¥ í•„ë“œ
+
+í¬íŠ¸í´ë¦¬ì˜¤ í”„ë¡œì íŠ¸ APIê°€ ë©´ì ‘ ì˜ˆìƒ ì§ˆë¬¸ ì €ì¥ ê²°ê³¼ë¥¼ í•¨ê»˜ ë‹¤ë£¨ë„ë¡ í™•ì¥ëë‹¤.
+
+### PATCH /portfolio/projects/{project_id}
+
+ì¶”ê°€ request field:
+
+| í•„ë“œ | íƒ€ì… | ì„¤ëª… |
+| --- | --- | --- |
+| `savedInterviewQuestions` | `string | null` | AI ë„ìš°ë¯¸ì—ì„œ ë§Œë“  ë©´ì ‘ ì˜ˆìƒ ì§ˆë¬¸ ê²°ê³¼ë¥¼ í”„ë¡œì íŠ¸ì— ì €ì¥í•œë‹¤. |
+
+### GET /portfolio/projects
+
+ì¶”ê°€ response field:
+
+| í•„ë“œ | íƒ€ì… | ì„¤ëª… |
+| --- | --- | --- |
+| `savedInterviewQuestions` | `string | null` | í”„ë¡œì íŠ¸ì— ì €ì¥ëœ ë©´ì ‘ ì˜ˆìƒ ì§ˆë¬¸ ë³¸ë¬¸ì´ë‹¤. |
+| `aiInterviewSaved` | `boolean` | ì €ì¥ëœ ë©´ì ‘ ì˜ˆìƒ ì§ˆë¬¸ì´ ìˆìœ¼ë©´ `true`ë¡œ ê³„ì‚°ëœë‹¤. |
+
+í”„ë¡ íŠ¸ ì—°ê²°:
+
+- `frontend/src/app/api/portfolio.ts`ì˜ `PortfolioProjectApiItem` íƒ€ì…ì— ìœ„ í•„ë“œê°€ ì¶”ê°€ëë‹¤.
+- AI ë„ìš°ë¯¸ëŠ” `savedInterviewQuestions`ë¥¼ PATCHí•˜ê³ , í¬íŠ¸í´ë¦¬ì˜¤ í™”ë©´ì€ `aiInterviewSaved`ë¡œ badge ìƒíƒœë¥¼ í‘œì‹œí•œë‹¤.
+
+---
+
+## 2026-06-16 Ãß°¡: Æ÷Æ®Æú¸®¿À AI °á°ú ÀúÀå ÇÊµå
+
+Æ÷Æ®Æú¸®¿À ÇÁ·ÎÁ§Æ® API°¡ ¸éÁ¢ ¿¹»ó Áú¹® ÀúÀå °á°ú¸¦ ÇÔ²² ´Ù·çµµ·Ï È®ÀåµÆ´Ù.
+
+### PATCH /portfolio/projects/{project_id}
+
+Ãß°¡ request field:
+
+| ÇÊµå | Å¸ÀÔ | ¼³¸í |
+| --- | --- | --- |
+| `savedInterviewQuestions` | `string | null` | AI µµ¿ì¹Ì¿¡¼­ ¸¸µç ¸éÁ¢ ¿¹»ó Áú¹® °á°ú¸¦ ÇÁ·ÎÁ§Æ®¿¡ ÀúÀåÇÑ´Ù. |
+
+### GET /portfolio/projects
+
+Ãß°¡ response field:
+
+| ÇÊµå | Å¸ÀÔ | ¼³¸í |
+| --- | --- | --- |
+| `savedInterviewQuestions` | `string | null` | ÇÁ·ÎÁ§Æ®¿¡ ÀúÀåµÈ ¸éÁ¢ ¿¹»ó Áú¹® º»¹®ÀÌ´Ù. |
+| `aiInterviewSaved` | `boolean` | ÀúÀåµÈ ¸éÁ¢ ¿¹»ó Áú¹®ÀÌ ÀÖÀ¸¸é `true`·Î °è»êµÈ´Ù. |
+
+ÇÁ·ĞÆ® ¿¬°á:
+
+- `frontend/src/app/api/portfolio.ts`ÀÇ `PortfolioProjectApiItem` Å¸ÀÔ¿¡ À§ ÇÊµå°¡ Ãß°¡µÆ´Ù.
+- AI µµ¿ì¹Ì´Â `savedInterviewQuestions`¸¦ PATCHÇÏ°í, Æ÷Æ®Æú¸®¿À È­¸éÀº `aiInterviewSaved`·Î badge »óÅÂ¸¦ Ç¥½ÃÇÑ´Ù.

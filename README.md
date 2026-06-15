@@ -460,3 +460,10 @@ OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 �
 - COACH 기본 진입 화면: `/coach-review`
 - COACH 메뉴: 코치 리뷰 인박스, 전체 게시글, 설정
 - `/`에 직접 접근하면 코치 사용자는 코치 리뷰 인박스로 이동합니다.
+
+## 최근 변경: AI 도우미 결과 보관
+
+- AI 도우미에서 만든 면접 예상 질문을 포트폴리오 프로젝트에 저장할 수 있도록 `savedInterviewQuestions` 흐름을 추가했습니다.
+- 포트폴리오 프로젝트 응답에 `aiInterviewSaved`를 추가해 저장 여부를 화면 badge로 보여줍니다.
+- 현재 생성은 OpenAI 연결 전 샘플 결과이며, 저장/조회 흐름은 실제 포트폴리오 API와 DB 기준으로 동작합니다.
+- 백엔드 로컬 개발 DB는 Alembic 도입 전 단계이므로 `ADD COLUMN IF NOT EXISTS`로 새 nullable column을 보강합니다.

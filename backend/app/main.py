@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
+from app.db.init_db import init_db
 from app.routers.admin import router as admin_router
 from app.routers.auth import router as auth_router
 from app.routers.comments import router as comments_router
@@ -19,6 +20,15 @@ from app.routers.reviews import router as reviews_router
 # FastAPI 애플리케이션 객체다.
 # title은 Swagger UI 상단에 보이는 API 이름으로 사용된다.
 app = FastAPI(title=settings.app_name)
+
+
+@app.on_event("startup")
+def startup() -> None:
+    """
+    로컬 개발 서버 시작 시 테이블과 v1 보강 column을 준비한다.
+    """
+
+    init_db()
 
 # 로컬 개발 단계에서는 사용자가 업로드한 프로필 이미지를 backend/uploads 아래에 저장한다.
 # 배포 단계에서는 이 mount를 S3 같은 외부 스토리지 URL로 교체할 수 있다.

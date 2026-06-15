@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 import app.db.models
 from app.db.base import Base
@@ -46,6 +46,21 @@ def seed_post_categories() -> None:
         db.commit()
 
 
+def ensure_schema_columns() -> None:
+    """
+    Alembic 도입 전 로컬 학습 단계에서 추가된 nullable column을 보강한다.
+
+    Notes:
+        create_all은 이미 존재하는 테이블에 새 column을 추가하지 않는다.
+        v1 개발 단계에서는 PostgreSQL의 ADD COLUMN IF NOT EXISTS로 안전하게 보강한다.
+    """
+
+    with engine.begin() as connection:
+        connection.execute(
+            text("ALTER TABLE portfolio_projects ADD COLUMN IF NOT EXISTS saved_interview_questions TEXT"),
+        )
+
+
 def init_db() -> None:
     """
     JungleLog가 동작하는 데 필요한 최소 DB 초기화를 실행한다.
@@ -56,4 +71,5 @@ def init_db() -> None:
     """
 
     create_tables()
+    ensure_schema_columns()
     seed_post_categories()

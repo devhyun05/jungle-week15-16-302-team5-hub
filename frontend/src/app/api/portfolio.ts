@@ -12,10 +12,12 @@ export type PortfolioProjectApiItem = {
   readmeSummary: string | null;
   recentCommitSummary: string[];
   savedPortfolioDraft: string | null;
+  savedInterviewQuestions: string | null;
   portfolioStatus: PortfolioStatus;
   coachFeedbackStatus: string;
   githubConnected: boolean;
   aiDraftSaved: boolean;
+  aiInterviewSaved: boolean;
   lastCommitAt: string | null;
   linkedPostIds: number[];
   linkedRecordCount: number;
@@ -41,6 +43,7 @@ export type PortfolioProjectUpdatePayload = {
   techStack?: string[];
   portfolioStatus?: PortfolioStatus;
   savedPortfolioDraft?: string;
+  savedInterviewQuestions?: string;
 };
 
 export async function getPortfolioProjects(): Promise<PortfolioProjectListResponse> {
