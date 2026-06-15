@@ -5,6 +5,7 @@ export type PortfolioStatus = "작성중" | "보완 필요" | "정리 완료";
 export type PortfolioProjectApiItem = {
   id: number;
   title: string;
+  publishedPostId: number | null;
   repoFullName: string;
   githubBranch: string;
   githubUrl: string;
@@ -119,6 +120,20 @@ export async function linkPortfolioProjectPosts(projectId: number, postIds: numb
 
 export async function refreshPortfolioProjectGithubInfo(projectId: number): Promise<PortfolioProjectApiItem> {
   const response = await apiFetch(`${API_BASE_URL}/portfolio/projects/${projectId}/github/refresh`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response);
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function publishPortfolioProjectPost(projectId: number): Promise<PortfolioProjectApiItem> {
+  const response = await apiFetch(`${API_BASE_URL}/portfolio/projects/${projectId}/publish-post`, {
     method: "POST",
     credentials: "include",
   });

@@ -170,6 +170,23 @@ def update_project_branch(
     return project
 
 
+def update_published_post(
+    db: Session,
+    project: PortfolioProject,
+    post: Post,
+) -> PortfolioProject:
+    """
+    포트폴리오 프로젝트가 대표로 발행한 게시글 id를 저장한다.
+    """
+
+    project.published_post_id = post.id
+
+    db.commit()
+    db.refresh(project)
+
+    return get_project_by_id(db=db, project_id=project.id, current_user=project.owner) or project
+
+
 def update_project(
     db: Session,
     project: PortfolioProject,

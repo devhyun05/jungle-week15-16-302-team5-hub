@@ -30,6 +30,7 @@ class PortfolioProjectPostLinkRequest(FrontendResponseModel):
 class PortfolioProjectResponse(FrontendResponseModel):
     id: int
     title: str
+    published_post_id: int | None = Field(alias="publishedPostId")
     repo_full_name: str = Field(alias="repoFullName")
     github_branch: str = Field(alias="githubBranch")
     github_url: str = Field(alias="githubUrl")

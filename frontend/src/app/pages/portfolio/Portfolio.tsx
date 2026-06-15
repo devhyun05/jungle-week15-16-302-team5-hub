@@ -10,6 +10,7 @@ import {
   createPortfolioProject,
   getPortfolioProjects,
   linkPortfolioProjectPosts,
+  publishPortfolioProjectPost,
   refreshPortfolioProjectGithubInfo,
   updatePortfolioProject,
   type PortfolioProjectApiItem,
@@ -349,6 +350,27 @@ export function Portfolio() {
     }
   };
 
+  const publishPortfolioPost = async () => {
+    if (!selectedProject) {
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage("");
+    setNotice("");
+
+    try {
+      const updatedProject = await publishPortfolioProjectPost(selectedProject.id);
+
+      upsertProject(updatedProject);
+      setNotice("프로젝트 내용을 바탕으로 포트폴리오 게시글을 발행했습니다.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "포트폴리오 게시글을 발행하지 못했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div>
@@ -495,6 +517,14 @@ export function Portfolio() {
                       <Button variant="outline" size="sm" className="whitespace-nowrap" asChild>
                         <Link to="/coach-review">코치 리뷰 요청하기</Link>
                       </Button>
+                      <Button variant="outline" size="sm" className="whitespace-nowrap" onClick={() => void publishPortfolioPost()} disabled={isSaving}>
+                        포트폴리오 게시글로 발행
+                      </Button>
+                      {selectedProject.publishedPostId && (
+                        <Button variant="ghost" size="sm" className="whitespace-nowrap" asChild>
+                          <Link to={`/posts/${selectedProject.publishedPostId}`}>게시글로 보기</Link>
+                        </Button>
+                      )}
                       {selectedProjectGithubHref ? (
                         <Button variant="outline" size="sm" className="whitespace-nowrap" asChild>
                           <a href={selectedProjectGithubHref} target="_blank" rel="noreferrer">

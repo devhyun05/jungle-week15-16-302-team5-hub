@@ -3321,3 +3321,54 @@ parse_github_project_reference("https://github.com/octocat/Hello-World/tree/mast
 ```txt
 feat: GitHub branch 기준 포트폴리오 관리 연결
 ```
+
+---
+
+## 2026-06-16 2차 작업: 포트폴리오 게시글 발행과 AI 도우미 UI 정리
+
+상태: 완료
+
+목표:
+
+- `포트폴리오 관리` 카테고리 게시글을 일반 자유 글이 아니라 포트폴리오 프로젝트 기반 글로 발행할 수 있게 한다.
+- 포트폴리오 관리 화면은 preview 중심으로 유지하고, 전체 내용은 게시글 상세에서 보게 한다.
+- AI 도우미 화면을 더 깔끔한 작업 도구 흐름으로 정리한다.
+
+진행한 것:
+
+- `portfolio_projects.published_post_id` 컬럼을 추가했다.
+- `POST /portfolio/projects/{project_id}/publish-post` API를 추가했다.
+- 프로젝트 기반 포트폴리오 게시글을 생성하거나, 이미 있으면 갱신하도록 구현했다.
+- 발행된 게시글은 `포트폴리오 관리` 카테고리와 프로젝트 소유자를 작성자로 사용한다.
+- 포트폴리오 게시글 본문에는 프로젝트 이름, GitHub repo/branch, 기술 스택, 프로젝트 설명, 연결된 학습 기록, 최근 커밋, 코치 피드백 상태, 포트폴리오 글 전체가 포함된다.
+- 포트폴리오 관리 화면에 `포트폴리오 게시글로 발행`과 `게시글로 보기` 흐름을 추가했다.
+- AI 도우미 화면을 프로젝트 선택, 생성 유형 선택, 참고 자료, 생성 결과 중심으로 재작성했다.
+- AI 도우미 내부 저장 필드는 기존 `savedPortfolioDraft`, `savedInterviewQuestions`를 유지했다.
+- 사용자 화면 문구는 `포트폴리오 초안`보다 `포트폴리오 글` 중심으로 정리했다.
+
+검증:
+
+```txt
+.\.venv\Scripts\python.exe -m compileall app
+npm run build
+init_db smoke test
+publish_portfolio_post service QA with temporary data
+브라우저 /ai-assistant empty state smoke test
+```
+
+결과:
+
+- 백엔드 compile 성공
+- 프론트엔드 build 성공
+- `init_db()` 실행 성공
+- 임시 QA 프로젝트 발행 결과 `published_post_id` 생성 확인
+- 발행된 게시글 category slug가 `portfolio`인지 확인
+- 발행된 게시글 본문에 포트폴리오 글 전체와 branch 정보가 포함되는지 확인
+- QA 데이터 cleanup 완료
+- `/ai-assistant` 화면이 에러 없이 열리고 빈 프로젝트 안내가 보이는지 확인
+
+커밋 추천 제목:
+
+```txt
+feat: 프로젝트 기반 포트폴리오 게시글 발행 연결
+```

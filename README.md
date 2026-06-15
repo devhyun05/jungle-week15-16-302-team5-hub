@@ -41,6 +41,7 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 - GitHub REST API 기반 repo/branch 등록, README 요약, 사용 언어, 최근 커밋 조회 연결
 - 등록된 프로젝트의 GitHub 정보 새로고침 API와 화면 연결
 - 포트폴리오 프로젝트와 게시글 연결 API
+- 포트폴리오 프로젝트 기반 `포트폴리오 관리` 게시글 발행/갱신 API
 - 포트폴리오 프로젝트 중복 등록 방지와 GitHub 링크 이동 UI
 - 포트폴리오 프로젝트 등록 후 목록 재조회/중복 등록 UX/긴 repo 카드 표시 안정화
 - 코치 리뷰 요청 생성/취소/목록/인박스/피드백 API와 화면 연결
@@ -50,7 +51,8 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 - 게시글 상세 조회 시 조회수 증가 처리
 - 대시보드 주요 통계 API 기반 정리
 - AI 도우미 화면을 포트폴리오 API 데이터 기반 샘플로 정리
-- AI 도우미 화면에 포트폴리오 초안 보관함 UI 추가
+- AI 도우미 화면을 프로젝트 선택, 참고 자료, 생성 결과 중심으로 재정리
+- AI 도우미 화면에 포트폴리오 글/면접 질문 저장 상태 UI 추가
 - 포트폴리오/AI 도우미의 내 기록 조회를 `/me/posts` API 계약(`size <= 50`)에 맞게 정리
 - 레거시 `mockData.ts` 제거
 - 브라우저 타이틀/메타 정보를 JungleLog 기준으로 정리
@@ -229,6 +231,7 @@ WEEK15_AI_BOARD/
 - `PATCH /portfolio/projects/{project_id}`
 - `POST /portfolio/projects/{project_id}/github/refresh`
 - `PUT /portfolio/projects/{project_id}/posts`
+- `POST /portfolio/projects/{project_id}/publish-post`
 
 ### 코치 리뷰
 
@@ -556,3 +559,11 @@ OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 �
 - README는 GitHub contents API의 `ref`, 최근 커밋은 commits API의 `sha`를 사용해 branch 기준으로 조회합니다.
 - GitHub languages API는 repo 단위라 branch별 값을 직접 제공하지 않으므로, branch tree를 조회해 파일 확장자 기반 기술 스택을 우선 추정합니다.
 - 포트폴리오 관리 화면은 repo와 branch를 함께 보여주고, 포트폴리오 글은 preview 중심으로 표시합니다.
+
+## 최근 변경: 포트폴리오 게시글 발행과 AI 도우미 정리
+
+- 포트폴리오 프로젝트에 `publishedPostId`를 추가해 프로젝트가 발행한 대표 포트폴리오 게시글을 명확히 연결합니다.
+- 포트폴리오 관리 화면에서 `포트폴리오 게시글로 발행`을 누르면 `포트폴리오 관리` 카테고리 게시글을 생성하거나 갱신합니다.
+- 발행된 게시글 상세에서는 프로젝트 이름, GitHub repo/branch, 기술 스택, 프로젝트 설명, 연결 기록, 최근 커밋, 코치 피드백 상태, 포트폴리오 글 전체가 보입니다.
+- AI 도우미 화면은 프로젝트 선택, 생성 유형 선택, 참고 자료, 생성 결과 저장 흐름으로 정리했습니다.
+- 화면 문구는 `초안`보다 `포트폴리오 글` 중심으로 바꾸고, 내부 DB 필드명은 기존 `savedPortfolioDraft`를 유지해 기존 데이터 흐름을 깨지 않게 했습니다.

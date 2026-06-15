@@ -957,3 +957,19 @@ AI ����̰� ���� ���� ���� ������ ������Ʈ���� �����ϱ� ���� `portfolio_projects
 - 사용자가 `main`, `dev`, `feature/...` branch를 각각 포트폴리오 프로젝트로 관리할 수 있다.
 - GitHub README와 commit 조회 시 어떤 branch를 기준으로 가져왔는지 명확해진다.
 - AI 도우미가 나중에 포트폴리오 글을 만들 때 정확한 branch 자료를 참고할 수 있다.
+
+---
+
+## 2026-06-16 DB 설계 추가: portfolio_projects.published_post_id
+
+`portfolio_projects`에 `published_post_id` 필드를 추가했다.
+
+| 필드 | 타입 | 이유 |
+| --- | --- | --- |
+| `published_post_id` | bigint nullable FK(posts.id) | 프로젝트가 전체 게시글에 발행한 대표 포트폴리오 글을 명확히 연결하기 위해 사용한다. |
+
+왜 `portfolio_project_posts`를 재사용하지 않았나:
+
+- `portfolio_project_posts`는 프로젝트가 참고하는 학습 기록 연결이다.
+- 발행된 포트폴리오 글은 참고 기록이 아니라 프로젝트를 대표하는 결과물이다.
+- 두 의미를 섞으면 연결된 기록 수와 AI 참고 자료가 꼬일 수 있다.

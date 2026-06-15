@@ -959,3 +959,34 @@ Response:
 - 저장된 `githubBranch` 기준으로 README와 최근 커밋을 다시 조회한다.
 - README는 GitHub contents API의 `ref` query를 사용한다.
 - commits는 GitHub commits API의 `sha` query를 사용한다.
+
+---
+
+## 2026-06-16 추가: 포트폴리오 게시글 발행 API
+
+### POST /portfolio/projects/{project_id}/publish-post
+
+목적:
+
+- 포트폴리오 프로젝트 내용을 기반으로 전체 게시글/내 기록에서 볼 수 있는 `포트폴리오 관리` 카테고리 게시글을 발행하거나 갱신한다.
+
+권한:
+
+- STUDENT
+- ADMIN
+
+처리:
+
+- `published_post_id`가 없으면 새 게시글을 생성한다.
+- `published_post_id`가 있고 게시글이 살아 있으면 기존 게시글을 갱신한다.
+- 게시글 작성자는 프로젝트 소유자다.
+- 게시글 카테고리는 `portfolio`다.
+- 응답은 갱신된 `PortfolioProjectResponse`다.
+
+응답 추가 필드:
+
+```json
+{
+  "publishedPostId": 123
+}
+```

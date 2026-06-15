@@ -4972,3 +4972,50 @@ GitHub ������Ʈ ���
 - DB migration
 - Git tree
 - file extension based language inference
+
+---
+
+## 2026-06-16 학습 기록: 포트폴리오 게시글 발행과 AI 도우미 UI 정리
+
+이번 구현은 포트폴리오 프로젝트를 전체 게시글의 `포트폴리오 관리` 글로 발행하는 흐름과 AI 도우미 화면을 정리한 작업이다.
+
+관련 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/db/models/portfolio_project.py` | `published_post_id`로 대표 포트폴리오 게시글 연결 |
+| `backend/app/db/init_db.py` | 기존 DB에 `published_post_id` 컬럼 보강 |
+| `backend/app/services/portfolio_service.py` | 프로젝트 기반 포트폴리오 게시글 본문 생성/발행 로직 |
+| `backend/app/repositories/portfolio_repository.py` | 발행된 게시글 id를 프로젝트에 저장 |
+| `backend/app/routers/portfolio.py` | `POST /portfolio/projects/{project_id}/publish-post` endpoint 추가 |
+| `backend/app/schemas/portfolio.py` | `publishedPostId` 응답 추가 |
+| `frontend/src/app/api/portfolio.ts` | 포트폴리오 게시글 발행 API wrapper 추가 |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | 발행 버튼과 게시글로 보기 링크 추가 |
+| `frontend/src/app/pages/ai/AIAssistant.tsx` | AI 도우미 UI를 작업 흐름 중심으로 재구성 |
+
+핵심 흐름:
+
+1. 학생이 포트폴리오 관리 화면에서 프로젝트를 선택한다.
+2. `포트폴리오 게시글로 발행` 버튼을 누른다.
+3. 백엔드는 프로젝트 정보를 읽고 `포트폴리오 관리` 카테고리 게시글 본문을 만든다.
+4. 처음 발행이면 새 게시글을 만들고, 이미 발행된 글이 있으면 기존 글을 갱신한다.
+5. 프로젝트에는 `published_post_id`가 저장된다.
+6. 사용자는 전체 게시글/내 기록에서 해당 포트폴리오 글 전체를 읽을 수 있다.
+
+중요 개념:
+
+- 연결된 학습 기록과 발행된 포트폴리오 게시글은 의미가 다르다.
+- 그래서 `portfolio_project_posts`에 발행 글을 섞지 않고 `published_post_id`를 별도로 둔다.
+- 프로젝트 관리 화면은 preview와 관리 행동 중심이고, 게시글 상세는 전체 글을 읽는 화면이다.
+- API 필드명은 프론트에서 `publishedPostId`, 백엔드/DB에서는 `published_post_id`로 관리한다.
+- AI 도우미는 아직 실제 OpenAI 호출 전이므로 기존 프로젝트 데이터를 이용해 결과 형태를 구성한다.
+
+추가 학습 키워드:
+
+- one-to-one reference
+- representative post
+- derived content
+- API wrapper
+- UI information architecture
+- empty state
+- data flow preservation

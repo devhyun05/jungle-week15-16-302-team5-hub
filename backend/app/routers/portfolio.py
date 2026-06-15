@@ -136,3 +136,28 @@ def link_project_posts(
         raise HTTPException(status_code=404, detail="포트폴리오 프로젝트를 찾을 수 없습니다.")
 
     return project
+
+
+@router.post("/{project_id}/publish-post", response_model=PortfolioProjectResponse)
+def publish_portfolio_post(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("STUDENT", "ADMIN")),
+) -> PortfolioProjectResponse:
+    """
+    포트폴리오 프로젝트 내용을 기반으로 전체 게시글에 보일 포트폴리오 글을 발행하거나 갱신한다.
+    """
+
+    try:
+        project = portfolio_service.publish_portfolio_post(
+            db=db,
+            project_id=project_id,
+            current_user=current_user,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+    if project is None:
+        raise HTTPException(status_code=404, detail="포트폴리오 프로젝트를 찾을 수 없습니다.")
+
+    return project

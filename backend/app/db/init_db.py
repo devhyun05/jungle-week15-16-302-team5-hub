@@ -63,6 +63,9 @@ def ensure_schema_columns() -> None:
             text("ALTER TABLE portfolio_projects ADD COLUMN IF NOT EXISTS github_branch VARCHAR(200)"),
         )
         connection.execute(
+            text("ALTER TABLE portfolio_projects ADD COLUMN IF NOT EXISTS published_post_id BIGINT REFERENCES posts(id)"),
+        )
+        connection.execute(
             text("ALTER TABLE portfolio_projects DROP CONSTRAINT IF EXISTS uq_portfolio_projects_owner_repo"),
         )
         connection.execute(

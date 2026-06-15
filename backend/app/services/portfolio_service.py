@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 from sqlalchemy.orm import Session
 
 from app.db.models import PortfolioProject, User
-from app.repositories import portfolio_repository
+from app.repositories import portfolio_repository, post_repository
 from app.schemas.portfolio import (
     PortfolioProjectCreateRequest,
     PortfolioProjectListResponse,
@@ -13,6 +13,7 @@ from app.schemas.portfolio import (
     PortfolioProjectUpdateRequest,
 )
 from app.services import github_service
+from app.services.post_service import normalize_tag_names
 
 
 VALID_PORTFOLIO_STATUSES = {"작성중", "보완 필요", "정리 완료"}
@@ -234,6 +235,141 @@ def link_project_posts(
     return build_project_response(updated_project)
 
 
+def publish_portfolio_post(
+    db: Session,
+    project_id: int,
+    current_user: User,
+) -> PortfolioProjectResponse | None:
+    """
+    포트폴리오 프로젝트 내용을 기반으로 `포트폴리오 관리` 카테고리 게시글을 생성하거나 갱신한다.
+    """
+
+    project = portfolio_repository.get_project_by_id(
+        db=db,
+        project_id=project_id,
+        current_user=current_user,
+    )
+
+    if project is None:
+        return None
+
+    category = post_repository.get_category_by_slug(
+        db=db,
+        category_slug="portfolio",
+    )
+
+    if category is None:
+        raise ValueError("포트폴리오 관리 카테고리를 찾을 수 없습니다.")
+
+    title = f"[포트폴리오] {project.title}"
+    content = build_portfolio_post_content(project)
+    summary = build_portfolio_post_summary(project)
+    tag_names = normalize_tag_names(["포트폴리오", project.title, project.github_branch or "main"])
+    related_github_url = build_project_branch_url(project)
+    existing_post = (
+        post_repository.get_post_for_update(db=db, post_id=project.published_post_id)
+        if project.published_post_id
+        else None
+    )
+
+    if existing_post is None:
+        post = post_repository.create_post(
+            db=db,
+            author=project.owner,
+            category=category,
+            title=title,
+            summary=summary,
+            content=content,
+            tag_names=tag_names,
+            is_public=True,
+            related_commit=related_github_url,
+        )
+    else:
+        post = post_repository.update_post(
+            db=db,
+            post=existing_post,
+            category=category,
+            title=title,
+            summary=summary,
+            content=content,
+            tag_names=tag_names,
+            is_public=True,
+            related_commit=related_github_url,
+        )
+
+    updated_project = portfolio_repository.update_published_post(
+        db=db,
+        project=project,
+        post=post,
+    )
+
+    return build_project_response(updated_project)
+
+
+def build_project_branch_url(project: PortfolioProject) -> str:
+    """
+    GitHub repo URL과 branch를 사람이 열어볼 수 있는 URL로 조합한다.
+    """
+
+    branch = project.github_branch or "main"
+
+    return f"{project.github_url.rstrip('/')}/tree/{branch}"
+
+
+def build_portfolio_post_summary(project: PortfolioProject) -> str:
+    """
+    포트폴리오 게시글 목록에 보여줄 요약을 만든다.
+    """
+
+    summary_parts = [
+        project.summary or f"{project.title} 프로젝트 포트폴리오 글입니다.",
+        f"GitHub: {project.repo_full_name} ({project.github_branch or 'main'})",
+        f"기술 스택: {', '.join(parse_tech_stack(project.tech_stack)) or '등록 전'}",
+    ]
+
+    return " / ".join(summary_parts)[:500]
+
+
+def build_portfolio_post_content(project: PortfolioProject) -> str:
+    """
+    전체 게시글/내 기록 상세에서 보여줄 포트폴리오 글 본문을 만든다.
+    """
+
+    linked_posts = [link.post for link in project.portfolio_project_posts if link.post is not None and link.post.deleted_at is None]
+    linked_record_text = "\n".join(
+        f"- [{post.category.label}] {post.title}: {post.summary or post.content[:120]}"
+        for post in linked_posts
+    ) or "- 아직 연결된 학습 기록이 없습니다."
+    commit_text = "\n".join(f"- {commit}" for commit in parse_recent_commit_summary(project.recent_commit_summary)) or "- 아직 최근 커밋 요약이 없습니다."
+    portfolio_text = normalize_optional_text(project.saved_portfolio_draft, LEGACY_DRAFT_PLACEHOLDERS)
+
+    return f"""# {project.title}
+
+## GitHub
+- Repository: {project.repo_full_name}
+- Branch: {project.github_branch or "main"}
+- URL: {build_project_branch_url(project)}
+
+## 기술 스택
+{", ".join(parse_tech_stack(project.tech_stack)) or "아직 기술 스택이 등록되지 않았습니다."}
+
+## 프로젝트 설명
+{project.summary or "아직 프로젝트 설명이 없습니다."}
+
+## 연결된 학습 기록
+{linked_record_text}
+
+## 최근 커밋 요약
+{commit_text}
+
+## 코치 피드백 상태
+{project.coach_feedback_status}
+
+## 포트폴리오 글
+{portfolio_text or "아직 작성된 포트폴리오 글이 없습니다. AI 도우미 또는 직접 작성으로 내용을 채워주세요."}
+"""
+
+
 def parse_github_project_reference(github_url: str) -> GitHubProjectReference:
     """
     GitHub URL에서 owner/repo와 선택적 branch 값을 추출한다.
@@ -339,6 +475,7 @@ def build_project_response(project: PortfolioProject) -> PortfolioProjectRespons
     return PortfolioProjectResponse(
         id=project.id,
         title=project.title,
+        published_post_id=project.published_post_id,
         repo_full_name=project.repo_full_name,
         github_branch=project.github_branch or "main",
         github_url=project.github_url,

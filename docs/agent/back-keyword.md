@@ -1008,3 +1008,31 @@ JWT 구현, DB 설계 문서, API 설계 문서는 팀원에게 공유해야 하
 - branch를 저장하지 않으면 같은 repo의 어느 시점/흐름을 분석했는지 알 수 없다.
 - 중복 기준도 branch를 포함해야 같은 repo의 다른 branch를 등록할 수 있다.
 - DB 컬럼 추가는 모델만 바꾸면 끝이 아니라 기존 DB 보강 코드도 필요하다.
+
+---
+
+## 2026-06-16 프론트/백엔드 키워드: 프로젝트 기반 포트폴리오 게시글
+
+관련 구현:
+
+- `published_post_id`
+- `POST /portfolio/projects/{project_id}/publish-post`
+- `publishPortfolioProjectPost(projectId)`
+- `frontend/src/app/pages/ai/AIAssistant.tsx`
+
+키워드 연결:
+
+| 키워드 | 이번 구현에서 나온 부분 |
+| --- | --- |
+| CRUD | 프로젝트 내용을 기반으로 게시글을 생성하거나 갱신한다. |
+| API Design | 포트폴리오 프로젝트 API 아래에 발행 endpoint를 두어 일반 글쓰기와 구분했다. |
+| Data Modeling | 참고 기록 연결과 대표 게시글 연결을 분리했다. |
+| React State | 발행 후 반환된 프로젝트 응답으로 `projects` state를 갱신한다. |
+| Conditional Rendering | `publishedPostId`가 있을 때만 `게시글로 보기` 링크를 보여준다. |
+| UI Information Architecture | AI 도우미를 프로젝트 선택, 참고 자료, 생성 결과 영역으로 나누었다. |
+
+내가 이해해야 하는 점:
+
+- 포트폴리오 관리 화면은 프로젝트를 관리하는 곳이고, 전체 게시글 상세는 완성된 글을 읽는 곳이다.
+- 같은 데이터라도 화면 목적에 따라 preview와 full content로 다르게 보여줘야 한다.
+- 내부 필드명을 무리하게 바꾸지 않고 화면 문구만 정리하면 기존 저장 데이터가 덜 흔들린다.

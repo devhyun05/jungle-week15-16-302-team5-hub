@@ -27,6 +27,8 @@ class PortfolioProject(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     # 프로젝트 소유 학생 id다. users.id를 참조한다.
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    # 이 프로젝트에서 발행한 대표 포트폴리오 게시글 id다.
+    published_post_id: Mapped[int | None] = mapped_column(ForeignKey("posts.id"), nullable=True)
     # 화면에 보여줄 프로젝트 이름이다.
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     # GitHub owner/repo 형태의 고유 repo 이름이다.
@@ -66,5 +68,7 @@ class PortfolioProject(Base):
     owner: Mapped["User"] = relationship(back_populates="portfolio_projects")
     # PortfolioProject -> PortfolioProjectPost 목록 관계다. 연결된 게시글은 이 중간 테이블을 거친다.
     portfolio_project_posts: Mapped[list["PortfolioProjectPost"]] = relationship(back_populates="project")
+    # PortfolioProject -> Post 관계다. 전체 게시글/내 기록에서 볼 대표 포트폴리오 글을 가리킨다.
+    published_post: Mapped["Post | None"] = relationship(foreign_keys=[published_post_id])
     # PortfolioProject -> ReviewRequest 목록 관계다. 프로젝트가 코치 리뷰 대상일 수 있다.
     review_requests: Mapped[list["ReviewRequest"]] = relationship(back_populates="target_project")

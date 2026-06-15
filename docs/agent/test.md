@@ -2727,3 +2727,43 @@ portfolio screen has heading/input/register button/branch text
 - [ ] 학생 계정으로 실제 `/tree/{branch}` URL을 등록한다.
 - [ ] 같은 repo의 다른 branch를 별도 프로젝트로 등록할 수 있는지 확인한다.
 - [ ] 등록 후 README와 최근 커밋이 branch 기준으로 바뀌는지 비교한다.
+
+---
+
+## 2026-06-16 QA: 포트폴리오 게시글 발행과 AI 도우미 UI
+
+목표: 프로젝트 기반 포트폴리오 게시글 발행과 AI 도우미 UI 정리가 기존 데이터를 꼬이게 하지 않는지 확인한다.
+
+체크리스트:
+
+- [x] 백엔드 compile이 성공한다.
+- [x] 프론트엔드 `npm run build`가 성공한다.
+- [x] `init_db()`가 `published_post_id` 컬럼 보강 후 정상 종료된다.
+- [x] 임시 프로젝트를 포트폴리오 게시글로 발행하면 `published_post_id`가 생긴다.
+- [x] 발행된 게시글의 카테고리는 `portfolio`다.
+- [x] 발행된 게시글 본문에 포트폴리오 글 전체가 포함된다.
+- [x] 발행된 게시글 본문에 branch 정보가 포함된다.
+- [x] QA 데이터는 검증 후 삭제했다.
+- [x] `/ai-assistant` 화면이 에러 없이 열린다.
+- [x] 프로젝트가 없을 때 AI 도우미 empty state가 보인다.
+
+검증 출력 요약:
+
+```txt
+python compile: success
+npm run build: success
+init_db ok
+publish response has published_post_id=True
+published post category=portfolio
+portfolio body included=True
+branch body included=True
+cleanup ok
+ai bodyHasError=False
+ai empty state visible=True
+```
+
+남은 수동 QA:
+
+- [ ] 실제 학생 프로젝트에서 `포트폴리오 게시글로 발행` 버튼을 클릭한다.
+- [ ] 발행 후 `게시글로 보기`로 이동해 전체 포트폴리오 글이 보이는지 확인한다.
+- [ ] AI 도우미에서 프로젝트가 있을 때 결과 저장 버튼이 기존 저장 흐름을 유지하는지 확인한다.
