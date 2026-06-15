@@ -4758,3 +4758,33 @@ GitHub ������Ʈ ���
 - Playwright package와 실제 브라우저 executable은 별개다.
 - 기본 Chromium이 없을 때는 설치된 Chrome channel을 사용해 smoke QA를 진행할 수 있다.
 - 브라우저 QA는 `Unexpected Application Error`, `[object Object]`, role 메뉴 노출 같은 사용자 눈에 보이는 문제를 잡는 데 좋다.
+
+---
+
+## 2026-06-16 학습 기록: 프로필 이미지 업로드 QA
+
+이번 QA는 파일 업로드가 단순히 화면 preview로 끝나는 것이 아니라, 백엔드 저장과 정적 파일 서빙까지 이어지는지 확인한 작업이다.
+
+관련 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/routers/me.py` | `PATCH /me/profile`에서 multipart form의 이름과 이미지 파일을 받는다. |
+| `backend/app/main.py` | `/uploads` 경로를 StaticFiles로 서빙한다. |
+| `backend/app/repositories/user_repository.py` | 사용자가 수정한 이름/프로필 이미지 저장, Google 재로그인 시 덮어쓰기 방지 처리 |
+| `backend/app/services/auth_service.py` | Google profile을 users row로 변환하고 현재 사용자 응답을 만든다. |
+| `frontend/src/app/pages/settings/Settings.tsx` | 사용자가 이름과 프로필 이미지를 수정하는 화면 |
+| `frontend/src/app/api/auth.ts` | `FormData`로 이름과 이미지 파일을 전송한다. |
+
+핵심 개념:
+
+- 파일 업로드는 JSON이 아니라 `multipart/form-data`로 보낸다.
+- FastAPI에서는 `Form(...)`과 `File(...)`을 같이 사용해 텍스트 필드와 파일을 받을 수 있다.
+- 로컬 개발에서는 `backend/uploads`에 저장하고, `StaticFiles`로 브라우저가 접근할 수 있게 만든다.
+- Google OAuth의 name/profile image는 최초 기본값으로만 쓰고, 사용자가 수정한 값은 이후 로그인에서 보존해야 한다.
+
+이번에 다시 배운 점:
+
+- TestClient에서 쿠키 인증을 검증할 때는 쿠키 jar보다 요청 `Cookie` header가 더 명확할 수 있다.
+- 업로드 QA는 DB 값만 보지 말고 실제 정적 URL이 200으로 열리는지도 확인해야 한다.
+- 사용자가 직접 수정한 프로필은 외부 OAuth profile보다 우선순위가 높다.

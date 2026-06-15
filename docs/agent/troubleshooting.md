@@ -609,3 +609,11 @@ size: int = Query(default=50, ge=1, le=50)
 - 원인: Playwright npm package는 설치되어 있었지만, Playwright가 사용하는 기본 Chromium 브라우저 바이너리는 설치되어 있지 않았다.
 - 해결: 새 브라우저를 다운로드하지 않고 `chromium.launch({ channel: "chrome" })`로 로컬 Chrome을 사용해 smoke QA를 진행했다.
 - 교훈: Playwright 설치 여부와 브라우저 바이너리 설치 여부는 다르다. 네트워크 다운로드 없이 QA해야 할 때는 로컬 Chrome channel을 먼저 시도할 수 있다.
+
+## 2026-06-16 - TestClient 쿠키 jar로 인증이 안 잡힌 경우
+
+- 영역: 백엔드 API QA
+- 증상: `client.cookies.set(..., domain="testserver")`로 access/refresh token을 넣었지만 `PATCH /me/profile`이 401을 반환했다.
+- 원인: TestClient의 쿠키 jar 설정과 실제 요청 host/domain 매칭이 기대와 달라 인증 dependency에서 쿠키를 읽지 못했다.
+- 해결: 요청마다 `headers={"Cookie": "access=...; refresh=..."}` 형태로 명시해 인증 QA를 진행했다.
+- 교훈: 인증 QA에서 401이 나오면 기능 버그로 단정하기 전에 쿠키가 실제 요청에 실렸는지 먼저 확인해야 한다.

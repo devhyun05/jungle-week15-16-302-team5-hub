@@ -2504,3 +2504,33 @@ student_request_feedback_seen=True
 /my-records: accessBlocked=true, hasPortfolioManager=false
 cleanup_done=True
 ```
+
+---
+
+## 2026-06-16 QA: 프로필 수정과 이미지 업로드
+
+목표: 이름 수정과 실제 프로필 이미지 업로드가 API, DB, 정적 파일 서빙, 재로그인 정책까지 이어지는지 확인한다.
+
+체크리스트:
+
+- [x] `PATCH /me/profile`이 200을 반환한다.
+- [x] 사용자가 입력한 이름이 응답에 반영된다.
+- [x] 업로드한 이미지는 `/uploads/profiles/...` 경로로 저장된다.
+- [x] `GET /auth/me`에서 수정한 이름이 유지된다.
+- [x] 업로드 이미지 URL을 정적 파일로 조회하면 200을 반환한다.
+- [x] 같은 Google 계정으로 다시 로그인해도 사용자가 수정한 이름은 덮어써지지 않는다.
+- [x] 같은 Google 계정으로 다시 로그인해도 사용자가 업로드한 프로필 이미지는 덮어써지지 않는다.
+- [x] QA 사용자와 업로드 파일은 검증 후 삭제했다.
+
+검증 출력 요약:
+
+```txt
+profile_patch_status=200
+profile_name_updated=True
+profile_image_url_is_upload=True
+auth_me_status=200
+auth_me_name_persisted=True
+static_upload_status=200
+google_login_does_not_overwrite_name=True
+google_login_does_not_overwrite_uploaded_image=True
+```

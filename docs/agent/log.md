@@ -3047,3 +3047,46 @@ cleanup_done=True
 ```txt
 docs: 코치 화면 브라우저 QA 기록
 ```
+
+---
+
+## 2026-06-16 프로필 수정/이미지 업로드 API QA
+
+상태: 완료
+
+목표: 학생/코치 화면에서 쓰이는 프로필 이름과 아바타 이미지가 실제 API와 정적 파일 서빙으로 연결되는지 확인했다.
+
+진행한 것:
+
+- QA 사용자를 임시 생성하고 access/refresh token을 발급했다.
+- `PATCH /me/profile`에 이름과 이미지 파일을 multipart form으로 전송했다.
+- 응답의 `profileImageUrl`이 `/uploads/profiles/...` 경로인지 확인했다.
+- `GET /auth/me`에서 수정한 이름이 유지되는지 확인했다.
+- 업로드된 정적 파일 URL이 200으로 서빙되는지 확인했다.
+- 같은 Google 계정으로 다시 로그인되는 상황을 서비스 함수로 재현했다.
+- Google name/profile image가 사용자가 수정한 이름/업로드 이미지로 덮어쓰지 않는지 확인했다.
+- QA 데이터와 업로드 파일은 검증 후 삭제했다.
+
+검증 결과:
+
+```txt
+profile_patch_status=200
+profile_name_updated=True
+profile_image_url_is_upload=True
+auth_me_status=200
+auth_me_name_persisted=True
+static_upload_status=200
+google_login_does_not_overwrite_name=True
+google_login_does_not_overwrite_uploaded_image=True
+```
+
+발견한 점:
+
+- FastAPI `TestClient`에서는 `client.cookies.set(..., domain='testserver')` 방식으로 넣은 쿠키가 이번 요청에서 인증에 쓰이지 않아 401이 발생했다.
+- 요청별 `Cookie` header를 직접 넣는 방식으로 인증 QA를 진행했다.
+
+커밋 추천 제목:
+
+```txt
+docs: 프로필 업로드 QA 기록
+```
