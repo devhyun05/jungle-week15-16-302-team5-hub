@@ -4729,3 +4729,32 @@ GitHub ������Ʈ ���
 - 화면에서 보이는 목록 유지 문제는 실제 저장 여부와 목록 재조회 여부를 함께 봐야 한다.
 - N:M 관계인 게시글 태그나 프로젝트-게시글 연결은 cleanup할 때 연결 테이블을 먼저 지워야 한다.
 - PowerShell을 통해 Python으로 한글 상태값을 넘길 때 인코딩이 깨질 수 있으므로, QA 스크립트에서는 유니코드 escape나 코드 상수를 쓰는 편이 안전하다.
+
+---
+
+## 2026-06-16 학습 기록: 코치 화면 브라우저 QA
+
+이번 QA는 서비스 함수만 확인한 것이 아니라, 브라우저에서 role 기반 화면 분기가 실제로 어떻게 보이는지 확인한 작업이다.
+
+관련 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/layouts/MainLayout.tsx` | role에 따라 사이드바 메뉴와 기본 진입 화면을 다르게 보여준다. |
+| `frontend/src/app/components/RoleGate.tsx` | 현재 로그인 사용자의 role/approvalStatus를 기준으로 접근 가능 여부를 판단한다. |
+| `frontend/src/app/pages/coach/CoachReview.tsx` | 코치 인박스와 학생 리뷰 요청 화면을 role별로 다르게 렌더링한다. |
+| `backend/app/services/auth_service.py` | QA용 access/refresh token을 만들 때 사용한 인증 서비스이다. |
+| `backend/app/services/review_service.py` | 코치 인박스에 표시할 리뷰 요청을 만든다. |
+
+핵심 개념:
+
+- 화면 접근 제한은 프론트 라우트에서 먼저 사용자 경험을 막고, 백엔드 API에서도 role을 다시 검증해야 한다.
+- 코치 role은 학생용 메뉴인 내 기록, 포트폴리오 관리, AI 도우미를 기본 메뉴로 보지 않는다.
+- 직접 URL을 입력했을 때도 학생 전용 화면이 그대로 보이면 안 되고 접근 제한 안내가 나와야 한다.
+- E2E QA에서 OAuth 로그인을 매번 실제 Google로 하지 않고, 테스트용 쿠키를 만들어 브라우저 컨텍스트에 넣어 검증할 수 있다.
+
+이번에 다시 배운 점:
+
+- Playwright package와 실제 브라우저 executable은 별개다.
+- 기본 Chromium이 없을 때는 설치된 Chrome channel을 사용해 smoke QA를 진행할 수 있다.
+- 브라우저 QA는 `Unexpected Application Error`, `[object Object]`, role 메뉴 노출 같은 사용자 눈에 보이는 문제를 잡는 데 좋다.

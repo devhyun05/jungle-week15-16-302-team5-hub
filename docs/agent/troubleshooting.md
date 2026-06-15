@@ -601,3 +601,11 @@ size: int = Query(default=50, ge=1, le=50)
 - 원인: Windows PowerShell stdin 인코딩과 Python 입력 인코딩이 맞지 않았고, N:M 연결 테이블 삭제 순서가 빠져 있었다.
 - 해결: QA 스크립트의 한글 상태값은 유니코드 escape로 넘기고, cleanup은 `comments`, `post_tags`, `portfolio_project_posts`, `review_request_coaches` 같은 연결/자식 테이블을 먼저 삭제하도록 정리했다.
 - 교훈: 실제 서비스 버그인지 QA 도구 문제인지 구분하려면, 상수 값과 요청 값의 `repr()`을 먼저 비교하는 것이 좋다.
+
+## 2026-06-16 - Playwright package는 있지만 Chromium executable이 없는 경우
+
+- 영역: 브라우저 QA
+- 증상: `playwright.chromium.launch()` 실행 시 `Executable doesn't exist` 오류가 발생했다.
+- 원인: Playwright npm package는 설치되어 있었지만, Playwright가 사용하는 기본 Chromium 브라우저 바이너리는 설치되어 있지 않았다.
+- 해결: 새 브라우저를 다운로드하지 않고 `chromium.launch({ channel: "chrome" })`로 로컬 Chrome을 사용해 smoke QA를 진행했다.
+- 교훈: Playwright 설치 여부와 브라우저 바이너리 설치 여부는 다르다. 네트워크 다운로드 없이 QA해야 할 때는 로컬 Chrome channel을 먼저 시도할 수 있다.

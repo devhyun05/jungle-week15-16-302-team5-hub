@@ -2473,3 +2473,34 @@ student_request_feedback_seen=True
 
 - PowerShell에서 Python stdin으로 한글 상태값을 직접 넘기면 깨질 수 있어 유니코드 escape로 검증했다.
 - cleanup 시 `post_tags` 연결 테이블을 먼저 삭제해야 `posts` 삭제 FK 오류가 나지 않는다.
+
+---
+
+## 2026-06-16 QA: 코치 화면 브라우저 smoke
+
+목표: 코치 role로 실제 브라우저 화면을 열었을 때 메뉴, 접근 제한, 에러 표시가 의도대로 동작하는지 확인한다.
+
+체크리스트:
+
+- [x] 코치 세션으로 `/coach-review`가 열린다.
+- [x] 코치 세션으로 `/posts`가 열린다.
+- [x] 코치 세션으로 `/settings`가 열린다.
+- [x] 코치 메뉴에 `대시보드`가 보이지 않는다.
+- [x] 코치가 `/portfolio`에 직접 접근하면 학생용 화면 본문 대신 접근 제한 안내가 보인다.
+- [x] 코치가 `/ai-assistant`에 직접 접근하면 접근 제한 안내가 보인다.
+- [x] 코치가 `/my-records`에 직접 접근하면 접근 제한 안내가 보인다.
+- [x] 확인한 화면에 `Unexpected Application Error`가 보이지 않는다.
+- [x] 확인한 화면에 `[object Object]`가 보이지 않는다.
+- [x] QA용 임시 사용자, 토큰, 리뷰 요청 데이터를 삭제했다.
+
+검증 출력 요약:
+
+```txt
+/coach-review: hasUnexpectedError=false, hasObjectObject=false, hasDashboardMenu=false
+/posts: hasUnexpectedError=false, hasObjectObject=false, hasDashboardMenu=false
+/settings: hasUnexpectedError=false, hasObjectObject=false, hasDashboardMenu=false
+/portfolio: accessBlocked=true, hasPortfolioManager=false
+/ai-assistant: accessBlocked=true, hasPortfolioManager=false
+/my-records: accessBlocked=true, hasPortfolioManager=false
+cleanup_done=True
+```

@@ -3001,3 +3001,49 @@ student_request_feedback_seen=True
 ```txt
 docs: 학생 핵심 흐름 QA 기록
 ```
+
+---
+
+## 2026-06-16 코치 화면 브라우저 smoke QA
+
+상태: 완료
+
+목표: 코치 계정으로 주요 코치 화면과 접근 제한 화면을 실제 브라우저에서 열어 깨지는 부분이 없는지 확인했다.
+
+진행한 것:
+
+- QA 학생/코치 사용자와 코치에게 배정된 리뷰 요청을 임시 생성했다.
+- 코치용 access/refresh cookie를 만들어 Playwright 브라우저 컨텍스트에 주입했다.
+- 로컬 Chrome 채널로 다음 화면을 열었다.
+  - `/coach-review`
+  - `/posts`
+  - `/settings`
+  - `/portfolio`
+  - `/ai-assistant`
+  - `/my-records`
+- 코치 전용 기본 화면에서는 `대시보드` 메뉴가 보이지 않는지 확인했다.
+- 코치가 학생 전용 화면에 직접 접근하면 접근 제한 안내가 보이는지 확인했다.
+- QA 데이터는 검증 후 삭제했다.
+
+검증 결과:
+
+```txt
+/coach-review: Unexpected Application Error 없음, [object Object] 없음, 대시보드 메뉴 없음
+/posts: Unexpected Application Error 없음, [object Object] 없음, 대시보드 메뉴 없음
+/settings: Unexpected Application Error 없음, [object Object] 없음, 대시보드 메뉴 없음
+/portfolio: 접근 제한 확인, 포트폴리오 관리 본문 미노출
+/ai-assistant: 접근 제한 확인, 포트폴리오 관리 본문 미노출
+/my-records: 접근 제한 확인, 포트폴리오 관리 본문 미노출
+cleanup_done=True
+```
+
+발견한 점:
+
+- Playwright package는 설치되어 있었지만 기본 Chromium executable은 없었다.
+- 새 브라우저를 다운로드하지 않고 로컬 Chrome channel로 QA를 진행했다.
+
+커밋 추천 제목:
+
+```txt
+docs: 코치 화면 브라우저 QA 기록
+```
