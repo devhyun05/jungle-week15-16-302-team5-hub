@@ -1,8 +1,9 @@
-import { Clock, LogIn } from "lucide-react";
-import { Link, useOutletContext } from "react-router";
+import { Clock, LogIn, LogOut, RefreshCw } from "lucide-react";
+import { Link, useNavigate, useOutletContext } from "react-router";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
+import { useAuth } from "../../contexts/AuthContext";
 import type { ApprovalStatus, UserRole } from "../../api/auth";
 import type { MainLayoutContext } from "../../layouts/MainLayout";
 
@@ -37,7 +38,15 @@ function getRoleLabel(role: UserRole) {
 
 export function PendingApproval() {
   const { user, approvalStatus, role } = useOutletContext<MainLayoutContext>();
+  const { logout, refreshCurrentUser } = useAuth();
+  const navigate = useNavigate();
   const message = statusMessages[approvalStatus];
+  const isApproved = approvalStatus === "승인 완료";
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-xl items-center justify-center">
@@ -46,7 +55,7 @@ export function PendingApproval() {
           <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
             <Clock className="h-7 w-7" />
           </div>
-          <Badge variant={approvalStatus === "승인 완료" ? "success" : "warning"}>{approvalStatus}</Badge>
+          <Badge variant={isApproved ? "success" : "warning"}>{approvalStatus}</Badge>
           <h1 className="mt-4 text-xl font-bold text-slate-900">{message.title}</h1>
           <p className="mt-2 text-sm leading-6 text-slate-600">{message.description}</p>
           <div className="mt-5 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm text-slate-600">
@@ -57,12 +66,25 @@ export function PendingApproval() {
               <span className="font-semibold text-slate-900">현재 역할:</span> {getRoleLabel(role)}
             </p>
           </div>
-          <Button asChild className="mt-6 gap-2">
-            <Link to={approvalStatus === "승인 완료" ? "/" : "/login"}>
-              <LogIn className="h-4 w-4" />
-              {approvalStatus === "승인 완료" ? "대시보드로 이동" : "로그인 화면으로 이동"}
-            </Link>
-          </Button>
+          {isApproved ? (
+            <Button asChild className="mt-6 gap-2">
+              <Link to="/">
+                <LogIn className="h-4 w-4" />
+                대시보드로 이동
+              </Link>
+            </Button>
+          ) : (
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <Button type="button" className="gap-2" onClick={() => void refreshCurrentUser()}>
+                <RefreshCw className="h-4 w-4" />
+                승인 상태 다시 확인
+              </Button>
+              <Button type="button" variant="outline" className="gap-2" onClick={() => void handleLogout()}>
+                <LogOut className="h-4 w-4" />
+                로그아웃
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

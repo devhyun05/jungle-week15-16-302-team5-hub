@@ -2953,3 +2953,41 @@ post detail API 호출
 - token hashing
 - FastAPI TestClient
 - dependency override
+
+## 2026-06-15 승인 대기 화면 UX 개선 학습 기록
+
+이번 작업은 인증이 성공했지만 서비스 사용 승인이 끝나지 않은 사용자의 화면 흐름을 다듬은 작업이다.
+
+### 수정한 파일
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/auth/PendingApproval.tsx` | 승인 대기/거절/정지/승인 완료 상태 안내 화면 |
+| `frontend/src/app/contexts/AuthContext.tsx` | `/auth/me`, `/auth/refresh`, `/auth/logout` 기반 전역 로그인 상태 관리 |
+
+### 사용한 React 개념
+
+- `useAuth`: 전역 인증 상태와 인증 관련 함수를 가져오는 custom hook이다.
+- `useNavigate`: 버튼 클릭 후 코드로 라우트를 이동할 때 사용한다.
+- 조건부 렌더링: `approvalStatus`가 `승인 완료`인지에 따라 버튼 구성을 다르게 보여준다.
+- async event handler: 로그아웃 API 호출이 끝난 뒤 로그인 화면으로 이동한다.
+
+### 코드 흐름
+
+```txt
+PendingApproval 렌더링
+-> MainLayout outlet context에서 user, role, approvalStatus를 받음
+-> useAuth에서 refreshCurrentUser, logout을 받음
+-> 승인 완료면 대시보드 이동 버튼 표시
+-> 미승인이면 승인 상태 다시 확인 / 로그아웃 버튼 표시
+-> 승인 상태 다시 확인: /auth/me와 refresh 흐름을 다시 실행
+-> 로그아웃: /auth/logout 호출 후 /login 이동
+```
+
+### 이해해야 할 핵심
+
+- 로그인 상태와 승인 상태는 다르다.
+- 로그인은 Google OAuth와 JWT cookie로 확인한다.
+- 서비스 접근 가능 여부는 `approvalStatus === "승인 완료"`까지 확인해야 한다.
+- 이미 로그인된 사용자를 `/login`으로 보내면 `Login.tsx`가 다시 `/pending-approval`로 돌려보내므로 UX 순환이 생긴다.
+- 그래서 승인 대기 화면에서는 로그인 버튼보다 `상태 다시 확인`과 `로그아웃`이 자연스럽다.

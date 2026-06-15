@@ -769,3 +769,14 @@ Google OAuth Client ID/Secret, JWT secret은 `backend/.env`에 직접 설정한�
 - Google Cloud 승인된 리디렉션 URI: `http://localhost:8000/auth/google/callback`
 - OAuth 동의 화면 테스트 사용자에 실제 Gmail 등록
 - `.env`의 `ADMIN_EMAILS`에 관리자 Gmail 등록
+
+### 승인 대기 화면 UX 개선
+
+Google OAuth 로그인은 성공했지만 아직 운영자 승인이 끝나지 않은 사용자는 `/pending-approval` 화면에서 대기 상태를 확인합니다.
+
+현재 동작:
+
+- 승인 대기/거절/정지 상태 사용자는 서비스 본문 라우트 접근이 제한됩니다.
+- 승인 대기 화면에서 `승인 상태 다시 확인`을 눌러 `/auth/me` 기반 사용자 상태를 다시 불러올 수 있습니다.
+- 승인 대기 화면에서 `로그아웃`을 눌러 `/auth/logout` 후 로그인 화면으로 돌아갈 수 있습니다.
+- 승인 완료 상태가 되면 대시보드로 이동할 수 있습니다.

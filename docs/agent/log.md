@@ -1640,3 +1640,27 @@ docs: 최종 QA 기록 업데이트
 ```txt
 docs: OAuth callback QA 기록 업데이트
 ```
+
+## 2026-06-15 승인 대기 화면 UX 개선
+
+상태: 완료
+
+목표: Google OAuth 로그인은 성공했지만 아직 운영자 승인이 나지 않은 사용자가 다시 `/login`으로 이동했다가 `/pending-approval`로 돌아오는 어색한 흐름을 제거한다.
+
+구현한 것:
+
+- `PendingApproval.tsx`에서 `useAuth()`를 사용해 현재 사용자 정보를 다시 조회할 수 있게 했다.
+- 미승인 상태 버튼을 `로그인 화면으로 이동`에서 `승인 상태 다시 확인`과 `로그아웃`으로 바꿨다.
+- 승인 완료 상태에서는 기존처럼 대시보드 이동 버튼을 보여준다.
+- 로그아웃 버튼은 `/auth/logout` 호출 후 `/login`으로 이동한다.
+
+검증:
+
+- `npm run build` 성공
+- `python -m compileall app` 성공
+
+추천 커밋 제목:
+
+```txt
+fix: 승인 대기 화면 UX 개선
+```
