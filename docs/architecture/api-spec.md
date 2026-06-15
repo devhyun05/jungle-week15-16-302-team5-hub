@@ -78,6 +78,18 @@ Auth/session 상세 정책은 `docs/architecture/auth-session-design.md`를 따�
 | GET | `/tags` | optional | q? | tags | 400 |
 | POST | `/tags` | yes | name | tag | 401, 409, 422 |
 
+## Admin APIs
+
+| Method | Path | Auth | Request | Response | Error |
+|---|---|---|---|---|---|
+| GET | `/api/admin/health` | admin | none | status, admin_user_id | 401, 403 |
+| POST | `/api/admin/posts/{post_id}/hide` | admin | reason? | target_type, target_id, hidden fields | 401, 403, 404, 422 |
+| POST | `/api/admin/posts/{post_id}/restore` | admin | reason? | target_type, target_id, hidden fields | 401, 403, 404, 422 |
+| POST | `/api/admin/comments/{comment_id}/hide` | admin | reason? | target_type, target_id, hidden fields | 401, 403, 404, 422 |
+| POST | `/api/admin/comments/{comment_id}/restore` | admin | reason? | target_type, target_id, hidden fields | 401, 403, 404, 422 |
+
+Admin auth is enforced by the backend `require_admin` dependency. Missing or invalid token returns 401 through `get_current_user`; a logged-in non-admin user returns 403.
+
 ## AI APIs
 
 | Method | Path | Auth | Request | Response | Error |
@@ -428,3 +440,71 @@ exceeded response:
 | Tag service | `backend/app/services/tag_service.py` |
 | Post service updates | `backend/app/services/post_service.py` |
 | Rate limit service | `backend/app/services/rate_limit_service.py` |
+
+## Day 3 API Contract
+
+Day 3 is being split because of deadline pressure. The completed backend slices are admin role guard and admin soft hide/restore for posts and comments. MyPage and Admin UI are postponed until after Day 4~6 unless needed earlier.
+
+### Admin Role Guard
+
+| Method | Path | Auth | Purpose | Request | Response | Error |
+|---|---|---|---|---|---|---|
+| GET | `/api/admin/health` | admin | admin guard smoke endpoint | none | status, admin_user_id | 401, 403 |
+
+Response:
+
+```json
+{
+  "status": "ok",
+  "admin_user_id": 1
+}
+```
+
+Policy:
+
+- `users.role` stores `"user"` or `"admin"`.
+- New users default to `"user"`.
+- `require_admin` depends on `get_current_user` first, so missing/invalid token is 401.
+- A logged-in user whose role is not `"admin"` receives 403 with `detail = "Admin access required"`.
+- Test coverage lives in `backend/tests/test_admin.py`.
+
+### Admin Soft Hide/Restore
+
+The moderation endpoints are admin-only and preserve rows instead of deleting content.
+
+```text
+POST /api/admin/posts/{post_id}/hide
+POST /api/admin/posts/{post_id}/restore
+POST /api/admin/comments/{comment_id}/hide
+POST /api/admin/comments/{comment_id}/restore
+```
+
+Request:
+
+```json
+{
+  "reason": "Off-topic"
+}
+```
+
+The request body is optional.
+
+Response:
+
+```json
+{
+  "target_type": "post",
+  "target_id": 1,
+  "hidden_at": "datetime or null",
+  "hidden_by_id": 2,
+  "hidden_reason": "Off-topic"
+}
+```
+
+Policy:
+
+- public post list/detail excludes posts where `hidden_at IS NOT NULL`.
+- public comment list and comment update/delete lookup exclude comments where `hidden_at IS NOT NULL`.
+- author comment deletion still uses `deleted_at`; admin hide uses separate `hidden_at`.
+- future vector search/RAG retrieval must exclude hidden posts and hidden comments.
+- admin action logging records actor, action, target type, target id, reason, and timestamp in `admin_action_logs`.

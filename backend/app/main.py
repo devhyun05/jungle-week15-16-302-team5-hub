@@ -15,6 +15,7 @@ from app.models.comment import Comment  # noqa: F401
 from app.models.user import User  # noqa: F401
 from app.models.session import UserSession  # noqa: F401
 from app.models.refresh_token import RefreshToken  # noqa: F401
+from app.models.admin_action_log import AdminActionLog  # noqa: F401
 
 
 @asynccontextmanager

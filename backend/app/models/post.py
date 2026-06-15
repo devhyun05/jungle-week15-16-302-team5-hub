@@ -24,4 +24,17 @@ class Post(Base):
         default=utc_now,
         onupdate=utc_now,
     )
+    hidden_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    hidden_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True,
+    )
+    hidden_reason: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
     tags = relationship("Tag", secondary=post_tags, back_populates="posts")

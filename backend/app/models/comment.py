@@ -27,3 +27,16 @@ class Comment(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    hidden_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    hidden_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True,
+    )
+    hidden_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )

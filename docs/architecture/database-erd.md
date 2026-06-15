@@ -337,3 +337,66 @@ post_tags.tag_id -> tags.id
 - [ ] `post_tags` join table을 추가한다.
 - [ ] `post_tags(post_id, tag_id)` composite primary key 또는 unique constraint를 추가한다.
 - [ ] 댓글 목록, 태그 필터, 최신순 pagination에 필요한 index를 반영한다.
+
+## Day 3 ERD Extension
+
+Day 3 is being split. The completed backend slices add admin authorization, admin soft hide/restore for posts and comments, and compact audit logging.
+
+### Implemented: Admin Role Guard
+
+```text
+users
+- role: string, default "user", not null
+```
+
+Policy:
+
+- `users.role = "user"` is the default for new signups.
+- `users.role = "admin"` is required for admin-only backend routes.
+- Current implemented admin smoke endpoint: `GET /api/admin/health`.
+
+Migration note:
+
+- Tests create a fresh SQLite schema, so `users.role` exists there automatically.
+- Existing PostgreSQL development DB tables are not altered by SQLAlchemy `create_all`.
+- Before manual Swagger/browser admin checks against the existing PostgreSQL DB, add the `users.role` column or run the future migration.
+
+### Implemented: Admin Moderation
+
+```text
+posts
+- hidden_at: datetime, nullable
+- hidden_by_id: FK -> users.id, nullable
+- hidden_reason: string/text, nullable
+
+comments
+- hidden_at: datetime, nullable
+- hidden_by_id: FK -> users.id, nullable
+- hidden_reason: string/text, nullable
+
+admin_action_logs
+- id: PK
+- actor_id: FK -> users.id
+- action: string
+- target_type: string
+- target_id: integer
+- reason: string/text, nullable
+- created_at: datetime
+```
+
+Policy target:
+
+- Public post list/detail should exclude posts where `hidden_at IS NOT NULL`.
+- Public comment list and comment update/delete lookup should exclude comments where `hidden_at IS NOT NULL`.
+- Author comment deletion still uses `comments.deleted_at`; admin hide uses `comments.hidden_at`.
+- Future vector search/RAG should exclude hidden posts and hidden comments from retrieval sources.
+- Admin hide/restore creates a compact audit log row without storing raw content snapshots.
+
+Development DB update applied on 2026-06-16:
+
+```text
+users.role
+posts.hidden_at / hidden_by_id / hidden_reason
+comments.hidden_at / hidden_by_id / hidden_reason
+admin_action_logs
+```

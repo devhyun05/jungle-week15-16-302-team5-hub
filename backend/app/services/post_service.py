@@ -37,7 +37,7 @@ def list_posts(
     page: int = 1,
     size: int = 10,
 ) -> PostPageResponse:
-    query = db.query(Post)
+    query = db.query(Post).filter(Post.hidden_at.is_(None))
 
     search_text = q.strip() if q else None
 
@@ -92,7 +92,10 @@ def get_post(
 ) -> Post:
     post = (
         db.query(Post)
-        .filter(Post.id == post_id)
+        .filter(
+            Post.id == post_id,
+            Post.hidden_at.is_(None),
+        )
         .first()
     )
 

@@ -70,6 +70,19 @@
 | logout은 frontend access token 상태를 비우고 backend refresh session을 revoke한다. | stateless access token은 denylist 없이 즉시 서버 폐기되지 않으므로, 30분 만료와 refresh session revoke로 기본 상용 절충안을 잡는다. |
 | logout cookie 삭제는 set cookie와 같은 path, secure, samesite 기준을 넘긴다. | 운영 HTTPS에서 `Secure` cookie가 남아 로그아웃이 불완전해지는 일을 막는다. |
 
+## Admin Authorization
+
+| Decision | Reason |
+|---|---|
+| Day 3 first slice is admin role guard before MyPage/Admin UI. | Day 5~6 RAG/Agent work needs a backend trust boundary more urgently than a user-facing account page. |
+| Admin role is stored as `users.role` with `"user"` and `"admin"`. | It is more extensible than `is_admin` but much smaller than a permissions table for the current MVP. |
+| Admin routes use `require_admin`, which depends on `get_current_user`. | Missing/invalid token stays 401, while logged-in non-admin users get 403. |
+| `/api/admin/health` is the first admin smoke endpoint. | It proves backend authorization before adding moderation behavior with larger side effects. |
+| Admin moderation uses `hidden_at`, `hidden_by_id`, and `hidden_reason` on posts and comments. | It keeps author deletion separate from admin visibility control and gives RAG a simple exclusion condition. |
+| Comment author deletion remains `deleted_at`; admin hide is separate `hidden_at`. | Admin restore must not accidentally revive a comment the author deleted. |
+| Admin hide/restore writes compact rows to `admin_action_logs`. | Moderation needs traceability without storing raw content snapshots. |
+| MyPage, Admin UI, and full moderation workflow are postponed until after Day 4~6 unless they block AI features. | Deadline pressure favors implementing the minimum operational safety guard before AI and returning for UI polish later. |
+
 ## Frontend State
 
 | State | Location | Reason |

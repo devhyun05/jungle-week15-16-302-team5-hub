@@ -659,38 +659,90 @@ API request gets 401
 
 ### Status
 
-Planned for Day 3.
+Day 3 partial implementation.
 
-### Expected Files
+Completed first slice:
+
+- `users.role` backend model field.
+- `require_admin` dependency.
+- `GET /api/admin/health` smoke endpoint.
+- 401/403/200 admin authorization tests.
+- admin soft hide/restore for posts and comments.
+- public post/comment lookup excludes admin-hidden content.
+- compact `admin_action_logs` rows for hide/restore.
+
+Postponed until after Day 4~6 unless it blocks AI work:
+
+- MyPage.
+- Admin UI.
+- full post/comment moderation screens.
+
+Next required AI-adjacent follow-up before RAG retrieval:
+
+- ensure vector search/RAG services filter out hidden posts and hidden comments.
+
+### Files
 
 | File | Purpose |
 |---|---|
-| `backend/app/models/user.py` | add role/admin flag or related role structure |
-| `backend/app/api/deps.py` | admin dependency |
-| `backend/app/api/routes/admin.py` | admin endpoints |
-| `backend/app/services/admin_service.py` | moderation rules |
-| `frontend/src/pages/AdminPage.tsx` | admin UI |
-| `backend/tests/test_admin.py` | admin authorization tests |
+| `backend/app/models/user.py` | implemented `role` field with default `"user"` |
+| `backend/app/models/post.py` | implemented post admin hidden fields |
+| `backend/app/models/comment.py` | implemented comment admin hidden fields separate from `deleted_at` |
+| `backend/app/models/admin_action_log.py` | implemented compact admin action log |
+| `backend/app/api/deps.py` | implemented `require_admin` |
+| `backend/app/api/routes/admin.py` | implemented `/api/admin/health`, post hide/restore, comment hide/restore |
+| `backend/app/main.py` | registered `admin_router` |
+| `backend/app/services/admin_service.py` | implemented moderation rules and audit log writes |
+| `backend/app/services/post_service.py` | public list/detail exclude hidden posts |
+| `backend/app/services/comment_service.py` | public comment lookup excludes hidden comments |
+| `backend/tests/test_admin.py` | implemented admin auth and moderation tests |
+| `frontend/src/pages/AdminPage.tsx` | not yet created; admin UI postponed |
 
-### Expected API
+### Implemented API
 
 ```text
-GET /api/admin/users
-GET /api/admin/posts
-PATCH /api/admin/posts/{post_id}/moderation
+GET /api/admin/health
+POST /api/admin/posts/{post_id}/hide
+POST /api/admin/posts/{post_id}/restore
+POST /api/admin/comments/{comment_id}/hide
+POST /api/admin/comments/{comment_id}/restore
 ```
 
-### Expected DB / ERD
+Behavior:
 
-Candidate:
+```text
+no token -> 401
+regular user token -> 403
+admin user token -> 200 { status, admin_user_id }
+admin hide -> hidden fields set, public lookup excludes target
+admin restore -> hidden fields cleared, public lookup includes target again
+```
+
+### DB / ERD
+
+Implemented:
 
 ```text
 users.role
-posts.moderation_status
-moderation_logs
+posts.hidden_at
+posts.hidden_by_id
+posts.hidden_reason
+comments.hidden_at
+comments.hidden_by_id
+comments.hidden_reason
+admin_action_logs
 ```
 
-Final shape should be decided before implementation.
+Still postponed:
+
+```text
+AdminPage UI
+MyPage UI
+```
+
+Migration note:
+
+Existing PostgreSQL tables need explicit migration or manual `ALTER TABLE` for new columns and `admin_action_logs`; local Docker PostgreSQL was updated manually on 2026-06-16. Tests use a fresh SQLite schema and pass.
 
 ## AI, RAG, MCP, Agent
 

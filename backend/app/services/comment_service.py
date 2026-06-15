@@ -18,6 +18,7 @@ def list_comments_by_post(
         .filter(
             Comment.post_id == post_id,
             Comment.deleted_at.is_(None),
+            Comment.hidden_at.is_(None),
         )
         .order_by(Comment.created_at.asc())
         .all()
@@ -54,6 +55,7 @@ def get_comment(
         .filter(
             Comment.id == comment_id,
             Comment.deleted_at.is_(None),
+            Comment.hidden_at.is_(None),
         )
         .first()
     )
