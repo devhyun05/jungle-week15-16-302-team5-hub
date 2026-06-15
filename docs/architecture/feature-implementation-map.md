@@ -1,0 +1,748 @@
+# Feature Implementation Map
+
+## Purpose
+
+이 문서는 GlowBoard의 기능별 구현 지도를 정리한다.
+
+각 기능마다 다음을 한 번에 볼 수 있게 한다.
+
+- 관련 파일 구조
+- 파일별 책임
+- API 계약
+- DB/ERD 관계
+- frontend 연결 위치
+- 테스트 위치
+- 현재 상태와 다음 작업
+
+세부 문서는 아래를 함께 본다.
+
+- 설계 결정: `docs/architecture/design-decisions.md`
+- API 상세 계약: `docs/architecture/api-spec.md`
+- DB 상세 ERD: `docs/architecture/database-erd.md`
+- Auth 상세 설계: `docs/architecture/auth-session-design.md`
+- 테스트 계획: `docs/testing/test-plan.md`
+
+## How To Use This Document
+
+새 기능을 구현하기 전에는 해당 기능 섹션에서 아래 여섯 가지를 먼저 확인한다.
+
+```text
+1. 파일 구조
+2. API 계약
+3. DB 구조
+4. 요청 흐름
+5. 보안/권한 규칙
+6. 테스트 케이스
+```
+
+암기:
+
+```text
+파일을 정하고,
+계약을 정하고,
+데이터를 정하고,
+흐름을 정하고,
+보안을 정하고,
+테스트로 닫는다.
+```
+
+## Current Layering Convention
+
+Backend:
+
+| Layer | Responsibility | Examples |
+|---|---|---|
+| `api/routes` | HTTP endpoint, dependency injection, status code | `auth.py`, `posts.py`, `comments.py`, `tags.py` |
+| `schemas` | Pydantic request/response shape | `auth.py`, `post.py`, `comment.py`, `tag.py` |
+| `services` | business rule, DB query, authorization decision | `auth_service.py`, `post_service.py` |
+| `models` | SQLAlchemy table mapping | `user.py`, `post.py`, `session.py`, `refresh_token.py` |
+| `core` | cross-cutting config/security/cache helpers | `config.py`, `security.py`, `redis.py` |
+| `db` | engine, session dependency, declarative base | `session.py`, `base.py` |
+| `tests` | route/service behavior and regressions | `backend/tests/*.py` |
+
+Frontend:
+
+| Layer | Responsibility | Examples |
+|---|---|---|
+| `api` | backend API wrappers and fetch rules | `client.ts`, `auth.ts`, `posts.ts` |
+| `types` | TypeScript request/response shapes | `auth.ts`, `post.ts`, `comment.ts` |
+| `stores` | shared app state | `authStore.ts` |
+| `pages` | route-level screens and local UI state | `PostListPage.tsx`, `LoginPage.tsx` |
+| `components` | reusable UI pieces | `TagInput.tsx` |
+
+## App Shell, DB, Config
+
+### Files
+
+| File | Purpose |
+|---|---|
+| `backend/app/main.py` | FastAPI app creation, CORS middleware, router registration, startup table creation |
+| `backend/app/db/base.py` | SQLAlchemy `Base` |
+| `backend/app/db/session.py` | engine, session factory, `get_db` dependency |
+| `backend/app/core/config.py` | environment settings |
+| `backend/app/core/security.py` | password hashing and JWT helpers, later refresh/CSRF helpers |
+| `frontend/src/main.tsx` | React entrypoint |
+| `frontend/src/App.tsx` | frontend route shell |
+| `frontend/src/api/client.ts` | common fetch wrapper |
+
+### DB And Runtime Notes
+
+Current DB creation:
+
+```text
+FastAPI lifespan
+-> Base.metadata.create_all(bind=engine)
+```
+
+Current development origins:
+
+```text
+frontend: http://localhost:5173
+backend:  http://localhost:8000
+```
+
+CORS currently allows:
+
+```text
+http://localhost:5173
+http://127.0.0.1:5173
+```
+
+Future candidate:
+
+```text
+Alembic migrations
+-> replace create_all as the project schema becomes more stable
+```
+
+## Auth And Session
+
+### Status
+
+| Part | Status |
+|---|---|
+| signup/login/access JWT | implemented |
+| Swagger form token endpoint | implemented |
+| `/api/auth/me` | implemented |
+| refresh token cookie | implemented for login/refresh/logout |
+| CSRF for refresh/logout | implemented for refresh/logout |
+| refresh token rotation history table | implemented |
+| 7-day idle + 30-day absolute session | implemented for login/refresh |
+| access token lifetime | 30 minutes |
+| logout access token policy | frontend clears authStore/access token; backend revokes refresh session; no access token denylist in Day 2-B baseline |
+
+### Backend Files
+
+| File | Purpose |
+|---|---|
+| `backend/app/api/routes/auth.py` | `/api/auth/signup`, `/login`, `/me`, `/token`, `/refresh`, `/logout`, cookie set/delete |
+| `backend/app/schemas/auth.py` | signup/login/token/user response shapes |
+| `backend/app/services/auth_service.py` | signup/login password and token rules, session create, refresh rotation, logout revoke |
+| `backend/app/models/user.py` | `users` table |
+| `backend/app/models/session.py` | `sessions` login grouping table with idle/absolute/revoke fields |
+| `backend/app/models/refresh_token.py` | `refresh_tokens` rotation history table |
+| `backend/app/api/deps.py` | Bearer access token dependency and current user loading |
+| `backend/app/core/security.py` | password hash/verify, access JWT, refresh token generation/hash, CSRF token generation |
+| `backend/app/core/config.py` | JWT and cookie/env settings; access token lifetime is 30 minutes |
+
+### Frontend Files
+
+| File | Purpose |
+|---|---|
+| `frontend/src/api/auth.ts` | login/signup/logout API wrappers with credentials and CSRF header |
+| `frontend/src/api/client.ts` | attach Bearer token, include credentials when requested, refresh once on 401 and retry once |
+| `frontend/src/stores/authStore.ts` | access token/current user shared state |
+| `frontend/src/types/auth.ts` | auth request/response types |
+| `frontend/src/pages/LoginPage.tsx` | login form and authStore update |
+| `frontend/src/pages/SignupPage.tsx` | signup form |
+| `frontend/src/App.tsx` | auth-aware navigation/header |
+
+### API Contract
+
+Current:
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| POST | `/api/auth/signup` | none | create user |
+| POST | `/api/auth/login` | none | return access token and user, set refresh/csrf cookies |
+| POST | `/api/auth/token` | form body | Swagger Authorize token endpoint |
+| GET | `/api/auth/me` | Bearer access token | return current user |
+| POST | `/api/auth/refresh` | refresh cookie + CSRF | rotate refresh token and return new access token |
+| POST | `/api/auth/logout` | refresh cookie + CSRF | revoke session and clear cookies |
+
+### DB / ERD
+
+Tables:
+
+```text
+users 1 ---- N sessions
+sessions 1 ---- N refresh_tokens
+```
+
+Current `sessions`:
+
+```text
+id
+user_id
+expires_at             # 7-day idle timeout
+absolute_expires_at    # 30-day absolute max
+created_at
+revoked_at             # logout/revoke/reuse detection time
+```
+
+Current `refresh_tokens`:
+
+```text
+id
+session_id
+token_hash
+issued_at
+expires_at
+used_at
+revoked_at
+replaced_by_token_id
+```
+
+Active session:
+
+```text
+revoked_at IS NULL
+expires_at > now
+absolute_expires_at > now
+```
+
+### Security Rules
+
+- Passwords are stored as hashes.
+- Normal APIs use `Authorization: Bearer <access_token>`.
+- Access token lifetime is 30 minutes.
+- Refresh token is stored in an HttpOnly cookie.
+- CSRF token is stored in a readable cookie and copied to `X-CSRF-Token`.
+- Refresh/logout require CSRF.
+- Refresh token raw value is never stored in DB.
+- Access token expiry triggers one refresh attempt and one original request retry.
+
+### Tests
+
+Current:
+
+| File | Coverage |
+|---|---|
+| `backend/tests/test_auth.py` | signup, duplicate signup, login, wrong password, token endpoint, me endpoint, login cookies/session rows, refresh CSRF 403, refresh rotation, old token reuse session revoke, logout CSRF 403, logout revoke/cookie delete, refresh after logout 401 |
+
+Remaining target:
+
+```text
+idle-expired session is rejected
+absolute-expired session is rejected
+```
+
+## Posts
+
+### Status
+
+Implemented for Day 1/2 MVP.
+
+### Backend Files
+
+| File | Purpose |
+|---|---|
+| `backend/app/api/routes/posts.py` | post create/list/detail/update/delete endpoints |
+| `backend/app/schemas/post.py` | post request/response/page shapes |
+| `backend/app/services/post_service.py` | post CRUD, owner checks, search, pagination, tag connection |
+| `backend/app/models/post.py` | `posts` table and tag relationship |
+| `backend/app/models/tag.py` | `post_tags` relationship used by posts |
+
+### Frontend Files
+
+| File | Purpose |
+|---|---|
+| `frontend/src/api/posts.ts` | post API wrappers |
+| `frontend/src/types/post.ts` | post request/response/page/tag types |
+| `frontend/src/pages/PostListPage.tsx` | list, search, tag filter, pagination |
+| `frontend/src/pages/PostDetailPage.tsx` | detail, delete, comments area |
+| `frontend/src/pages/PostCreatePage.tsx` | create form |
+| `frontend/src/pages/PostEditPage.tsx` | edit form |
+| `frontend/src/components/TagInput.tsx` | comma/Enter tag entry |
+
+### API Contract
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/api/posts/` | none | list posts with search/pagination |
+| POST | `/api/posts/` | Bearer | create post |
+| GET | `/api/posts/{post_id}` | none | read post detail |
+| PUT | `/api/posts/{post_id}` | owner Bearer | update own post |
+| DELETE | `/api/posts/{post_id}` | owner Bearer | delete own post |
+
+List query:
+
+```text
+q?
+tag?
+tags?
+page=1
+size=10
+```
+
+### DB / ERD
+
+```text
+users 1 ---- N posts
+posts N ---- M tags through post_tags
+posts 1 ---- N comments
+```
+
+Core columns:
+
+```text
+posts.id
+posts.author_id
+posts.title
+posts.body
+posts.created_at
+posts.updated_at
+```
+
+Planned/longer-term columns in ERD:
+
+```text
+board
+original_language
+region
+product_name
+source_url
+deleted_at
+```
+
+### Security Rules
+
+- Create requires login.
+- Update/delete require the post owner.
+- Owner checks happen in backend service, not only frontend UI.
+
+### Tests
+
+| File | Coverage |
+|---|---|
+| `backend/tests/test_posts.py` | create/list/detail/update/delete, 401/403/404 |
+| `backend/tests/test_posts_search.py` | keyword search, tag filters, pagination |
+
+## Comments
+
+### Status
+
+Implemented for Day 2 MVP. Redis rate limit is applied to comment creation.
+
+### Backend Files
+
+| File | Purpose |
+|---|---|
+| `backend/app/api/routes/comments.py` | comment list/create/update/delete endpoints |
+| `backend/app/schemas/comment.py` | comment request/response shapes |
+| `backend/app/services/comment_service.py` | comment CRUD, owner checks, soft delete |
+| `backend/app/models/comment.py` | `comments` table |
+| `backend/app/services/rate_limit_service.py` | fixed-window rate limit helper |
+| `backend/app/core/redis.py` | Redis client |
+
+### Frontend Files
+
+| File | Purpose |
+|---|---|
+| `frontend/src/api/comments.ts` | comment API wrappers |
+| `frontend/src/types/comment.ts` | comment request/response types |
+| `frontend/src/pages/PostDetailPage.tsx` | comment list/create/edit/delete UI; target: comment pagination controls |
+
+### API Contract
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/api/posts/{post_id}/comments` | none | list visible comments; target query: `page`, `size` |
+| POST | `/api/posts/{post_id}/comments` | Bearer | create comment |
+| PUT | `/api/comments/{comment_id}` | owner Bearer | update own comment |
+| DELETE | `/api/comments/{comment_id}` | owner Bearer | soft delete own comment |
+
+### DB / ERD
+
+```text
+users 1 ---- N comments
+posts 1 ---- N comments
+```
+
+Columns:
+
+```text
+comments.id
+comments.post_id
+comments.author_id
+comments.body
+comments.created_at
+comments.updated_at
+comments.deleted_at
+```
+
+Soft delete:
+
+```text
+DELETE /api/comments/{comment_id}
+-> set comments.deleted_at
+
+GET /api/posts/{post_id}/comments
+-> filter deleted_at IS NULL
+-> target: apply page/size and return CommentPage
+```
+
+### Security Rules
+
+- List is public.
+- Create requires login.
+- Update/delete require comment owner.
+- Delete is soft delete.
+- Create is rate-limited by Redis using `rate:comments:create:{user_id}`.
+
+### Tests
+
+| File | Coverage |
+|---|---|
+| `backend/tests/test_comments.py` | create/list/update/soft delete, 401/403/404 |
+
+### Additional Implementation Plan
+
+Comment pagination is a planned follow-up for the existing comment list.
+
+| Area | Planned Change |
+|---|---|
+| API | `GET /api/posts/{post_id}/comments?page=&size=` |
+| Response | `CommentPageResponse` with `items`, `total`, `page`, `size`, `has_next`, `has_prev` |
+| Backend | apply `offset`/`limit` to visible comments only, excluding `deleted_at` rows |
+| Frontend | add comment page state and controls to `PostDetailPage` or `CommentList` |
+| Tests | add comment pagination ordering, total, empty page, and deleted-comment exclusion cases |
+
+## Tags
+
+### Status
+
+Implemented for post create/update and tag listing.
+
+### Backend Files
+
+| File | Purpose |
+|---|---|
+| `backend/app/api/routes/tags.py` | tag list endpoint |
+| `backend/app/schemas/tag.py` | tag response shape |
+| `backend/app/services/tag_service.py` | normalize, find/create, list tags |
+| `backend/app/models/tag.py` | `tags` table and `post_tags` join table |
+| `backend/app/services/post_service.py` | attaches/replaces tags during post create/update |
+
+### Frontend Files
+
+| File | Purpose |
+|---|---|
+| `frontend/src/components/TagInput.tsx` | user tag entry UI |
+| `frontend/src/types/post.ts` | tag type included in post response |
+| `frontend/src/api/posts.ts` | sends `tag_names` on create/update |
+| `frontend/src/pages/PostListPage.tsx` | tag filter display/input |
+| `frontend/src/pages/PostCreatePage.tsx` | create post tags |
+| `frontend/src/pages/PostEditPage.tsx` | edit post tags |
+
+### API Contract
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/api/tags/` | none | list tag suggestions/all tags |
+| POST | `/api/posts/` | Bearer | create/reuse tags through `tag_names` |
+| PUT | `/api/posts/{post_id}` | owner Bearer | replace post tag connections through `tag_names` |
+
+### DB / ERD
+
+```text
+posts N ---- M tags through post_tags
+```
+
+Tables:
+
+```text
+tags
+- id
+- normalized_name
+- display_name
+- created_at
+
+post_tags
+- post_id
+- tag_id
+```
+
+Policy:
+
+```text
+trim input
+lowercase normalized_name
+reuse existing tag row
+do not duplicate same tag on same post
+leave orphan tags for now
+```
+
+### Tests
+
+| File | Coverage |
+|---|---|
+| `backend/tests/test_tags.py` | tag listing and tag behavior |
+| `backend/tests/test_posts_search.py` | tag filter behavior |
+
+## Search And Pagination
+
+### Status
+
+Implemented for posts list.
+
+### Files
+
+| File | Purpose |
+|---|---|
+| `backend/app/api/routes/posts.py` | query parameters `q`, `tag`, `tags`, `page`, `size` |
+| `backend/app/services/post_service.py` | `ILIKE`, tag filters, count, page response |
+| `backend/app/schemas/post.py` | `PostPageResponse` |
+| `frontend/src/pages/PostListPage.tsx` | URL query state and page buttons |
+| `frontend/src/api/posts.ts` | list posts with params |
+
+### API Contract
+
+```text
+GET /api/posts/?q=&tag=&tags=&page=&size=
+```
+
+Response:
+
+```text
+items
+page
+size
+total
+has_next
+has_prev
+```
+
+### DB / Query Shape
+
+Current:
+
+```text
+posts.title ILIKE
+posts.body ILIKE
+tags.normalized_name filter
+offset pagination
+```
+
+Candidates:
+
+```text
+full-text search
+cursor pagination
+advanced OR tag filters
+```
+
+### Tests
+
+| File | Coverage |
+|---|---|
+| `backend/tests/test_posts_search.py` | keyword search, tag filtering, pagination |
+
+## Redis Rate Limit
+
+### Status
+
+Implemented for comment creation.
+
+### Files
+
+| File | Purpose |
+|---|---|
+| `backend/app/core/redis.py` | Redis client creation |
+| `backend/app/services/rate_limit_service.py` | fixed window counter and 429 exception |
+| `backend/app/api/routes/comments.py` | calls `check_rate_limit` before comment creation |
+| `docker-compose.yml` | Redis service |
+| root `.env.example` | `REDIS_URL` example |
+
+### API Behavior
+
+Applied to:
+
+```text
+POST /api/posts/{post_id}/comments
+```
+
+Policy:
+
+```text
+key: rate:comments:create:{user_id}
+limit: 5
+window_seconds: 60
+failure: 429 Too Many Requests
+```
+
+### Why Redis
+
+Rate counters are:
+
+```text
+frequently updated
+short-lived
+shared across uvicorn workers/processes
+safe to expire automatically
+```
+
+Redis fits this better than PostgreSQL for this use.
+
+### Candidates
+
+```text
+login IP/email rate limit
+post creation rate limit
+AI quota/concurrency limit
+sliding window or token bucket
+```
+
+## Frontend Auth State
+
+### Status
+
+Zustand authStore is implemented. Cookie refresh integration code is connected in frontend API wrappers, and browser manual verification for login cookies, readable CSRF cookie, HttpOnly refresh token hiding, logout CSRF header, and cookie deletion is complete.
+
+### Files
+
+| File | Purpose |
+|---|---|
+| `frontend/src/stores/authStore.ts` | access token/current user shared state |
+| `frontend/src/api/client.ts` | reads token, sends Bearer header, refreshes once on 401, retries once |
+| `frontend/src/api/auth.ts` | login/signup/logout; login/logout include credentials, logout sends CSRF header |
+| `frontend/src/App.tsx` | navigation and logout UI |
+| `frontend/src/pages/LoginPage.tsx` | login updates store |
+| `frontend/src/pages/PostCreatePage.tsx` | protected action reads store |
+| `frontend/src/pages/PostEditPage.tsx` | protected action reads store |
+| `frontend/src/pages/PostDetailPage.tsx` | owner UI and comment auth state |
+
+### State Policy
+
+```text
+authStore:
+-> access token
+-> current user
+-> login/logout/update token actions
+
+URL query:
+-> search q
+-> tag filters
+-> page
+
+local component state:
+-> form inputs
+-> comment draft
+-> local loading/error states
+```
+
+### Implemented Refresh Flow
+
+```text
+API request gets 401
+-> client calls /api/auth/refresh once with credentials include
+-> stores new access token
+-> retries original request once
+-> if refresh fails, clear authStore and send user to login
+```
+
+## Admin And Moderation
+
+### Status
+
+Planned for Day 3.
+
+### Expected Files
+
+| File | Purpose |
+|---|---|
+| `backend/app/models/user.py` | add role/admin flag or related role structure |
+| `backend/app/api/deps.py` | admin dependency |
+| `backend/app/api/routes/admin.py` | admin endpoints |
+| `backend/app/services/admin_service.py` | moderation rules |
+| `frontend/src/pages/AdminPage.tsx` | admin UI |
+| `backend/tests/test_admin.py` | admin authorization tests |
+
+### Expected API
+
+```text
+GET /api/admin/users
+GET /api/admin/posts
+PATCH /api/admin/posts/{post_id}/moderation
+```
+
+### Expected DB / ERD
+
+Candidate:
+
+```text
+users.role
+posts.moderation_status
+moderation_logs
+```
+
+Final shape should be decided before implementation.
+
+## AI, RAG, MCP, Agent
+
+These features are planned after the board MVP. Their detailed designs live under `docs/ai/`.
+
+### RAG
+
+| Area | Expected Shape |
+|---|---|
+| Design doc | `docs/ai/rag-design.md` |
+| Backend files | `ai` routes/service, embedding service, retrieval service |
+| DB | `embedding_jobs`, `post_embeddings`, maybe comment embeddings |
+| API | `POST /api/ai/rag-answer`, related topics endpoint |
+| Tests | mock embedding, mock LLM, source citation |
+
+### MCP
+
+| Area | Expected Shape |
+|---|---|
+| Design doc | `docs/ai/mcp-design.md` |
+| Backend files | MCP server/client, tool registry |
+| DB | optional `source_metadata` for fetched external URL metadata |
+| API | `POST /api/ai/source-metadata` or internal tool call |
+| Tests | JSON-RPC request/response, external fallback |
+
+### Agent
+
+| Area | Expected Shape |
+|---|---|
+| Design doc | `docs/ai/agent-design.md` |
+| Backend files | agent route, graph/service, tool adapters |
+| DB | optional agent run/step trace tables |
+| API | `POST /api/ai/agent`, `GET /api/ai/agent/{run_id}/events` |
+| Tests | max step guard, tool trace, fallback |
+
+## Per-Feature Update Checklist
+
+When adding or changing a feature, update the matching rows in this document.
+
+```text
+[ ] files changed
+[ ] file responsibilities
+[ ] API contract
+[ ] DB/ERD
+[ ] frontend connection
+[ ] security/authorization
+[ ] tests
+[ ] implementation candidates
+```
+
+Also update:
+
+```text
+docs/architecture/api-spec.md
+docs/architecture/database-erd.md
+docs/architecture/design-decisions.md
+docs/learning/진도_체크포인트.md
+docs/planning/index.html when the user studies from it
+```

@@ -10,6 +10,9 @@
 2. 과제 요구사항 때문에 반드시 들어가야 하는 선택과 우리가 선택할 수 있는 부분을 구분한다.
 3. 구현을 진행하면서 실제 코드와 맞게 결정을 업데이트한다.
 
+현재까지 확정한 세부 설계 결정은 `docs/architecture/design-decisions.md`에 모아 둔다.
+Auth/session 상세 설계는 `docs/architecture/auth-session-design.md`를 따른다.
+
 따라서 이 문서의 모든 내용은 세 종류로 표시한다.
 
 - 후보: 아직 비교 중인 선택지
@@ -132,7 +135,7 @@ flowchart LR
 | Realtime | WebSocket demo + SSE AI progress | 잠정 결정 | 요구사항과 AI progress에 맞음 |
 | DB | PostgreSQL | 결정 | 요구사항 |
 | Vector | pgvector | 결정 | 요구사항 |
-| Redis | rate limit + AI cache 후보 | 잠정 결정 | 구현 범위를 보고 조정 |
+| Redis | 댓글 작성 rate limit 구현, AI cache/status는 후보 | 결정 일부 완료 | Day 2에서 fixed-window rate limit을 붙였고, AI cache/status는 Day 5 이후 결정 |
 | Job Queue | RabbitMQ + Celery | 결정 | Job Queue 구현 근거가 명확함 |
 | MCP | JSON-RPC server + external tool | 결정 | 요구사항 |
 | Agent | LangGraph graph | 결정 | 사용자 판단에 따라 고정 |
@@ -145,7 +148,7 @@ flowchart LR
 - SSR은 FastAPI `HTMLResponse`로 충분한지, React SSR이 꼭 필요한지 확인한다.
 - WebSocket은 댓글 알림으로 만들지, 단순 activity echo로 만들지 정한다.
 - SSE는 Agent progress 전용으로 둘지, worker job progress에도 쓸지 정한다.
-- Redis를 rate limit만 쓸지, AI cache/job status까지 쓸지 구현량을 보고 정한다.
+- Redis의 Day 2 역할은 댓글 작성 rate limit으로 확정했다. AI cache/job status까지 확장할지는 Day 5 이후 구현량을 보고 정한다.
 - MCP 외부 tool은 Open-Meteo weather로 갈지, URL metadata로 갈지 정한다.
 - LLM provider와 embedding model은 API key 상황을 보고 정한다.
 
@@ -292,10 +295,10 @@ flowchart LR
 | Zustand | auth, search/filter, AI progress 상태 | 사용 | store를 2개로 할지 3개로 할지 |
 | FastAPI routers | REST/GraphQL/SSR/realtime endpoint | 사용 | router 파일 분리 기준 |
 | Services | business rule, RAG, MCP client, Agent orchestration | 사용 | 너무 비대해지는 service 분리 |
-| Repositories | DB query | 사용 | 단순 CRUD도 repository로 뺄지 |
+| Repositories | DB query | 후보 | 현재는 service 안 query로 충분하고, query 중복이 커질 때 분리 |
 | PostgreSQL | 관계형 데이터 | 사용 | soft delete 필요 여부 |
 | pgvector | vector search | 사용 | vector index 종류 |
-| Redis | rate limit/cache/status | 사용 후보 | rate limit 외 용도 범위 |
+| Redis | rate limit/cache/status | rate limit 사용 | AI cache/status 확장 범위 |
 | RabbitMQ | job queue | 사용 | queue name과 retry 정책 |
 | Celery worker | embedding/background job | 사용 | worker task 수 |
 | MCP server | JSON-RPC tool server | 사용 | 별도 process 여부 |
@@ -309,6 +312,7 @@ flowchart LR
 | 2026-06-06 | 상태관리는 Zustand 사용 | Redux Toolkit보다 작고 빠르게 구현 가능 | auth/search/AI store 구현 후 확인 |
 | 2026-06-06 | Job Queue는 RabbitMQ + Celery 사용 | 요구사항 구현 근거가 명확하고 Python worker와 연결 쉬움 | worker 실행 난이도 확인 |
 | 2026-06-06 | Agent는 LangGraph 사용 | 요구사항상 반드시 지키는 방향 | Day 7 구현 전 node 수 조정 |
+| 2026-06-16 | Redis는 Day 2에서 댓글 작성 rate limit에 사용 | 여러 uvicorn worker/process에서도 같은 counter를 공유하기 위함 | AI cache/status 확장 여부는 Day 5 이후 |
 
 ## 구현하면서 업데이트할 체크리스트
 
@@ -317,4 +321,4 @@ flowchart LR
 - [ ] DB migration이 생기면 ERD와 architecture가 맞는지 확인한다.
 - [ ] GraphQL/SSR/WebSocket/SSE 구현 깊이를 정하고 문서에 반영한다.
 - [ ] RAG/MCP/Agent 구현 후 diagram이 실제 코드 흐름과 맞는지 확인한다.
-- [ ] README의 architecture summary가 이 문서와 같은 말을 하는지 확인한다.
+- [x] README의 architecture summary가 Day 2 기준 구조와 같은 말을 하는지 확인한다.

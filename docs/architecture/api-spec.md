@@ -4,6 +4,9 @@
 
 이 문서는 frontend와 backend 사이의 약속을 정리한다. 실제 구현이 바뀌면 이 문서도 같이 갱신한다.
 
+주요 설계 결정은 `docs/architecture/design-decisions.md`를 보고, 기능별 파일/API/DB 지도는 `docs/architecture/feature-implementation-map.md`를 본다.
+Auth/session 상세 정책은 `docs/architecture/auth-session-design.md`를 따른다.
+
 ## 작성 방법
 
 각 API는 아래 항목을 반드시 가진다.
@@ -43,10 +46,11 @@
 
 | Method | Path | Auth | Request | Response | Error |
 |---|---|---|---|---|---|
-| POST | `/auth/signup` | no | email, display_name, password | user | 400, 409, 422 |
-| POST | `/auth/login` | no | email, password | access_token, user | 400, 401, 422 |
-| POST | `/auth/logout` | yes | none | success | 401 |
-| GET | `/auth/me` | yes | none | user | 401 |
+| POST | `/api/auth/signup` | no | email, display_name, password | user | 400, 409, 422 |
+| POST | `/api/auth/login` | no | email, password | access_token, user, refresh/csrf cookies | 400, 401, 422 |
+| POST | `/api/auth/refresh` | refresh cookie + CSRF | none | access_token | 401, 403 |
+| POST | `/api/auth/logout` | refresh cookie + CSRF | none | success, cleared cookies | 401, 403 |
+| GET | `/api/auth/me` | yes | none | user | 401 |
 
 ## Post APIs
 
@@ -193,16 +197,37 @@ Day 1에서는 auth와 posts CRUD만 먼저 구현한다.
 
 Day 2에서는 댓글, 태그, 검색, 페이징, frontend 상태 정책, Redis rate limit 기준을 추가한다.
 
-### Auth Token Note
+### Auth Session Note
 
-현재 구현은 access token만 발급한다.
+Day 2-B에서는 access token만 쓰던 구조에서 cookie refresh auth로 확장한다.
+상세 설계 기준은 `docs/architecture/auth-session-design.md`를 따른다.
 
 ```text
 POST /api/auth/login
--> access_token, token_type, user
+-> response body: access_token, token_type, user
+-> Set-Cookie: refresh_token, csrf_token
+
+POST /api/auth/refresh
+-> request cookies: refresh_token, csrf_token
+-> request header: X-CSRF-Token
+-> response body: access_token, token_type
+-> Set-Cookie: rotated refresh_token, csrf_token
+
+POST /api/auth/logout
+-> request cookies: refresh_token, csrf_token
+-> request header: X-CSRF-Token
+-> response: 204 or success body
+-> clear refresh_token, csrf_token cookies
 ```
 
-`refresh_token`은 아직 구현하지 않았다. 장기 ERD의 `sessions.refresh_token_hash`는 refresh/session 전략을 확장할 때 사용할 후보 구조다.
+Policy:
+
+- normal APIs use `Authorization: Bearer <access_token>`; GlowBoard access token lifetime is 30 minutes.
+- refresh/logout use refresh cookie and CSRF check.
+- access token expiry triggers one refresh attempt and one original request retry.
+- login creates one `sessions` row and one `refresh_tokens` row.
+- refresh marks the old refresh token `used_at`, creates a new `refresh_tokens` row, and keeps the parent session as the same device/browser login.
+- logout clears frontend access token state, revokes the backend refresh session, and deletes refresh/csrf cookies. Existing stateless access tokens are not denylisted in the Day 2-B baseline and naturally expire within 30 minutes.
 
 ### Post List Search and Pagination
 
@@ -292,7 +317,7 @@ Tag policy:
 
 | Method | Path | Auth | Purpose | Request | Response | Error |
 |---|---|---|---|---|---|---|
-| GET | `/api/posts/{post_id}/comments` | no | 댓글 목록 조회 | path: post_id | comment[] | 404 |
+| GET | `/api/posts/{post_id}/comments` | no | 댓글 목록 조회 | path: post_id, query: page?, size? | comment[] currently; target: CommentPage | 404, 422 |
 | POST | `/api/posts/{post_id}/comments` | yes | 댓글 작성 | body | comment | 401, 404, 422, 429 |
 | PUT | `/api/comments/{comment_id}` | owner | 댓글 수정 | body | comment | 401, 403, 404, 422 |
 | DELETE | `/api/comments/{comment_id}` | owner | 댓글 soft delete | none | 204 no content | 401, 403, 404 |
@@ -304,6 +329,15 @@ Comment request:
   "body": "string"
 }
 ```
+
+Comment pagination target:
+
+```text
+GET /api/posts/{post_id}/comments?page=1&size=20
+-> response: items, total, page, size, has_next, has_prev
+```
+
+댓글 페이지네이션은 추가 구현 플랜이다. 구현 시 `PostPageResponse`와 비슷한 `CommentPageResponse`를 두고, `PostDetailPage`의 댓글 목록 상태와 `backend/tests/test_comments.py` pagination test를 함께 갱신한다.
 
 Comment response:
 

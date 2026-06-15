@@ -301,7 +301,8 @@ Signup:
 States:
 - wrong password
 - duplicate email
-- token restore after refresh
+- access token expires, refresh cookie + CSRF flow restores a new access token once
+- logout clears frontend auth state and revokes the backend refresh session
 ```
 
 ### AI Q&A
