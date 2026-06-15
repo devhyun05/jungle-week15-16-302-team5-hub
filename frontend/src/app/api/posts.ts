@@ -1,5 +1,5 @@
-import type { UserRole } from "../data/mockData";
 import { API_BASE_URL, getErrorMessage } from "./client";
+import type { UserRole } from "./auth";
 
 export type PostListApiItem = {
   id: number;

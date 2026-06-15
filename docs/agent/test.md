@@ -1090,3 +1090,26 @@ curl.exe -I http://localhost:5173/login
 curl.exe -s -D - -o NUL http://localhost:8000/auth/google/login
 curl.exe -s -o NUL -w "%{http_code}" http://localhost:8000/auth/me
 ```
+## 2026-06-15 레거시 mockData 제거 QA
+
+목표: 프론트 주요 화면이 `data/mockData.ts`에 의존하지 않고 실제 API 또는 명확한 샘플 상태로 동작하는지 확인한다.
+
+체크리스트:
+
+- [x] `frontend/src/app/constants/categories.ts`가 존재한다.
+- [x] `frontend/src/app/data/mockData.ts`를 삭제했다.
+- [x] 게시글 목록/내 기록/글쓰기/대시보드의 카테고리 import가 `constants/categories.ts`를 사용한다.
+- [x] `api/posts.ts`와 `api/comments.ts`의 `UserRole` 타입 source가 `api/auth.ts`이다.
+- [x] 게시글 상세의 관련 기록은 `GET /posts` API 응답 기준으로 표시한다.
+- [x] 글쓰기 화면의 최근 공개 기록은 `GET /posts` API 응답 기준으로 표시한다.
+- [x] 알림은 알림 API 연결 전 샘플 데이터임을 명확히 표시한다.
+- [x] `rg "mockData|data/mockData|mock 저장|mock 연결|demo student" frontend/src/app` 결과 없음.
+- [x] `npm run build` 성공.
+- [x] `python -m compileall app` 성공.
+- [x] `git diff --check` 통과.
+
+남은 명확한 임시 상태:
+
+- AI 도우미 결과는 OpenAI/RAG/MCP/Agent 연결 전 API 데이터 기반 샘플이다.
+- 알림 API와 프로필 설정 저장 API는 다음 단계 구현 대상이다.
+- 글 임시저장 API는 다음 단계 구현 대상이다.

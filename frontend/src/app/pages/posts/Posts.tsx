@@ -5,7 +5,7 @@ import { Eye, Lock, MessageCircle, Search } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Input } from "../../components/ui/Input";
 import { getPosts, type PostListApiItem } from "../../api/posts";
-import { categories, type CategorySlug } from "../../data/mockData";
+import { categories, type CategorySlug } from "../../constants/categories";
 
 const categoryTabs = [{ slug: "all", label: "전체" }, ...categories] as const;
 

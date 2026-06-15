@@ -2846,3 +2846,54 @@ Dashboard 렌더링
 - “mock 저장”처럼 보이는 버튼은 사용자가 실제 저장된다고 오해할 수 있다.
 - 지금 구현된 GitHub 흐름은 전역 계정 연동이 아니라 포트폴리오 프로젝트별 repo URL 등록이다.
 - API가 없으면 숨기거나 준비 중으로 명확히 표시해야 실제 서비스 흐름이 더 신뢰감 있게 보인다.
+## 2026-06-15 레거시 mockData 제거 학습 기록
+
+이번 단계는 React mock UI 단계에서 쓰던 `data/mockData.ts`를 실제 API 단계에 맞게 제거한 작업이다.
+
+### 수정한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/constants/categories.ts` | 게시글 카테고리 slug, label, icon, color를 관리하는 정적 UI 상수 |
+| `frontend/src/app/pages/posts/PostDetail.tsx` | 관련 기록을 mock 배열이 아니라 `GET /posts` API로 조회 |
+| `frontend/src/app/pages/posts/PostEdit.tsx` | 최근 공개 기록을 mock 배열이 아니라 `GET /posts` API로 조회 |
+| `frontend/src/app/layouts/MainLayout.tsx` | 알림 API 연결 전 샘플 알림을 레이아웃 내부 상수로 관리 |
+| `frontend/src/app/api/posts.ts` | `UserRole` 타입을 `api/auth.ts`에서 가져오도록 정리 |
+| `frontend/src/app/api/comments.ts` | `UserRole` 타입을 `api/auth.ts`에서 가져오도록 정리 |
+
+### 코드 흐름 변화
+
+게시글 상세:
+
+```txt
+post detail API 호출
+-> post.categorySlug 확인
+-> GET /posts?category={categorySlug}
+-> 현재 게시글 id 제외
+-> 최대 2개 관련 공개 기록 표시
+```
+
+글쓰기 화면:
+
+```txt
+/posts/new 또는 /posts/:id/edit 진입
+-> GET /posts?page=1&size=3
+-> 최근 공개 기록을 참고 목록으로 표시
+-> 실제 유사도 추천은 RAG 단계로 남김
+```
+
+### 내가 이해해야 할 핵심 포인트
+
+- 정적 UI 상수와 mock 데이터는 다르다.
+- 카테고리 label/icon/color는 서버 데이터가 아니어도 프론트 상수로 둘 수 있다.
+- 게시글/댓글/포트폴리오/코치 리뷰처럼 사용자가 바꾸는 데이터는 API 응답을 기준으로 화면을 만들어야 한다.
+- 파일 이름이 `mockData.ts`로 남아 있으면 실제 API 단계에서도 혼란을 만든다.
+- 아직 API가 없는 알림은 “샘플”임을 분명히 표시해야 한다.
+
+### 추가 학습 키워드
+
+- constants 폴더 역할
+- API response 기반 derived UI
+- 레거시 코드 제거
+- TypeScript type source of truth
+- RAG 연결 전 대체 UI

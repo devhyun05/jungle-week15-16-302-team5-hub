@@ -7,7 +7,7 @@ import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import { getMyPosts, getPosts, type PostListApiItem } from "../../api/posts";
 import { getMyReviewRequests, getReviewInbox, type ReviewRequestApiItem } from "../../api/reviews";
-import { categories } from "../../data/mockData";
+import { categories } from "../../constants/categories";
 import type { MainLayoutContext } from "../../layouts/MainLayout";
 
 function formatDate(dateText: string) {

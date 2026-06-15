@@ -1555,3 +1555,32 @@ fix: 설정 화면 mock 문구 정리
 - `curl -I /auth/google/login`은 HEAD 요청이므로 405가 정상이다. 이 endpoint는 GET만 허용한다.
 - 실제 Google 계정 선택과 동의는 사용자 계정 조작이 필요하므로 수동 QA로 남겼다.
 - Browser 플러그인으로 버튼 클릭 확인 중 timeout이 발생해 HTTP/code 기준 QA로 대체했다.
+## 2026-06-15 레거시 mockData 제거
+
+상태: 완료
+
+목표: 실제 API 기준으로 전환된 화면에서 남아 있던 `data/mockData.ts` 의존을 제거한다.
+
+구현한 것:
+
+- `constants/categories.ts` 추가
+- 카테고리 import를 `data/mockData.ts`에서 `constants/categories.ts`로 변경
+- `api/posts.ts`, `api/comments.ts`, `PostDetail.tsx`가 `UserRole`을 `api/auth.ts`에서 가져오도록 변경
+- `PostDetail` 관련 기록을 `GET /posts` API 기반으로 전환
+- `PostEdit` 최근 공개 기록을 `GET /posts` API 기반으로 전환
+- `MainLayout` 알림 샘플을 레이아웃 내부 상수로 이동
+- `frontend/src/app/data/mockData.ts` 삭제
+- 오래된 하위 README 3개 갱신
+
+검증:
+
+- `npm run build` 성공
+- `python -m compileall app` 성공
+- `git diff --check` 통과
+- `mockData`, `mock 저장`, `mock 연결`, `demo student` 검색 결과 없음
+
+추천 커밋 제목:
+
+```txt
+fix: 레거시 mockData 의존 제거
+```

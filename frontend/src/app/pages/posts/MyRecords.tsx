@@ -6,7 +6,7 @@ import { getMyPosts, type PostListApiItem } from "../../api/posts";
 import { Badge } from "../../components/ui/Badge";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
-import { categories, type CategorySlug } from "../../data/mockData";
+import { categories, type CategorySlug } from "../../constants/categories";
 
 type CategoryFilter = "all" | CategorySlug;
 type VisibilityFilter = "all" | "public" | "private";

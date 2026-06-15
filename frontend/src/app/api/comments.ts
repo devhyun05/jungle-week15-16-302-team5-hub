@@ -1,4 +1,4 @@
-import type { UserRole } from "../data/mockData";
+import type { UserRole } from "./auth";
 import { API_BASE_URL, getErrorMessage } from "./client";
 
 export type CommentApiItem = {

@@ -7,8 +7,8 @@ import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
-import { createPost, getPostDetail, updatePost } from "../../api/posts";
-import { categories, posts } from "../../data/mockData";
+import { createPost, getPostDetail, getPosts, updatePost, type PostListApiItem } from "../../api/posts";
+import { categories } from "../../constants/categories";
 
 function buildSummary(content: string) {
   // 목록 카드에 보여줄 짧은 요약을 본문 앞부분으로 만든다.
@@ -35,6 +35,31 @@ export function PostEdit() {
   const [notice, setNotice] = useState("");
   const [isPostLoading, setIsPostLoading] = useState(isEditMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [referencePosts, setReferencePosts] = useState<PostListApiItem[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadReferencePosts() {
+      try {
+        const data = await getPosts({ page: 1, size: 3 });
+
+        if (isMounted) {
+          setReferencePosts(data.items);
+        }
+      } catch {
+        if (isMounted) {
+          setReferencePosts([]);
+        }
+      }
+    }
+
+    void loadReferencePosts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     // 수정 화면은 URL의 id를 기준으로 백엔드에서 기존 게시글을 가져와 form state에 채운다.
@@ -149,7 +174,7 @@ export function PostEdit() {
   const saveDraft = () => {
     // TODO backend: 실제 임시저장 API는 백엔드 연결 후 구현 예정.
     setError("");
-    setNotice("mock으로 임시저장되었습니다. 새로고침하면 유지되지는 않습니다.");
+    setNotice("임시저장 API 연결 전 화면 안내입니다. 현재 입력값은 브라우저 새로고침 시 유지되지 않습니다.");
   };
 
   return (
@@ -159,7 +184,7 @@ export function PostEdit() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">{isEditMode ? "게시글 수정" : "새 게시글 작성"}</h1>
             <p className="mt-1 text-sm text-slate-500">
-              새 글 발행과 수정은 백엔드 API에 저장되고, 임시저장은 아직 mock 단계입니다.
+              새 글 발행과 수정은 백엔드 API에 저장되고, 임시저장은 다음 단계에서 별도 API로 연결합니다.
             </p>
           </div>
           <div className="flex gap-2">
@@ -292,12 +317,12 @@ export function PostEdit() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-sm">
               <Lightbulb className="h-4 w-4 text-amber-500" />
-              비슷한 이전 기록
+              최근 공개 기록
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-xs text-slate-500">실제 유사 글 검색은 RAG/검색 API 연결 후 구현 예정입니다.</p>
-            {posts.slice(0, 2).map((post) => (
+            <p className="text-xs text-slate-500">현재는 백엔드 게시글 API의 최근 공개 기록을 보여주며, 실제 유사 글 검색은 RAG 연결 후 구현 예정입니다.</p>
+            {referencePosts.map((post) => (
               <Link
                 key={post.id}
                 to={`/posts/${post.id}`}
@@ -307,6 +332,7 @@ export function PostEdit() {
                 <p className="mt-1 text-xs text-slate-400">{post.category}</p>
               </Link>
             ))}
+            {referencePosts.length === 0 && <p className="text-xs text-slate-400">참고할 공개 기록이 아직 없습니다.</p>}
           </CardContent>
         </Card>
       </aside>

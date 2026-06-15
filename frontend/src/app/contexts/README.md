@@ -1,11 +1,11 @@
 # contexts
 
-앱 전체에서 공유하는 React Context를 두는 폴더다.
+React 전역 상태를 관리하는 폴더입니다.
 
-예정 예시:
-- 로그인 사용자 상태
-- STUDENT / COACH / ADMIN role 상태
-- 승인 상태
-- 알림 상태
+현재 사용 중인 핵심 context:
 
-현재 role과 승인 상태는 `MainLayout`의 mock state로만 처리한다.
+- `AuthContext.tsx`: 앱 시작 시 `/auth/me`를 호출해 현재 로그인 사용자, role, approvalStatus를 관리합니다.
+- Google 로그인 시작은 `loginWithGoogle()`에서 `/auth/google/login`으로 이동합니다.
+- 로그아웃은 `/auth/logout` API를 호출한 뒤 사용자 상태를 비웁니다.
+
+현재 role과 승인 상태는 mock state가 아니라 백엔드 인증 API 응답을 기준으로 처리합니다.

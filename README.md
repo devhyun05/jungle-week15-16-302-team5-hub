@@ -715,3 +715,20 @@ Google OAuth 브라우저 end-to-end 전 단계까지 로컬 QA를 진행했습�
 - 실제 Google 계정 선택 및 동의 후 `/auth/google/callback` 성공 흐름
 - 최초 로그인 사용자의 승인 대기 화면 확인
 - 관리자 승인 후 STUDENT/COACH/ADMIN 화면 분기 확인
+## 2026-06-15 최신 구현: 레거시 mockData 제거
+
+프론트 주요 화면에서 마지막으로 남아 있던 `data/mockData.ts` 의존을 제거했습니다.
+
+- 카테고리 UI 상수는 `frontend/src/app/constants/categories.ts`로 분리했습니다.
+- 게시글 상세의 “AI가 추천하는 관련 기록”은 mock 배열 대신 `GET /posts` API 응답으로 같은 카테고리 공개 기록을 보여줍니다.
+- 글쓰기 화면의 “비슷한 이전 기록”은 mock 배열 대신 `GET /posts` API 응답으로 최근 공개 기록을 보여줍니다.
+- 알림 드롭다운은 아직 알림 API 연결 전 샘플임을 명확히 하고, 레이아웃 내부 샘플 상수로 이동했습니다.
+- `api/posts.ts`, `api/comments.ts`, `PostDetail.tsx`의 role 타입은 `api/auth.ts` 기준으로 정리했습니다.
+- 오래된 `frontend/src/app/api`, `contexts`, `types` README 문구를 현재 인증/API 구조 기준으로 갱신했습니다.
+
+검증:
+
+- `npm run build` 성공
+- `python -m compileall app` 성공
+- `git diff --check` 통과
+- `rg "mockData|data/mockData|mock 저장|mock 연결|demo student" frontend/src/app` 결과 없음

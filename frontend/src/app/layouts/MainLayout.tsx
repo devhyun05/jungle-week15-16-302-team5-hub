@@ -17,7 +17,6 @@ import {
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { useAuth } from "../contexts/AuthContext";
-import { notifications } from "../data/mockData";
 import type { ApprovalStatus, CurrentUser, UserRole } from "../api/auth";
 
 const studentNavItems = [
@@ -46,6 +45,12 @@ const adminNavItems = [
 
 const pendingNavItems = [
   { name: "승인 상태", path: "/pending-approval", icon: Clock },
+];
+
+const sampleNotifications = [
+  { id: "notification-feedback", message: "코치 피드백이 도착했습니다.", time: "방금 전" },
+  { id: "notification-review", message: "포트폴리오 리뷰 요청이 승인되었습니다.", time: "1시간 전" },
+  { id: "notification-ai", message: "AI 초안 생성이 완료되었습니다.", time: "어제" },
 ];
 
 export type MainLayoutContext = {
@@ -194,7 +199,7 @@ export function MainLayout() {
                     <p className="text-xs text-slate-500">알림 API 연결 전 샘플 데이터입니다.</p>
                   </div>
                   <div className="divide-y divide-slate-100">
-                    {notifications.map((notification) => (
+                    {sampleNotifications.map((notification) => (
                       <button
                         key={notification.id}
                         type="button"

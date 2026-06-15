@@ -6,9 +6,8 @@ import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import { createPostComment, deleteComment, getPostComments } from "../../api/comments";
-import { deletePost, getPostDetail, type PostDetailApiResponse } from "../../api/posts";
-import { posts } from "../../data/mockData";
-import type { UserRole } from "../../data/mockData";
+import { deletePost, getPostDetail, getPosts, type PostDetailApiResponse, type PostListApiItem } from "../../api/posts";
+import type { UserRole } from "../../api/auth";
 import type { MainLayoutContext } from "../../layouts/MainLayout";
 
 type CommentItem = {
@@ -63,6 +62,7 @@ export function PostDetail() {
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
   const [commentDeleteError, setCommentDeleteError] = useState("");
   const [comments, setComments] = useState<CommentItem[]>([]);
+  const [relatedPosts, setRelatedPosts] = useState<PostListApiItem[]>([]);
 
   useEffect(() => {
     if (!id) {
@@ -104,6 +104,39 @@ export function PostDetail() {
       isActive = false;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!post) {
+      setRelatedPosts([]);
+      return;
+    }
+
+    let isActive = true;
+
+    async function loadRelatedPosts() {
+      try {
+        const data = await getPosts({
+          category: post.categorySlug,
+          page: 1,
+          size: 5,
+        });
+
+        if (isActive) {
+          setRelatedPosts(data.items.filter((item) => item.id !== post.id).slice(0, 2));
+        }
+      } catch {
+        if (isActive) {
+          setRelatedPosts([]);
+        }
+      }
+    }
+
+    void loadRelatedPosts();
+
+    return () => {
+      isActive = false;
+    };
+  }, [post]);
 
   useEffect(() => {
     if (!id) {
@@ -386,10 +419,7 @@ export function PostDetail() {
           AI가 추천하는 관련 기록
         </h3>
         <ul className="space-y-2 text-sm">
-          {posts
-            .filter((item) => item.id !== post.id)
-            .slice(0, 2)
-            .map((item) => (
+          {relatedPosts.map((item) => (
               <li key={item.id}>
                 <Link to={`/posts/${item.id}`} className="flex items-center gap-2 text-emerald-700 hover:underline">
                   <FileText className="h-3 w-3" />
@@ -397,8 +427,9 @@ export function PostDetail() {
                 </Link>
               </li>
             ))}
+          {relatedPosts.length === 0 && <li className="text-emerald-700">같은 카테고리의 공개 기록이 아직 없습니다.</li>}
         </ul>
-        <p className="mt-3 text-xs text-emerald-700">실제 유사 기록 추천은 RAG 연결 후 구현 예정입니다.</p>
+        <p className="mt-3 text-xs text-emerald-700">현재는 같은 카테고리의 공개 기록을 보여주며, 실제 유사도 추천은 RAG 연결 후 구현 예정입니다.</p>
       </section>
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
