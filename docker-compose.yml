@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: glowboard
       POSTGRES_USER: glowboard
-      POSTGRES_PASSWORD: glowboard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-glowboard}
     ports:
       - "55432:5432"
     volumes:
