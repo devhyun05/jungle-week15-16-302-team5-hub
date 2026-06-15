@@ -5155,3 +5155,31 @@ GitHub ������Ʈ ���
 - Markdown parser와 직접 parser의 차이
 - category-specific component rendering
 - 백엔드 응답 DTO를 화면용 view model로 바꾸는 방식
+
+---
+
+## 2026-06-16 학습 기록: 기술 스택 표시에서 Markdown 제거
+
+이번 구현은 API 원본 데이터와 화면 표시 데이터를 분리해서 생각하는 작업이다.
+
+관련 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/utils/techStack.ts` | 화면에 보여줄 기술 스택만 걸러내는 공통 함수 |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | 포트폴리오 관리 화면의 기술 스택 표시 |
+| `frontend/src/app/pages/ai/AIAssistant.tsx` | AI 도우미 참고자료와 샘플 결과의 기술 스택 표시 |
+| `frontend/src/app/pages/posts/PostDetail.tsx` | 포트폴리오 게시글 상세의 기술 스택 표시 |
+
+핵심 포인트:
+
+- GitHub 분석 결과에 `Markdown`이 들어올 수 있지만, 포트폴리오 화면에서는 실제 구현 기술로 보기 어렵다.
+- DB/API 값을 바로 지우지 않고 화면에 보여줄 때만 필터링하면 기존 데이터 흐름을 유지할 수 있다.
+- 기존 저장 글에 남아 있는 단독 `GitHub` 기술 스택도 렌더링 단계에서 안내 문구로 바꿀 수 있다.
+
+추가 학습 키워드:
+
+- view model
+- display filtering
+- raw data vs UI data
+- shared utility function

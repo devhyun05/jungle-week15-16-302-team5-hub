@@ -16,6 +16,7 @@ import {
   type PortfolioProjectApiItem,
   type PortfolioStatus,
 } from "../../api/portfolio";
+import { getDisplayTechStack } from "../../utils/techStack";
 
 const portfolioStatuses: PortfolioStatus[] = ["작성중", "보완 필요", "정리 완료"];
 // /me/posts API는 한 번에 최대 50개까지만 허용한다.
@@ -184,6 +185,7 @@ export function Portfolio() {
   const selectedProject =
     projects.find((project) => project.id === selectedProjectId) ?? filteredProjects[0] ?? projects[0] ?? null;
   const selectedProjectGithubHref = selectedProject ? getGithubHref(selectedProject.githubUrl) : null;
+  const selectedDisplayTechStack = selectedProject ? getDisplayTechStack(selectedProject.techStack) : [];
 
   const linkedRecords = useMemo(
     () => (selectedProject ? availablePosts.filter((post) => selectedProject.linkedPostIds.includes(post.id)) : []),
@@ -441,6 +443,7 @@ export function Portfolio() {
 
             {filteredProjects.map((project) => {
               const isActive = selectedProject?.id === project.id;
+              const displayTechStack = getDisplayTechStack(project.techStack);
               return (
                 <button key={project.id} type="button" onClick={() => selectProject(project)} className="block w-full text-left">
                   <Card className={`relative cursor-pointer overflow-hidden transition-colors ${isActive ? "border-emerald-500 shadow-sm ring-1 ring-emerald-500" : "hover:border-slate-300"}`}>
@@ -464,11 +467,14 @@ export function Portfolio() {
                         코치: {project.coachFeedbackStatus}
                       </span>
                       <div className="flex flex-wrap gap-1">
-                        {project.techStack.slice(0, 3).map((tag) => (
+                        {displayTechStack.slice(0, 3).map((tag) => (
                           <Badge key={tag} variant="secondary" className="text-[10px]">
                             {tag}
                           </Badge>
                         ))}
+                        {displayTechStack.length === 0 && (
+                          <span className="text-[10px] text-slate-400">기술 스택 감지 전</span>
+                        )}
                       </div>
                       <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-xs text-slate-500">
                         <span className="flex items-center gap-1">
@@ -619,18 +625,20 @@ export function Portfolio() {
                       </h3>
                       <div className="space-y-4">
                         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                          <p className="text-xs font-semibold text-slate-500">감지된 기술/문서 유형</p>
+                          <p className="text-xs font-semibold text-slate-500">기술 스택</p>
                           <p className="mt-1 text-xs leading-5 text-slate-500">
-                            GitHub 파일 구성을 보고 AI가 참고할 프로젝트 단서를 정리합니다. `Markdown`은 README 같은 문서 파일이 감지됐다는 뜻입니다.
+                            GitHub 파일 구성을 바탕으로 포트폴리오에 쓸 수 있는 실제 기술 스택만 보여줍니다.
                           </p>
                           <div className="mt-3 flex flex-wrap gap-2">
-                            {selectedProject.techStack.map((stack) => (
+                            {selectedDisplayTechStack.map((stack) => (
                               <span key={stack} className="rounded-md bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm">
                                 {stack}
                               </span>
                             ))}
-                            {selectedProject.techStack.length === 0 && (
-                              <span className="rounded-md bg-white px-2 py-1 text-xs text-slate-500 shadow-sm">아직 감지된 항목이 없습니다.</span>
+                            {selectedDisplayTechStack.length === 0 && (
+                              <span className="rounded-md bg-white px-2 py-1 text-xs text-slate-500 shadow-sm">
+                                아직 기술 스택을 충분히 감지하지 못했습니다.
+                              </span>
                             )}
                           </div>
                         </div>

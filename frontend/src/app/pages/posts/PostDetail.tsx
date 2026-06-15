@@ -10,6 +10,7 @@ import { deletePost, getPostDetail, getPosts, type PostDetailApiResponse, type P
 import type { UserRole } from "../../api/auth";
 import { resolveApiAssetUrl } from "../../api/client";
 import type { MainLayoutContext } from "../../layouts/MainLayout";
+import { getDisplayTechStack } from "../../utils/techStack";
 
 type CommentItem = {
   id: string;
@@ -145,10 +146,12 @@ function parsePortfolioPostContent(content: string): PortfolioPostSections {
     repository: githubValue("Repository") || "등록된 repository 정보가 없습니다.",
     branch: githubValue("Branch") || "main",
     githubUrl: githubValue("URL"),
-    techStack: getSectionText("기술 스택")
-      .split(",")
-      .map((stack) => stack.trim())
-      .filter(Boolean),
+    techStack: getDisplayTechStack(
+      getSectionText("기술 스택")
+        .split(",")
+        .map((stack) => stack.trim())
+        .filter(Boolean),
+    ),
     description: getSectionText("프로젝트 설명") || "아직 프로젝트 설명이 없습니다.",
     linkedRecords: parsePortfolioList(getSectionText("연결된 학습 기록")),
     recentCommits: parsePortfolioList(getSectionText("최근 커밋 요약")),
@@ -158,7 +161,11 @@ function parsePortfolioPostContent(content: string): PortfolioPostSections {
 }
 
 function PortfolioTextBlock({ text }: { text: string }) {
-  const paragraphs = cleanMarkdownText(text)
+  const normalizedText = cleanMarkdownText(text).replace(
+    /(^|\n)((?:\d+\.\s*)?기술 스택)\s*\n(?:GitHub|Markdown|README)(?=\n|$)/g,
+    "$1$2\n아직 GitHub에서 기술 스택을 충분히 감지하지 못했습니다.",
+  );
+  const paragraphs = normalizedText
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);

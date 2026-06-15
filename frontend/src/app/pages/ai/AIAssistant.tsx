@@ -18,6 +18,7 @@ import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import { getMyPosts, type PostListApiItem } from "../../api/posts";
 import { getPortfolioProjects, updatePortfolioProject, type PortfolioProjectApiItem } from "../../api/portfolio";
+import { getDisplayTechStack } from "../../utils/techStack";
 
 type OutputType = "portfolio" | "interview";
 
@@ -41,7 +42,8 @@ const outputOptions = [
 
 function buildPortfolioDraft(project: PortfolioProjectApiItem, linkedRecords: PostListApiItem[]) {
   // 실제 OpenAI 연결 전까지 선택 프로젝트 정보를 이용해 포트폴리오 글 미리보기를 만든다.
-  const stackText = project.techStack.length > 0 ? project.techStack.slice(0, 3).join(", ") : "등록된 기술 스택";
+  const displayTechStack = getDisplayTechStack(project.techStack);
+  const stackText = displayTechStack.length > 0 ? displayTechStack.slice(0, 3).join(", ") : "정리할 기술 스택";
   const linkedRecordCount = linkedRecords.length;
 
   return `1. 프로젝트 한 줄 소개
@@ -54,7 +56,7 @@ ${project.title}는 ${stackText} 기반으로 구현한 프로젝트입니다. G
 GitHub 프로젝트 등록, 학습 기록 연결, 포트폴리오 글 저장, 코치 리뷰 요청까지 이어지는 흐름을 설계하고 구현했습니다.
 
 4. 기술 스택
-${project.techStack.length > 0 ? project.techStack.join(", ") : "아직 기술 스택이 등록되지 않았습니다."}
+${displayTechStack.length > 0 ? displayTechStack.join(", ") : "아직 GitHub에서 기술 스택을 충분히 감지하지 못했습니다."}
 
 5. 배운 점
 AI 기능은 버튼 하나가 아니라 어떤 자료를 참고하고 어떤 결과로 저장되는지 UI에서 먼저 설명되어야 한다는 점을 배웠습니다.`;
@@ -144,6 +146,7 @@ export function AIAssistant() {
   }, [queryProjectParam]);
 
   const selectedProject = projects.find((project) => project.id === selectedProjectId) ?? projects[0] ?? null;
+  const selectedDisplayTechStack = selectedProject ? getDisplayTechStack(selectedProject.techStack) : [];
   const linkedRecords = useMemo(
     () => (selectedProject ? records.filter((post) => selectedProject.linkedPostIds.includes(post.id)) : []),
     [records, selectedProject],
@@ -322,15 +325,15 @@ export function AIAssistant() {
                         {selectedProject.repoFullName}
                       </p>
                       <p className="mt-1 font-mono text-xs text-slate-500">branch: {selectedProject.githubBranch}</p>
-                      <p className="mt-3 text-xs font-semibold text-slate-500">감지된 기술/문서 유형</p>
+                      <p className="mt-3 text-xs font-semibold text-slate-500">기술 스택</p>
                       <div className="mt-3 flex flex-wrap gap-1">
-                        {selectedProject.techStack.map((stack) => (
+                        {selectedDisplayTechStack.map((stack) => (
                           <Badge key={stack} variant="secondary" className="text-[10px]">
                             {stack}
                           </Badge>
                         ))}
-                        {selectedProject.techStack.length === 0 && (
-                          <span className="text-xs text-slate-500">아직 감지된 항목이 없습니다.</span>
+                        {selectedDisplayTechStack.length === 0 && (
+                          <span className="text-xs text-slate-500">아직 기술 스택을 충분히 감지하지 못했습니다.</span>
                         )}
                       </div>
                     </div>

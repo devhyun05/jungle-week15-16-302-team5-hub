@@ -3523,3 +3523,36 @@ backend compileall: success
 
 - 학생 계정으로 프로젝트가 있는 상태에서 `/portfolio` 섹션별 버튼 위치를 실제 화면으로 한 번 더 눈 QA한다.
 - 실제 포트폴리오 글 본문을 더 풍부하게 만들기 위해 AI 연결 단계에서 출력 템플릿을 조정한다.
+
+---
+
+## 2026-06-16 6차 작업: 기술 스택 표시에서 Markdown 제거
+
+상태: 완료
+
+목표:
+
+- README가 Markdown이라는 당연한 정보를 기술 스택처럼 보여주는 문제를 제거한다.
+- 포트폴리오 관리, AI 도우미, 포트폴리오 게시글 상세에서 실제 기술 스택 중심으로 보이게 한다.
+
+진행한 것:
+
+- `frontend/src/app/utils/techStack.ts`에 화면 표시용 기술 스택 필터를 추가했다.
+- `Markdown`, `README`, 단독 `GitHub` 값은 기술 스택 표시에서 제외한다.
+- `Portfolio.tsx`, `AIAssistant.tsx`, `PostDetail.tsx`가 공통 필터를 사용하게 했다.
+- 기존 저장 포트폴리오 글 본문에 남아 있던 `기술 스택 / GitHub` 단독 표시도 렌더링 단계에서 안내 문구로 바꿔 보이게 했다.
+
+검증:
+
+```txt
+npm run build: success
+/posts/47 portfolio detail smoke: success
+hasBareGithubStackParagraph=false
+hasMarkdownAsStack=false
+```
+
+커밋 추천 제목:
+
+```txt
+fix: 기술 스택 표시에서 Markdown 제거
+```

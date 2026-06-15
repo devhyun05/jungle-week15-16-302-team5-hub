@@ -2907,3 +2907,26 @@ portfolio detail hasPortfolioText=true
 normal detail hasError=false
 normal detail hasPostMissing=false
 ```
+
+---
+
+## 2026-06-16 QA: 기술 스택 표시에서 Markdown 제거
+
+체크리스트:
+
+- [x] 프론트엔드 `npm run build` 성공
+- [x] `/posts/47` 포트폴리오 상세가 에러 없이 열림
+- [x] 구조화된 기술 스택 섹션에 `Markdown`이 보이지 않음
+- [x] 기존 포트폴리오 글 본문에 남아 있던 `4. 기술 스택 / GitHub` 단독 표시가 안내 문구로 바뀜
+- [x] README는 `GitHub README 참고 자료` 영역에서만 다룸
+
+검증 출력 요약:
+
+```txt
+npm run build: success
+/posts/47 portfolio detail smoke: success
+structured tech stack: 아직 기술 스택이 등록되지 않았습니다.
+portfolio text generic stack: 아직 GitHub에서 기술 스택을 충분히 감지하지 못했습니다.
+hasBareGithubStackParagraph=false
+hasMarkdownAsStack=false
+```
