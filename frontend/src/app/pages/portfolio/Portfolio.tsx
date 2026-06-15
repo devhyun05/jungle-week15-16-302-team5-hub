@@ -551,12 +551,19 @@ export function Portfolio() {
                               <span>{commit}</span>
                             </li>
                           ))}
+                          {selectedProject.recentCommitSummary.length === 0 && (
+                            <li className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-3 text-sm text-slate-500">
+                              아직 최근 커밋 요약이 없습니다.
+                            </li>
+                          )}
                         </ul>
                         <details className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                           <summary className="cursor-pointer text-xs font-semibold text-slate-600">
                             README 요약은 AI 참고 자료로만 보기
                           </summary>
-                          <p className="mt-2 text-sm leading-6 text-slate-600">{selectedProject.readmeSummary}</p>
+                          <p className="mt-2 text-sm leading-6 text-slate-600">
+                            {selectedProject.readmeSummary ?? "아직 README 요약이 없습니다."}
+                          </p>
                         </details>
                       </div>
                     </div>

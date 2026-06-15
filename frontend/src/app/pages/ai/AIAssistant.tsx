@@ -406,7 +406,7 @@ export function AIAssistant() {
                   </div>
                   <details className="rounded border border-slate-200 bg-white p-3 text-xs text-slate-700">
                     <summary className="cursor-pointer font-medium">GitHub README는 AI가 참고하는 자료입니다</summary>
-                    <p className="mt-2 leading-5 text-slate-500">{selectedProject.readmeSummary ?? "README 요약은 GitHub 정보가 보강되면 자동으로 채워집니다."}</p>
+                    <p className="mt-2 leading-5 text-slate-500">{selectedProject.readmeSummary ?? "아직 README 요약이 없습니다."}</p>
                   </details>
                 </section>
 

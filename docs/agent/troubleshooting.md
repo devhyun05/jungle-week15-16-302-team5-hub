@@ -551,3 +551,26 @@ size: int = Query(default=50, ge=1, le=50)
 3. 브라우저 화면 state를 확인한다.
 4. API 응답은 맞는데 화면만 다르면 cache/HMR/dev server를 의심한다.
 5. `npm run build`로 소스 오류인지 dev server 상태 문제인지 분리한다.
+
+---
+
+## 2026-06-16 PowerShell 파이프 한글 리터럴 인코딩 QA 이슈
+
+상황:
+
+- 포트폴리오 레거시 placeholder 필터를 검증하려고 PowerShell here-string 안에 한글 문구를 직접 적고 Python으로 pipe했다.
+- Python 코드 실행은 됐지만 DB에 들어간 한글 문자열이 깨져 exact match가 실패했다.
+
+원인:
+
+- PowerShell pipe와 Python 표준 입력 사이에서 한글 인코딩이 예상과 다르게 처리됐다.
+- 기능 로직 문제가 아니라 QA 스크립트 입력 문자열이 원래 코드 상수와 달라진 문제였다.
+
+해결:
+
+- 한글 문구를 QA 스크립트에 직접 적지 않고 `portfolio_service.py`의 `LEGACY_*_PLACEHOLDERS` 상수를 import해서 사용했다.
+- 상수 기준 재검증 결과 레거시 placeholder 필터가 정상 동작했다.
+
+배운 점:
+
+- 한글 exact match를 검증할 때는 터미널 입력 인코딩보다 코드 내부 상수나 파일 기반 입력을 쓰는 편이 안전하다.

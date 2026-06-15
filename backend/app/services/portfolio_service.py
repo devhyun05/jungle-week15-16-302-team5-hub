@@ -14,6 +14,9 @@ from app.schemas.portfolio import (
 
 
 VALID_PORTFOLIO_STATUSES = {"작성중", "보완 필요", "정리 완료"}
+LEGACY_README_PLACEHOLDERS = {"GitHub README는 AI 생성 단계에서 참고 자료로 사용할 예정입니다."}
+LEGACY_COMMIT_PLACEHOLDERS = {"GitHub 프로젝트 등록 완료. 실제 커밋 분석은 MCP/GitHub API 연결 후 갱신합니다."}
+LEGACY_DRAFT_PLACEHOLDERS = {"아직 저장된 포트폴리오 글 초안이 없습니다. AI 도우미에서 초안을 생성해보세요."}
 
 
 def get_portfolio_projects(db: Session, current_user: User) -> PortfolioProjectListResponse:
@@ -179,6 +182,30 @@ def parse_text_list(text: str | None) -> list[str]:
     return [line.strip() for line in text.splitlines() if line.strip()]
 
 
+def normalize_optional_text(text: str | None, placeholders: set[str]) -> str | None:
+    """
+    과거 개발 단계에서 DB에 저장한 안내 문구를 실제 데이터처럼 응답하지 않는다.
+    """
+
+    if text is None:
+        return None
+
+    stripped_text = text.strip()
+
+    if not stripped_text or stripped_text in placeholders:
+        return None
+
+    return text
+
+
+def parse_recent_commit_summary(text: str | None) -> list[str]:
+    """
+    저장된 최근 커밋 요약에서 과거 개발 안내 문구를 제거하고 화면용 배열로 바꾼다.
+    """
+
+    return [line for line in parse_text_list(text) if line not in LEGACY_COMMIT_PLACEHOLDERS]
+
+
 def build_project_response(project: PortfolioProject) -> PortfolioProjectResponse:
     """
     PortfolioProject model을 프론트가 바로 쓰기 좋은 JSON 응답으로 바꾼다.
@@ -193,9 +220,9 @@ def build_project_response(project: PortfolioProject) -> PortfolioProjectRespons
         github_url=project.github_url,
         summary=project.summary,
         tech_stack=parse_text_list(project.tech_stack),
-        readme_summary=project.readme_summary,
-        recent_commit_summary=parse_text_list(project.recent_commit_summary),
-        saved_portfolio_draft=project.saved_portfolio_draft,
+        readme_summary=normalize_optional_text(project.readme_summary, LEGACY_README_PLACEHOLDERS),
+        recent_commit_summary=parse_recent_commit_summary(project.recent_commit_summary),
+        saved_portfolio_draft=normalize_optional_text(project.saved_portfolio_draft, LEGACY_DRAFT_PLACEHOLDERS),
         saved_interview_questions=project.saved_interview_questions,
         portfolio_status=project.portfolio_status,
         coach_feedback_status=project.coach_feedback_status,

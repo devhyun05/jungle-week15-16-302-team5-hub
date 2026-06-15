@@ -2305,3 +2305,36 @@ cleanup_project=True
 남은 QA:
 
 - 실제 브라우저에서 AI 도우미 -> 면접 질문 저장 -> 포트폴리오 화면 재확인 흐름을 클릭으로 한 번 더 확인한다.
+
+---
+
+## 2026-06-16 QA: 포트폴리오 빈 상태 문구 정리
+
+목표: 포트폴리오 프로젝트 등록 직후 개발 단계 문구가 API 데이터처럼 저장되거나 화면에 노출되지 않는지 검증한다.
+
+체크리스트:
+
+- [x] 새 프로젝트 생성 시 `readme_summary`는 `None`으로 저장된다.
+- [x] 새 프로젝트 생성 시 `recent_commit_summary`는 `None`으로 저장되고 API 응답에서는 빈 배열로 보인다.
+- [x] 새 프로젝트 생성 시 `saved_portfolio_draft`는 `None`으로 저장된다.
+- [x] 과거 `GitHub README는 AI 생성 단계에서 참고 자료로 사용할 예정입니다.` 문구는 응답에서 `None`으로 정리된다.
+- [x] 과거 `MCP/GitHub API 연결 후 갱신` 문구는 응답에서 빈 배열로 정리된다.
+- [x] 포트폴리오 화면은 빈 커밋 요약에 대해 사용자용 empty state를 보여준다.
+- [x] AI 도우미와 포트폴리오 화면의 README fallback 문구가 `아직 README 요약이 없습니다.`로 통일된다.
+
+검증 출력 요약:
+
+```txt
+new_readme_is_none=True
+new_recent_commit_summary=[]
+new_saved_draft_is_none=True
+legacy_readme_is_none=True
+legacy_recent_commit_summary=[]
+legacy_saved_draft_is_none=True
+cleanup=True
+```
+
+메모:
+
+- PowerShell here-string으로 Python에 한글 리터럴을 직접 넘겼을 때 인코딩이 깨져 1차 레거시 exact match 검증이 실패했다.
+- 이후 Python에서 service 상수를 직접 사용해 같은 조건을 다시 검증했고 정상 통과했다.

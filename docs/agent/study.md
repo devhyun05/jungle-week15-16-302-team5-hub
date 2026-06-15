@@ -4514,3 +4514,49 @@ AI 도우미에서 프로젝트 선택
 - SQLAlchemy model
 - repository pattern
 - service layer
+
+---
+
+## 2026-06-16 학습: 포트폴리오 빈 상태 데이터와 화면 문구 분리
+
+이번에 본 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/repositories/portfolio_repository.py` | 새 포트폴리오 프로젝트 row를 생성하는 저장 계층 |
+| `backend/app/services/portfolio_service.py` | DB 값을 프론트 응답으로 바꾸면서 레거시 안내 문구를 정리하는 계층 |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | 포트폴리오 관리 화면의 README/커밋 요약 empty state 표시 |
+| `frontend/src/app/pages/ai/AIAssistant.tsx` | AI 도우미 참고 자료 패널의 README empty state 표시 |
+
+핵심 개념:
+
+- DB에는 실제 데이터만 저장하는 편이 좋다.
+- “아직 데이터가 없습니다” 같은 문구는 DB 값이 아니라 화면 표현에 가깝다.
+- DB에 안내 문구를 저장하면 나중에 실제 GitHub README/커밋 분석 결과와 구분하기 어려워진다.
+- 과거에 이미 저장된 placeholder 문구는 service layer에서 `None` 또는 빈 배열로 정리해 프론트에 보낸다.
+
+코드 흐름:
+
+```txt
+GitHub 프로젝트 등록
+-> repository가 readme_summary / recent_commit_summary / saved_portfolio_draft를 None으로 저장
+-> service가 DB row를 PortfolioProjectResponse로 변환
+-> 과거 placeholder 문구가 있으면 normalize_optional_text 또는 parse_recent_commit_summary가 제거
+-> 프론트는 null/빈 배열을 보고 화면용 empty state 문구를 표시
+```
+
+이번에 이해해야 할 포인트:
+
+1. repository는 저장 책임, service는 응답 조립 책임, page component는 화면 표시 책임을 가진다.
+2. 빈 데이터와 안내 문구를 분리하면 API가 더 깨끗해진다.
+3. “데이터 없음”도 오류가 아니라 정상 상태이므로 사용자에게 조용하고 명확한 문구로 보여줘야 한다.
+4. PowerShell 파이프에서 한글 리터럴을 Python으로 넘기면 인코딩이 깨질 수 있으므로, QA에서는 코드 안의 상수를 직접 써서 다시 검증했다.
+
+추가 공부 키워드:
+
+- empty state
+- placeholder data
+- service layer normalization
+- nullable field
+- legacy data cleanup
+- encoding issue
