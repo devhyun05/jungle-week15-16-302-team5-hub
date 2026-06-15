@@ -618,12 +618,21 @@ export function Portfolio() {
                         GitHub 참고 정보
                       </h3>
                       <div className="space-y-4">
-                        <div className="flex flex-wrap gap-2">
-                          {selectedProject.techStack.map((stack) => (
-                            <span key={stack} className="rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-700">
-                              {stack}
-                            </span>
-                          ))}
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                          <p className="text-xs font-semibold text-slate-500">감지된 기술/문서 유형</p>
+                          <p className="mt-1 text-xs leading-5 text-slate-500">
+                            GitHub 파일 구성을 보고 AI가 참고할 프로젝트 단서를 정리합니다. `Markdown`은 README 같은 문서 파일이 감지됐다는 뜻입니다.
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {selectedProject.techStack.map((stack) => (
+                              <span key={stack} className="rounded-md bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm">
+                                {stack}
+                              </span>
+                            ))}
+                            {selectedProject.techStack.length === 0 && (
+                              <span className="rounded-md bg-white px-2 py-1 text-xs text-slate-500 shadow-sm">아직 감지된 항목이 없습니다.</span>
+                            )}
+                          </div>
                         </div>
                         <ul className="space-y-2">
                           {selectedProject.recentCommitSummary.slice(0, 3).map((commit) => (
@@ -640,8 +649,11 @@ export function Portfolio() {
                         </ul>
                         <details className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                           <summary className="cursor-pointer text-xs font-semibold text-slate-600">
-                            README는 AI 참고 자료로만 보기
+                            GitHub README 참고 자료 보기
                           </summary>
+                          <p className="mt-2 text-xs leading-5 text-slate-500">
+                            README는 포트폴리오 글의 최종 결과물이 아니라, AI가 프로젝트 배경을 이해할 때 참고하는 자료입니다.
+                          </p>
                           <p className="mt-2 text-sm leading-6 text-slate-600">
                             {selectedProject.readmeSummary ?? "아직 README 요약이 없습니다."}
                           </p>

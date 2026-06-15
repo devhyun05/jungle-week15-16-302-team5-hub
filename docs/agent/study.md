@@ -5056,3 +5056,36 @@ GitHub ������Ʈ ���
 - section header action
 - React JSX refactor
 - reusable className
+
+---
+
+## 2026-06-16 학습 기록: GitHub README 참고 정보 표시 개선
+
+이번 구현은 GitHub 분석 결과가 사용자에게 어떤 의미인지 설명하는 UI 개선 작업이다.
+
+관련 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | 포트폴리오 관리 화면의 GitHub 참고 정보 설명 개선 |
+| `frontend/src/app/pages/ai/AIAssistant.tsx` | AI 도우미 참고 자료 패널의 README 설명 개선 |
+
+핵심 흐름:
+
+1. GitHub API 분석 결과로 기술 스택과 문서 유형이 들어온다.
+2. `Markdown`처럼 기술처럼 보이지 않는 값도 README 같은 문서 파일 감지 결과일 수 있다.
+3. 화면에서는 이 값을 그냥 배지로 던지지 않고 `감지된 기술/문서 유형`이라는 라벨 아래 보여준다.
+4. README는 최종 포트폴리오 글이 아니라 AI가 참고하는 근거 자료로 접어서 보여준다.
+
+중요 개념:
+
+- API 데이터 이름이 사용자에게 바로 이해되는 것은 아니다.
+- 같은 데이터라도 화면 라벨과 설명이 없으면 버그처럼 보일 수 있다.
+- 접힘 UI는 중요도가 낮지만 필요할 때 확인해야 하는 정보를 담기에 적합하다.
+
+추가 학습 키워드:
+
+- progressive disclosure
+- data labeling
+- GitHub README
+- reference material UI

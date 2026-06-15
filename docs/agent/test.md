@@ -2805,3 +2805,34 @@ source label check: portfolio action labels are present in Portfolio.tsx
 
 - [ ] 학생 계정에서 프로젝트가 1개 이상 있는 상태로 `/portfolio`에 들어가 섹션별 버튼 위치를 눈으로 확인한다.
 - [ ] `게시글 보러가기`가 발행된 프로젝트에서 명확한 버튼처럼 보이는지 확인한다.
+
+---
+
+## 2026-06-16 QA: GitHub README 참고 정보 표시 개선
+
+목표: GitHub 참고 정보와 README 참고 자료 설명이 추가되어도 기존 포트폴리오/AI 저장 흐름이 깨지지 않는지 확인한다.
+
+체크리스트:
+
+- [ ] 프론트엔드 `npm run build`가 성공한다.
+- [ ] `/portfolio` 화면이 에러 없이 열린다.
+- [ ] `/ai-assistant` 화면이 에러 없이 열린다.
+- [ ] GitHub 참고 정보 영역에 `감지된 기술/문서 유형` 설명이 보인다.
+- [ ] README는 `GitHub README 참고 자료`라는 설명과 함께 접힘 형태로 보인다.
+- [ ] 기존 프로젝트 선택, AI 결과 저장, 포트폴리오 게시글 발행 API 흐름은 변경하지 않는다.
+
+검증 출력 요약:
+
+```txt
+아직 실행 전
+```
+
+검증 결과 업데이트:
+
+```txt
+npm run build: success
+/portfolio browser smoke: success after re-check, no Unexpected Application Error
+/ai-assistant browser smoke: success, no Unexpected Application Error
+current session: project count 0, so README detail area is verified by source label check
+source label check: 감지된 기술/문서 유형, GitHub README 참고 자료 labels are present
+```

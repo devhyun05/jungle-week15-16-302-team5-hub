@@ -322,14 +322,29 @@ export function AIAssistant() {
                         {selectedProject.repoFullName}
                       </p>
                       <p className="mt-1 font-mono text-xs text-slate-500">branch: {selectedProject.githubBranch}</p>
+                      <p className="mt-3 text-xs font-semibold text-slate-500">감지된 기술/문서 유형</p>
                       <div className="mt-3 flex flex-wrap gap-1">
                         {selectedProject.techStack.map((stack) => (
                           <Badge key={stack} variant="secondary" className="text-[10px]">
                             {stack}
                           </Badge>
                         ))}
+                        {selectedProject.techStack.length === 0 && (
+                          <span className="text-xs text-slate-500">아직 감지된 항목이 없습니다.</span>
+                        )}
                       </div>
                     </div>
+                    <details className="rounded-lg border border-slate-200 bg-white p-3">
+                      <summary className="cursor-pointer text-sm font-semibold text-slate-900">
+                        GitHub README 참고 자료
+                      </summary>
+                      <p className="mt-2 text-xs leading-5 text-slate-500">
+                        AI가 포트폴리오 글과 면접 질문을 만들 때 참고하는 README 요약입니다. 최종 결과물은 아래 생성 결과 영역에서 정리합니다.
+                      </p>
+                      <p className="mt-2 line-clamp-5 text-sm leading-6 text-slate-600">
+                        {selectedProject.readmeSummary ?? "아직 README 요약이 없습니다."}
+                      </p>
+                    </details>
                     <div className="rounded-lg border border-slate-200 bg-white p-3">
                       <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-900">
                         <GitCommit className="h-4 w-4 text-emerald-600" />

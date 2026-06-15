@@ -3411,3 +3411,42 @@ feat: 포트폴리오 관리 액션 버튼 UI 정리
 - `npm run build` 성공.
 - `/portfolio` 브라우저 smoke에서 에러 없음 확인.
 - 현재 관리자 세션에는 프로젝트가 없어 상세 버튼 DOM은 뜨지 않았고, 버튼 라벨은 소스 기준으로 확인했다.
+
+---
+
+## 2026-06-16 4차 작업: GitHub README 참고 정보 표시 개선
+
+상태: 완료
+
+목표:
+
+- GitHub 참고 정보 영역에서 `Markdown` 배지만 보여 의미를 알기 어려운 문제를 해결한다.
+- README를 핵심 결과물이 아니라 AI 참고 자료로 보이게 정리한다.
+
+진행한 것:
+
+- `Portfolio.tsx`의 GitHub 참고 정보에 `감지된 기술/문서 유형` 설명을 추가했다.
+- `Markdown`은 README 같은 문서 파일이 감지됐다는 뜻임을 화면에서 설명한다.
+- `Portfolio.tsx`의 README 접힘 영역 제목을 `GitHub README 참고 자료 보기`로 바꿨다.
+- `AIAssistant.tsx`에도 README 참고 자료 접힘 영역을 추가했다.
+- AI 도우미의 기술 스택 배지도 `감지된 기술/문서 유형` 라벨 아래에서 보이게 했다.
+
+검증 예정:
+
+```txt
+npm run build
+/portfolio browser smoke
+/ai-assistant browser smoke
+```
+
+커밋 추천 제목:
+
+```txt
+feat: GitHub README 참고 정보 표시 개선
+```
+
+완료 기록:
+
+- `npm run build` 성공.
+- `/portfolio`, `/ai-assistant` 브라우저 smoke에서 에러 없음 확인.
+- 현재 세션에는 프로젝트가 없어 README 세부 영역은 소스 라벨 기준으로 확인했다.
