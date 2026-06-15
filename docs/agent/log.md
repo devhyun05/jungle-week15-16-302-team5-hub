@@ -1584,3 +1584,25 @@ fix: 설정 화면 mock 문구 정리
 ```txt
 fix: 레거시 mockData 의존 제거
 ```
+## 2026-06-15 최종 OpenAPI와 Notion 기록 확인
+
+상태: 완료
+
+확인한 것:
+
+- `http://localhost:8000/openapi.json` 조회 성공
+- Swagger/OpenAPI에 health, posts, comments, me, auth, admin, portfolio, review-requests API가 등록되어 있음
+- 오늘 날짜 Notion `2026-06-15 학습 기록`에 구현 내용, 막힌 점, 해결 방법, 다음 작업을 정리함
+- 레거시 mockData 제거 추가 진행 내용도 Notion에 덧붙임
+
+남은 수동 QA:
+
+- 실제 Google 계정 선택 후 `/auth/google/callback` 성공 확인
+- 최초 로그인 계정의 승인 대기 화면 확인
+- 관리자 승인 후 STUDENT/COACH/ADMIN 화면 분기 확인
+
+추천 커밋 제목:
+
+```txt
+docs: 최종 QA 기록 업데이트
+```

@@ -1113,3 +1113,25 @@ curl.exe -s -o NUL -w "%{http_code}" http://localhost:8000/auth/me
 - AI 도우미 결과는 OpenAI/RAG/MCP/Agent 연결 전 API 데이터 기반 샘플이다.
 - 알림 API와 프로필 설정 저장 API는 다음 단계 구현 대상이다.
 - 글 임시저장 API는 다음 단계 구현 대상이다.
+## 2026-06-15 최종 OpenAPI QA
+
+목표: Swagger에서 주요 API가 확인 가능한지 검증한다.
+
+체크리스트:
+
+- [x] `GET /health` 등록 확인.
+- [x] `GET /health/db` 등록 확인.
+- [x] `GET /posts`, `POST /posts`, `GET/PATCH/DELETE /posts/{post_id}` 등록 확인.
+- [x] `GET/POST /posts/{post_id}/comments`, `DELETE /comments/{comment_id}` 등록 확인.
+- [x] `GET /me/posts` 등록 확인.
+- [x] `GET /auth/google/login`, `GET /auth/google/callback`, `GET /auth/me`, `POST /auth/refresh`, `POST /auth/logout` 등록 확인.
+- [x] `GET /admin/users`, `PATCH /admin/users/{user_id}` 등록 확인.
+- [x] `GET/POST /portfolio/projects`, `PATCH /portfolio/projects/{project_id}`, `PUT /portfolio/projects/{project_id}/posts` 등록 확인.
+- [x] `GET /review-requests/coaches`, `POST /review-requests`, `GET /review-requests/me`, `GET /review-requests/inbox`, `PATCH/DELETE /review-requests/{review_request_id}` 등록 확인.
+- [x] Notion `2026-06-15 학습 기록` 업데이트 완료.
+
+검증 명령:
+
+```powershell
+curl.exe -s http://localhost:8000/openapi.json
+```

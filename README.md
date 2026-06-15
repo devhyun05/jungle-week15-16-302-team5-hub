@@ -732,3 +732,19 @@ Google OAuth 브라우저 end-to-end 전 단계까지 로컬 QA를 진행했습�
 - `python -m compileall app` 성공
 - `git diff --check` 통과
 - `rg "mockData|data/mockData|mock 저장|mock 연결|demo student" frontend/src/app` 결과 없음
+## 2026-06-15 최종 QA 메모
+
+Swagger/OpenAPI에서 주요 API 등록을 확인했습니다.
+
+확인된 주요 API 영역:
+
+- health / DB health
+- auth / Google OAuth / JWT refresh / logout
+- posts / comments / me
+- admin users
+- portfolio projects
+- review requests
+
+오늘 날짜 Notion 학습 기록도 구현 내용, 막힌 점, 해결 방법, 다음 작업 기준으로 업데이트했습니다.
+
+수동으로 남은 확인은 실제 Google 계정 선택 후 callback 성공과 관리자 승인 후 역할별 화면 분기입니다.
