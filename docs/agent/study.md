@@ -4071,3 +4071,60 @@ COACH �α���
 - derived field
 - view count side effect
 - API response DTO
+
+## 2026-06-15 학습: 게시글 작성 후 코치 리뷰 대상에 보이는 흐름
+
+이번에 본 파일:
+
+- `frontend/src/app/pages/coach/CoachReview.tsx`
+- `frontend/src/app/api/reviews.ts`
+- `frontend/src/app/api/posts.ts`
+- `backend/app/routers/reviews.py`
+- `backend/app/services/review_service.py`
+- `backend/app/repositories/review_repository.py`
+
+핵심 개념:
+
+- 리뷰 요청 대상 목록은 별도 mock data가 아니라 현재 로그인 사용자의 `GET /me/posts` 응답으로 만든다.
+- `visibility=all`을 사용하기 때문에 내 공개글과 비공개글 모두 리뷰 대상 후보가 될 수 있다.
+- 학생이 리뷰 요청을 보내면 `review_requests` row와 `review_request_coaches` 연결 row가 함께 생긴다.
+- 코치에게는 알림이 생성되고, 학생의 `내가 보낸 요청 목록`에는 방금 생성한 요청이 추가된다.
+- 프론트는 요청 생성 응답을 받아 `setRequests((prev) => [createdRequest, ...prev])`로 화면 목록을 즉시 갱신한다.
+
+프론트 흐름:
+
+1. 학생이 `/coach-review`에 들어간다.
+2. `StudentReviewView`가 mount되면서 `loadStudentReviewData()`를 실행한다.
+3. `getMyPosts({ visibility: "all", size: 50 })`로 내 게시글을 불러온다.
+4. `getPortfolioProjects()`로 내 포트폴리오 프로젝트를 불러온다.
+5. `getCoachOptions()`로 승인 완료 코치 목록을 불러온다.
+6. `getMyReviewRequests()`로 내가 보낸 요청 목록을 불러온다.
+7. target type이 `post`이면 게시글 배열이 select option이 된다.
+8. 사용자가 리뷰 요청을 보내면 `createReviewRequest()`가 호출된다.
+9. 성공 응답으로 받은 요청을 requests state 앞에 추가한다.
+
+백엔드 흐름:
+
+1. `POST /review-requests`는 STUDENT 또는 ADMIN만 호출할 수 있다.
+2. 대상이 post이면 `review_repository.get_post_target()`으로 현재 사용자의 게시글인지 확인한다.
+3. 대상이 portfolio이면 `get_project_target()`으로 현재 사용자의 프로젝트인지 확인한다.
+4. coachIds는 `get_approved_coaches_by_ids()`로 실제 승인 완료 코치인지 확인한다.
+5. `create_review_request()`가 리뷰 요청 row와 코치 연결 row를 만든다.
+6. 코치에게 `review-request` 알림을 만든다.
+7. 응답은 `ReviewRequestResponse` 형태로 target title, category, coach names, status 등을 포함한다.
+
+이번 QA에서 배운 점:
+
+- 화면에 select option이 안 보일 때는 프론트 state만 보지 말고 `GET /me/posts` 응답부터 확인해야 한다.
+- 작성 직후 리뷰 대상에 나타나려면 게시글 저장 API, 내 글 조회 API, 리뷰 화면 mount 시점이 모두 맞아야 한다.
+- `size` query 제한처럼 API 계약이 어긋나면 화면에는 단순히 빈 목록처럼 보일 수 있다.
+- 실제 브라우저 QA는 API QA로 놓치기 쉬운 “select option, 미리보기, 요청 목록 반영”을 확인하는 데 필요하다.
+
+추가로 공부할 키워드:
+
+- React mount 시점
+- Promise.all
+- select controlled value
+- role based API guard
+- join table
+- notification side effect

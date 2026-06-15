@@ -1990,3 +1990,49 @@ list_after_second_detail.comments=1
 
 - 현재 게시글 목록/상세의 조회수와 댓글 수는 실제 API 기준으로 일치한다.
 - 이 항목은 코드 수정 없이 QA 통과로 기록한다.
+
+## 2026-06-15 QA: 코치 리뷰 요청 대상 선택
+
+목표: 학생이 게시글을 작성한 직후 코치 리뷰 요청 화면에서 해당 게시글을 리뷰 대상으로 선택할 수 있는지 확인한다.
+
+API QA:
+
+- [x] 임시 STUDENT와 임시 COACH를 만들었다.
+- [x] STUDENT로 `POST /posts`를 호출해 게시글을 작성했다.
+- [x] `GET /me/posts?visibility=all&size=50` 목록에 방금 게시글이 포함됐다.
+- [x] `GET /review-requests/coaches` 목록에 임시 COACH가 포함됐다.
+- [x] 방금 게시글 id로 `POST /review-requests`를 호출하면 201이 반환됐다.
+- [x] 생성된 리뷰 요청의 `targetTitle`이 방금 게시글 제목과 일치했다.
+- [x] `GET /review-requests/me` 목록에 방금 요청이 포함됐다.
+- [x] API QA용 임시 데이터는 삭제했다.
+
+브라우저 QA:
+
+- [x] 현재 로그인 계정을 STUDENT / 승인 완료로 전환했다.
+- [x] 임시 코치 `QA Browser Coach`를 만들었다.
+- [x] `/posts/new`에서 새 게시글을 작성하고 발행했다.
+- [x] 작성 후 `/posts/:id` 상세 화면으로 이동했다.
+- [x] `/coach-review`에서 방금 게시글이 `리뷰 대상 선택` select option에 보였다.
+- [x] 선택한 대상 미리보기에 제목과 본문 요약이 보였다.
+- [x] 리뷰 요청을 보내면 안내 문구가 보였다.
+- [x] 내가 보낸 요청 목록에 방금 게시글이 `대기 중` 상태로 보였다.
+- [x] 화면에 `Unexpected Application Error`와 `[object Object]`가 보이지 않았다.
+- [x] QA용 리뷰 요청, 알림, 게시글, 임시 코치를 삭제했다.
+- [x] 현재 로그인 계정을 ADMIN / 승인 완료로 복구했다.
+
+검증 출력 요약:
+
+```txt
+post_visible_in_targets=True
+coach_visible=True
+create_review_status=201
+review_visible_in_my_requests=True
+titleInBody=True
+hasNotice=True
+requestListHasTitle=True
+hasPending=True
+```
+
+결론:
+
+- 게시글 작성 후 코치 리뷰 대상 목록에 나타나는 흐름은 실제 API와 브라우저 기준으로 정상이다.

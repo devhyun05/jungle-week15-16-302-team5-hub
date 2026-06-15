@@ -2571,3 +2571,27 @@ fix: 포트폴리오 등록 목록 유지와 중복 UX 정리
 ```txt
 docs: 게시글 조회수 댓글 수 QA 기록
 ```
+
+## 2026-06-15 코치 리뷰 요청 대상 선택 QA
+
+목표: 학생이 게시글을 작성한 직후 코치 리뷰 요청 화면의 `리뷰 대상 선택` 목록에 해당 게시글이 바로 표시되는지 확인한다.
+
+진행한 것:
+
+- `CoachReview.tsx`의 학생 화면이 `getMyPosts({ visibility: "all", size: 50 })`, `getPortfolioProjects()`, `getCoachOptions()`, `getMyReviewRequests()`를 함께 호출하는 구조를 확인했다.
+- `review_service.py`에서 게시글 리뷰 요청 시 대상 게시글을 `author_id == current_user.id` 기준으로 검증하는 것을 확인했다.
+- 임시 STUDENT/COACH와 게시글을 만들어 API 레벨에서 `POST /posts -> GET /me/posts -> POST /review-requests -> GET /review-requests/me` 흐름을 검증했다.
+- 실제 브라우저에서 현재 계정을 STUDENT로 바꾸고 `/posts/new`에서 게시글을 발행한 뒤 `/coach-review`에서 방금 글이 select와 미리보기에 보이는지 확인했다.
+- 브라우저에서 리뷰 요청을 전송했고, `내가 보낸 요청 목록`에 `대기 중` 상태로 표시되는 것을 확인했다.
+- QA용 리뷰 요청, 알림, 게시글, 임시 코치를 삭제했고 현재 로그인 계정은 ADMIN / 승인 완료로 복구했다.
+
+결론:
+
+- 게시글 작성 후 코치 리뷰 요청 대상에 즉시 표시되는 흐름은 현재 실제 API 기준으로 정상이다.
+- 이번 파트는 코드 수정 없이 QA와 문서화로 닫는다.
+
+추천 커밋 제목:
+
+```txt
+docs: 코치 리뷰 요청 대상 QA 기록
+```
