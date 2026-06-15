@@ -93,6 +93,7 @@ export async function apiRequest<T>(
             useAuthStore.getState().login(
                 refreshResult.access_token,
                 refreshResult.user.id,
+                refreshResult.user.role,
             )
 
             return apiRequest<T>(path, {

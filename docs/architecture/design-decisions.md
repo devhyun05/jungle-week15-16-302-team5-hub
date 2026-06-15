@@ -82,7 +82,8 @@
 | Admin moderation uses `hidden_at`, `hidden_by_id`, and `hidden_reason` on posts and comments. | It keeps author deletion separate from admin visibility control and gives RAG a simple exclusion condition. |
 | Comment author deletion remains `deleted_at`; admin hide is separate `hidden_at`. | Admin restore must not accidentally revive a comment the author deleted. |
 | Admin hide/restore writes compact rows to `admin_action_logs`. | Moderation needs traceability without storing raw content snapshots. |
-| MyPage, Admin UI, and full moderation workflow are postponed until after Day 4~6 unless they block AI features. | Deadline pressure favors implementing the minimum operational safety guard before AI and returning for UI polish later. |
+| MyPage and Admin moderation UI are implemented after the backend moderation guard. | The backend trust boundary came first; the UI now exposes the same hide/restore workflow without creating a separate moderation path. |
+| Frontend stores the current user role and hides Admin navigation from non-admin users. | This avoids confusing regular users while keeping backend `require_admin` as the actual security boundary. |
 
 ## Frontend State
 

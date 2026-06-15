@@ -44,9 +44,11 @@ def get_post_for_admin(db: Session, post_id: int) -> Post:
 def get_comment_for_admin(db: Session, comment_id: int) -> Comment:
     comment = (
         db.query(Comment)
+        .join(Post, Comment.post_id == Post.id)
         .filter(
             Comment.id == comment_id,
             Comment.deleted_at.is_(None),
+            Post.deleted_at.is_(None),
         )
         .first()
     )
@@ -58,6 +60,28 @@ def get_comment_for_admin(db: Session, comment_id: int) -> Comment:
         )
 
     return comment
+
+
+def list_admin_posts(db: Session) -> list[Post]:
+    return (
+        db.query(Post)
+        .filter(Post.deleted_at.is_(None))
+        .order_by(Post.created_at.desc(), Post.id.desc())
+        .all()
+    )
+
+
+def list_admin_comments(db: Session) -> list[Comment]:
+    return (
+        db.query(Comment)
+        .join(Post, Comment.post_id == Post.id)
+        .filter(
+            Comment.deleted_at.is_(None),
+            Post.deleted_at.is_(None),
+        )
+        .order_by(Comment.created_at.desc(), Comment.id.desc())
+        .all()
+    )
 
 
 def log_admin_action(

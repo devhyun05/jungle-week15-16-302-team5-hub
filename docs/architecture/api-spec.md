@@ -83,12 +83,14 @@ Auth/session 상세 정책은 `docs/architecture/auth-session-design.md`를 따�
 | Method | Path | Auth | Request | Response | Error |
 |---|---|---|---|---|---|
 | GET | `/api/admin/health` | admin | none | status, admin_user_id | 401, 403 |
+| GET | `/api/admin/posts` | admin | none | admin post[] including hidden fields | 401, 403 |
+| GET | `/api/admin/comments` | admin | none | admin comment[] including hidden fields | 401, 403 |
 | POST | `/api/admin/posts/{post_id}/hide` | admin | reason? | target_type, target_id, hidden fields | 401, 403, 404, 422 |
 | POST | `/api/admin/posts/{post_id}/restore` | admin | reason? | target_type, target_id, hidden fields | 401, 403, 404, 422 |
 | POST | `/api/admin/comments/{comment_id}/hide` | admin | reason? | target_type, target_id, hidden fields | 401, 403, 404, 422 |
 | POST | `/api/admin/comments/{comment_id}/restore` | admin | reason? | target_type, target_id, hidden fields | 401, 403, 404, 422 |
 
-Admin auth is enforced by the backend `require_admin` dependency. Missing or invalid token returns 401 through `get_current_user`; a logged-in non-admin user returns 403.
+Admin auth is enforced by the backend `require_admin` dependency. Missing or invalid token returns 401 through `get_current_user`; a logged-in non-admin user returns 403. The frontend also stores the current user's role and only shows the Admin navigation/page for `role = "admin"`, but backend authorization remains the source of truth.
 
 ## User APIs
 
@@ -451,7 +453,7 @@ exceeded response:
 
 ## Day 3 API Contract
 
-Day 3 is being split because of deadline pressure. The completed backend slices are admin role guard and admin soft hide/restore for posts and comments. MyPage and Admin UI are postponed until after Day 4~6 unless needed earlier.
+Day 3 was split because of deadline pressure. The implemented slices are admin role guard, admin soft hide/restore for posts and comments, author post soft delete, MyPage activity, and the Admin moderation page.
 
 ### Admin Role Guard
 
@@ -481,6 +483,8 @@ Policy:
 The moderation endpoints are admin-only and preserve rows instead of deleting content.
 
 ```text
+GET /api/admin/posts
+GET /api/admin/comments
 POST /api/admin/posts/{post_id}/hide
 POST /api/admin/posts/{post_id}/restore
 POST /api/admin/comments/{comment_id}/hide
@@ -515,5 +519,6 @@ Policy:
 - author post deletion uses `posts.deleted_at`; public post list/detail excludes posts where `deleted_at IS NOT NULL`.
 - public comment list and comment update/delete lookup exclude comments where `hidden_at IS NOT NULL`.
 - author comment deletion still uses `deleted_at`; admin hide uses separate `hidden_at`.
+- admin list endpoints include visible and admin-hidden rows, but exclude author-deleted posts and comments under author-deleted posts.
 - future vector search/RAG retrieval must exclude hidden posts and hidden comments.
 - admin action logging records actor, action, target type, target id, reason, and timestamp in `admin_action_logs`.

@@ -131,6 +131,89 @@ def test_admin_health_with_admin_user_returns_200(
     }
 
 
+def test_regular_user_cannot_list_admin_posts(client: TestClient):
+    token = signup_and_login(
+        client,
+        email="regular@example.com",
+        display_name="Regular User",
+    )
+
+    response = client.get(
+        "/api/admin/posts",
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Admin access required"
+
+
+def test_admin_can_list_visible_and_hidden_posts(
+    client: TestClient,
+    db_session: Session,
+):
+    admin_email = "admin@example.com"
+    admin_token = signup_and_login(
+        client,
+        email=admin_email,
+        display_name="Admin User",
+    )
+    make_admin(db_session, admin_email)
+    author_token = signup_and_login(
+        client,
+        email="author@example.com",
+        display_name="Author",
+    )
+    visible_post = create_post(
+        client,
+        author_token,
+        title="Visible topic",
+        body="Visible body",
+    )
+    hidden_post = create_post(
+        client,
+        author_token,
+        title="Hidden topic",
+        body="Hidden body",
+    )
+    deleted_post = create_post(
+        client,
+        author_token,
+        title="Deleted topic",
+        body="Deleted body",
+    )
+
+    hide_response = client.post(
+        f"/api/admin/posts/{hidden_post['id']}/hide",
+        headers=auth_headers(admin_token),
+        json={"reason": "Needs review"},
+    )
+    assert hide_response.status_code == 200
+
+    delete_response = client.delete(
+        f"/api/posts/{deleted_post['id']}",
+        headers=auth_headers(author_token),
+    )
+    assert delete_response.status_code == 204
+
+    response = client.get(
+        "/api/admin/posts",
+        headers=auth_headers(admin_token),
+    )
+
+    assert response.status_code == 200
+    posts = response.json()
+    post_ids = {post["id"] for post in posts}
+    assert post_ids == {visible_post["id"], hidden_post["id"]}
+
+    hidden = next(post for post in posts if post["id"] == hidden_post["id"])
+    assert hidden["hidden_at"] is not None
+    assert hidden["hidden_reason"] == "Needs review"
+
+    visible = next(post for post in posts if post["id"] == visible_post["id"])
+    assert visible["hidden_at"] is None
+    assert visible["hidden_reason"] is None
+
+
 def test_admin_can_hide_and_restore_post(
     client: TestClient,
     db_session: Session,
@@ -220,6 +303,101 @@ def test_regular_user_cannot_hide_post(client: TestClient):
 
     assert response.status_code == 403
     assert response.json()["detail"] == "Admin access required"
+
+
+def test_regular_user_cannot_list_admin_comments(client: TestClient):
+    token = signup_and_login(
+        client,
+        email="regular@example.com",
+        display_name="Regular User",
+    )
+
+    response = client.get(
+        "/api/admin/comments",
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Admin access required"
+
+
+def test_admin_can_list_visible_and_hidden_comments(
+    client: TestClient,
+    db_session: Session,
+):
+    admin_email = "admin@example.com"
+    admin_token = signup_and_login(
+        client,
+        email=admin_email,
+        display_name="Admin User",
+    )
+    make_admin(db_session, admin_email)
+    author_token = signup_and_login(
+        client,
+        email="author@example.com",
+        display_name="Author",
+    )
+    post = create_post(client, author_token)
+    deleted_post = create_post(
+        client,
+        author_token,
+        title="Deleted parent",
+        body="Deleted parent body",
+    )
+    visible_comment = create_comment(
+        client,
+        author_token,
+        post["id"],
+        body="Visible comment",
+    )
+    hidden_comment = create_comment(
+        client,
+        author_token,
+        post["id"],
+        body="Hidden comment",
+    )
+    deleted_parent_comment = create_comment(
+        client,
+        author_token,
+        deleted_post["id"],
+        body="Comment under deleted parent",
+    )
+
+    hide_response = client.post(
+        f"/api/admin/comments/{hidden_comment['id']}/hide",
+        headers=auth_headers(admin_token),
+        json={"reason": "Spam"},
+    )
+    assert hide_response.status_code == 200
+
+    delete_response = client.delete(
+        f"/api/posts/{deleted_post['id']}",
+        headers=auth_headers(author_token),
+    )
+    assert delete_response.status_code == 204
+
+    response = client.get(
+        "/api/admin/comments",
+        headers=auth_headers(admin_token),
+    )
+
+    assert response.status_code == 200
+    comments = response.json()
+    comment_ids = {comment["id"] for comment in comments}
+    assert comment_ids == {visible_comment["id"], hidden_comment["id"]}
+    assert deleted_parent_comment["id"] not in comment_ids
+
+    hidden = next(
+        comment for comment in comments if comment["id"] == hidden_comment["id"]
+    )
+    assert hidden["hidden_at"] is not None
+    assert hidden["hidden_reason"] == "Spam"
+
+    visible = next(
+        comment for comment in comments if comment["id"] == visible_comment["id"]
+    )
+    assert visible["hidden_at"] is None
+    assert visible["hidden_reason"] is None
 
 
 def test_admin_cannot_hide_author_deleted_post(client: TestClient, db_session: Session):

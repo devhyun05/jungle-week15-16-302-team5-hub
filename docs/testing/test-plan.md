@@ -127,6 +127,9 @@ Fill this during implementation and again during Day 8/Day 9.
 | 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest tests/test_users.py tests/test_auth.py` | 19 passed | MyPage activity endpoint and auth response role |
 | 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest` | 65 passed | MyPage activity added; backend full regression |
 | 2026-06-16 | `cd frontend && npm run build` | passed | MyPage route, API client, and type build check |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest tests/test_admin.py` | 11 passed | admin post/comment list endpoints, hide/restore, auth guard |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest` | 69 passed | admin moderation lists added; backend full regression |
+| 2026-06-16 | `cd frontend && npm run build` | passed | Admin page, moderation API client, and frontend role sync build check |
 | TBD | `npm test` | TBD | frontend unit tests are not set up yet |
 | TBD | `npx playwright test` | TBD | automated E2E is not set up yet |
 

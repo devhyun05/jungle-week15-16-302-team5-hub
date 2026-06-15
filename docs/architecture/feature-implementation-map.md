@@ -659,9 +659,9 @@ API request gets 401
 
 ### Status
 
-Day 3 partial implementation.
+Day 3 required MVP/admin slices implemented.
 
-Completed first slice:
+Completed:
 
 - `users.role` backend model field.
 - `require_admin` dependency.
@@ -672,11 +672,9 @@ Completed first slice:
 - compact `admin_action_logs` rows for hide/restore.
 - author post delete changed from hard delete to `posts.deleted_at` soft delete.
 - MyPage activity endpoint and frontend page.
-
-Postponed until after Day 4~6 unless it blocks AI work:
-
-- Admin UI.
-- full post/comment moderation screens.
+- admin post/comment list endpoints for moderation UI.
+- Admin moderation page for post/comment hide and restore.
+- frontend auth store role sync and admin-only navigation display.
 
 Next required AI-adjacent follow-up before RAG retrieval:
 
@@ -691,13 +689,14 @@ Next required AI-adjacent follow-up before RAG retrieval:
 | `backend/app/services/post_service.py` | public list/detail exclude deleted/hidden posts; author delete sets `deleted_at` |
 | `backend/app/models/comment.py` | implemented comment admin hidden fields separate from `deleted_at` |
 | `backend/app/models/admin_action_log.py` | implemented compact admin action log |
+| `backend/app/schemas/admin.py` | implemented moderation response and admin post/comment list response shapes |
 | `backend/app/api/deps.py` | implemented `require_admin` |
-| `backend/app/api/routes/admin.py` | implemented `/api/admin/health`, post hide/restore, comment hide/restore |
+| `backend/app/api/routes/admin.py` | implemented `/api/admin/health`, admin post/comment lists, post hide/restore, comment hide/restore |
 | `backend/app/main.py` | registered `admin_router` |
-| `backend/app/services/admin_service.py` | implemented moderation rules and audit log writes |
+| `backend/app/services/admin_service.py` | implemented admin list queries, moderation rules, and audit log writes |
 | `backend/tests/test_posts.py` | verifies author post delete preserves row and sets `deleted_at` |
 | `backend/app/services/comment_service.py` | public comment lookup excludes hidden comments |
-| `backend/tests/test_admin.py` | implemented admin auth and moderation tests |
+| `backend/tests/test_admin.py` | implemented admin auth, list, and moderation tests |
 | `backend/app/api/routes/users.py` | implemented current user activity endpoint |
 | `backend/app/schemas/user.py` | implemented MyPage activity response shape |
 | `backend/app/services/user_service.py` | implemented current user's visible posts/comments query |
@@ -705,12 +704,18 @@ Next required AI-adjacent follow-up before RAG retrieval:
 | `frontend/src/api/users.ts` | implemented MyPage API client |
 | `frontend/src/pages/MyPage.tsx` | implemented profile, my posts, my comments view |
 | `frontend/src/types/user.ts` | implemented MyPage frontend type |
-| `frontend/src/pages/AdminPage.tsx` | not yet created; admin UI postponed |
+| `frontend/src/api/admin.ts` | implemented Admin moderation API client |
+| `frontend/src/types/admin.ts` | implemented Admin moderation frontend types |
+| `frontend/src/pages/AdminPage.tsx` | implemented post/comment moderation lists and hide/restore controls |
+| `frontend/src/stores/authStore.ts` | stores access token, current user id, and current user role |
+| `frontend/src/App.tsx` | syncs role from `/api/auth/me` on app start/token change and hides Admin nav from non-admin users |
 
 ### Implemented API
 
 ```text
 GET /api/admin/health
+GET /api/admin/posts
+GET /api/admin/comments
 POST /api/admin/posts/{post_id}/hide
 POST /api/admin/posts/{post_id}/restore
 POST /api/admin/comments/{comment_id}/hide
@@ -726,8 +731,10 @@ regular user token -> 403
 admin user token -> 200 { status, admin_user_id }
 admin hide -> hidden fields set, public lookup excludes target
 admin restore -> hidden fields cleared, public lookup includes target again
+admin lists -> visible and hidden rows are returned; author-deleted rows are excluded
 author post delete -> deleted_at set, public lookup returns 404
 my activity -> returns current user, visible own posts, visible own comments
+frontend admin nav -> shown only when current user role is admin
 ```
 
 ### DB / ERD
@@ -744,13 +751,6 @@ comments.hidden_at
 comments.hidden_by_id
 comments.hidden_reason
 admin_action_logs
-```
-
-Still postponed:
-
-```text
-AdminPage UI
-MyPage UI
 ```
 
 Migration note:

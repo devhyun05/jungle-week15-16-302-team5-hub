@@ -4,10 +4,17 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_admin
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.admin import AdminModerationResponse, ModerationRequest
+from app.schemas.admin import (
+    AdminCommentResponse,
+    AdminModerationResponse,
+    AdminPostResponse,
+    ModerationRequest,
+)
 from app.services.admin_service import (
     hide_comment,
     hide_post,
+    list_admin_comments,
+    list_admin_posts,
     restore_comment,
     restore_post,
 )
@@ -24,6 +31,22 @@ def admin_health(
         "status": "ok",
         "admin_user_id": current_user.id,
     }
+
+
+@router.get("/posts", response_model=list[AdminPostResponse])
+def list_admin_posts_endpoint(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    return list_admin_posts(db)
+
+
+@router.get("/comments", response_model=list[AdminCommentResponse])
+def list_admin_comments_endpoint(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    return list_admin_comments(db)
 
 
 @router.post("/posts/{post_id}/hide", response_model=AdminModerationResponse)

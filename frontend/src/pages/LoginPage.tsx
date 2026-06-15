@@ -26,7 +26,7 @@ export function LoginPage() {
                 password,
             })
 
-            saveLogin(result.access_token, result.user.id)
+            saveLogin(result.access_token, result.user.id, result.user.role)
             navigate('/')
         } catch {
             setError('failed to log in.')
