@@ -248,7 +248,7 @@ export default function PostDetailPage() {
               <span className={cn(badgeBase, badgeTone.coral)}>AI Agent</span>
               <h3 className={cn(h3, "mt-2")}>진단 흐름</h3>
             </div>
-            {["게시글 내용은 RAG 지식으로 활용됩니다.", "Agent가 비슷한 사례와 도구 결과를 함께 확인합니다.", "결과에서 해결 순서와 추천 태그를 확인합니다."].map((title) => (
+            {["게시글과 댓글 내용을 함께 참고합니다.", "Agent가 비슷한 사례와 도구 결과를 함께 확인합니다.", "결과에서 해결 순서와 추천 태그를 확인합니다."].map((title) => (
               <div className="flex items-start gap-2.5" key={title}>
                 <span className={cn(badgeBase, badgeTone.mint)}>흐름</span>
                 <p className={muted}>{title}</p>
