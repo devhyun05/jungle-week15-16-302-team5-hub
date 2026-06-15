@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { Input } from "../../components/ui/Input";
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { getMyPosts, type PostListApiItem } from "../../api/posts";
@@ -740,23 +740,20 @@ export function Portfolio() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>포트폴리오 게시글 발행 설정</DialogTitle>
-            <DialogDescription>
-              발행할 포트폴리오 게시글의 공개 범위를 선택합니다. 비공개로 발행하면 내 기록에서만 확인할 수 있습니다.
-            </DialogDescription>
           </DialogHeader>
           <RadioGroup
             value={publishVisibility}
             onValueChange={(value) => setPublishVisibility(value as "public" | "private")}
             className="grid gap-3"
           >
-            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+            <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${publishVisibility === "public" ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/70"}`}>
               <RadioGroupItem value="public" className="mt-1" />
               <span>
                 <span className="block text-sm font-semibold text-slate-900">공개</span>
                 <span className="mt-1 block text-xs leading-5 text-slate-600">전체 게시글과 내 기록에 함께 보입니다.</span>
               </span>
             </label>
-            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-4">
+            <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${publishVisibility === "private" ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/70"}`}>
               <RadioGroupItem value="private" className="mt-1" />
               <span>
                 <span className="block text-sm font-semibold text-slate-900">비공개</span>

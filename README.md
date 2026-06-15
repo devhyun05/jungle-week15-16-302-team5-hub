@@ -620,3 +620,7 @@ OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 �
 - `frontend`: `npm run build` 성공
 - `backend`: `.venv\Scripts\python.exe -m compileall app` 성공
 - 서비스 QA: 포트폴리오 공개 발행, 동일 내용 unchanged, 공개 여부 변경 updated, 최고관리자 변경 차단, 일반 사용자 승인 성공 확인
+### 2026-06-16 포트폴리오 발행 모달 UI 정리
+
+- 포트폴리오 게시글 발행 설정 모달의 보조 설명 문구를 제거했습니다.
+- 공개/비공개 선택 카드는 선택 또는 hover 시 연초록색으로 보이도록 정리했습니다.
