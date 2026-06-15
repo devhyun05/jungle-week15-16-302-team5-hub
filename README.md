@@ -665,3 +665,22 @@ AI 도우미 화면을 `mockData.portfolioProjects` 대신 실제 포트폴리�
 - 실제 OpenAI/RAG/MCP/Agent 호출 연결
 - 대시보드의 mock 통계 API 기반 정리
 - OAuth 브라우저 로그인 end-to-end QA
+## 2026-06-15 최신 구현: 대시보드 API 기반 정리
+
+학생/코치 대시보드의 주요 통계와 최근 목록을 mock data 대신 실제 API 응답 기준으로 정리했습니다.
+
+- 학생 대시보드는 `GET /me/posts`로 최근 내 기록과 카테고리별 기록 수를 계산합니다.
+- 학생의 코치 리뷰 요청 버튼은 `GET /review-requests/me` 응답에서 검토 중인 요청 수를 표시합니다.
+- 코치 대시보드는 `GET /review-requests/inbox`로 검토 필요 요청과 최근 리뷰 요청을 표시합니다.
+- 코치 대시보드의 전체 게시글 수는 `GET /posts` 응답 기준으로 표시합니다.
+- AI 도우미의 query string 의존성을 객체가 아닌 `project` 값 기준으로 안정화했습니다.
+
+검증:
+
+- `npm run build` 성공
+
+다음 작업:
+
+- 전체 OAuth 브라우저 로그인 흐름 QA
+- 알림/설정 화면의 남은 mock 문구 정리
+- 최종 README/test/study/log 정리와 Notion 학습 기록 업데이트

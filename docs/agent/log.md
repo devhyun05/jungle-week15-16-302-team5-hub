@@ -1491,3 +1491,27 @@ feat: 코치 리뷰 화면 API 연결
 ```txt
 feat: AI 도우미 포트폴리오 API 기반 정리
 ```
+## 2026-06-15 대시보드 API 기반 정리
+
+상태: 완료
+
+목표: 대시보드에서 남아 있던 게시글/코치 리뷰 mock 데이터를 제거하고, 실제 API 응답 기준으로 통계와 최근 목록을 표시한다.
+
+구현한 것:
+
+- 학생 대시보드에서 `GET /me/posts`로 최근 기록과 카테고리별 수 계산
+- 학생 대시보드에서 `GET /review-requests/me`로 진행 중인 리뷰 요청 수 표시
+- 코치 대시보드에서 `GET /review-requests/inbox`로 검토 필요 요청과 최근 요청 표시
+- 코치 대시보드에서 `GET /posts`로 전체 게시글 수 표시
+- 로딩/오류/빈 목록 UI 추가
+- AI 도우미의 `useEffect` dependency를 `searchParams` 객체 대신 query string 값으로 안정화
+
+검증:
+
+- `npm run build` 성공
+
+추천 커밋 제목:
+
+```txt
+feat: 대시보드 API 기반 정리
+```

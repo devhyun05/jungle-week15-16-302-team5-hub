@@ -2782,3 +2782,46 @@ refresh token cookie �б�
 - 관계 데이터 연결하기
 - AI 호출 전 데이터 준비 단계
 - RAG 입력 자료 구성
+## 2026-06-15 대시보드 API 기반 정리 학습 기록
+
+이번 단계는 대시보드가 더 이상 `mockData.posts`, `mockData.reviewRequests`를 직접 읽지 않고, 로그인한 사용자의 role에 맞는 API를 호출하도록 바꾼 작업이다.
+
+### 수정한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/dashboard/Dashboard.tsx` | 학생/코치 대시보드 통계와 최근 목록을 API 응답 기준으로 계산 |
+| `frontend/src/app/pages/ai/AIAssistant.tsx` | query string 의존성을 `project` 값 기준으로 안정화 |
+
+### 사용한 React 개념
+
+- `useEffect`: role이 바뀔 때 학생용 API 또는 코치용 API를 호출한다.
+- `useState`: 대시보드에 표시할 내 기록, 학생 리뷰 요청, 코치 인박스, 공개 게시글 목록을 저장한다.
+- `useMemo`: 학생 카테고리 카드의 count를 현재 내 기록 목록 기준으로 계산한다.
+- 조건부 렌더링: ADMIN은 관리자 페이지로 redirect, COACH는 코치 대시보드, STUDENT는 학생 대시보드를 보여준다.
+
+### 코드 흐름
+
+```txt
+Dashboard 렌더링
+-> MainLayout context에서 role 확인
+-> ADMIN이면 /admin/users로 이동
+-> COACH면 getReviewInbox(), getPosts() 호출
+-> STUDENT면 getMyPosts(), getMyReviewRequests() 호출
+-> API 응답으로 통계 카드와 최근 목록 렌더링
+```
+
+### 내가 이해해야 할 핵심 포인트
+
+- 같은 대시보드라도 role에 따라 필요한 API가 다르다.
+- 학생은 “내 데이터”가 중요하므로 `/me/posts`, `/review-requests/me`를 쓴다.
+- 코치는 “받은 요청과 전체 게시글”이 중요하므로 `/review-requests/inbox`, `/posts`를 쓴다.
+- 카테고리 아이콘과 라벨은 정적 UI 상수로 남길 수 있지만, count는 API 응답에서 계산해야 실제 서비스처럼 보인다.
+
+### 추가 학습 키워드
+
+- role 기반 데이터 fetching
+- derived state
+- API 응답으로 통계 계산하기
+- loading/error UI
+- React Router Navigate

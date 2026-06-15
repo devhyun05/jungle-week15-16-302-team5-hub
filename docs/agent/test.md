@@ -1033,3 +1033,23 @@ cd C:\junhee\WEEK15_AI_BOARD\backend
 
 - 브라우저에서 포트폴리오 프로젝트 등록 후 `/ai-assistant?project={id}` 진입 확인
 - 샘플 초안 저장 후 포트폴리오 관리 화면에서 저장된 초안 확인
+## 2026-06-15 대시보드 API 기반 정리 QA
+
+목표: 대시보드가 mock posts/reviewRequests 배열이 아니라 실제 API 응답 기준으로 빌드되는지 확인한다.
+
+체크리스트:
+
+- [x] `Dashboard.tsx`가 `posts` mock 배열을 import하지 않는다.
+- [x] `Dashboard.tsx`가 `reviewRequests` mock 배열을 import하지 않는다.
+- [x] STUDENT 대시보드는 `getMyPosts()`를 호출한다.
+- [x] STUDENT 대시보드는 `getMyReviewRequests()`를 호출한다.
+- [x] COACH 대시보드는 `getReviewInbox()`를 호출한다.
+- [x] COACH 대시보드는 `getPosts()`를 호출한다.
+- [x] 카테고리 count는 현재 내 기록 API 응답 기준으로 계산한다.
+- [x] AI 도우미는 query string의 `project` 값 기준으로 데이터를 다시 불러온다.
+- [x] `npm run build` 성공.
+
+추가 수동 QA 예정:
+
+- 학생 로그인 후 대시보드 최근 기록과 카테고리 수 확인
+- 코치 로그인 후 대시보드 리뷰 인박스 숫자 확인

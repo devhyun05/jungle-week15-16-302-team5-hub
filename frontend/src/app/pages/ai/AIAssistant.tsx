@@ -64,6 +64,7 @@ function buildInterviewQuestions(project: PortfolioProjectApiItem, linkedRecords
 export function AIAssistant() {
   // 포트폴리오 화면에서 넘어올 때 project와 type query string으로 초기 선택값을 맞춥니다.
   const [searchParams] = useSearchParams();
+  const queryProjectParam = searchParams.get("project");
   const initialType: OutputType = searchParams.get("type") === "interview" ? "interview" : "portfolio";
 
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
@@ -93,7 +94,7 @@ export function AIAssistant() {
           return;
         }
 
-        const queryProjectId = Number(searchParams.get("project"));
+        const queryProjectId = Number(queryProjectParam);
         const nextSelectedProject =
           projectData.items.find((project) => project.id === queryProjectId) ?? projectData.items[0] ?? null;
 
@@ -116,7 +117,7 @@ export function AIAssistant() {
     return () => {
       isActive = false;
     };
-  }, [searchParams]);
+  }, [queryProjectParam]);
 
   // AI 도우미는 직접 입력 대신 포트폴리오 관리에 등록된 프로젝트를 기준으로 동작합니다.
   const selectedProject = projects.find((project) => project.id === selectedProjectId) ?? projects[0] ?? null;
