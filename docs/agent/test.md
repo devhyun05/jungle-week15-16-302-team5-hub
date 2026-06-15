@@ -1391,3 +1391,33 @@ DB 초기화 demo seed 제거 QA 결과:
 - [x] `git diff --check` 통과
 - [x] 실제 코드/README 범위에서 `demo.student`, `seed_demo`, `DEMO_POSTS` 검색 결과 없음
 - [!] 로컬 PostgreSQL에는 과거 개발용 사용자 `demo.student@junglelog.local`이 1개 남아 있음. 코드 변경으로 새로 생성되지는 않지만, 기존 DB 정리는 별도 승인 후 진행한다.
+
+## 2026-06-15 로컬 DB demo 잔존 데이터 cleanup QA
+
+목표: 과거 개발용 demo 사용자가 실제 Google OAuth 흐름 QA를 방해하지 않도록 로컬 DB에서 제거되었는지 확인한다.
+
+체크리스트:
+
+- [x] 삭제 전 demo 사용자 존재 여부를 확인했다.
+- [x] 삭제 전 연결된 게시글/댓글/태그 연결 개수를 확인했다.
+- [x] 포트폴리오/리뷰/토큰/알림 연결이 없음을 확인했다.
+- [x] demo 사용자와 연결된 댓글 3개를 삭제했다.
+- [x] demo 사용자 게시글의 post_tags 25개를 삭제했다.
+- [x] demo 사용자 게시글 12개를 삭제했다.
+- [x] demo 사용자 1명을 삭제했다.
+- [x] 삭제 후 `legacy_demo_user_count=0`을 확인했다.
+- [ ] `npm run build`
+- [ ] `python -m compileall app`
+- [ ] `git diff --check`
+
+주의:
+
+- 이 cleanup은 로컬 PostgreSQL 상태 변경이며 git 커밋에는 DB row 삭제 자체가 남지 않는다.
+- 코드상으로는 `init_db()`에서 개발용 사용자를 더 이상 생성하지 않도록 이미 정리되어 있다.
+
+로컬 DB demo 잔존 데이터 cleanup QA 결과:
+
+- [x] `npm run build` 성공
+- [x] `python -m compileall app` 성공
+- [x] `git diff --check` 통과
+- [x] `legacy_demo_user_count=0` 확인

@@ -1898,3 +1898,46 @@ fix: 프론트 API 주소 환경변수화
 ```txt
 fix: DB 초기화 demo seed 제거
 ```
+
+## 2026-06-15 로컬 DB demo 잔존 데이터 정리
+
+상태: 완료
+
+정리 전 영향 범위:
+
+```txt
+demo_user_exists=True
+user_id=1
+posts_by_user=12
+comments_by_user=3
+comments_on_user_posts=3
+post_tags_on_user_posts=25
+portfolio_projects_by_user=0
+review_requests_related=0
+notifications=0
+refresh_tokens=0
+approval_logs_as_user=0
+approval_logs_as_actor=0
+users_approved_by_demo=0
+```
+
+삭제 결과:
+
+```txt
+deleted_comments=3
+deleted_post_tags=25
+deleted_posts=12
+deleted_users=1
+```
+
+삭제 후 확인:
+
+```txt
+legacy_demo_user_count=0
+```
+
+의미:
+
+- 이제 로컬 관리자 사용자 목록에 과거 개발용 `demo.student@junglelog.local` 계정이 섞이지 않는다.
+- 앞으로 DB 초기화 코드는 개발용 사용자를 새로 만들지 않는다.
+- 실제 사용자 데이터는 Google OAuth 로그인과 관리자 승인 흐름으로만 생성된다.
