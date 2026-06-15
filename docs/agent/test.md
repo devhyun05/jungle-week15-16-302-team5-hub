@@ -2930,3 +2930,27 @@ portfolio text generic stack: 아직 GitHub에서 기술 스택을 충분히 감
 hasBareGithubStackParagraph=false
 hasMarkdownAsStack=false
 ```
+
+---
+
+## 2026-06-16 QA: 포트폴리오 게시글 발행 상태 구분
+
+체크리스트:
+
+- [x] 백엔드 `python -m compileall app` 성공
+- [x] 프론트엔드 `npm run build` 성공
+- [x] 처음 발행 시 `publishStatus=created`
+- [x] 같은 내용 재발행 시 `publishStatus=unchanged`
+- [x] 내용 변경 후 재발행 시 `publishStatus=updated`
+- [x] 새 제목은 `프로젝트명 포트폴리오` 형식
+- [x] QA 데이터 cleanup 완료
+
+검증 출력 요약:
+
+```txt
+first created QA Publish Status Project 포트폴리오
+second unchanged
+compare False ...
+third updated
+cleanup ok
+```

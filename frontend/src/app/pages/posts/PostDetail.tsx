@@ -92,7 +92,9 @@ function getDisplayTitle(post: PostDetailApiResponse) {
     return post.title;
   }
 
-  return post.title.replace(/^\[포트폴리오]\s*/, "").trim() + " 포트폴리오";
+  const titleWithoutPrefix = post.title.replace(/^\[포트폴리오]\s*/, "").trim();
+
+  return titleWithoutPrefix.endsWith(" 포트폴리오") ? titleWithoutPrefix : `${titleWithoutPrefix} 포트폴리오`;
 }
 
 function cleanMarkdownText(text: string) {

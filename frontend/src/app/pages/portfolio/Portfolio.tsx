@@ -367,9 +367,14 @@ export function Portfolio() {
 
     try {
       const updatedProject = await publishPortfolioProjectPost(selectedProject.id);
+      const publishNoticeMap = {
+        created: "포트폴리오 게시글을 발행했습니다.",
+        updated: "포트폴리오 게시글을 최신 내용으로 갱신했습니다.",
+        unchanged: "이미 최신 포트폴리오 게시글입니다.",
+      };
 
       upsertProject(updatedProject);
-      setNotice("프로젝트 내용을 바탕으로 포트폴리오 게시글을 발행했습니다.");
+      setNotice(publishNoticeMap[updatedProject.publishStatus ?? "updated"]);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "포트폴리오 게시글을 발행하지 못했습니다.");
     } finally {
@@ -626,9 +631,6 @@ export function Portfolio() {
                       <div className="space-y-4">
                         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                           <p className="text-xs font-semibold text-slate-500">기술 스택</p>
-                          <p className="mt-1 text-xs leading-5 text-slate-500">
-                            GitHub 파일 구성을 바탕으로 포트폴리오에 쓸 수 있는 실제 기술 스택만 보여줍니다.
-                          </p>
                           <div className="mt-3 flex flex-wrap gap-2">
                             {selectedDisplayTechStack.map((stack) => (
                               <span key={stack} className="rounded-md bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm">

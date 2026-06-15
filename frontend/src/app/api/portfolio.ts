@@ -6,6 +6,7 @@ export type PortfolioProjectApiItem = {
   id: number;
   title: string;
   publishedPostId: number | null;
+  publishStatus?: "created" | "updated" | "unchanged" | null;
   repoFullName: string;
   githubBranch: string;
   githubUrl: string;

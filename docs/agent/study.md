@@ -5183,3 +5183,39 @@ GitHub ������Ʈ ���
 - display filtering
 - raw data vs UI data
 - shared utility function
+
+---
+
+## 2026-06-16 학습 기록: 포트폴리오 게시글 발행 상태 구분
+
+이번 구현은 버튼을 눌렀을 때 항상 같은 안내를 보여주는 것이 아니라, 서버가 실제로 어떤 일이 일어났는지 프론트에 알려주는 흐름이다.
+
+관련 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/services/portfolio_service.py` | 포트폴리오 게시글 제목 생성, 기존 게시글 비교, 발행 상태 결정 |
+| `backend/app/schemas/portfolio.py` | `publishStatus` 응답 필드 추가 |
+| `frontend/src/app/api/portfolio.ts` | `publishStatus` 타입 추가 |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | 발행 결과별 안내 문구 처리 |
+| `frontend/src/app/pages/posts/PostDetail.tsx` | 기존/새 포트폴리오 제목 형식 모두 자연스럽게 표시 |
+
+핵심 흐름:
+
+1. 처음 발행하면 게시글을 새로 만들고 `created`를 반환한다.
+2. 이미 발행된 게시글이 있고 내용이 같으면 update를 생략하고 `unchanged`를 반환한다.
+3. 이미 발행된 게시글이 있지만 내용이 다르면 기존 글을 갱신하고 `updated`를 반환한다.
+4. 프론트는 `publishStatus`에 따라 안내 문구를 다르게 보여준다.
+
+중요 개념:
+
+- 중복 생성 방지와 불필요한 update 방지는 다른 문제다.
+- `updated_at`이 괜히 바뀌지 않게 하려면 내용 비교 후 update를 생략해야 한다.
+- 사용자는 버튼을 눌렀을 때 실제로 생성됐는지, 갱신됐는지, 이미 최신인지 알 수 있어야 한다.
+
+추가 학습 키워드:
+
+- idempotency
+- dirty check
+- response status field
+- backend-driven UI message

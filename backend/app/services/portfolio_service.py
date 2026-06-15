@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 from sqlalchemy.orm import Session
 
-from app.db.models import PortfolioProject, User
+from app.db.models import PortfolioProject, Post, User
 from app.repositories import portfolio_repository, post_repository
 from app.schemas.portfolio import (
     PortfolioProjectCreateRequest,
@@ -261,7 +261,7 @@ def publish_portfolio_post(
     if category is None:
         raise ValueError("포트폴리오 관리 카테고리를 찾을 수 없습니다.")
 
-    title = f"[포트폴리오] {project.title}"
+    title = build_portfolio_post_title(project)
     content = build_portfolio_post_content(project)
     summary = build_portfolio_post_summary(project)
     tag_names = normalize_tag_names(["포트폴리오", project.title, project.github_branch or "main"])
@@ -284,6 +284,17 @@ def publish_portfolio_post(
             is_public=True,
             related_commit=related_github_url,
         )
+        publish_status = "created"
+    elif is_same_published_post(
+        post=existing_post,
+        category_id=category.id,
+        title=title,
+        summary=summary,
+        content=content,
+        tag_names=tag_names,
+        related_github_url=related_github_url,
+    ):
+        return build_project_response(project, publish_status="unchanged")
     else:
         post = post_repository.update_post(
             db=db,
@@ -296,6 +307,7 @@ def publish_portfolio_post(
             is_public=True,
             related_commit=related_github_url,
         )
+        publish_status = "updated"
 
     updated_project = portfolio_repository.update_published_post(
         db=db,
@@ -303,7 +315,45 @@ def publish_portfolio_post(
         post=post,
     )
 
-    return build_project_response(updated_project)
+    return build_project_response(updated_project, publish_status=publish_status)
+
+
+def build_portfolio_post_title(project: PortfolioProject) -> str:
+    """
+    포트폴리오 게시글 목록과 상세에 자연스럽게 보일 제목을 만든다.
+    """
+
+    title = project.title.strip()
+
+    return title if title.endswith(" 포트폴리오") else f"{title} 포트폴리오"
+
+
+def is_same_published_post(
+    post: Post,
+    category_id: int,
+    title: str,
+    summary: str | None,
+    content: str,
+    tag_names: list[str],
+    related_github_url: str,
+) -> bool:
+    """
+    이미 발행된 포트폴리오 게시글이 새로 만들 내용과 같은지 확인한다.
+
+    같으면 update를 생략해 updated_at만 바뀌는 불필요한 DB 갱신을 막는다.
+    """
+
+    current_tag_names = {post_tag.tag.name for post_tag in post.post_tags if post_tag.tag is not None}
+
+    return (
+        post.category_id == category_id
+        and post.title == title
+        and (post.summary or "") == (summary or "")
+        and post.content == content
+        and post.is_public is True
+        and (post.related_commit or "") == related_github_url
+        and current_tag_names == set(tag_names)
+    )
 
 
 def build_project_branch_url(project: PortfolioProject) -> str:
@@ -465,7 +515,7 @@ def parse_tech_stack(text: str | None) -> list[str]:
     return [line for line in parse_text_list(text) if line not in LEGACY_TECH_STACK_PLACEHOLDERS]
 
 
-def build_project_response(project: PortfolioProject) -> PortfolioProjectResponse:
+def build_project_response(project: PortfolioProject, publish_status: str | None = None) -> PortfolioProjectResponse:
     """
     PortfolioProject model을 프론트가 바로 쓰기 좋은 JSON 응답으로 바꾼다.
     """
@@ -476,6 +526,7 @@ def build_project_response(project: PortfolioProject) -> PortfolioProjectRespons
         id=project.id,
         title=project.title,
         published_post_id=project.published_post_id,
+        publish_status=publish_status,
         repo_full_name=project.repo_full_name,
         github_branch=project.github_branch or "main",
         github_url=project.github_url,

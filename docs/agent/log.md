@@ -3556,3 +3556,38 @@ hasMarkdownAsStack=false
 ```txt
 fix: 기술 스택 표시에서 Markdown 제거
 ```
+
+---
+
+## 2026-06-16 7차 작업: 포트폴리오 게시글 발행 상태 구분
+
+상태: 완료
+
+목표:
+
+- 포트폴리오 게시글 목록 제목에서 `[포트폴리오]` prefix를 제거한다.
+- 이미 최신 내용이면 재발행 버튼을 눌러도 DB update를 하지 않고 최신 상태 안내를 보여준다.
+
+진행한 것:
+
+- `publish_portfolio_post` 제목 생성 기준을 `프로젝트명 포트폴리오`로 변경했다.
+- 발행 API 응답에 `publishStatus`를 추가했다.
+- 발행 결과는 `created`, `updated`, `unchanged`로 구분한다.
+- 기존 발행 게시글과 새 제목/요약/본문/태그/GitHub URL이 모두 같으면 update를 생략한다.
+- 프론트는 `publishStatus` 값에 따라 발행/갱신/최신 상태 안내 문구를 다르게 보여준다.
+- 포트폴리오 상세 제목은 기존 `[포트폴리오]` 제목과 새 `프로젝트명 포트폴리오` 제목을 모두 자연스럽게 처리한다.
+
+검증:
+
+```txt
+backend compileall: success
+npm run build: success
+service QA created -> unchanged -> updated: success
+QA data cleanup: success
+```
+
+커밋 추천 제목:
+
+```txt
+fix: 포트폴리오 게시글 발행 상태 구분
+```
