@@ -1,36 +1,43 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.db.models import Comment, Post, User
 
 
-DEMO_COMMENT_AUTHOR_EMAIL = "demo.student@junglelog.local"
+ROLE_ADMIN = "ADMIN"
 
 
-def get_public_post_exists(db: Session, post_id: int) -> bool:
+def get_accessible_post_exists(
+    db: Session,
+    post_id: int,
+    current_user: User | None,
+) -> bool:
     """
-    댓글을 조회하기 전에 게시글이 실제로 존재하는지 확인한다.
+    현재 사용자가 댓글을 조회하거나 작성할 수 있는 게시글인지 확인한다.
 
-    Args:
-        db: SQLAlchemy session.
-        post_id: 댓글을 조회할 게시글 id.
-
-    Returns:
-        공개 게시글이 존재하면 True, 없으면 False.
+    공개글은 누구나 댓글 목록을 볼 수 있고,
+    비공개글은 작성자 본인 또는 ADMIN만 댓글 목록 조회/작성이 가능하다.
     """
 
-    # SELECT posts.id FROM posts WHERE ...
-    post = db.scalar(
-        select(Post.id).where(
-            Post.id == post_id,
-            Post.deleted_at.is_(None),
-            Post.is_public.is_(True),
+    filters = [
+        Post.id == post_id,
+        Post.deleted_at.is_(None),
+    ]
+
+    if current_user is None:
+        filters.append(Post.is_public.is_(True))
+    elif current_user.role != ROLE_ADMIN:
+        filters.append(
+            or_(
+                Post.is_public.is_(True),
+                Post.author_id == current_user.id,
+            )
         )
-    )
 
-    # post가 None이 아니면 존재한다는 뜻이다.
+    post = db.scalar(select(Post.id).where(*filters))
+
     return post is not None
 
 
@@ -59,18 +66,6 @@ def list_comments_by_post_id(db: Session, post_id: int) -> list[Comment]:
     )
 
     return list(comments)
-
-
-def get_demo_comment_author(db: Session) -> User | None:
-    """
-    JWT/OAuth2 구현 전까지 댓글 작성에 사용할 임시 demo 사용자를 조회한다.
-
-    실제 로그인 기능이 들어오면 이 함수는 current_user dependency로 대체된다.
-    """
-
-    return db.scalar(
-        select(User).where(User.email == DEMO_COMMENT_AUTHOR_EMAIL)
-    )
 
 
 def create_comment(

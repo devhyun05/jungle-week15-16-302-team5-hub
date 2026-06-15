@@ -9,6 +9,7 @@ export type PostListApiItem = {
   categorySlug: string;
   tags: string[];
   author: string;
+  authorId: number;
   authorRole: UserRole;
   isPublic: boolean;
   views: number;

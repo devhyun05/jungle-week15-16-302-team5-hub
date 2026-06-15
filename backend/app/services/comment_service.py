@@ -1,29 +1,31 @@
 from sqlalchemy.orm import Session
 
-from app.db.models import Comment
+from app.db.models import Comment, User
 from app.repositories import comment_repository
 from app.schemas.comment import CommentCreateRequest, CommentItemResponse, CommentListResponse
 
-def get_comments_by_post_id(db: Session, post_id: int) -> CommentListResponse | None:
+
+ROLE_ADMIN = "ADMIN"
+
+
+def get_comments_by_post_id(
+    db: Session,
+    post_id: int,
+    current_user: User | None,
+) -> CommentListResponse | None:
     """
     게시글 댓글 목록 API 응답을 만든다.
-
-    Args:
-        db: SQLAlchemy session.
-        post_id: 댓글을 조회할 게시글 id.
-
-    Returns:
-        게시글이 있으면 댓글 목록 응답, 게시글이 없으면 None.
     """
-    # 먼저 게시글이 존재하는지 확인한다.
-    # 없는 게시글의 댓글을 조회하면 router에서 404로 바꾼다.
-    if not comment_repository.get_public_post_exists(db, post_id):
+
+    if not comment_repository.get_accessible_post_exists(
+        db=db,
+        post_id=post_id,
+        current_user=current_user,
+    ):
         return None
 
-    # repository에서 DB 댓글 목록을 가져온다.
     comments = comment_repository.list_comments_by_post_id(db, post_id)
 
-    # SQLAlchemy Comment model 목록을 Pydantic 응답 schema로 변환한다.
     return CommentListResponse(
         post_id=post_id,
         items=[
@@ -36,19 +38,14 @@ def get_comments_by_post_id(db: Session, post_id: int) -> CommentListResponse | 
 
 def build_comment_item(comment: Comment) -> CommentItemResponse:
     """
-    Comment DB model 하나를 프론트가 쓰기 좋은 JSON 응답 item으로 바꾼다.
-
-    Args:
-        comment: DB에서 조회한 Comment model.
-
-    Returns:
-        댓글 응답 item.
+    Comment DB model 하나를 프론트엔드가 쓰기 좋은 JSON item으로 바꾼다.
     """
 
     return CommentItemResponse(
         id=comment.id,
         post_id=comment.post_id,
         author=comment.author.name,
+        author_id=comment.author_id,
         author_role=comment.author.role,
         content=comment.content,
         created_at=comment.created_at,
@@ -56,63 +53,54 @@ def build_comment_item(comment: Comment) -> CommentItemResponse:
     )
 
 
+def can_manage_comment(current_user: User, author_id: int) -> bool:
+    """
+    댓글 삭제 권한을 확인한다.
+
+    댓글 작성자 본인과 ADMIN만 댓글을 삭제할 수 있다.
+    """
+
+    return current_user.id == author_id or current_user.role == ROLE_ADMIN
+
+
 def create_comment_for_post(
     db: Session,
     post_id: int,
     request: CommentCreateRequest,
+    current_user: User,
 ) -> CommentItemResponse | None:
     """
-    댓글 작성 API의 비즈니스 흐름을 처리한다.
-
-    Args:
-        db: SQLAlchemy session.
-        post_id: 댓글을 작성할 게시글 id.
-        request: 프론트에서 보낸 댓글 작성 request body.
-
-    Returns:
-        게시글이 있으면 생성된 댓글 응답, 게시글이 없으면 None.
-
-    Raises:
-        ValueError: 공백만 있는 댓글이면 발생한다.
-        RuntimeError: JWT 전 단계에서 사용할 demo user가 없으면 발생한다.
+    현재 로그인 사용자를 작성자로 사용해 댓글을 생성한다.
     """
 
-    # 댓글은 존재하는 공개 게시글에만 작성할 수 있게 막는다.
-    # 없는 게시글이면 router에서 404 응답으로 바꾼다.
-    if not comment_repository.get_public_post_exists(db, post_id):
+    if not comment_repository.get_accessible_post_exists(
+        db=db,
+        post_id=post_id,
+        current_user=current_user,
+    ):
         return None
 
-    # 프론트에서 공백 문자열을 보내도 DB에는 의미 있는 본문만 저장한다.
     content = request.content.strip()
 
     if not content:
-        raise ValueError("댓글 내용을 입력해주세요.")
-
-    # TODO auth: JWT/OAuth2 구현 후에는 demo user 대신 get_current_user() 결과를 사용한다.
-    author = comment_repository.get_demo_comment_author(db)
-
-    if author is None:
-        raise RuntimeError("댓글 작성용 demo 사용자를 찾을 수 없습니다.")
+        raise ValueError("댓글 내용을 입력해 주세요.")
 
     comment = comment_repository.create_comment(
         db=db,
         post_id=post_id,
-        author_id=author.id,
+        author_id=current_user.id,
         content=content,
     )
 
-    # create 후 응답을 만들 때 작성자 이름/역할이 필요하므로 author 관계를 채워둔다.
-    comment.author = author
+    # create 직후 응답에는 작성자 이름/역할이 필요하므로 현재 사용자 객체를 연결한다.
+    comment.author = current_user
 
     return build_comment_item(comment)
 
 
-def delete_comment(db: Session, comment_id: int) -> bool:
+def delete_comment(db: Session, comment_id: int, current_user: User) -> bool:
     """
-    댓글 삭제 API의 비즈니스 흐름을 처리한다.
-
-    현재는 JWT/OAuth2 연결 전이므로 댓글 작성자 권한 검사는 하지 않는다.
-    인증 구현 후에는 댓글 작성자 본인 또는 ADMIN만 삭제할 수 있게 검사해야 한다.
+    댓글 작성자 본인 또는 ADMIN만 댓글을 soft delete 할 수 있게 처리한다.
     """
 
     comment = comment_repository.get_comment_for_update(db=db, comment_id=comment_id)
@@ -120,7 +108,9 @@ def delete_comment(db: Session, comment_id: int) -> bool:
     if comment is None:
         return False
 
-    # TODO auth: JWT/OAuth2 연결 후 comment.author_id == current_user.id 또는 ADMIN인지 검사한다.
+    if not can_manage_comment(current_user=current_user, author_id=comment.author_id):
+        raise PermissionError("댓글을 삭제할 권한이 없습니다.")
+
     comment_repository.soft_delete_comment(db=db, comment=comment)
 
     return True

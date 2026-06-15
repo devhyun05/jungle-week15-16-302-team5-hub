@@ -5,6 +5,7 @@ export type CommentApiItem = {
   id: number;
   postId: number;
   author: string;
+  authorId: number;
   authorRole: UserRole;
   content: string;
   createdAt: string;

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.db.models import Comment, Post, PostCategory, PostTag, Tag, User
 
 
-DEMO_POST_AUTHOR_EMAIL = "demo.student@junglelog.local"
+ROLE_ADMIN = "ADMIN"
 
 
 def build_tag_slug(tag_name: str) -> str:
@@ -27,18 +27,6 @@ def build_tag_slug(tag_name: str) -> str:
     """
 
     return tag_name.strip().lower().replace(" ", "-")[:50]
-
-
-def get_demo_post_author(db: Session) -> User | None:
-    """
-    JWT/OAuth2 구현 전까지 게시글 작성에 사용할 demo 사용자를 조회한다.
-
-    실제 인증이 붙으면 이 함수는 current_user dependency로 대체된다.
-    """
-
-    return db.scalar(
-        select(User).where(User.email == DEMO_POST_AUTHOR_EMAIL)
-    )
 
 
 def get_category_by_slug(db: Session, category_slug: str) -> PostCategory | None:
@@ -376,6 +364,51 @@ def list_posts_by_author(
     comment_counts = get_comment_counts(db, [post.id for post in posts])
 
     return posts, total, comment_counts
+
+
+def get_accessible_post_by_id(
+    db: Session,
+    post_id: int,
+    current_user: User | None,
+) -> tuple[Post | None, int]:
+    """
+    현재 사용자가 접근할 수 있는 게시글 상세와 댓글 수를 조회한다.
+
+    공개글은 비로그인 사용자도 볼 수 있고,
+    비공개글은 작성자 본인 또는 ADMIN만 볼 수 있다.
+    """
+
+    filters = [
+        Post.id == post_id,
+        Post.deleted_at.is_(None),
+    ]
+
+    if current_user is None:
+        filters.append(Post.is_public.is_(True))
+    elif current_user.role != ROLE_ADMIN:
+        filters.append(
+            or_(
+                Post.is_public.is_(True),
+                Post.author_id == current_user.id,
+            )
+        )
+
+    post = db.scalar(
+        select(Post)
+        .options(
+            selectinload(Post.author),
+            selectinload(Post.category),
+            selectinload(Post.post_tags).selectinload(PostTag.tag),
+        )
+        .where(*filters)
+    )
+
+    if post is None:
+        return None, 0
+
+    comment_count = get_comment_counts(db, [post.id]).get(post.id, 0)
+
+    return post, comment_count
 
 
 def get_post_by_id(db: Session, post_id: int) -> tuple[Post | None, int]:

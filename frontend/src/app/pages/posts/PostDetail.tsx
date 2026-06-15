@@ -13,6 +13,7 @@ import type { MainLayoutContext } from "../../layouts/MainLayout";
 
 type CommentItem = {
   id: string;
+  authorId: number;
   author: string;
   role: UserRole;
   createdAt: string;
@@ -44,7 +45,7 @@ export function PostDetail() {
   // /posts/:id의 id 값을 읽어서 백엔드 상세 API에 전달합니다.
   const { id } = useParams();
   const navigate = useNavigate();
-  const { role } = useOutletContext<MainLayoutContext>();
+  const { role, user } = useOutletContext<MainLayoutContext>();
 
   const [post, setPost] = useState<PostDetailApiResponse | null>(null);
   const [isPostLoading, setIsPostLoading] = useState(true);
@@ -131,6 +132,7 @@ export function PostDetail() {
         setComments(
           data.items.map((comment) => ({
             id: String(comment.id),
+            authorId: comment.authorId,
             author: comment.author,
             role: comment.authorRole,
             createdAt: comment.createdAt,
@@ -231,6 +233,7 @@ export function PostDetail() {
         ...prev,
         {
           id: String(savedComment.id),
+          authorId: savedComment.authorId,
           author: savedComment.author,
           role: savedComment.authorRole,
           createdAt: savedComment.createdAt,
@@ -253,7 +256,6 @@ export function PostDetail() {
       await deleteComment(commentId);
 
       // 실제 DB에서는 soft delete가 되었고, 화면에서는 바로 사라진 것처럼 보여준다.
-      // TODO auth: JWT/OAuth2 연결 후에는 본인 댓글 또는 ADMIN 권한일 때만 삭제 버튼을 보여준다.
       setComments((prev) => prev.filter((comment) => comment.id !== commentId));
     } catch {
       setCommentDeleteError("댓글을 삭제하지 못했습니다. 백엔드 서버와 API 상태를 확인해주세요.");
@@ -261,6 +263,8 @@ export function PostDetail() {
       setDeletingCommentId(null);
     }
   };
+
+  const canManagePost = role === "ADMIN" || post.authorId === user.id;
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -274,7 +278,7 @@ export function PostDetail() {
             </Badge>
           </div>
 
-          {role === "STUDENT" ? (
+          {canManagePost ? (
             <div className="flex gap-2">
               <Button variant="outline" size="sm" asChild>
                 <Link to={`/posts/${post.id}/edit`}>수정</Link>
@@ -444,16 +448,18 @@ export function PostDetail() {
                   </div>
                 </div>
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-red-600 hover:bg-red-50"
-                  onClick={() => void removeComment(comment.id)}
-                  disabled={deletingCommentId === comment.id}
-                >
-                  {deletingCommentId === comment.id ? "삭제 중" : "삭제"}
-                </Button>
+                {(role === "ADMIN" || comment.authorId === user.id) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-red-600 hover:bg-red-50"
+                    onClick={() => void removeComment(comment.id)}
+                    disabled={deletingCommentId === comment.id}
+                  >
+                    {deletingCommentId === comment.id ? "삭제 중" : "삭제"}
+                  </Button>
+                )}
               </div>
               <p className="mt-2 text-sm text-slate-700">{comment.content}</p>
             </div>
@@ -473,7 +479,7 @@ export function PostDetail() {
                 />
                 {commentError && <p className="text-xs text-red-600">{commentError}</p>}
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs text-slate-400">현재는 demo user로 저장되며 JWT 연결 후 로그인 사용자로 바뀝니다.</p>
+                  <p className="text-xs text-slate-400">댓글은 현재 로그인 사용자 이름으로 저장됩니다.</p>
                   <Button type="button" size="sm" onClick={addComment} disabled={isCommentSubmitting}>
                     {isCommentSubmitting ? "작성 중" : "댓글 작성"}
                   </Button>
