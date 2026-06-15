@@ -421,12 +421,7 @@ function CoachInboxView() {
     void loadInbox();
   }, []);
 
-  const selectedRequest = requests.find((request) => request.id === selectedId) ?? requests[0] ?? null;
   const categoryOptions = Array.from(new Set(requests.map((request) => request.category)));
-
-  useEffect(() => {
-    setFeedback(selectedRequest?.feedback ?? "");
-  }, [selectedRequest?.feedback, selectedRequest?.id]);
 
   const filteredRequests = useMemo(
     () =>
@@ -446,6 +441,20 @@ function CoachInboxView() {
       }),
     [keyword, requests, selectedCategory, selectedStatus],
   );
+  const selectedRequest = filteredRequests.find((request) => request.id === selectedId) ?? filteredRequests[0] ?? null;
+
+  useEffect(() => {
+    setFeedback(selectedRequest?.feedback ?? "");
+  }, [selectedRequest?.feedback, selectedRequest?.id]);
+
+  useEffect(() => {
+    // 필터가 바뀌어 기존 선택 요청이 목록에서 사라지면 상세 패널도 필터된 첫 요청으로 맞춘다.
+    const nextSelectedId = selectedRequest?.id ?? null;
+
+    if (selectedId !== nextSelectedId) {
+      setSelectedId(nextSelectedId);
+    }
+  }, [selectedId, selectedRequest?.id]);
 
   const selectRequest = (request: ReviewRequestApiItem) => {
     setSelectedId(request.id);

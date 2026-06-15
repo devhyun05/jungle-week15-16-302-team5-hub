@@ -2338,3 +2338,44 @@ cleanup=True
 
 - PowerShell here-string으로 Python에 한글 리터럴을 직접 넘겼을 때 인코딩이 깨져 1차 레거시 exact match 검증이 실패했다.
 - 이후 Python에서 service 상수를 직접 사용해 같은 조건을 다시 검증했고 정상 통과했다.
+
+---
+
+## 2026-06-16 QA: 코치 리뷰 인박스와 피드백 왕복 흐름
+
+목표: 학생이 보낸 리뷰 요청이 배정된 코치 인박스에만 보이고, 코치가 저장한 피드백이 학생 요청 목록과 알림에 반영되는지 검증한다.
+
+체크리스트:
+
+- [x] 학생 게시글을 리뷰 요청 대상으로 만들 수 있다.
+- [x] 학생이 배정 코치에게 리뷰 요청을 만들면 상태가 `대기 중`이다.
+- [x] 학생의 `내가 보낸 요청 목록`에 해당 요청이 보인다.
+- [x] 배정된 코치의 인박스에는 요청이 보인다.
+- [x] 배정되지 않은 다른 코치의 인박스에는 요청이 보이지 않는다.
+- [x] 배정되지 않은 코치는 리뷰 요청을 수정할 수 없다.
+- [x] 배정된 코치는 `피드백 완료` 상태와 피드백 본문을 저장할 수 있다.
+- [x] 학생의 요청 목록에는 코치가 저장한 상태와 피드백이 반영된다.
+- [x] 학생에게 `review-feedback` 알림이 생성된다.
+- [x] 코치 인박스 필터 변경 시 상세 패널도 필터된 요청 기준으로 표시된다.
+
+검증 출력 요약:
+
+```txt
+created_status=대기 중
+student_has_request_before=True
+coach_inbox_count_before=1
+other_inbox_count_before=0
+unauthorized_error_exists=True
+updated_status_is_feedback_done=True
+updated_feedback=Problem definition and solution flow are clear.
+student_status_after_is_feedback_done=True
+student_feedback_after=Problem definition and solution flow are clear.
+student_notification_count=1
+student_latest_notification_type=review-feedback
+coach_request_notification_count=1
+cleanup=True
+```
+
+메모:
+
+- PowerShell pipe에서 한글 상태 문자열이 깨질 수 있어 QA 스크립트에서는 `피드백 완료`를 유니코드 escape로 넣어 검증했다.

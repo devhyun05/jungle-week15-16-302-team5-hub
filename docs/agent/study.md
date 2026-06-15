@@ -4560,3 +4560,51 @@ GitHub 프로젝트 등록
 - nullable field
 - legacy data cleanup
 - encoding issue
+
+---
+
+## 2026-06-16 학습: 코치 리뷰 인박스 필터와 피드백 흐름
+
+이번에 본 파일:
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/coach/CoachReview.tsx` | 학생 리뷰 요청 화면과 코치 리뷰 인박스 화면을 role에 따라 나누어 보여준다. |
+| `frontend/src/app/api/reviews.ts` | 코치 옵션, 리뷰 요청 생성, 내 요청 목록, 코치 인박스, 피드백 저장 API 호출을 담당한다. |
+| `backend/app/routers/reviews.py` | 리뷰 요청 API endpoint와 STUDENT/COACH 권한을 연결한다. |
+| `backend/app/services/review_service.py` | 리뷰 요청 생성, 코치 피드백 저장, 학생 알림 생성 같은 비즈니스 규칙을 담당한다. |
+| `backend/app/repositories/review_repository.py` | 리뷰 요청/대상 게시글/담당 코치 조회와 DB 저장을 담당한다. |
+
+핵심 개념:
+
+- 학생과 코치는 같은 `review_requests` 데이터를 보지만 관점이 다르다.
+- 학생은 `GET /review-requests/me`로 본인이 보낸 요청만 본다.
+- 코치는 `GET /review-requests/inbox`로 자기에게 배정된 요청만 본다.
+- 코치가 피드백을 저장하면 같은 review request row의 `status`, `feedback`이 바뀌고 학생 목록에도 같은 값이 보인다.
+- 필터 UI에서는 목록과 상세 패널이 같은 데이터 기준을 사용해야 한다.
+
+이번에 고친 UI 흐름:
+
+```txt
+코치 인박스 전체 요청 목록
+-> 카테고리/상태/검색어 필터 적용
+-> filteredRequests 계산
+-> selectedRequest도 filteredRequests 기준으로 선택
+-> 기존 선택이 필터 밖으로 사라지면 필터된 첫 요청으로 상세 패널 이동
+```
+
+이번에 이해해야 할 포인트:
+
+1. `requests`는 서버에서 받은 원본 목록이고, `filteredRequests`는 화면 필터가 적용된 목록이다.
+2. 화면에 보이는 목록이 `filteredRequests`라면 상세 패널도 `filteredRequests` 기준으로 선택해야 UX가 자연스럽다.
+3. 권한 검사는 프론트 버튼 숨김만으로 끝나면 안 되고, 백엔드에서 배정된 코치인지 다시 확인해야 한다.
+4. 피드백 저장은 댓글 작성과 다르다. 댓글은 원문 게시글에 붙는 공개 대화이고, 코치 피드백은 리뷰 요청 row에 저장되는 요청 처리 결과다.
+
+추가 공부 키워드:
+
+- derived state
+- filtered list
+- selected item state
+- permission check
+- role based API
+- notification side effect

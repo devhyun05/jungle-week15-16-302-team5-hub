@@ -574,3 +574,22 @@ size: int = Query(default=50, ge=1, le=50)
 배운 점:
 
 - 한글 exact match를 검증할 때는 터미널 입력 인코딩보다 코드 내부 상수나 파일 기반 입력을 쓰는 편이 안전하다.
+
+---
+
+## 2026-06-16 PowerShell 파이프 한글 상태값 Pydantic 검증 이슈
+
+상황:
+
+- 코치 리뷰 QA 스크립트에서 `피드백 완료` 상태 문자열을 PowerShell here-string으로 Python에 전달했다.
+- Python 쪽에서 문자열이 `??? ??`처럼 깨져 Pydantic Literal 검증에 실패했다.
+
+원인:
+
+- PowerShell 표준 입력 파이프 과정에서 한글 리터럴 인코딩이 깨졌다.
+- 백엔드 status validation 로직 문제는 아니었다.
+
+해결:
+
+- QA 스크립트에서 `피드백 완료`를 직접 한글로 쓰지 않고 `\ud53c\ub4dc\ubc31 \uc644\ub8cc` 유니코드 escape로 전달했다.
+- 이후 리뷰 요청 생성, 코치 피드백 저장, 학생 알림 생성 검증이 정상 통과했다.
