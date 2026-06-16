@@ -252,3 +252,15 @@ export async function publishPortfolioProjectPost(projectId: number, isPublic: b
 
   return normalizePortfolioProject(data);
 }
+
+export async function deletePortfolioProject(projectId: number): Promise<void> {
+  const response = await apiFetch(`${API_BASE_URL}/portfolio/projects/${projectId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response);
+    throw new Error(message);
+  }
+}

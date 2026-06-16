@@ -7,10 +7,14 @@ import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { Input } from "../../components/ui/Input";
+import { PortfolioMarkdownBlock } from "../../components/portfolio/PortfolioMarkdownBlock";
+import { InterviewQuestionsBlock } from "../../components/portfolio/InterviewQuestionsBlock";
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { getMyPosts, type PostListApiItem } from "../../api/posts";
+import { getMyReviewRequests, type ReviewRequestApiItem } from "../../api/reviews";
 import {
   createPortfolioProject,
+  deletePortfolioProject,
   getPortfolioProjects,
   linkPortfolioProjectPosts,
   publishPortfolioProjectPost,
@@ -20,6 +24,7 @@ import {
   type PortfolioStatus,
 } from "../../api/portfolio";
 import { getDisplayTechStack } from "../../utils/techStack";
+import { cleanInterviewQuestionsText, getInterviewQuestionPreview } from "../../utils/interviewQuestions";
 
 const portfolioStatuses: PortfolioStatus[] = ["작성중", "보완 필요", "정리 완료"];
 const coachFeedbackStatusFilters = ["전체", "요청 전", "요청함", "검토 중", "수정 요청", "피드백 완료"] as const;
@@ -154,6 +159,7 @@ function getGithubCommitsHref(project: PortfolioProjectApiItem) {
 export function Portfolio() {
   const [projects, setProjects] = useState<PortfolioProjectApiItem[]>([]);
   const [availablePosts, setAvailablePosts] = useState<PostListApiItem[]>([]);
+  const [reviewRequests, setReviewRequests] = useState<ReviewRequestApiItem[]>([]);
   const [repoUrl, setRepoUrl] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -163,6 +169,11 @@ export function Portfolio() {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [isConnectOpen, setIsConnectOpen] = useState(false);
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<PortfolioProjectApiItem | null>(null);
+  const [isPortfolioTextDialogOpen, setIsPortfolioTextDialogOpen] = useState(false);
+  const [isInterviewQuestionsDialogOpen, setIsInterviewQuestionsDialogOpen] = useState(false);
+  const [isCoachFeedbackDialogOpen, setIsCoachFeedbackDialogOpen] = useState(false);
   const [publishVisibility, setPublishVisibility] = useState<"public" | "private">("public");
   const [selectedPostIds, setSelectedPostIds] = useState<number[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
@@ -172,13 +183,15 @@ export function Portfolio() {
     setErrorMessage("");
 
     try {
-      const [projectData, postData] = await Promise.all([
+      const [projectData, postData, reviewData] = await Promise.all([
         getPortfolioProjects(),
         getMyPosts({ visibility: "all", size: PORTFOLIO_LINKABLE_POST_PAGE_SIZE }),
+        getMyReviewRequests(),
       ]);
 
       setProjects(projectData.items);
       setAvailablePosts(postData.items.filter(isLinkablePortfolioRecord));
+      setReviewRequests(reviewData.items);
 
       const nextSelectedProject =
         projectData.items.find((project) => project.id === preferredProjectId) ??
@@ -237,6 +250,20 @@ export function Portfolio() {
     () => (selectedProject ? availablePosts.filter((post) => selectedProject.linkedPostIds.includes(post.id)) : []),
     [availablePosts, selectedProject],
   );
+
+  const selectedProjectReviewRequests = useMemo(
+    () =>
+      selectedProject
+        ? reviewRequests
+            .filter((request) => request.targetType === "portfolio" && request.targetId === selectedProject.id)
+            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        : [],
+    [reviewRequests, selectedProject],
+  );
+
+  const latestCoachFeedback = selectedProjectReviewRequests.find((request) => request.feedback?.trim());
+  const cleanedInterviewQuestions = cleanInterviewQuestionsText(selectedProject?.savedInterviewQuestions);
+  const interviewQuestionPreview = getInterviewQuestionPreview(selectedProject?.savedInterviewQuestions);
 
   const selectProject = (project: PortfolioProjectApiItem) => {
     setSelectedProjectId(project.id);
@@ -445,6 +472,42 @@ export function Portfolio() {
     }
   };
 
+  const openDeleteDialog = (project: PortfolioProjectApiItem) => {
+    setProjectToDelete(project);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const removeSelectedProject = async () => {
+    if (!projectToDelete) {
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage("");
+
+    try {
+      await deletePortfolioProject(projectToDelete.id);
+
+      const nextProjects = projects.filter((project) => project.id !== projectToDelete.id);
+
+      setProjects(nextProjects);
+      if (selectedProjectId === projectToDelete.id) {
+        setSelectedProjectId(nextProjects[0]?.id ?? null);
+        setSelectedPostIds(nextProjects[0]?.linkedPostIds ?? []);
+      }
+      setIsDeleteDialogOpen(false);
+      setProjectToDelete(null);
+      toast.success("포트폴리오 프로젝트를 삭제했습니다.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "포트폴리오 프로젝트를 삭제하지 못했습니다.";
+
+      setErrorMessage(message);
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-[1680px] space-y-6">
       <div>
@@ -552,9 +615,22 @@ export function Portfolio() {
                         <h3 className="min-w-0 flex-1 truncate font-semibold text-slate-900" title={project.title}>
                           {project.title}
                         </h3>
-                        <span className={`shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold ${portfolioStatusClass(project.portfolioStatus)}`}>
-                          {project.portfolioStatus}
-                        </span>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold ${portfolioStatusClass(project.portfolioStatus)}`}>
+                            {project.portfolioStatus}
+                          </span>
+                          <button
+                            type="button"
+                            aria-label={`${project.title} 삭제`}
+                            className="flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openDeleteDialog(project);
+                            }}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                       <div className="space-y-1">
                         {projectRepoHref ? (
@@ -679,6 +755,7 @@ export function Portfolio() {
                             </Button>
                           )}
                         </div>
+
                       </div>
                     </div>
 
@@ -712,10 +789,15 @@ export function Portfolio() {
                           </Link>
                         </Button>
                       </div>
-                      <div className="min-h-[420px] rounded-lg border border-emerald-100 bg-white p-5 text-sm leading-7 text-slate-700">
-                        <p className="whitespace-pre-line">
-                          {selectedProject.savedPortfolioDraft ?? "아직 저장된 포트폴리오 글이 없습니다."}
-                        </p>
+                      <div className="rounded-lg border border-emerald-100 bg-white p-5 text-sm leading-7 text-slate-700">
+                        <PortfolioMarkdownBlock text={selectedProject.savedPortfolioDraft ?? "아직 저장된 포트폴리오 글이 없습니다."} compact />
+                        {selectedProject.savedPortfolioDraft && (
+                          <div className="mt-4 flex justify-end border-t border-slate-100 pt-4">
+                            <Button type="button" variant="outline" size="sm" className={utilityActionClass} onClick={() => setIsPortfolioTextDialogOpen(true)}>
+                              전체 포트폴리오 글 보기
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </section>
@@ -729,17 +811,34 @@ export function Portfolio() {
                             {selectedProject.aiInterviewSaved ? "저장됨" : "저장 전"}
                           </Badge>
                         </div>
-                        <div className="flex justify-end">
+                        <div className="flex flex-wrap justify-end gap-2">
+                          {cleanedInterviewQuestions && (
+                            <Button type="button" variant="outline" size="sm" className={utilityActionClass} onClick={() => setIsInterviewQuestionsDialogOpen(true)}>
+                              전체 예상 질문 보기
+                            </Button>
+                          )}
                           <Button asChild variant="outline" size="sm" className={sectionActionClass}>
                             <Link to={`/ai-assistant?project=${selectedProject.id}&type=interview`}>면접 질문 만들기</Link>
                           </Button>
                         </div>
                       </div>
                       <div className="rounded-lg border border-slate-100 bg-slate-50/80 px-4 py-3">
-                        <p className="line-clamp-6 whitespace-pre-line text-sm leading-6 text-slate-600">
-                        {selectedProject.savedInterviewQuestions ??
-                          "AI 도우미에서 이 프로젝트를 선택하면 GitHub repo와 연결 기록을 기준으로 면접 예상 질문을 저장할 수 있습니다."}
-                        </p>
+                        {interviewQuestionPreview.length > 0 ? (
+                          <ul className="space-y-2">
+                            {interviewQuestionPreview.map((question, index) => (
+                              <li key={`${question}-${index}`} className="flex gap-2 text-sm leading-6 text-slate-700">
+                                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                                <span className="line-clamp-2">{question}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : cleanedInterviewQuestions ? (
+                          <p className="line-clamp-3 text-sm leading-6 text-slate-600">저장된 면접 예상 질문이 있습니다. 전체 내용은 버튼을 눌러 확인하세요.</p>
+                        ) : (
+                          <p className="text-sm leading-6 text-slate-600">
+                            AI 도우미에서 이 프로젝트를 선택하면 GitHub repo와 연결 기록을 기준으로 면접 예상 질문을 저장할 수 있습니다.
+                          </p>
+                        )}
                       </div>
                     </section>
 
@@ -751,16 +850,23 @@ export function Portfolio() {
                             {getCoachFeedbackStatusLabel(selectedProject.coachFeedbackStatus)}
                           </span>
                         </div>
-                        <div className="flex justify-end">
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <Button type="button" variant="outline" size="sm" className={utilityActionClass} onClick={() => setIsCoachFeedbackDialogOpen(true)}>
+                            전체 피드백 보기
+                          </Button>
                           <Button asChild variant="outline" size="sm" className={sectionActionClass}>
                             <Link to="/coach-review">코치 리뷰 요청하기</Link>
                           </Button>
                         </div>
                       </div>
                       <div className="rounded-lg border border-slate-100 bg-slate-50/80 px-4 py-3">
-                        <p className="text-sm leading-6 text-slate-600">
-                          포트폴리오 글을 저장한 뒤 코치 리뷰를 요청하면 피드백 이력과 상태를 이 프로젝트 기준으로 관리합니다.
-                        </p>
+                        {latestCoachFeedback?.feedback ? (
+                          <PortfolioMarkdownBlock text={latestCoachFeedback.feedback} compact />
+                        ) : (
+                          <p className="text-sm leading-6 text-slate-600">
+                            포트폴리오 글을 저장한 뒤 코치 리뷰를 요청하면 피드백 이력과 상태를 이 프로젝트 기준으로 관리합니다.
+                          </p>
+                        )}
                       </div>
                     </section>
 
@@ -906,6 +1012,92 @@ export function Portfolio() {
           </section>
         </div>
       )}
+
+      <Dialog open={isPortfolioTextDialogOpen} onOpenChange={setIsPortfolioTextDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{selectedProject?.title ?? "프로젝트"} 포트폴리오 글</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white p-5">
+            <PortfolioMarkdownBlock text={selectedProject?.savedPortfolioDraft ?? "아직 저장된 포트폴리오 글이 없습니다."} />
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={() => setIsPortfolioTextDialogOpen(false)}>
+              닫기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isInterviewQuestionsDialogOpen} onOpenChange={setIsInterviewQuestionsDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{selectedProject?.title ?? "프로젝트"} 면접 예상 질문</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white p-5">
+            <InterviewQuestionsBlock text={cleanedInterviewQuestions} />
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={() => setIsInterviewQuestionsDialogOpen(false)}>
+              닫기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCoachFeedbackDialogOpen} onOpenChange={setIsCoachFeedbackDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{selectedProject?.title ?? "프로젝트"} 코치 피드백</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold text-slate-900">현재 상태</span>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${selectedProject ? feedbackStatusClass(selectedProject.coachFeedbackStatus) : "bg-slate-100 text-slate-700"}`}>
+                {selectedProject ? getCoachFeedbackStatusLabel(selectedProject.coachFeedbackStatus) : "요청 전"}
+              </span>
+            </div>
+            <div className="max-h-[56vh] overflow-y-auto rounded-lg bg-slate-50 p-4">
+              <PortfolioMarkdownBlock text={latestCoachFeedback?.feedback ?? "아직 저장된 코치 피드백이 없습니다."} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={() => setIsCoachFeedbackDialogOpen(false)}>
+              닫기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeleteDialogOpen(open);
+          if (!open) {
+            setProjectToDelete(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>포트폴리오 프로젝트를 삭제할까요?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm leading-6 text-slate-600">
+            <p>
+              `{projectToDelete?.title ?? "선택한 프로젝트"}` 프로젝트 등록과 연결 기록, GitHub 분석 정보, 코치 리뷰 요청이 삭제됩니다.
+            </p>
+            <p className="text-xs text-slate-500">이미 발행된 포트폴리오 게시글은 게시판 기록으로 남습니다.</p>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isSaving}>
+              취소
+            </Button>
+            <Button type="button" variant="destructive" onClick={() => void removeSelectedProject()} disabled={isSaving}>
+              {isSaving ? "삭제 중" : "삭제 확인"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isPublishDialogOpen} onOpenChange={setIsPublishDialogOpen}>
         <DialogContent>

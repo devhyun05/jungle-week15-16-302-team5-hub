@@ -85,6 +85,26 @@ def update_portfolio_project(
     return project
 
 
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_portfolio_project(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("STUDENT", "ADMIN")),
+) -> None:
+    """
+    포트폴리오 프로젝트 등록을 삭제한다.
+    """
+
+    is_deleted = portfolio_service.delete_portfolio_project(
+        db=db,
+        project_id=project_id,
+        current_user=current_user,
+    )
+
+    if not is_deleted:
+        raise HTTPException(status_code=404, detail="포트폴리오 프로젝트를 찾을 수 없습니다.")
+
+
 @router.post("/{project_id}/github/refresh", response_model=PortfolioProjectResponse)
 def refresh_github_project(
     project_id: int,

@@ -123,7 +123,7 @@ def build_user_prompt(context: AIContext, output_type: AIOutputType) -> str:
     if output_type == "interview":
         task = (
             "아래 자료를 바탕으로 면접 예상 질문 8개를 만들어줘. "
-            "각 질문마다 답변 포인트와 꼬리 질문 1개를 포함해줘."
+            "각 질문마다 답변 포인트만 간결하게 정리하고, 꼬리 질문은 포함하지 마."
         )
     else:
         task = (
@@ -185,4 +185,3 @@ def call_openai_response(instructions: str, input_text: str) -> str:
         raise AIGenerationError("OpenAI 응답 본문이 비어 있습니다.")
 
     return content.strip()
-

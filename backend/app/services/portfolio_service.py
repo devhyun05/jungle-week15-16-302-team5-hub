@@ -225,6 +225,31 @@ def update_portfolio_project(
     return build_project_response(updated_project)
 
 
+def delete_portfolio_project(
+    db: Session,
+    project_id: int,
+    current_user: User,
+) -> bool:
+    """
+    현재 사용자가 접근할 수 있는 포트폴리오 프로젝트를 삭제한다.
+
+    발행된 게시글은 게시판 기록으로 남기고, 프로젝트 등록/연결/리뷰 요청/GitHub 커밋 데이터만 제거한다.
+    """
+
+    project = portfolio_repository.get_project_by_id(
+        db=db,
+        project_id=project_id,
+        current_user=current_user,
+    )
+
+    if project is None:
+        return False
+
+    portfolio_repository.delete_project(db=db, project=project)
+
+    return True
+
+
 def link_project_posts(
     db: Session,
     project_id: int,
@@ -445,6 +470,7 @@ def build_portfolio_post_content(project: PortfolioProject) -> str:
         )
     ) or "- 아직 수집된 커밋 메시지가 없습니다."
     portfolio_text = normalize_optional_text(project.saved_portfolio_draft, LEGACY_DRAFT_PLACEHOLDERS)
+    interview_text = normalize_optional_text(project.saved_interview_questions, set())
 
     return f"""# {project.title}
 
@@ -470,6 +496,9 @@ def build_portfolio_post_content(project: PortfolioProject) -> str:
 
 ## 코치 피드백 상태
 {project.coach_feedback_status}
+
+## 면접 예상 질문
+{interview_text or "아직 저장된 면접 예상 질문이 없습니다. AI 도우미에서 면접 질문을 생성해보세요."}
 
 ## 포트폴리오 글
 {portfolio_text or "아직 작성된 포트폴리오 글이 없습니다. AI 도우미 또는 직접 작성으로 내용을 채워주세요."}

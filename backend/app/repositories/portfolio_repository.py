@@ -4,7 +4,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
-from app.db.models import GitHubCommit, PortfolioProject, PortfolioProjectPost, Post, PostCategory, User
+from app.db.models import GitHubCommit, PortfolioProject, PortfolioProjectPost, Post, PostCategory, ReviewRequest, ReviewRequestCoach, User
 
 
 ROLE_ADMIN = "ADMIN"
@@ -336,3 +336,24 @@ def replace_project_posts(
     db.refresh(project)
 
     return get_project_by_id(db=db, project_id=project.id, current_user=current_user) or project
+
+
+def delete_project(db: Session, project: PortfolioProject) -> None:
+    """
+    포트폴리오 프로젝트와 프로젝트에 직접 매달린 보조 데이터를 삭제한다.
+
+    발행된 게시글은 전체 게시글 이력으로 남겨두고, 프로젝트만 제거한다.
+    """
+
+    review_request_ids = list(
+        db.scalars(select(ReviewRequest.id).where(ReviewRequest.target_project_id == project.id))
+    )
+
+    if review_request_ids:
+        db.execute(delete(ReviewRequestCoach).where(ReviewRequestCoach.review_request_id.in_(review_request_ids)))
+        db.execute(delete(ReviewRequest).where(ReviewRequest.id.in_(review_request_ids)))
+
+    db.execute(delete(PortfolioProjectPost).where(PortfolioProjectPost.project_id == project.id))
+    db.execute(delete(GitHubCommit).where(GitHubCommit.project_id == project.id))
+    db.execute(delete(PortfolioProject).where(PortfolioProject.id == project.id))
+    db.commit()

@@ -7,11 +7,14 @@ import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { PortfolioMarkdownBlock } from "../../components/portfolio/PortfolioMarkdownBlock";
+import { InterviewQuestionsBlock } from "../../components/portfolio/InterviewQuestionsBlock";
 import { createPostComment, deleteComment, getPostComments } from "../../api/comments";
 import { deletePost, getPostDetail, getPosts, type PostDetailApiResponse, type PostListApiItem } from "../../api/posts";
 import type { UserRole } from "../../api/auth";
 import { resolveApiAssetUrl } from "../../api/client";
 import type { MainLayoutContext } from "../../layouts/MainLayout";
+import { cleanInterviewQuestionsText } from "../../utils/interviewQuestions";
 import { getDisplayTechStack } from "../../utils/techStack";
 
 type CommentItem = {
@@ -34,6 +37,7 @@ type PortfolioPostSections = {
   linkedRecords: string[];
   recentCommits: string[];
   coachFeedbackStatus: string;
+  interviewQuestions: string;
   portfolioText: string;
 };
 
@@ -123,13 +127,14 @@ function parsePortfolioPostContent(content: string): PortfolioPostSections {
 
   for (const rawLine of content.split(/\r?\n/)) {
     const line = rawLine.trimEnd();
+    const isPortfolioTextSection = currentSection === "포트폴리오 글";
 
-    if (line.startsWith("# ")) {
+    if (!isPortfolioTextSection && line.startsWith("# ")) {
       projectTitle = cleanMarkdownText(line);
       continue;
     }
 
-    if (line.startsWith("## ")) {
+    if (!isPortfolioTextSection && line.startsWith("## ")) {
       currentSection = cleanMarkdownText(line);
       sectionMap.set(currentSection, []);
       continue;
@@ -138,7 +143,8 @@ function parsePortfolioPostContent(content: string): PortfolioPostSections {
     sectionMap.set(currentSection, [...(sectionMap.get(currentSection) ?? []), line]);
   }
 
-  const getSectionText = (name: string) => cleanMarkdownText((sectionMap.get(name) ?? []).join("\n"));
+  const getRawSectionText = (name: string) => (sectionMap.get(name) ?? []).join("\n").trim();
+  const getSectionText = (name: string) => cleanMarkdownText(getRawSectionText(name));
   const githubLines = parsePortfolioList(getSectionText("GitHub"));
   const githubValue = (label: string) => {
     const matchedLine = githubLines.find((line) => line.toLowerCase().startsWith(label.toLowerCase()));
@@ -160,32 +166,9 @@ function parsePortfolioPostContent(content: string): PortfolioPostSections {
     linkedRecords: parsePortfolioList(getSectionText("연결된 학습 기록")),
     recentCommits: parsePortfolioList(getSectionText("최근 커밋 요약")),
     coachFeedbackStatus: getSectionText("코치 피드백 상태") || "요청 전",
-    portfolioText: getSectionText("포트폴리오 글") || "아직 작성된 포트폴리오 글이 없습니다.",
+    interviewQuestions: getRawSectionText("면접 예상 질문") || "아직 저장된 면접 예상 질문이 없습니다.",
+    portfolioText: getRawSectionText("포트폴리오 글") || "아직 작성된 포트폴리오 글이 없습니다.",
   };
-}
-
-function PortfolioTextBlock({ text }: { text: string }) {
-  const normalizedText = cleanMarkdownText(text).replace(
-    /(^|\n)((?:\d+\.\s*)?기술 스택)\s*\n(?:GitHub|Markdown|README)(?=\n|$)/g,
-    "$1$2\n아직 GitHub에서 기술 스택을 충분히 감지하지 못했습니다.",
-  );
-  const paragraphs = normalizedText
-    .split(/\n{2,}/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
-
-  return (
-    <div className="space-y-4">
-      {paragraphs.map((paragraph) => (
-        <p key={paragraph} className="whitespace-pre-line text-sm leading-7 text-slate-700">
-          {paragraph}
-        </p>
-      ))}
-
-
-
-    </div>
-  );
 }
 
 function PortfolioPostDetail({ post }: { post: PostDetailApiResponse }) {
@@ -193,6 +176,8 @@ function PortfolioPostDetail({ post }: { post: PostDetailApiResponse }) {
   const githubUrl = portfolio.githubUrl || post.relatedGitHubUrl;
   const githubCommitsUrl =
     portfolio.repository && portfolio.branch ? `https://github.com/${portfolio.repository}/commits/${portfolio.branch}` : null;
+  const [isInterviewDialogOpen, setIsInterviewDialogOpen] = useState(false);
+  const cleanedInterviewQuestions = cleanInterviewQuestionsText(portfolio.interviewQuestions);
 
   return (
     <div className="space-y-6 py-6">
@@ -202,99 +187,129 @@ function PortfolioPostDetail({ post }: { post: PostDetailApiResponse }) {
         <p className="mt-3 text-sm leading-7 text-slate-700">{portfolio.description}</p>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <section className="rounded-xl border border-slate-200 bg-white p-5">
-          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
-            <Github className="h-4 w-4 text-slate-500" />
-            GitHub 정보
-          </h3>
-          <dl className="space-y-3 text-sm">
-            <div>
-              <dt className="text-xs font-semibold text-slate-400">Repository</dt>
-              <dd className="mt-1 break-all font-mono text-slate-700">{portfolio.repository}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold text-slate-400">Branch</dt>
-              <dd className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-1 font-mono text-xs text-slate-700">
-                {portfolio.branch}
-              </dd>
-            </div>
-          </dl>
-          {githubUrl && isValidExternalUrl(githubUrl) && (
-            <Button asChild variant="outline" size="sm" className="mt-4 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
-              <a href={githubUrl} target="_blank" rel="noreferrer">
-                GitHub 보기
-              </a>
-            </Button>
-          )}
-        </section>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <main className="space-y-5">
+          <section className="rounded-xl border border-emerald-100 bg-white p-6">
+            <h3 className="mb-5 text-base font-bold text-slate-900">포트폴리오 글</h3>
+            <PortfolioMarkdownBlock text={portfolio.portfolioText} />
+          </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-5">
-          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
-            <FileText className="h-4 w-4 text-emerald-600" />
-            기술 스택
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {portfolio.techStack.map((stack) => (
-              <Badge key={stack} variant="secondary">
-                {stack}
-              </Badge>
-            ))}
-            {portfolio.techStack.length === 0 && <p className="text-sm text-slate-500">아직 기술 스택이 등록되지 않았습니다.</p>}
-          </div>
-        </section>
-      </div>
+          <section className="rounded-xl border border-slate-200 bg-white p-5">
+            <h3 className="mb-4 text-sm font-semibold text-slate-900">코치 피드백 상태</h3>
+            <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
+              {portfolio.coachFeedbackStatus}
+            </span>
+          </section>
+        </main>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-5">
-        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
-          <BookOpen className="h-4 w-4 text-emerald-600" />
-          연결된 학습 기록
-        </h3>
-        <ul className="space-y-2">
-          {portfolio.linkedRecords.map((record) => (
-            <li key={record} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm leading-6 text-slate-700">
-              {record}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <section className="rounded-xl border border-slate-200 bg-white p-5">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-              <GitCommit className="h-4 w-4 text-emerald-600" />
-              최근 커밋 요약
+        <aside className="space-y-4">
+          <section className="rounded-xl border border-slate-200 bg-white p-5">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <Github className="h-4 w-4 text-slate-500" />
+              GitHub 정보
             </h3>
-            {githubCommitsUrl && (
-              <Button asChild variant="outline" size="sm" className="border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
-                <a href={githubCommitsUrl} target="_blank" rel="noreferrer">
-                  GitHub 커밋 보기
+            <dl className="space-y-3 text-sm">
+              <div>
+                <dt className="text-xs font-semibold text-slate-400">Repository</dt>
+                <dd className="mt-1 break-all font-mono text-slate-700">{portfolio.repository}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold text-slate-400">Branch</dt>
+                <dd className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-1 font-mono text-xs text-slate-700">
+                  {portfolio.branch}
+                </dd>
+              </div>
+            </dl>
+            {githubUrl && isValidExternalUrl(githubUrl) && (
+              <Button asChild variant="outline" size="sm" className="mt-4 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+                <a href={githubUrl} target="_blank" rel="noreferrer">
+                  GitHub 보기
                 </a>
               </Button>
             )}
-          </div>
-          <ul className="space-y-2">
-            {portfolio.recentCommits.map((commit) => (
-              <li key={commit} className="text-sm leading-6 text-slate-700">
-                {commit}
-              </li>
-            ))}
-          </ul>
-        </section>
+          </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-5">
-          <h3 className="mb-4 text-sm font-semibold text-slate-900">코치 피드백 상태</h3>
-          <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
-            {portfolio.coachFeedbackStatus}
-          </span>
-        </section>
+          <section className="rounded-xl border border-slate-200 bg-white p-5">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <FileText className="h-4 w-4 text-emerald-600" />
+              기술 스택
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {portfolio.techStack.map((stack) => (
+                <Badge key={stack} variant="secondary">
+                  {stack}
+                </Badge>
+              ))}
+              {portfolio.techStack.length === 0 && <p className="text-sm text-slate-500">아직 기술 스택이 등록되지 않았습니다.</p>}
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-slate-200 bg-white p-5">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <BookOpen className="h-4 w-4 text-emerald-600" />
+              연결된 학습 기록
+            </h3>
+            <ul className="space-y-2">
+              {portfolio.linkedRecords.map((record) => (
+                <li key={record} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm leading-6 text-slate-700">
+                  {record}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="rounded-xl border border-slate-200 bg-white p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                <GitCommit className="h-4 w-4 text-emerald-600" />
+                최근 커밋 요약
+              </h3>
+              {githubCommitsUrl && (
+                <Button asChild variant="outline" size="sm" className="border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+                  <a href={githubCommitsUrl} target="_blank" rel="noreferrer">
+                    GitHub 커밋 보기
+                  </a>
+                </Button>
+              )}
+            </div>
+            <ul className="space-y-2">
+              {portfolio.recentCommits.slice(0, 5).map((commit) => (
+                <li key={commit} className="text-sm leading-6 text-slate-700">
+                  {commit}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="rounded-xl border border-slate-200 bg-white p-5">
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">면접 예상 질문</h3>
+                <p className="mt-1 text-xs leading-5 text-slate-500">저장된 면접 예상 질문은 별도 창에서 확인합니다.</p>
+              </div>
+              <Button type="button" variant="outline" size="sm" className="border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100" onClick={() => setIsInterviewDialogOpen(true)}>
+                면접 예상 질문 보기
+              </Button>
+            </div>
+          </section>
+        </aside>
       </div>
 
-      <section className="rounded-xl border border-emerald-100 bg-white p-5">
-        <h3 className="mb-4 text-sm font-semibold text-slate-900">포트폴리오 글</h3>
-        <PortfolioTextBlock text={portfolio.portfolioText} />
-      </section>
+      <Dialog open={isInterviewDialogOpen} onOpenChange={setIsInterviewDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{portfolio.projectTitle} 면접 예상 질문</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white p-5">
+            <InterviewQuestionsBlock text={cleanedInterviewQuestions} />
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={() => setIsInterviewDialogOpen(false)}>
+              닫기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -581,7 +596,7 @@ export function PostDetail() {
   const isPortfolioPost = post.categorySlug === "portfolio";
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className={`mx-auto space-y-8 ${isPortfolioPost ? "max-w-[1320px]" : "max-w-4xl"}`}>
       <article className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="mb-4 flex items-start justify-between gap-4">
           <div className="flex flex-wrap gap-2">

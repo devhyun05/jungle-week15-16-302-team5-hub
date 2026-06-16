@@ -582,3 +582,199 @@ AI:
 - `OpenAI로 생성하기` 버튼을 누른다.
 - 생성 결과가 화면에 표시되는지 확인한다.
 - 저장 버튼을 누른 뒤 포트폴리오 관리 화면에서 저장 상태가 바뀌는지 확인한다.
+
+## 2026-06-17 학습 기록: 포트폴리오 게시글 파서 버그
+
+### 버그 현상
+
+- 포트폴리오 관리에서는 AI 생성 포트폴리오 글이 저장된 것처럼 보였다.
+- 그런데 포트폴리오 게시글로 발행한 뒤 상세 화면에서는 `아직 작성된 포트폴리오 글이 없습니다.`가 보였다.
+
+### 실제 원인
+
+- DB에는 포트폴리오 글이 정상 저장되어 있었다.
+- 발행 게시글 본문에도 `## 포트폴리오 글` 아래 실제 AI 생성 글이 들어 있었다.
+- 문제는 프론트 파서였다.
+- AI 생성 글 안에는 `# JungleLog 프로젝트 경험`, `## 프로젝트 개요` 같은 Markdown heading이 들어 있다.
+- 기존 파서는 본문 전체에서 `#`, `##`를 만나면 계속 새 섹션으로 해석했다.
+- 그래서 `## 포트폴리오 글` 아래 내용이 `포트폴리오 글` 섹션에 남지 않고 다른 섹션으로 흩어졌다.
+
+### 수정한 방식
+
+- `parsePortfolioPostContent`에서 현재 섹션이 `포트폴리오 글`이면 이후 줄은 전부 포트폴리오 본문으로 취급한다.
+- 즉, `포트폴리오 글` 안의 `#`, `##`, `###`는 새 섹션이 아니라 글 내용이다.
+
+### 배운 점
+
+- Markdown 문자열을 섹션별로 파싱할 때는 상위 문서의 heading과 내부 콘텐츠의 heading을 구분해야 한다.
+- AI 생성 결과는 사람이 쓰는 글처럼 Markdown heading을 포함할 수 있으므로, 단순히 `line.startsWith("## ")`만 보면 위험하다.
+- 저장 데이터가 맞는데 화면이 이상하면 DB, API 응답, 프론트 파서 순서로 나눠 확인하면 원인을 빨리 찾을 수 있다.
+
+### UI 개선
+
+- 포트폴리오 관리 화면에서 긴 포트폴리오 글을 전부 펼치지 않고 12줄 preview로 보여준다.
+- `전체 포트폴리오 글 보기` 버튼을 누르면 modal에서 전체 글을 볼 수 있다.
+
+## 2026-06-17 학습 기록: 포트폴리오 Markdown 렌더링
+
+### 수정한 파일
+
+- `frontend/src/app/components/portfolio/PortfolioMarkdownBlock.tsx`: 포트폴리오 글 전용 Markdown 렌더러.
+- `frontend/src/app/pages/posts/PostDetail.tsx`: 포트폴리오 게시글 상세에서 전용 렌더러 사용.
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`: 전체 포트폴리오 글 보기 모달에서 같은 렌더러 사용.
+
+### 왜 필요한가
+
+- AI가 생성한 포트폴리오 글은 Markdown 구조를 가진다.
+- `#`, `##`, `-`, `---`를 단순히 제거하면 구조가 사라져 긴 텍스트 덩어리처럼 보인다.
+- 포트폴리오 글은 섹션과 목록이 중요한 산출물이므로, Markdown의 의미를 UI로 살려야 한다.
+
+### 구현 방식
+
+- 외부 라이브러리 없이 필요한 문법만 직접 파싱했다.
+- `#`는 큰 제목, `##`는 섹션 제목, `###`는 소제목으로 바꾼다.
+- `-` 또는 `*`로 시작하는 줄은 목록으로 묶어 렌더링한다.
+- `---`는 얇은 구분선으로 렌더링한다.
+- 일반 문장은 paragraph로 렌더링한다.
+
+### React/TypeScript 개념
+
+- union type: `MarkdownBlock` 타입으로 heading, paragraph, list, divider를 구분한다.
+- parser function: 문자열을 line 단위로 읽어 화면에 필요한 구조로 변환한다.
+- component reuse: 게시글 상세와 포트폴리오 관리 모달이 같은 렌더러를 사용한다.
+
+### 나중에 개선할 수 있는 것
+
+- 표, 링크, 코드블록, 굵은 글씨 등 Markdown 문법이 더 필요해지면 `react-markdown` 같은 라이브러리를 검토할 수 있다.
+- 지금은 과제 범위에 맞춰 포트폴리오 글에 필요한 최소 문법만 직접 처리한다.
+
+### 추가로 배운 점
+
+- AI가 항상 `# 큰 제목`으로 시작한다고 가정하면 안 된다.
+- 어떤 응답은 `### 제목`처럼 낮은 heading으로 시작하고, 어떤 응답은 Markdown heading 없이 제목 문장으로 바로 시작할 수 있다.
+- 그래서 렌더러에서 첫 heading이 `##`나 `###`이어도 문서 첫 제목이면 대표 제목으로 승격했다.
+- 첫 block이 문단이고 첫 줄이 짧은 제목처럼 보이면 그 첫 줄도 대표 제목으로 분리한다.
+- 관리 화면 미리보기와 상세 화면이 서로 다르게 보이지 않도록 같은 렌더러를 재사용했다.
+
+## 2026-06-17 학습 기록: 포트폴리오 상세 정보 구조
+
+### 수정한 파일
+
+- `frontend/src/app/components/portfolio/PortfolioMarkdownBlock.tsx`: Markdown heading 범위와 numbered list 처리 확장.
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`: 면접 예상 질문/코치 피드백 preview와 전체보기 모달 추가.
+- `frontend/src/app/pages/posts/PostDetail.tsx`: 포트폴리오 게시글 상세를 넓은 문서형 레이아웃으로 재배치.
+- `backend/app/services/portfolio_service.py`: 포트폴리오 게시글 발행 본문에 면접 예상 질문 섹션 추가.
+
+### 왜 필요한가
+
+- AI 응답은 항상 같은 Markdown 형식으로 오지 않는다.
+- 어떤 모델 응답은 `####`처럼 낮은 heading을 사용하고, 어떤 응답은 numbered list를 섞는다.
+- 포트폴리오 글은 게시판의 일반 본문보다 산출물 성격이 강하므로, 프로젝트 개요/본문/참고자료의 시각적 우선순위가 중요하다.
+
+### 핵심 흐름
+
+1. AI 도우미가 포트폴리오 글 또는 면접 예상 질문을 생성한다.
+2. 결과는 `portfolio_projects.saved_portfolio_draft`, `saved_interview_questions`에 저장된다.
+3. 포트폴리오 관리 화면은 저장된 값을 짧은 preview로 보여주고, 전체보기 모달에서 전체 내용을 보여준다.
+4. 포트폴리오 게시글 발행 시 백엔드가 프로젝트 정보, 연결 기록, 커밋 요약, 면접 예상 질문, 포트폴리오 글을 하나의 게시글 본문으로 만든다.
+5. 게시글 상세 화면은 그 본문을 다시 섹션별로 나누고, 포트폴리오 글과 면접 질문은 raw Markdown을 유지해 전용 렌더러로 보여준다.
+
+### 배운 점
+
+- 저장 데이터는 Markdown 문자열이어도, 화면에서는 parser와 component로 문서형 UI를 만들 수 있다.
+- parser가 데이터를 너무 일찍 `cleanMarkdownText`로 지우면 나중 렌더러가 구조를 살릴 수 없다.
+- 그래서 포트폴리오 글/면접 질문처럼 내부 Markdown 의미가 중요한 섹션은 raw text를 유지해야 한다.
+- 게시글 상세처럼 사용자에게 결과물이 보이는 화면은 `max-width`와 보조 column 배치가 가독성에 큰 영향을 준다.
+
+## 2026-06-17 학습 기록: AI 도우미 결과 상태와 fallback
+
+### 수정한 파일
+
+- `frontend/src/app/pages/ai/AIAssistant.tsx`: 결과 영역이 sample fallback 대신 저장값/생성값만 보여주도록 수정.
+- `frontend/src/app/utils/interviewQuestions.ts`: 면접 질문 표시 전용 정리 함수 추가.
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`: 면접 질문/코치 피드백 전체보기 흐름 정리.
+- `frontend/src/app/pages/posts/PostDetail.tsx`: 게시글 상세의 면접 질문을 modal로 분리.
+- `backend/app/services/ai_service.py`: 면접 질문 생성 prompt에서 꼬리 질문 요구 제거.
+
+### 왜 필요한가
+
+- mock UI 단계에서는 sample text가 화면 이해를 도와줬다.
+- 하지만 실제 OpenAI/API 연결 이후에는 sample text가 실제 저장 결과처럼 보이면 사용자가 혼란스럽다.
+- 따라서 AI 도우미 결과 영역은 다음 세 상태를 구분해야 한다.
+  - 아직 생성/저장된 결과 없음
+  - 기존 저장 결과 있음
+  - 이번에 새로 생성한 결과 있음
+
+### 핵심 흐름
+
+1. `generatedText`가 있으면 방금 OpenAI로 생성한 결과를 보여준다.
+2. `generatedText`가 없고 프로젝트에 저장된 결과가 있으면 저장된 결과를 보여준다.
+3. 둘 다 없으면 sample을 만들지 않고 빈 상태 안내를 보여준다.
+4. 저장 버튼은 실제 저장할 본문이 있을 때만 활성화된다.
+
+### 배운 점
+
+- fallback text는 개발 초기에는 편하지만, 실제 데이터 연결 이후에는 실제 데이터와 구분하기 어렵다.
+- AI 생성 기능에서는 “예시”, “저장된 결과”, “방금 생성한 결과”를 UI와 state에서 명확히 분리해야 한다.
+- 긴 부가 자료는 본문에 바로 펼치기보다 modal이나 details로 숨겨야 핵심 글의 가독성을 지킬 수 있다.
+
+## 2026-06-17 학습 기록: 포트폴리오 프로젝트 삭제 흐름
+
+### 수정한 파일
+
+- `backend/app/repositories/portfolio_repository.py`: 프로젝트 삭제 시 관련 테이블을 정리하는 repository 함수 추가.
+- `backend/app/services/portfolio_service.py`: 현재 사용자가 접근 가능한 프로젝트인지 확인한 뒤 삭제하는 service 함수 추가.
+- `backend/app/routers/portfolio.py`: `DELETE /portfolio/projects/{project_id}` API 추가.
+- `frontend/src/app/api/portfolio.ts`: 삭제 API 호출 함수 추가.
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`: 삭제 버튼, 확인 modal, 삭제 후 목록 갱신 로직 추가.
+
+### 왜 필요한가
+
+- 등록 기능이 있으면 잘못 등록한 데이터를 되돌릴 수 있는 삭제/정리 흐름도 필요하다.
+- 프로젝트는 단독 데이터가 아니라 연결된 학습 기록, GitHub commit, 코치 리뷰 요청과 관계가 있다.
+- 따라서 삭제할 때 어떤 데이터를 같이 지울지 정책을 먼저 정해야 한다.
+
+### 이번 삭제 정책
+
+- 삭제하는 것:
+  - 포트폴리오 프로젝트 row
+  - 프로젝트와 학습 기록 연결 row
+  - 프로젝트에 수집된 GitHub commit row
+  - 프로젝트를 대상으로 한 코치 리뷰 요청과 코치 배정 row
+- 남기는 것:
+  - 이미 발행된 포트폴리오 게시글
+
+### 배운 점
+
+- DB에서 FK 관계가 있는 데이터를 삭제할 때는 삭제 순서가 중요하다.
+- 프론트에서만 목록을 없애는 것은 실제 삭제가 아니므로, 백엔드 API와 DB 삭제 정책이 필요하다.
+- 위험 작업은 바로 실행하지 말고 확인 modal을 거치는 편이 좋다.
+
+## 2026-06-17 학습 기록: 면접 질문 preview 설계
+
+### 수정한 파일
+
+- `frontend/src/app/utils/interviewQuestions.ts`: 면접 질문 본문에서 질문만 추출하는 preview 함수 추가.
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`: 면접 질문 카드 preview를 질문 요약 목록으로 변경.
+- `frontend/src/app/pages/posts/PostDetail.tsx`: 포트폴리오 게시글 상세의 면접 질문 버튼 위치 조정.
+
+### 왜 필요한가
+
+- 저장된 면접 질문 전체를 카드 안에 바로 렌더링하면 질문, 답변 포인트, 목록 UI가 한꺼번에 보여 난잡해진다.
+- 관리 화면의 preview는 “무슨 질문이 저장되어 있는지” 정도만 보여주고, 전체 내용은 modal에서 읽는 편이 낫다.
+
+### 배운 점
+
+- 같은 데이터라도 preview와 detail은 보여주는 깊이가 달라야 한다.
+- preview에서는 핵심만 추출하고, detail/modal에서는 전체 내용을 보여주는 식으로 정보량을 나누면 화면이 훨씬 덜 복잡해진다.
+
+### 추가로 배운 점
+
+- 프로젝트 삭제 같은 위험 동작은 상세 영역의 큰 버튼보다 목록 카드의 작은 `X`와 확인 modal 조합이 더 관리 도구처럼 보일 수 있다.
+- 카드 전체가 click 대상일 때 내부 버튼을 누르면 부모 click도 같이 실행될 수 있으므로 `event.stopPropagation()`이 필요하다.
+- SQLAlchemy에서 관계가 이미 로드된 ORM 객체를 `db.delete()`로 삭제하면 FK를 null로 바꾸려는 동작이 섞여 실패할 수 있다.
+- 이런 경우 연결 데이터를 bulk delete로 정리한 뒤 parent row도 bulk delete로 삭제하면 관계 로딩 상태의 영향을 줄일 수 있다.
+- 면접 질문처럼 형식이 정해진 결과물은 범용 Markdown 렌더러보다 전용 컴포넌트가 더 읽기 좋다.
+- 한글 label을 정규식으로 파싱할 때 파일/터미널 인코딩이 깨지면 parser가 엉뚱하게 동작할 수 있다.
+- 중요한 label matcher는 `\uC9C8\uBB38` 같은 유니코드 escape를 쓰면 소스 인코딩 영향을 덜 받는다.
+- preview와 modal이 서로 다른 parser를 쓰면 한쪽은 3개 요약, 한쪽은 전체가 한 카드로 들어가는 식의 불일치가 생긴다.

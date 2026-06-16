@@ -21,6 +21,7 @@ import { getMyPosts, type PostListApiItem } from "../../api/posts";
 import { getPortfolioProjects, updatePortfolioProject, type PortfolioProjectApiItem } from "../../api/portfolio";
 import { generateAIContent } from "../../api/ai";
 import { getDisplayTechStack } from "../../utils/techStack";
+import { cleanInterviewQuestionsText } from "../../utils/interviewQuestions";
 
 type OutputType = "portfolio" | "interview";
 
@@ -37,7 +38,7 @@ const outputOptions = [
   {
     value: "interview",
     title: "면접 예상 질문",
-    description: "프로젝트와 연결 기록을 바탕으로 꼬리 질문과 답변 포인트 구성",
+    description: "프로젝트와 연결 기록을 바탕으로 예상 질문과 답변 포인트 구성",
     icon: MessageSquare,
   },
 ] as const;
@@ -155,11 +156,20 @@ export function AIAssistant() {
     () => (selectedProject ? records.filter((post) => selectedProject.linkedPostIds.includes(post.id)) : []),
     [records, selectedProject],
   );
-  const fallbackResultText = getResultText(selectedProject, linkedRecords, outputType);
-  const resultText = generatedText || fallbackResultText;
+  const savedResultText =
+    outputType === "portfolio"
+      ? selectedProject?.savedPortfolioDraft ?? ""
+      : cleanInterviewQuestionsText(selectedProject?.savedInterviewQuestions);
+  const resultText = generatedText || savedResultText;
+  const hasResultText = resultText.trim().length > 0;
 
   const saveResult = async () => {
     if (!selectedProject) {
+      return;
+    }
+
+    if (!hasResultText) {
+      toast.info(outputType === "portfolio" ? "저장할 포트폴리오 글을 먼저 생성해주세요." : "저장할 면접 예상 질문을 먼저 생성해주세요.");
       return;
     }
 
@@ -245,6 +255,12 @@ export function AIAssistant() {
   };
 
   const copyResult = async () => {
+    if (!hasResultText) {
+      setCopyNotice("복사할 생성 결과가 없습니다.");
+      window.setTimeout(() => setCopyNotice(""), 1400);
+      return;
+    }
+
     const isCopied = await copyResultWithFallback(resultText);
 
     setCopyNotice(isCopied ? "결과를 복사했습니다." : "복사 권한을 확인해주세요.");
@@ -481,15 +497,21 @@ export function AIAssistant() {
                 </div>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col p-0">
-                <pre className="flex-1 overflow-y-auto whitespace-pre-wrap p-6 text-sm leading-7 text-slate-700">
-                  {resultText}
-                </pre>
+                <div className="flex-1 overflow-y-auto p-6 text-sm leading-7 text-slate-700">
+                  {hasResultText ? (
+                    <pre className="whitespace-pre-wrap font-sans">{resultText}</pre>
+                  ) : (
+                    <div className="flex h-full min-h-[320px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-center text-sm text-slate-500">
+                      OpenAI로 생성하기를 누르면 이 영역에 결과가 표시됩니다.
+                    </div>
+                  )}
+                </div>
                 <div className="space-y-2 border-t border-slate-100 bg-slate-50 p-4">
                   <Button variant="secondary" className="w-full" onClick={() => void generateResult()} disabled={isGenerating}>
                     <Sparkles className="mr-2 h-4 w-4" />
                     {isGenerating ? "AI 생성 중..." : "OpenAI로 생성하기"}
                   </Button>
-                  <Button className="w-full" onClick={() => void saveResult()} disabled={isSaving}>
+                  <Button className="w-full" onClick={() => void saveResult()} disabled={isSaving || !hasResultText}>
                     <Save className="mr-2 h-4 w-4" />
                     {outputType === "portfolio" ? "포트폴리오 글로 저장" : "면접 질문으로 저장"}
                   </Button>

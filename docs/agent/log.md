@@ -537,3 +537,169 @@ savedInterviewLength=2203
 frontend npm run build: success
 backend compileall app: success
 ```
+
+## 2026-06-17 포트폴리오 게시글 본문 파싱 수정
+
+- 작업 파일:
+  - `frontend/src/app/pages/posts/PostDetail.tsx`
+  - `frontend/src/app/pages/portfolio/Portfolio.tsx`
+  - `README.md`
+  - `docs/agent/study.md`
+  - `docs/agent/log.md`
+  - `docs/agent/test.md`
+- 문제:
+  - 포트폴리오 게시글 발행 후 상세에서 `아직 작성된 포트폴리오 글이 없습니다.`가 보일 수 있었다.
+  - DB의 발행 게시글에는 실제 포트폴리오 글이 들어 있었지만, 프론트 파서가 `## 포트폴리오 글` 아래 AI 생성 본문의 `#`, `##` 제목을 새 섹션으로 오해했다.
+- 해결:
+  - `parsePortfolioPostContent`에서 현재 섹션이 `포트폴리오 글`이면 이후 줄의 Markdown heading을 새 섹션으로 해석하지 않고 본문으로 유지했다.
+  - 포트폴리오 관리 화면의 긴 저장 글은 12줄 preview로 보여주고 `전체 포트폴리오 글 보기` 모달에서 전체 내용을 볼 수 있게 했다.
+
+검증:
+
+```txt
+frontend npm run build: success
+backend compileall app: success
+post 62 portfolio_section_length: 2122
+browser /posts/62 hasPlaceholder: false
+browser /posts/62 hasPortfolioTitle: true
+```
+
+## 2026-06-17 포트폴리오 Markdown 렌더링 개선
+
+- 작업 파일:
+  - `frontend/src/app/components/portfolio/PortfolioMarkdownBlock.tsx`
+  - `frontend/src/app/pages/posts/PostDetail.tsx`
+  - `frontend/src/app/pages/portfolio/Portfolio.tsx`
+  - `README.md`
+  - `docs/agent/study.md`
+  - `docs/agent/log.md`
+  - `docs/agent/test.md`
+- `PortfolioMarkdownBlock` 공용 컴포넌트를 추가했다.
+- `#`, `##`, `###`, `-`, `---`를 포트폴리오 전용 UI 구조로 렌더링한다.
+- 기존처럼 Markdown 기호를 단순히 제거하지 않고, 제목/섹션/목록/구분선 의미를 살렸다.
+- 포트폴리오 게시글 상세와 포트폴리오 관리의 전체 글 보기 모달이 같은 렌더러를 재사용한다.
+- 외부 Markdown 라이브러리는 추가하지 않았다.
+
+검증:
+
+```txt
+frontend npm run build: success
+backend compileall app: success
+browser /posts/62 hasHashHeadingMarker: false
+browser /posts/62 hasDividerMarker: false
+browser /posts/62 hasPortfolioTitle: true
+browser /posts/62 hasRoleSection: true
+browser /posts/62 hasTroubleSection: true
+```
+
+### 추가 보정
+
+- AI 결과가 `### ai-board-lab 프로젝트 소개 및 문제 정의`처럼 낮은 heading으로 시작하면 첫 heading을 대표 제목 카드로 승격하도록 보정했다.
+- Markdown heading 없이 첫 줄이 제목처럼 오고 다음 줄부터 본문이 이어지는 경우에도 첫 줄을 대표 제목 카드로 승격한다.
+- 포트폴리오 관리 화면의 preview 영역도 raw text가 아니라 `PortfolioMarkdownBlock`의 compact 모드를 사용하도록 변경했다.
+
+## 2026-06-17 포트폴리오 문서형 상세 UI 보강
+
+- 작업 파일:
+  - `frontend/src/app/components/portfolio/PortfolioMarkdownBlock.tsx`
+  - `frontend/src/app/pages/portfolio/Portfolio.tsx`
+  - `frontend/src/app/pages/posts/PostDetail.tsx`
+  - `backend/app/services/portfolio_service.py`
+  - `README.md`
+  - `docs/agent/study.md`
+  - `docs/agent/log.md`
+  - `docs/agent/test.md`
+- 문제:
+  - AI 결과가 `#### 문제 정의`처럼 4단계 heading으로 오면 Markdown 기호가 그대로 보였다.
+  - 포트폴리오 관리 화면의 면접 예상 질문/코치 피드백 preview는 포트폴리오 글보다 덜 정돈되어 보였다.
+  - 포트폴리오 게시글 상세에서 포트폴리오 글이 너무 아래에 있고, 본문 공간이 좁아 보였다.
+  - 발행된 포트폴리오 게시글에 저장된 면접 예상 질문이 포함되지 않았다.
+- 해결:
+  - Markdown 렌더러가 `#`부터 `######`까지 처리하도록 확장했다.
+  - numbered list도 목록으로 렌더링하도록 보강했다.
+  - 면접 예상 질문과 코치 피드백 preview/전체보기 모달에 같은 렌더러를 적용했다.
+  - 포트폴리오 게시글 발행 본문에 `## 면접 예상 질문` 섹션을 추가했다.
+  - 포트폴리오 게시글 상세를 넓은 문서형 레이아웃으로 바꾸고, 포트폴리오 글을 프로젝트 개요 바로 아래 메인 영역으로 올렸다.
+
+검증:
+
+```txt
+frontend npm run build: success
+backend compileall app: success
+```
+
+## 2026-06-17 포트폴리오 프로젝트 삭제와 면접 질문 preview 정리
+
+- 작업 파일:
+  - `backend/app/repositories/portfolio_repository.py`
+  - `backend/app/services/portfolio_service.py`
+  - `backend/app/routers/portfolio.py`
+  - `frontend/src/app/api/portfolio.ts`
+  - `frontend/src/app/pages/portfolio/Portfolio.tsx`
+  - `frontend/src/app/pages/posts/PostDetail.tsx`
+  - `frontend/src/app/utils/interviewQuestions.ts`
+  - `README.md`
+  - `docs/agent/study.md`
+  - `docs/agent/log.md`
+  - `docs/agent/test.md`
+- 문제:
+  - GitHub 프로젝트 등록 기능은 있는데 삭제 기능이 없어 잘못 등록한 프로젝트를 정리할 수 없었다.
+  - 면접 예상 질문 preview가 답변 포인트까지 길게 보여 카드 안에서 난잡해 보였다.
+  - 포트폴리오 게시글 상세의 면접 예상 질문 버튼 위치가 코치 피드백 아래에 있어 정보 우선순위가 어색했다.
+- 해결:
+  - `DELETE /portfolio/projects/{project_id}` API를 추가했다.
+  - 프로젝트 삭제 시 프로젝트-게시글 연결, GitHub commit 수집 데이터, 프로젝트 대상 리뷰 요청과 리뷰 요청 코치 연결을 함께 삭제한다.
+  - 발행된 포트폴리오 게시글은 게시판 기록으로 남긴다.
+- 포트폴리오 관리 화면에 삭제 버튼과 확인 modal을 추가했다.
+- 면접 질문 preview는 질문 3개만 요약해서 보여주도록 정리했다.
+- 포트폴리오 게시글 상세에서 면접 질문 버튼을 오른쪽 보조 영역의 최근 커밋 요약 아래로 이동했다.
+
+### 추가 보정
+
+- 프로젝트 삭제 버튼을 상세 액션 영역에서 제거하고, 내 프로젝트 카드 오른쪽 `X` 버튼으로 이동했다.
+- `X` 버튼은 카드 선택 click과 충돌하지 않도록 `event.stopPropagation()`을 사용한다.
+- 삭제 실패 가능성이 있던 `db.delete(project)`를 `delete(PortfolioProject).where(...)` bulk delete로 바꿨다.
+- 면접 예상 질문 전체보기는 `PortfolioMarkdownBlock` 대신 `InterviewQuestionsBlock` 전용 컴포넌트를 사용한다.
+- 질문은 굵게, 답변은 `POINT` 영역으로 묶어 질문 하나와 답변 포인트가 같은 덩어리로 읽히게 했다.
+- 한글 정규식이 깨져 `질문:`과 `답변 포인트:`를 제대로 인식하지 못하던 문제를 줄이기 위해 parser의 핵심 label 정규식을 유니코드 escape 기반으로 바꿨다.
+- preview와 modal이 같은 `parseInterviewQuestionGroups` 기준을 사용하도록 정리했다.
+
+검증:
+
+```txt
+frontend npm run build: success
+backend compileall app: success
+from app.main import app: success
+```
+
+## 2026-06-17 AI 도우미 저장값/면접 질문 표시 흐름 정리
+
+- 작업 파일:
+  - `frontend/src/app/pages/ai/AIAssistant.tsx`
+  - `frontend/src/app/pages/portfolio/Portfolio.tsx`
+  - `frontend/src/app/pages/posts/PostDetail.tsx`
+  - `frontend/src/app/utils/interviewQuestions.ts`
+  - `backend/app/services/ai_service.py`
+  - `README.md`
+  - `docs/agent/study.md`
+  - `docs/agent/log.md`
+  - `docs/agent/test.md`
+- 문제:
+  - AI 도우미에서 저장된 결과가 없어도 sample 포트폴리오 글/면접 질문이 실제 결과처럼 보였다.
+  - 면접 예상 질문이 포트폴리오 게시글 상세에 바로 펼쳐져 글이 너무 길어졌다.
+  - 면접 질문 생성 prompt가 꼬리 질문까지 요구해 화면이 더 복잡해졌다.
+  - 포트폴리오 관리의 코치 리뷰/피드백 카드에서 전체 피드백 확인 진입점이 눈에 잘 보이지 않았다.
+- 해결:
+  - AI 도우미 결과 영역은 생성 결과 또는 저장된 결과가 있을 때만 본문을 보여주도록 바꿨다.
+  - 저장된 결과가 없으면 `OpenAI로 생성하기`를 눌러야 결과가 표시된다는 안내만 보여준다.
+  - 면접 질문 prompt에서 꼬리 질문 요구를 제거했다.
+  - 기존 저장 데이터에 `꼬리 질문`이 있어도 화면에서는 제거하는 공통 util을 추가했다.
+  - 포트폴리오 게시글 상세의 면접 예상 질문은 버튼을 눌러 modal에서 확인하도록 바꿨다.
+  - 포트폴리오 관리의 코치 피드백 전체보기 버튼은 항상 보이게 했다.
+
+검증:
+
+```txt
+frontend npm run build: success
+backend compileall app: success
+```
