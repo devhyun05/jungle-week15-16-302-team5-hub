@@ -1,23 +1,28 @@
-import { useState } from 'react'
 import { Link, Route, Routes, useNavigate } from 'react-router-dom'
+
+import { useAuthStore } from './stores/authStore'
+import { logout as logoutRequest } from './api/auth'
 
 import { LoginPage } from './pages/LoginPage'
 import { PostDetailPage } from './pages/PostDetailPage'
 import { PostListPage } from './pages/PostListPage'
 import { PostCreatePage } from './pages/PostCreatePage'
 import { PostEditPage } from './pages/PostEditPage'
+import { SignupPage } from './pages/SignupPage'
 import './index.css'
 
 function App() {
   const navigate = useNavigate()
-  const [token, setToken] = useState<string | null>(() => 
-    localStorage.getItem('access_token'),
-  )
+  const token = useAuthStore((state) => state.token)
+  const logout = useAuthStore((state) => state.logout)
 
-  function handleLogout() {
-    localStorage.removeItem('access_token')
-    setToken(null)
-    navigate('/')
+  async function handleLogout() {
+    try {
+      await logoutRequest()
+    } finally {
+      logout()
+      navigate('/')
+    }
   }
 
   return (
@@ -34,17 +39,18 @@ function App() {
               Log out
             </button>
           ) : (
-          <Link to="/login">Log in</Link>
+            <>
+              <Link to="/signup">Sign up</Link>
+              <Link to="/login">Log in</Link>
+            </>
           )}
         </nav>
       </header>
 
       <Routes>
         <Route path="/" element={<PostListPage />} />
-        <Route
-          path="/login"
-          element={<LoginPage onLogin={(nextToken) => setToken(nextToken)} />}
-        />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         <Route path="/posts/:postId" element={<PostDetailPage />} />
         <Route path="/posts/new" element={<PostCreatePage />} />
         <Route path="/posts/:postId/edit" element={<PostEditPage />} />

@@ -80,6 +80,12 @@ Comment fields:
 
 ## Required User Features
 
+Current MVP status after Day 2:
+
+- Auth, posts CRUD, comments CRUD, tags, search, pagination, Zustand auth state,
+  cookie refresh auth, CSRF for refresh/logout, and Redis comment rate limit are implemented.
+- AI, GraphQL, SSR, realtime, worker queue, pgvector/RAG, MCP, and Agent features remain in later phases.
+
 ### Authentication
 
 - Sign up

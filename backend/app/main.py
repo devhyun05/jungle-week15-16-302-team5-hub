@@ -5,11 +5,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.auth import router as auth_router
 from app.api.routes.posts import router as posts_router
+from app.api.routes.comments import router as comments_router
+from app.api.routes.tags import router as tags_router
 from app.db.base import Base
 from app.db.session import engine
 from app.models.post import Post  # noqa: F401
-from app.models.session import UserSession  # noqa: F401
+from app.models.comment import Comment  # noqa: F401
 from app.models.user import User  # noqa: F401
+from app.models.session import UserSession  # noqa: F401
+from app.models.refresh_token import RefreshToken  # noqa: F401
 
 
 @asynccontextmanager
@@ -35,6 +39,8 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(posts_router)
+app.include_router(comments_router)
+app.include_router(tags_router)
 
 
 @app.get("/health")

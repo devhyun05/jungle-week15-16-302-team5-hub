@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.post import PostCreateRequest, PostResponse, PostUpdateRequest
+from app.schemas.post import PostCreateRequest, PostPageResponse, PostResponse, PostUpdateRequest
 from app.services.post_service import create_post, list_posts, get_post, update_post, delete_post
 
 
@@ -20,11 +20,16 @@ def create_post_endpoint(
     return create_post(db, post_request, current_user)
 
 
-@router.get("/", response_model=list[PostResponse])
+@router.get("/", response_model=PostPageResponse)
 def list_posts_endpoint(
+    q: str | None = Query(None),
+    tag: str | None = Query(None),
+    tags: list[str] | None = Query(None),
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db),
 ):
-    return list_posts(db)
+    return list_posts(db, q=q, tag=tag, tags=tags, page=page, size=size)
 
 
 @router.get("/{post_id}", response_model=PostResponse)

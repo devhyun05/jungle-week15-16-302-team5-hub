@@ -101,7 +101,15 @@ def test_public_users_can_list_and_read_posts(client: TestClient):
     list_response = client.get("/api/posts/")
 
     assert list_response.status_code == 200
-    posts = list_response.json()
+    page = list_response.json()
+    posts = page["items"]
+
+    assert page["page"] == 1
+    assert page["size"] == 10
+    assert page["total"] == 1
+    assert page["has_next"] is False
+    assert page["has_prev"] is False
+
     assert len(posts) == 1
     assert posts[0]["id"] == post["id"]
     assert posts[0]["title"] == "First Glow Topic"
@@ -111,6 +119,49 @@ def test_public_users_can_list_and_read_posts(client: TestClient):
 
     assert detail_response.status_code == 200
     assert detail_response.json()["body"] == "Testing my first post"
+
+
+def test_list_posts_returns_pagination_metadata(client: TestClient):
+    token = signup_and_login(
+        client,
+        email="author@example.com",
+        display_name="Author",
+    )
+    create_post(client, token, title="First topic")
+    create_post(client, token, title="Second topic")
+    create_post(client, token, title="Third topic")
+
+    first_page_response = client.get("/api/posts/?page=1&size=2")
+
+    assert first_page_response.status_code == 200
+
+    first_page = first_page_response.json()
+    assert len(first_page["items"]) == 2
+    assert first_page["page"] == 1
+    assert first_page["size"] == 2
+    assert first_page["total"] == 3
+    assert first_page["has_next"] is True
+    assert first_page["has_prev"] is False
+
+    second_page_response = client.get("/api/posts/?page=2&size=2")
+
+    assert second_page_response.status_code == 200
+
+    second_page = second_page_response.json()
+    assert len(second_page["items"]) == 1
+    assert second_page["page"] == 2
+    assert second_page["size"] == 2
+    assert second_page["total"] == 3
+    assert second_page["has_next"] is False
+    assert second_page["has_prev"] is True
+
+
+def test_list_posts_rejects_invalid_pagination_query(client: TestClient):
+    page_response = client.get("/api/posts/?page=0")
+    size_response = client.get("/api/posts/?size=51")
+
+    assert page_response.status_code == 422
+    assert size_response.status_code == 422
 
 
 def test_missing_post_returns_404(client: TestClient):
