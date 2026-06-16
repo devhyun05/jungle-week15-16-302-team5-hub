@@ -511,3 +511,29 @@ removed text search: no stale UI found
 frontend npm run build: success
 backend compileall app: success
 ```
+
+## 2026-06-17 AI 생성 결과 저장 API 흐름 QA
+
+- 현재 브라우저 로그인 계정은 관리자이고, 포트폴리오 프로젝트는 `leejunhee2796@gmail.com` 학생 계정 소유라 UI 버튼 직접 QA는 계정 전환이 필요했다.
+- 먼저 학생 계정 JWT cookie를 만들어 프론트가 호출하는 것과 같은 API 흐름을 검증했다.
+- 검증 흐름:
+  1. `GET /portfolio/projects`
+  2. `POST /ai/generate`
+  3. `PATCH /portfolio/projects/{id}`
+  4. `GET /portfolio/projects`
+- `project_id=25` 기준 면접 예상 질문 생성과 저장이 성공했다.
+
+검증 결과:
+
+```txt
+projects_status=200
+generate_status=200
+model=gpt-4.1-mini
+content_length=2203
+save_status=200
+aiInterviewSaved=True
+verify_status=200
+savedInterviewLength=2203
+frontend npm run build: success
+backend compileall app: success
+```

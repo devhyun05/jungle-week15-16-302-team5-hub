@@ -399,3 +399,29 @@ backend compileall app: success
 ### 남은 수동 확인
 
 - 프로젝트가 있는 학생 계정으로 `/portfolio`와 포트폴리오 게시글 상세에 들어가 실제 시각 정렬을 확인한다.
+
+## 2026-06-17 QA: AI 생성 결과 저장 API 흐름
+
+### 자동/API 검증 결과
+
+- 학생 계정 `leejunhee2796@gmail.com` 기준 JWT cookie로 API를 호출했다.
+- 프로젝트 목록 조회가 성공했다.
+- `POST /ai/generate`가 성공했고 OpenAI 응답이 반환됐다.
+- 생성된 면접 예상 질문을 포트폴리오 프로젝트에 저장했다.
+- 프로젝트를 다시 조회했을 때 `aiInterviewSaved=true`와 저장된 본문 길이를 확인했다.
+
+```txt
+GET /portfolio/projects: 200
+POST /ai/generate: 200
+PATCH /portfolio/projects/{id}: 200
+GET /portfolio/projects: 200
+aiInterviewSaved: True
+```
+
+### 남은 브라우저 QA
+
+- 프로젝트 소유 학생 계정으로 로그인한다.
+- `/ai-assistant`에서 프로젝트 선택 dropdown이 보이는지 확인한다.
+- `OpenAI로 생성하기` 버튼 클릭 후 결과 영역에 생성 결과가 표시되는지 확인한다.
+- 저장 버튼 클릭 후 `/portfolio`에서 면접 질문 저장 상태가 `저장됨`으로 보이는지 확인한다.
+- 저장 후에도 포트폴리오 글/면접 질문 값이 다른 프로젝트와 섞이지 않는지 확인한다.
