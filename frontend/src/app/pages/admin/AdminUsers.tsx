@@ -94,6 +94,7 @@ export function AdminUsers() {
 
   const pendingCount = users.filter((user) => user.approvalStatus === "승인 대기").length;
   const approvedCount = users.filter((user) => user.approvalStatus === "승인 완료").length;
+  const studentCount = users.filter((user) => user.role === "STUDENT" && user.approvalStatus === "승인 완료").length;
   const coachCount = users.filter((user) => user.role === "COACH" && user.approvalStatus === "승인 완료").length;
 
   const setRoleDraft = (userId: number, role: UserRole) => {
@@ -146,7 +147,7 @@ export function AdminUsers() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardContent className="p-5">
             <p className="text-sm text-slate-500">승인 대기</p>
@@ -157,6 +158,12 @@ export function AdminUsers() {
           <CardContent className="p-5">
             <p className="text-sm text-slate-500">승인 완료 사용자</p>
             <p className="mt-2 text-3xl font-bold text-slate-900">{approvedCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5">
+            <p className="text-sm text-slate-500">승인 완료 학생</p>
+            <p className="mt-2 text-3xl font-bold text-slate-900">{studentCount}</p>
           </CardContent>
         </Card>
         <Card>

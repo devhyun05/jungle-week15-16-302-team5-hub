@@ -5334,3 +5334,45 @@ GitHub ������Ʈ ���
 - API error handling
 - defense in depth
 - health check
+
+---
+
+## 2026-06-16 학습 기록: 로그인 UI 단순화와 관리자 통계 계산
+
+### 수정한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/auth/Login.tsx` | 로그인 전 화면을 담당합니다. Google OAuth 시작 버튼은 기존 `loginWithGoogle` 함수를 그대로 호출합니다. |
+| `frontend/src/app/pages/admin/AdminUsers.tsx` | 관리자 사용자 승인 목록과 통계 카드를 보여줍니다. |
+
+### 이번에 이해할 React 개념
+
+- JSX layout: 같은 데이터 흐름이라도 DOM 구조를 바꾸면 화면 인상이 크게 달라집니다.
+- conditional rendering: 로그인 중, 로그인 완료, 승인 대기, 비로그인 상태를 조건별로 다른 화면으로 보냅니다.
+- event handler: `Google로 계속하기` 버튼은 `onClick={loginWithGoogle}`로 기존 인증 시작 함수를 호출합니다.
+- derived state: `studentCount`, `coachCount`처럼 별도 state를 만들지 않고 `users.filter(...)`로 화면에 필요한 값을 계산합니다.
+- responsive grid: 관리자 통계는 `md:grid-cols-2 xl:grid-cols-4`로 화면 폭에 따라 2열/4열이 됩니다.
+
+### 코드 흐름
+
+1. `Login.tsx`는 `useAuth()`에서 현재 사용자와 `loginWithGoogle` 함수를 가져옵니다.
+2. 이미 승인된 사용자는 `/`로 이동하고, 승인 전 사용자는 `/pending-approval`로 이동합니다.
+3. 비로그인 사용자만 중앙 SIGN IN 화면을 봅니다.
+4. `AdminUsers.tsx`는 `/admin/users` API 응답을 `users` state에 저장합니다.
+5. 통계 카드는 `users` 배열을 필터링해서 승인 대기, 승인 완료 전체, 승인 완료 학생, 승인 완료 코치를 계산합니다.
+
+### 코치 리뷰 QA에서 필요한 계정
+
+- 코치 리뷰 왕복 흐름은 STUDENT와 COACH가 서로 다른 역할로 로그인해야 자연스럽게 검증됩니다.
+- 현재 최고관리자와 코치 계정만 있으면 학생이 요청을 보내는 시작 단계가 부족합니다.
+- 가장 안전한 방법은 새 Google 계정을 하나 더 만들고 관리자가 STUDENT/승인 완료로 승인한 뒤 테스트하는 것입니다.
+- seed/test 데이터 방식은 자동 QA에는 좋지만, 실제 OAuth 화면 흐름까지 보려면 별도 학생 계정이 더 직관적입니다.
+
+추가 학습 키워드:
+
+- derived state
+- responsive grid
+- OAuth login redirect
+- role-based QA
+- seed data

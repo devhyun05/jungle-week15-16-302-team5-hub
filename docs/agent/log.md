@@ -3715,3 +3715,37 @@ browser login QA: no approval copy, no cookie copy, no console error
 ```txt
 fix: 로그인 화면과 게시글 상호작용 오류 정리
 ```
+
+---
+
+## 2026-06-16 작업: 로그인 화면 단순화와 관리자 학생 통계 추가
+
+상태: 완료
+
+목표:
+
+- 로그인 화면을 중앙 단일 구조로 바꿔 제목/버튼 정렬을 단순하게 만들었습니다.
+- 관리자 사용자 승인 화면에 승인 완료 학생 수를 추가했습니다.
+- 코치 리뷰 흐름은 기능 우회 없이 실제 계정 또는 seed 데이터로 QA하는 방향을 문서화했습니다.
+
+수정 파일:
+
+- `frontend/src/app/pages/auth/Login.tsx`
+- `frontend/src/app/pages/admin/AdminUsers.tsx`
+- `README.md`
+- `docs/agent/log.md`
+- `docs/agent/study.md`
+- `docs/agent/test.md`
+
+변경 요약:
+
+- 로그인 화면의 2단 레이아웃, 설명 카드, 긴 부제목을 제거했습니다.
+- 큰 `SIGN IN` 제목과 `Google로 계속하기` 버튼을 중앙에 배치했습니다.
+- 관리자 통계에 `studentCount`를 추가하고 4개 카드 grid로 정리했습니다.
+- 코치 리뷰 QA는 현재 최고관리자 1개, 코치 계정 1개 상태에서는 전체 왕복 확인이 어려우므로 학생 계정 추가가 필요하다고 정리했습니다.
+
+커밋 추천 제목:
+
+```txt
+style: 로그인 화면과 관리자 통계 UI 정리
+```
