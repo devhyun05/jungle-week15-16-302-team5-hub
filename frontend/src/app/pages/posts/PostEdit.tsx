@@ -2,6 +2,7 @@
 import { type FormEvent, type KeyboardEvent, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { Lightbulb, Link as LinkIcon, Send, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
@@ -33,7 +34,6 @@ export function PostEdit() {
   const [body, setBody] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
   const [isPostLoading, setIsPostLoading] = useState(isEditMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [referencePosts, setReferencePosts] = useState<PostListApiItem[]>([]);
@@ -127,7 +127,6 @@ export function PostEdit() {
 
     if (!trimmedTitle || !trimmedBody) {
       setError("제목과 본문을 입력해주세요.");
-      setNotice("");
       return;
     }
 
@@ -135,7 +134,6 @@ export function PostEdit() {
 
     if (!selectedCategory) {
       setError("카테고리를 찾을 수 없습니다.");
-      setNotice("");
       return;
     }
 
@@ -151,7 +149,6 @@ export function PostEdit() {
 
     setIsSubmitting(true);
     setError("");
-    setNotice("");
 
     try {
       if (isEditMode) {
@@ -161,14 +158,14 @@ export function PostEdit() {
 
         const updatedPost = await updatePost(id, payload);
 
-        setNotice("게시글이 수정되었습니다. 상세 화면으로 이동합니다.");
+        toast.success("게시글이 수정되었습니다.");
         window.setTimeout(() => navigate(`/posts/${updatedPost.id}`), 900);
         return;
       }
 
       const createdPost = await createPost(payload);
 
-      setNotice("게시글이 발행되었습니다. 상세 화면으로 이동합니다.");
+      toast.success("게시글이 발행되었습니다.");
       // 목록/상세 화면이 API 응답 중심으로 바뀌었기 때문에 생성된 상세 화면으로 바로 이동할 수 있다.
       window.setTimeout(() => navigate(`/posts/${createdPost.id}`), 900);
     } catch (submitError) {
@@ -202,15 +199,7 @@ export function PostEdit() {
           </div>
         )}
 
-        {(error || notice) && (
-          <div
-            className={`rounded-lg border px-4 py-3 text-sm ${
-              error ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-800"
-            }`}
-          >
-            {error || notice}
-          </div>
-        )}
+        {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
         <Card className="space-y-6 p-6">
           <Input

@@ -119,9 +119,12 @@ export function AdminUsers() {
         ...prev,
         [updatedUser.id]: updatedUser.role,
       }));
-      setSuccessMessage(`${updatedUser.name}님의 권한 상태를 저장했습니다.`);
+      toast.success(`${updatedUser.name}님의 권한 상태를 저장했습니다.`);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "사용자 권한을 변경하지 못했습니다.");
+      const message = error instanceof Error ? error.message : "사용자 권한을 변경하지 못했습니다.";
+
+      setErrorMessage(message);
+      toast.error(message);
     } finally {
       setUpdatingUserId(null);
     }

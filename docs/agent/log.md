@@ -3664,3 +3664,54 @@ git diff --check: success
 ```txt
 style: 포트폴리오 발행 모달 선택 UI 정리
 ```
+---
+
+## 2026-06-16 작업: 로그인/게시글 상호작용 오류 수정
+
+상태: 완료
+
+목표:
+
+- DB 연결 문제처럼 보이던 댓글 작성/게시글 삭제 실패를 실제 원인 기준으로 분리했습니다.
+- 관리자 화면에서 역할 변경 후 `setSuccessMessage is not defined` 런타임 에러가 뜨는 문제를 제거했습니다.
+- 로그인 화면을 Google OAuth 중심의 넓은 화면으로 개선했습니다.
+- 포트폴리오 프로젝트의 연결 기록 후보에서 포트폴리오 게시글을 제외했습니다.
+
+수정 파일:
+
+- `frontend/src/app/pages/admin/AdminUsers.tsx`
+- `frontend/src/app/pages/auth/Login.tsx`
+- `frontend/src/app/pages/posts/PostEdit.tsx`
+- `frontend/src/app/pages/posts/PostDetail.tsx`
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`
+- `backend/app/repositories/portfolio_repository.py`
+- `README.md`
+- `docs/agent/log.md`
+- `docs/agent/study.md`
+- `docs/agent/test.md`
+
+핵심 원인:
+
+- DB와 백엔드는 `/health/db` 기준 정상 연결 상태였습니다.
+- 게시글 삭제 성공 후 프론트에서 존재하지 않는 `setDeleteNotice`를 호출하고 있어, 실제 API 성공이 프론트 런타임 오류처럼 보일 수 있었습니다.
+- 관리자 화면에는 `setSuccessMessage` state가 없는데 호출만 남아 있어 역할 변경 후 런타임 에러가 발생했습니다.
+- 댓글/삭제 catch 문이 실제 API 에러 메시지를 숨기고 같은 문구만 보여줘 원인 파악이 어려웠습니다.
+
+QA 결과:
+
+```txt
+docker ps: junglelog-postgres Up
+GET /health: 200
+GET /health/db: 200
+backend API QA: create post 201, create comment 201, delete post 204
+portfolio link guard: portfolio category post blocked
+npm run build: success
+backend compileall: success
+browser login QA: no approval copy, no cookie copy, no console error
+```
+
+커밋 추천 제목:
+
+```txt
+fix: 로그인 화면과 게시글 상호작용 오류 정리
+```

@@ -50,6 +50,12 @@ function categoryVariant(category: string) {
   return "secondary";
 }
 
+function isLinkablePortfolioRecord(post: PostListApiItem) {
+  // 포트폴리오 프로젝트에서 발행한 포트폴리오 게시글을 다시 프로젝트에 연결하면
+  // "프로젝트 -> 게시글 -> 같은 프로젝트"로 순환 참조처럼 보일 수 있어 연결 후보에서 제외한다.
+  return post.categorySlug !== "portfolio" && post.category !== "포트폴리오 관리";
+}
+
 function formatDate(dateText: string | null) {
   if (!dateText) {
     return "분석 전";
@@ -143,7 +149,7 @@ export function Portfolio() {
       ]);
 
       setProjects(projectData.items);
-      setAvailablePosts(postData.items);
+      setAvailablePosts(postData.items.filter(isLinkablePortfolioRecord));
 
       const nextSelectedProject =
         projectData.items.find((project) => project.id === preferredProjectId) ??
@@ -345,7 +351,9 @@ export function Portfolio() {
     setErrorMessage("");
 
     try {
-      const updatedProject = await linkPortfolioProjectPosts(selectedProject.id, selectedPostIds);
+      const linkablePostIds = new Set(availablePosts.map((post) => post.id));
+      const nextPostIds = selectedPostIds.filter((postId) => linkablePostIds.has(postId));
+      const updatedProject = await linkPortfolioProjectPosts(selectedProject.id, nextPostIds);
 
       upsertProject(updatedProject);
       setIsConnectOpen(false);
@@ -746,18 +754,16 @@ export function Portfolio() {
             onValueChange={(value) => setPublishVisibility(value as "public" | "private")}
             className="grid gap-3"
           >
-            <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${publishVisibility === "public" ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/70"}`}>
+            <label className={`flex cursor-pointer items-center gap-3 rounded-lg border bg-white p-4 transition-colors hover:border-emerald-200 hover:bg-emerald-50/70 ${publishVisibility === "public" ? "border-emerald-400 ring-1 ring-emerald-200" : "border-slate-200"}`}>
               <RadioGroupItem value="public" className="mt-1" />
               <span>
                 <span className="block text-sm font-semibold text-slate-900">공개</span>
-                <span className="mt-1 block text-xs leading-5 text-slate-600">전체 게시글과 내 기록에 함께 보입니다.</span>
               </span>
             </label>
-            <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${publishVisibility === "private" ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/70"}`}>
+            <label className={`flex cursor-pointer items-center gap-3 rounded-lg border bg-white p-4 transition-colors hover:border-emerald-200 hover:bg-emerald-50/70 ${publishVisibility === "private" ? "border-emerald-400 ring-1 ring-emerald-200" : "border-slate-200"}`}>
               <RadioGroupItem value="private" className="mt-1" />
               <span>
                 <span className="block text-sm font-semibold text-slate-900">비공개</span>
-                <span className="mt-1 block text-xs leading-5 text-slate-600">내 기록에서만 확인할 수 있습니다.</span>
               </span>
             </label>
           </RadioGroup>

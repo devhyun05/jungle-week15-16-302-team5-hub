@@ -3014,3 +3014,67 @@ normal_user_update= COACH 승인 완료
 남은 수동 QA:
 
 - [ ] 브라우저에서 `포트폴리오 게시글로 발행`을 눌러 모달 시각 상태를 직접 확인한다.
+---
+
+## 2026-06-16 QA: DB 연결 의심 증상과 게시글 상호작용 검증
+
+목표: 댓글 작성, 게시글 삭제, 관리자 역할 변경이 실패하는 것처럼 보일 때 DB 연결 문제인지 프론트 런타임 문제인지 분리한다.
+
+### 서버/DB 상태
+
+- [x] `docker ps`에서 `junglelog-postgres` 컨테이너가 Up 상태인지 확인
+- [x] `GET /health`가 200을 반환하는지 확인
+- [x] `GET /health/db`가 200과 `database=postgresql`을 반환하는지 확인
+
+결론:
+
+- DB 연결은 정상입니다.
+- 이번 실패 느낌은 DB down이 아니라 프론트 런타임/에러 처리 문제로 판단했습니다.
+
+### API 직접 검증
+
+- [x] 테스트용 승인 사용자 생성
+- [x] JWT access token cookie 설정
+- [x] `POST /posts`로 게시글 생성: 201
+- [x] `POST /posts/{post_id}/comments`로 댓글 작성: 201
+- [x] `DELETE /posts/{post_id}`로 게시글 삭제: 204
+- [x] QA 데이터 cleanup 완료
+
+검증 출력:
+
+```txt
+create_post 201
+create_comment 201
+delete_post 204
+```
+
+### 포트폴리오 연결 방어 QA
+
+- [x] `portfolio` 카테고리 게시글을 프로젝트 연결 기록으로 넣으려는 요청을 백엔드에서 차단
+
+검증 출력:
+
+```txt
+portfolio_link_guard blocked 포트폴리오 게시글은 연결 기록으로 추가할 수 없습니다.
+```
+
+### 프론트 QA
+
+- [x] `setSuccessMessage is not defined` 검색 결과 제거
+- [x] `setDeleteNotice` 검색 결과 제거
+- [x] 게시글 작성/수정 성공 안내가 block 대신 toast로 변경
+- [x] 게시글 삭제 확인 dialog에서 soft delete 설명 문구 제거
+- [x] 댓글 작성 안내 문구 제거
+- [x] 로그인 화면에서 승인 대기/역할 승인 안내 문구 제거
+- [x] Browser QA에서 로그인 화면 콘솔 error 없음
+
+### 자동 검증
+
+- [x] `npm run build` 성공
+- [x] `.venv\Scripts\python.exe -m compileall app` 성공
+
+### 아직 사람 손으로 더 보면 좋은 것
+
+- [ ] 실제 브라우저에서 본인 작성 글 삭제 버튼 클릭 후 toast와 `/posts` 이동 확인
+- [ ] 실제 브라우저에서 본인 작성 글 댓글 작성 후 댓글이 목록에 추가되는지 확인
+- [ ] 학생 계정과 코치 계정이 각각 준비되면 코치 리뷰 요청/피드백 왕복 QA 진행

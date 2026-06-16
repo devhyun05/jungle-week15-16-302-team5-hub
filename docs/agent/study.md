@@ -5275,3 +5275,62 @@ GitHub ������Ʈ ���
 - `publishVisibility` state 값에 따라 선택된 카드와 선택되지 않은 카드의 className을 다르게 줍니다.
 - 선택되지 않은 카드는 흰색으로 두고 `hover:bg-emerald-50/70`으로 마우스가 올라갔을 때만 연초록색이 되게 했습니다.
 - 선택된 카드는 `border-emerald-300 bg-emerald-50`으로 현재 선택 상태를 분명하게 보여줍니다.
+---
+
+## 2026-06-16 학습 기록: API는 정상인데 화면에서 실패처럼 보이는 경우
+
+이번 구현을 이해하려면 아래 흐름을 보면 됩니다.
+
+### 수정한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/auth/Login.tsx` | Google OAuth 로그인 화면을 렌더링합니다. 로그인 전 사용자에게 보이는 첫 화면입니다. |
+| `frontend/src/app/pages/admin/AdminUsers.tsx` | 관리자가 사용자 역할과 승인 상태를 바꾸는 화면입니다. 성공/실패 안내를 toast로 보여줍니다. |
+| `frontend/src/app/pages/posts/PostEdit.tsx` | 게시글 작성/수정 폼입니다. 작성/수정 성공 안내를 화면 block에서 toast로 바꿨습니다. |
+| `frontend/src/app/pages/posts/PostDetail.tsx` | 게시글 상세, 댓글 작성, 게시글 삭제 dialog를 담당합니다. |
+| `frontend/src/app/pages/portfolio/Portfolio.tsx` | 포트폴리오 프로젝트 관리와 기록 연결 UI를 담당합니다. 포트폴리오 게시글은 연결 후보에서 제외합니다. |
+| `backend/app/repositories/portfolio_repository.py` | 프로젝트-게시글 연결 저장 전 DB에서 연결 가능한 게시글인지 검증합니다. |
+
+### 이번에 나온 React 개념
+
+- `useState`: 삭제 dialog 열림 여부, 댓글 입력값, 에러 메시지, 포트폴리오 발행 공개 범위처럼 화면 상태를 저장합니다.
+- controlled input: 댓글 textarea, 게시글 작성 form, 공개/비공개 선택값은 React state가 화면 값을 제어합니다.
+- toast: 성공/정보/오류 안내를 화면 레이아웃을 밀어내지 않고 보여주는 방식입니다.
+- dialog/modal: 삭제처럼 사용자의 명확한 확인이 필요한 작업에 사용합니다.
+- conditional rendering: 에러가 있을 때만 작은 오류 문구를 보여주고, 성공 안내는 toast로 분리했습니다.
+
+### 이번에 나온 백엔드 개념
+
+- health check: `/health`, `/health/db`로 서버와 DB 연결 상태를 빠르게 확인합니다.
+- 인증 cookie: 프론트는 `credentials: "include"`로 HttpOnly JWT cookie를 백엔드에 보냅니다.
+- 권한 검사: 게시글 삭제는 작성자 본인 또는 ADMIN만 가능합니다.
+- defense in depth: 프론트에서 포트폴리오 게시글을 연결 후보에서 숨겨도, 백엔드에서 다시 한 번 `portfolio` 카테고리를 차단합니다.
+- API 에러 메시지 전달: 백엔드가 내려준 `detail` 메시지를 프론트가 숨기지 않고 보여주면 디버깅이 쉬워집니다.
+
+### 막힌 부분과 해결
+
+- 증상: 댓글 작성/게시글 삭제가 실패하는 것처럼 보였습니다.
+- 확인: `/health/db`와 API 직접 호출 QA는 정상이라 DB 연결 문제는 아니었습니다.
+- 원인 후보 1: 삭제 성공 뒤 `setDeleteNotice`라는 없는 state 함수를 호출하고 있었습니다.
+- 원인 후보 2: 관리자 화면에서 `setSuccessMessage`라는 없는 state 함수를 호출하고 있었습니다.
+- 해결: 성공 안내는 `toast.success`, 실패는 실제 API error message를 사용하도록 바꿨습니다.
+
+### 다음에 비슷한 문제를 볼 때 순서
+
+1. `/health`, `/health/db`로 서버와 DB가 살아 있는지 본다.
+2. Swagger 또는 API QA 스크립트로 API 자체가 되는지 확인한다.
+3. API가 되는데 화면만 실패하면 브라우저 console error를 본다.
+4. `rg "setSomething"`으로 존재하지 않는 state setter 호출이 남아 있는지 찾는다.
+5. catch 문이 실제 API 에러를 숨기고 있지 않은지 확인한다.
+
+추가 학습 키워드:
+
+- React state setter
+- toast notification
+- modal dialog
+- FastAPI dependency auth
+- JWT cookie 인증
+- API error handling
+- defense in depth
+- health check

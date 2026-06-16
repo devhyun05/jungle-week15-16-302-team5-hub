@@ -4,7 +4,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
-from app.db.models import PortfolioProject, PortfolioProjectPost, Post, User
+from app.db.models import PortfolioProject, PortfolioProjectPost, Post, PostCategory, User
 
 
 ROLE_ADMIN = "ADMIN"
@@ -246,6 +246,17 @@ def replace_project_posts(
 
         if current_user.role != ROLE_ADMIN:
             filters.append(Post.author_id == current_user.id)
+
+        portfolio_post_ids = set(
+            db.scalars(
+                select(Post.id)
+                .join(PostCategory, Post.category_id == PostCategory.id)
+                .where(*filters, PostCategory.slug == "portfolio")
+            )
+        )
+
+        if portfolio_post_ids:
+            raise ValueError("포트폴리오 게시글은 연결 기록으로 추가할 수 없습니다.")
 
         matched_post_ids = set(db.scalars(select(Post.id).where(*filters)))
 

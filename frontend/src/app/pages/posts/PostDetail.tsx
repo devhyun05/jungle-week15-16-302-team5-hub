@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { createPostComment, deleteComment, getPostComments } from "../../api/comments";
 import { deletePost, getPostDetail, getPosts, type PostDetailApiResponse, type PostListApiItem } from "../../api/posts";
 import type { UserRole } from "../../api/auth";
@@ -489,10 +489,14 @@ export function PostDetail() {
 
     try {
       await deletePost(id);
-      setDeleteNotice("게시글이 삭제되었습니다. 게시글 목록으로 이동합니다.");
+      setIsDeleteConfirmOpen(false);
+      toast.success("게시글이 삭제되었습니다.");
       window.setTimeout(() => navigate("/posts"), 700);
-    } catch {
-      setDeleteError("게시글을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.");
+    } catch (deleteError) {
+      const message = deleteError instanceof Error ? deleteError.message : "게시글을 삭제하지 못했습니다.";
+
+      setDeleteError(message);
+      toast.error(message);
     } finally {
       setIsDeleting(false);
     }
@@ -532,8 +536,11 @@ export function PostDetail() {
         },
       ]);
       setCommentInput("");
-    } catch {
-      setCommentError("댓글을 작성하지 못했습니다. 잠시 후 다시 시도해주세요.");
+    } catch (commentError) {
+      const message = commentError instanceof Error ? commentError.message : "댓글을 작성하지 못했습니다.";
+
+      setCommentError(message);
+      toast.error(message);
     } finally {
       setIsCommentSubmitting(false);
     }
@@ -548,8 +555,11 @@ export function PostDetail() {
 
       // 실제 DB에서는 soft delete가 되었고, 화면에서는 바로 사라진 것처럼 보여준다.
       setComments((prev) => prev.filter((comment) => comment.id !== commentId));
-    } catch {
-      setCommentDeleteError("댓글을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.");
+    } catch (commentDeleteError) {
+      const message = commentDeleteError instanceof Error ? commentDeleteError.message : "댓글을 삭제하지 못했습니다.";
+
+      setCommentDeleteError(message);
+      toast.error(message);
     } finally {
       setDeletingCommentId(null);
     }
@@ -765,8 +775,7 @@ export function PostDetail() {
                   placeholder="댓글을 남겨보세요."
                 />
                 {commentError && <p className="text-xs text-red-600">{commentError}</p>}
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs text-slate-400">댓글은 현재 로그인 사용자 이름으로 저장됩니다.</p>
+                <div className="flex justify-end">
                   <Button type="button" size="sm" onClick={addComment} disabled={isCommentSubmitting}>
                     {isCommentSubmitting ? "작성 중" : "댓글 작성"}
                   </Button>
@@ -781,9 +790,6 @@ export function PostDetail() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>게시글을 삭제할까요?</DialogTitle>
-            <DialogDescription>
-              삭제하면 목록과 상세 화면에서 보이지 않습니다. 서버에서는 복구 가능성을 위해 soft delete로 처리합니다.
-            </DialogDescription>
           </DialogHeader>
           {deleteError && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{deleteError}</p>}
           <DialogFooter>
