@@ -662,6 +662,19 @@ OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 �
 - 코치 리뷰 화면의 보조 안내 문구는 제거했습니다.
 - 코치 리뷰 인박스 상태 필터에서는 `최종 확인`을 제거하고, 피드백 상태 토글 간격과 전송 버튼 색상을 JungleLog 초록 톤에 맞춰 정리했습니다.
 
+## 최근 변경: AI 전 검증과 GitHub branch URL 보정
+
+- AI 기능 구현 전에 프론트 빌드, 백엔드 compile, DB 연결, 게시글 목록, 포트폴리오 프로젝트, 코치 리뷰 왕복 흐름을 점검했습니다.
+- `ai-board-lab` 프로젝트의 로컬 QA 데이터에서 `github_url`은 `/tree/dev`를 가리키지만 `github_branch`는 `main`인 불일치를 발견했습니다.
+- 포트폴리오 게시글 발행 링크가 `/tree/dev/tree/main`처럼 꼬이지 않도록 백엔드에서 GitHub repo 기본 URL을 정규화한 뒤 branch URL을 조합하도록 방어했습니다.
+- 로컬 QA 데이터의 `ai-board-lab` 프로젝트는 `github_branch=dev`, `github_url=https://github.com/leejunhee8235/ai-board-lab`로 보정했습니다.
+
+검증:
+
+- `frontend`: `npm run build` 성공
+- `backend`: `.venv\Scripts\python.exe -m compileall app` 성공
+- service smoke: 공개 게시글 조회, 학생 리뷰 현황, 코치 인박스, 포트폴리오 프로젝트 목록 조회 성공
+
 검증:
 
 - `frontend`: `npm run build` 성공

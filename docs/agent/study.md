@@ -5428,3 +5428,39 @@ GitHub ������Ʈ ���
 - 하지만 코치가 새로 필터링하거나 전송하는 화면 옵션에서는 `최종 확인`을 보여주지 않도록 `reviewStatusOptions`에서 제외했습니다.
 - 즉, DB/API가 알고 있는 상태 전체와 현재 화면에서 사용자가 선택할 수 있는 상태 목록은 다를 수 있습니다.
 - UI 버튼 색상은 행동의 의미를 빠르게 읽게 해주므로, 코치 리뷰 전송 버튼은 서비스 주요 색상인 emerald 계열로 맞췄습니다.
+
+---
+
+## 2026-06-16 학습 기록: GitHub URL 정규화와 QA smoke
+
+### 수정한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `backend/app/services/portfolio_service.py` | 포트폴리오 프로젝트를 게시글로 발행할 때 GitHub branch URL을 만드는 서비스 로직 |
+| `README.md` | 현재 구현/검증 상태 요약 |
+| `docs/agent/log.md` | 작업 기록 |
+| `docs/agent/study.md` | 학습 개념 기록 |
+| `docs/agent/test.md` | QA 체크리스트 기록 |
+
+### 이번에 이해할 개념
+
+- URL 정규화: 사용자가 입력한 URL이 repo 기본 URL인지, `/tree/dev` 같은 branch URL인지 섞여 있어도 내부에서는 안정적인 형태로 맞춘다.
+- 방어적 코드: 기존 DB에 조금 이상한 값이 남아 있어도 새 기능이 깨지지 않도록 service 계층에서 보정한다.
+- smoke test: 전체 테스트는 아니지만 핵심 기능이 살아 있는지 빠르게 확인하는 검증이다.
+- DB 데이터와 코드 모델의 차이: SQLAlchemy 모델이 맞아도 과거에 들어간 데이터가 현재 규칙과 다를 수 있다.
+
+### 흐름
+
+1. `portfolio_projects.github_url`에 branch URL이 들어온 과거 데이터를 발견했습니다.
+2. `build_project_branch_url()`이 이 값을 그대로 사용하면 `/tree/dev/tree/main` 같은 잘못된 URL이 생길 수 있었습니다.
+3. `normalize_github_repository_url()`로 GitHub URL의 owner/repo까지만 남긴 뒤 branch를 붙이도록 바꿨습니다.
+4. 로컬 QA 데이터도 현재 규칙에 맞게 보정했습니다.
+
+### 추가로 공부할 키워드
+
+- URL parsing
+- `urllib.parse.urlparse`
+- service layer validation
+- data migration
+- smoke test

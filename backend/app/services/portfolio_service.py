@@ -365,8 +365,31 @@ def build_project_branch_url(project: PortfolioProject) -> str:
     """
 
     branch = project.github_branch or "main"
+    github_url = normalize_github_repository_url(project.github_url)
 
-    return f"{project.github_url.rstrip('/')}/tree/{branch}"
+    return f"{github_url}/tree/{branch}"
+
+
+def normalize_github_repository_url(github_url: str) -> str:
+    """
+    GitHub URL에서 `/tree/{branch}`나 `/blob/{branch}` 이하를 제거해 repo 기본 URL로 맞춘다.
+
+    과거 데이터에 branch URL이 그대로 저장돼 있어도 포트폴리오 게시글 발행 링크가
+    `/tree/dev/tree/main`처럼 중복되지 않게 방어한다.
+    """
+
+    parsed_url = urlparse(github_url.strip())
+
+    if not parsed_url.netloc:
+        return github_url.rstrip("/")
+
+    path_parts = [part for part in parsed_url.path.split("/") if part]
+
+    if len(path_parts) >= 2:
+        repository_path = "/".join(path_parts[:2])
+        return f"{parsed_url.scheme}://{parsed_url.netloc}/{repository_path}".rstrip("/")
+
+    return github_url.rstrip("/")
 
 
 def build_portfolio_post_summary(project: PortfolioProject) -> str:

@@ -3798,3 +3798,39 @@ refactor: 코치 리뷰 피드백 전송 UI 정리
 - 코치 리뷰 인박스 왼쪽 상태 필터에서 `최종 확인` 옵션을 제거했습니다.
 - 피드백 상태 토글 버튼 사이에 간격을 추가해 너무 붙어 보이지 않게 정리했습니다.
 - `피드백 전송` 버튼을 검정색에서 JungleLog 초록 계열 버튼으로 변경했습니다.
+
+---
+
+## 2026-06-16 작업: AI 전 최종 검증과 GitHub branch URL 보정
+
+상태: 완료
+
+목표:
+
+- AI 기능으로 넘어가기 전 일반 게시판/포트폴리오/코치 리뷰 흐름이 깨지지 않았는지 점검했습니다.
+- GitHub branch가 포함된 프로젝트 URL이 포트폴리오 게시글 발행 링크에서 꼬이지 않도록 방어했습니다.
+
+발견한 문제:
+
+- `ai-board-lab` 로컬 QA 데이터가 `github_url=https://github.com/leejunhee8235/ai-board-lab/tree/dev`, `github_branch=main`으로 섞여 있었습니다.
+- 이 상태에서 포트폴리오 게시글을 발행하면 GitHub 링크가 `/tree/dev/tree/main`처럼 만들어질 수 있었습니다.
+
+해결:
+
+- `backend/app/services/portfolio_service.py`에 GitHub repo 기본 URL 정규화 함수를 추가했습니다.
+- 포트폴리오 게시글 발행용 GitHub branch URL을 만들 때 `/tree/{branch}`나 `/blob/{branch}` 이하를 제거한 뒤 branch를 붙이도록 수정했습니다.
+- 로컬 QA DB의 `ai-board-lab` 프로젝트는 `github_branch=dev`, `github_url=https://github.com/leejunhee8235/ai-board-lab`로 보정했습니다.
+
+QA:
+
+```txt
+npm run build: success
+backend compileall: success
+service smoke: public posts, student reviews, coach inbox, portfolio projects success
+```
+
+커밋 추천 제목:
+
+```txt
+fix: 포트폴리오 GitHub branch URL 보정
+```
