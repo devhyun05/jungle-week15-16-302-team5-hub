@@ -1,13 +1,11 @@
-import { useNavigate } from "react-router"
 import AuthLayout from "../components/AuthLayout"
-import { loginWithMockSlack } from "../lib/mockAuth"
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api"
 
 function Login() {
-  const navigate = useNavigate()
-
   const handleSlackLogin = () => {
-    loginWithMockSlack()
-    navigate("/")
+    window.location.href = `${API_BASE_URL}/auth/slack/login`
   }
 
   return (

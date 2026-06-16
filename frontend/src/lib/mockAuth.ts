@@ -1,62 +1,100 @@
 import { useEffect, useState } from "react"
 
-const MOCK_AUTH_STORAGE_KEY = "jungle-market:mock-user"
-const MOCK_AUTH_CHANGE_EVENT = "jungle-market:auth-change"
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api"
+const AUTH_CHANGE_EVENT = "jungle-market:auth-change"
 
-type MockUser = {
+type AuthUser = {
+  id: number
   name: string
   email: string
+  profileImageUrl: string | null
+  role: string
 }
 
-const mockSlackUser: MockUser = {
-  name: "이현성",
-  email: "devhyun.jungle@gmail.com",
+type UserMeResponse = {
+  id: number
+  email: string
+  username: string
+  profile_image_url: string | null
+  role: string
 }
 
-const getMockUser = () => {
-  const storedUser = localStorage.getItem(MOCK_AUTH_STORAGE_KEY)
-
-  if (!storedUser) {
-    return null
-  }
-
-  return JSON.parse(storedUser) as MockUser
-}
+const toAuthUser = (user: UserMeResponse): AuthUser => ({
+  id: user.id,
+  name: user.username,
+  email: user.email,
+  profileImageUrl: user.profile_image_url,
+  role: user.role,
+})
 
 const notifyAuthChange = () => {
-  window.dispatchEvent(new Event(MOCK_AUTH_CHANGE_EVENT))
+  window.dispatchEvent(new Event(AUTH_CHANGE_EVENT))
+}
+
+const fetchCurrentUser = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const user = (await response.json()) as UserMeResponse
+    return toAuthUser(user)
+  } catch {
+    return null
+  }
 }
 
 export const loginWithMockSlack = () => {
-  localStorage.setItem(MOCK_AUTH_STORAGE_KEY, JSON.stringify(mockSlackUser))
-  notifyAuthChange()
+  window.location.href = `${API_BASE_URL}/auth/slack/login`
 }
 
-export const logoutMockUser = () => {
-  localStorage.removeItem(MOCK_AUTH_STORAGE_KEY)
-  notifyAuthChange()
+export const logoutMockUser = async () => {
+  try {
+    await fetch(`${API_BASE_URL}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    })
+  } finally {
+    notifyAuthChange()
+  }
 }
 
 export const useMockAuth = () => {
-  const [user, setUser] = useState<MockUser | null>(() => getMockUser())
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
 
   useEffect(() => {
-    const syncUser = () => {
-      setUser(getMockUser())
+    let isMounted = true
+
+    const syncUser = async () => {
+      setIsCheckingAuth(true)
+
+      const currentUser = await fetchCurrentUser()
+
+      if (isMounted) {
+        setUser(currentUser)
+        setIsCheckingAuth(false)
+      }
     }
 
-    window.addEventListener(MOCK_AUTH_CHANGE_EVENT, syncUser)
-    window.addEventListener("storage", syncUser)
+    syncUser()
+    window.addEventListener(AUTH_CHANGE_EVENT, syncUser)
 
     return () => {
-      window.removeEventListener(MOCK_AUTH_CHANGE_EVENT, syncUser)
-      window.removeEventListener("storage", syncUser)
+      isMounted = false
+      window.removeEventListener(AUTH_CHANGE_EVENT, syncUser)
     }
   }, [])
 
   return {
     user,
     isLoggedIn: Boolean(user),
+    isCheckingAuth,
     loginWithMockSlack,
     logoutMockUser,
   }

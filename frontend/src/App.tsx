@@ -16,7 +16,15 @@ type RequireAuthProps = {
 }
 
 const RequireAuth = ({ children }: RequireAuthProps) => {
-  const { isLoggedIn } = useMockAuth()
+  const { isLoggedIn, isCheckingAuth } = useMockAuth()
+
+  if (isCheckingAuth) {
+    return (
+      <div className="py-20 text-center text-sm font-medium text-gray-400">
+        로그인 상태를 확인하고 있습니다.
+      </div>
+    )
+  }
 
   if (!isLoggedIn) {
     return <Navigate to="/login" replace />
@@ -61,7 +69,7 @@ function App() {
             }
           />
           <Route
-            path="/post-edit"
+            path="/post-edit/:postId"
             element={
               <RequireAuth>
                 <PostEdit />
