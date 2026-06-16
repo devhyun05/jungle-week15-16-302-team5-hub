@@ -10,7 +10,6 @@ from app.schemas.comment import CommentCreate, CommentResponse
 
 def get_comments(
     db: Session,
-    *,
     post_id: int,
     current_user: User | None,
 ) -> list[CommentResponse]:
@@ -30,7 +29,6 @@ def get_comments(
 
 def create_comment(
     db: Session,
-    *,
     post_id: int,
     comment_data: CommentCreate,
     writer: User,
@@ -66,7 +64,6 @@ def create_comment(
 
 def delete_comment(
     db: Session,
-    *,
     post_id: int,
     comment_id: int,
     current_user: User,
@@ -96,7 +93,6 @@ def delete_comment(
 
 def to_comment_response(
     comment: Comment,
-    *,
     post: Post,
     current_user: User | None,
 ) -> CommentResponse:

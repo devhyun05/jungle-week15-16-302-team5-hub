@@ -1,10 +1,9 @@
-from typing import Annotated
-
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import CurrentUser, OptionalCurrentUser
+from app.api.deps import get_current_user, get_optional_current_user
 from app.db.session import get_db
+from app.models.user import User
 from app.schemas.comment import CommentCreate, CommentResponse
 from app.services import comment_service
 
@@ -14,8 +13,8 @@ router = APIRouter(prefix="/posts/{post_id}/comments", tags=["comments"])
 @router.get("", response_model=list[CommentResponse])
 def read_comments(
     post_id: int,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: OptionalCurrentUser,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_current_user),
 ) -> list[CommentResponse]:
     return comment_service.get_comments(
         db,
@@ -28,8 +27,8 @@ def read_comments(
 def create_comment(
     post_id: int,
     comment_data: CommentCreate,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: CurrentUser,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> CommentResponse:
     return comment_service.create_comment(
         db,
@@ -43,8 +42,8 @@ def create_comment(
 def delete_comment(
     post_id: int,
     comment_id: int,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: CurrentUser,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> Response:
     comment_service.delete_comment(
         db,

@@ -3,8 +3,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.image import PostImageResponse
+
 PostStatus = Literal["selling", "reserved", "sold"]
 PostSort = Literal["latest", "popular", "price_low"]
+PostCategory = Literal["전자기기", "의류/잡화", "도서", "가구/인테리어", "스포츠", "기타"]
 
 
 class PostCreate(BaseModel):
@@ -12,6 +15,7 @@ class PostCreate(BaseModel):
     description: str | None = Field(default=None, max_length=1000)
     price: int = Field(ge=0)
     trade_location: str = Field(min_length=1, max_length=40)
+    category: PostCategory
     status: PostStatus = "selling"
 
     @field_validator("title", "trade_location")
@@ -36,6 +40,7 @@ class PostUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=1000)
     price: int | None = Field(default=None, ge=0)
     trade_location: str | None = Field(default=None, min_length=1, max_length=40)
+    category: PostCategory | None = None
     status: PostStatus | None = None
 
     @field_validator("title", "trade_location")
@@ -70,9 +75,11 @@ class PostResponse(BaseModel):
     description: str | None
     price: int
     trade_location: str
+    category: PostCategory
     status: PostStatus
     view_count: int
     like_count: int
     comment_count: int
     created_at: datetime
     updated_at: datetime
+    images: list[PostImageResponse] = Field(default_factory=list)

@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -15,6 +15,7 @@ class Post(Base):
     description: Mapped[str | None] = mapped_column(Text)
     price: Mapped[int] = mapped_column(Integer, nullable=False)
     trade_location: Mapped[str] = mapped_column(String(40), nullable=False)
+    category: Mapped[str] = mapped_column(String(30), nullable=False, default="기타")
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="selling")
     view_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     like_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -31,3 +32,10 @@ class Post(Base):
         onupdate=func.now(),
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    images = relationship(
+        "PostImage",
+        back_populates="post",
+        cascade="all, delete-orphan",
+        order_by="PostImage.sort_order",
+    )
