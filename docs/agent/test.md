@@ -327,3 +327,29 @@ rg -n "\?\?\?" README.md docs
 
 - `backend/.env`에 `OPENAI_API_KEY` 추가 후 Swagger에서 `POST /ai/generate` 호출
 - 이후 AI 도우미 화면에서 실제 API 연결 확인
+
+## 2026-06-17 QA: AI 도우미 프론트 API 연결
+
+### 확인할 것
+
+- `/ai-assistant`에서 `OpenAI로 생성하기` 버튼이 보인다.
+- 버튼을 누르면 프론트가 `POST /ai/generate`를 호출한다.
+- 프로젝트 선택을 바꾸면 이전 생성 결과가 남아 있지 않아야 한다.
+- `포트폴리오 글`과 `면접 예상 질문` 유형을 바꾸면 이전 생성 결과가 초기화되어야 한다.
+- API 호출 성공 시 생성 결과가 오른쪽 결과 영역에 표시되어야 한다.
+- API 호출 실패 시 toast와 오류 메시지로 원인을 확인할 수 있어야 한다.
+- `OpenAI로 생성하기` 버튼은 생성 중 중복 클릭되지 않아야 한다.
+- 화면 진입만으로 OpenAI API가 자동 호출되면 안 된다.
+
+### 자동 검증
+
+```txt
+frontend npm run build: success
+backend .venv\Scripts\python.exe -m compileall app: success
+backend app import: success
+```
+
+### 현재 막힌 점
+
+- `backend/.env`에 `OPENAI_API_KEY` 변수명은 있으나 값이 비어 있다.
+- 실제 OpenAI 생성 QA는 키 값을 넣은 뒤 다시 진행해야 한다.

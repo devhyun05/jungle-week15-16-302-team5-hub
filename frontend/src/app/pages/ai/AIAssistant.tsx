@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
+import { toast } from "sonner";
 import {
   Bot,
   BookOpen,
@@ -18,6 +19,7 @@ import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import { getMyPosts, type PostListApiItem } from "../../api/posts";
 import { getPortfolioProjects, updatePortfolioProject, type PortfolioProjectApiItem } from "../../api/portfolio";
+import { generateAIContent } from "../../api/ai";
 import { getDisplayTechStack } from "../../utils/techStack";
 
 type OutputType = "portfolio" | "interview";
@@ -102,6 +104,8 @@ export function AIAssistant() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedText, setGeneratedText] = useState("");
 
   useEffect(() => {
     let isActive = true;
@@ -151,7 +155,8 @@ export function AIAssistant() {
     () => (selectedProject ? records.filter((post) => selectedProject.linkedPostIds.includes(post.id)) : []),
     [records, selectedProject],
   );
-  const resultText = getResultText(selectedProject, linkedRecords, outputType);
+  const fallbackResultText = getResultText(selectedProject, linkedRecords, outputType);
+  const resultText = generatedText || fallbackResultText;
 
   const saveResult = async () => {
     if (!selectedProject) {
@@ -186,8 +191,35 @@ export function AIAssistant() {
     }
   };
 
+  const generateResult = async () => {
+    if (!selectedProject) {
+      return;
+    }
+
+    setIsGenerating(true);
+    setSavedNotice("");
+    setErrorMessage("");
+
+    try {
+      const response = await generateAIContent({
+        projectId: selectedProject.id,
+        outputType,
+      });
+
+      setGeneratedText(response.content);
+      toast.success(outputType === "portfolio" ? "AI 포트폴리오 글을 생성했습니다." : "AI 면접 예상 질문을 생성했습니다.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "AI 생성에 실패했습니다.";
+
+      setErrorMessage(message);
+      toast.error(message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const refreshResult = () => {
-    setSavedNotice("선택한 프로젝트 정보를 기준으로 결과를 다시 구성했습니다.");
+    void generateResult();
   };
 
   const copyResultWithFallback = async (text: string) => {
@@ -260,6 +292,7 @@ export function AIAssistant() {
                   onChange={(event) => {
                     setSelectedProjectId(Number(event.target.value));
                     setSavedNotice("");
+                    setGeneratedText("");
                   }}
                   className="h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:ring-1 focus:ring-emerald-500"
                 >
@@ -288,7 +321,11 @@ export function AIAssistant() {
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => setOutputType(option.value)}
+                      onClick={() => {
+                        setOutputType(option.value);
+                        setGeneratedText("");
+                        setSavedNotice("");
+                      }}
                       className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
                         outputType === option.value
                           ? "border-emerald-500 bg-emerald-50 text-emerald-900"
@@ -434,7 +471,7 @@ export function AIAssistant() {
                   <Button variant="ghost" size="icon" className="h-8 w-8" title="복사하기" onClick={copyResult}>
                     <Copy className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" title="다시 구성" onClick={refreshResult}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" title="다시 구성" onClick={refreshResult} disabled={isGenerating}>
                     <RefreshCw className="h-4 w-4" />
                   </Button>
                 </div>
@@ -444,6 +481,10 @@ export function AIAssistant() {
                   {resultText}
                 </pre>
                 <div className="space-y-2 border-t border-slate-100 bg-slate-50 p-4">
+                  <Button variant="secondary" className="w-full" onClick={() => void generateResult()} disabled={isGenerating}>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    {isGenerating ? "AI 생성 중..." : "OpenAI로 생성하기"}
+                  </Button>
                   <Button className="w-full" onClick={() => void saveResult()} disabled={isSaving}>
                     <Save className="mr-2 h-4 w-4" />
                     {outputType === "portfolio" ? "포트폴리오 글로 저장" : "면접 질문으로 저장"}

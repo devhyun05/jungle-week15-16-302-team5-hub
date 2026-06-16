@@ -445,3 +445,26 @@ AI 기능 전 마지막 확인:
 - `POST /ai/generate` API를 추가했다.
 - 지금은 RAG가 아니라 선택 프로젝트 자료를 직접 prompt context로 넣는 구조다.
 - `OPENAI_API_KEY`가 없으면 API는 400으로 `OPENAI_API_KEY가 설정되어 있지 않습니다.`를 반환한다.
+
+## 2026-06-17 AI 도우미 프론트 API 연결
+
+- 작업 파일:
+  - `frontend/src/app/api/ai.ts`
+  - `frontend/src/app/pages/ai/AIAssistant.tsx`
+  - `README.md`
+  - `docs/agent/study.md`
+  - `docs/agent/log.md`
+  - `docs/agent/test.md`
+- AI 도우미 화면에 `OpenAI로 생성하기` 버튼을 추가했다.
+- 버튼 클릭 시 백엔드 `POST /ai/generate`를 호출하고, 성공하면 생성 결과를 결과 영역에 표시한다.
+- 프로젝트나 생성 유형을 바꾸면 이전 AI 생성 결과를 초기화해 다른 프로젝트 결과가 섞이지 않게 했다.
+- 화면 진입 시 자동 호출하지 않아 OpenAI 비용이 불필요하게 발생하지 않도록 했다.
+- 현재 확인 결과 `backend/.env`에는 `OPENAI_API_KEY` 변수명은 있지만 값 길이가 0이다. 실제 생성 QA 전에 키 값을 다시 넣어야 한다.
+
+검증:
+
+```txt
+frontend npm run build: success
+backend compileall app: success
+backend app import: success
+```

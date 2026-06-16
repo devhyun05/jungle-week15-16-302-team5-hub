@@ -93,3 +93,37 @@ Frontend AI Assistant
 - `backend/.env`에 `OPENAI_API_KEY` 설정
 - Swagger에서 AI API 직접 호출
 - 프론트 AI 도우미의 mock 생성 결과를 실제 `/ai/generate` 호출로 교체
+
+## 2026-06-17: 프론트 AI 도우미 API 연결
+
+### 구현한 것
+
+- `frontend/src/app/api/ai.ts`를 추가해 프론트에서 백엔드 `/ai/generate`를 호출할 수 있게 했다.
+- `AIAssistant.tsx`에서 `OpenAI로 생성하기` 버튼을 누르면 실제 AI API를 호출한다.
+- 프로젝트 선택 또는 생성 유형 변경 시 이전 생성 결과를 초기화한다.
+- 화면 진입 시 자동 호출하지 않고, 사용자가 명시적으로 버튼을 눌렀을 때만 호출한다.
+
+### 지금 구조
+
+```txt
+AI 도우미 화면
+  -> OpenAI로 생성하기 버튼
+  -> frontend/src/app/api/ai.ts
+  -> POST /ai/generate
+  -> FastAPI ai_router
+  -> ai_service
+  -> OpenAI Responses API
+  -> generatedText
+  -> 기존 포트폴리오 프로젝트 저장 API
+```
+
+### 학습 포인트
+
+- OpenAI API key는 프론트에 두면 안 되고 백엔드 `.env`에만 있어야 한다.
+- 프론트는 `projectId`, `outputType` 같은 최소 요청값만 백엔드에 보낸다.
+- 백엔드는 DB에 저장된 README, 커밋 메시지, 연결 기록을 모아 prompt를 만든다.
+- 지금은 RAG 검색 없이 직접 context를 넣는 단계이고, 다음 단계에서 vector search를 붙인다.
+
+### 현재 막힌 점
+
+- `backend/.env`의 `OPENAI_API_KEY` 값이 비어 있어 실제 OpenAI 호출 QA는 아직 진행하지 못했다.

@@ -776,3 +776,18 @@ OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 �
 - `POST /ai/generate`
 - 요청 예시: `{ "projectId": 25, "outputType": "portfolio" }`가 아니라 백엔드 스키마 기준 `{ "project_id": 25, "output_type": "portfolio" }`입니다.
 - 출력 유형: `portfolio`, `interview`
+
+## 최근 변경: AI 도우미 프론트 API 연결
+
+- `frontend/src/app/api/ai.ts`를 추가해 프론트에서 `POST /ai/generate`를 호출할 수 있게 했습니다.
+- AI 도우미 화면의 `OpenAI로 생성하기` 버튼을 누르면 선택한 포트폴리오 프로젝트 id와 생성 유형을 백엔드로 보냅니다.
+- 화면을 열자마자 자동으로 OpenAI를 호출하지 않고, 사용자가 버튼을 눌렀을 때만 호출해 비용이 불필요하게 발생하지 않도록 했습니다.
+- API 호출 전에는 기존 mock preview를 그대로 보여주고, 호출 성공 후에는 실제 OpenAI 생성 결과를 결과 영역에 표시합니다.
+- 생성 결과 저장은 기존 포트폴리오 프로젝트 저장 API를 그대로 사용합니다.
+- 현재 `backend/.env`의 `OPENAI_API_KEY` 값이 비어 있으면 실제 생성은 실패하며, 키 설정 후 다시 검증해야 합니다.
+
+검증:
+
+- `frontend`: `npm run build` 성공
+- `backend`: `.venv\Scripts\python.exe -m compileall app` 성공
+- `backend`: `from app.main import app` import 성공

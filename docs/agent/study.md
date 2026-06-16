@@ -465,3 +465,37 @@ AI:
 4. 백엔드가 README, 커밋, 연결 기록을 prompt로 만든다.
 5. 백엔드가 OpenAI API를 호출한다.
 6. 생성된 text를 프론트로 반환한다.
+
+## 2026-06-17 학습 기록: AI 도우미 프론트 API 연결
+
+### 수정한 파일
+
+- `frontend/src/app/api/ai.ts`: AI 생성 API 호출 함수를 추가했다.
+- `frontend/src/app/pages/ai/AIAssistant.tsx`: `OpenAI로 생성하기` 버튼에서 백엔드 `/ai/generate`를 호출하도록 연결했다.
+
+### 이번 구현에서 사용한 React 개념
+
+- `useState`: `generatedText`, `isGenerating`으로 실제 생성 결과와 로딩 상태를 관리한다.
+- 조건부 데이터 선택: `generatedText || fallbackResultText`로 실제 API 결과가 있으면 API 결과를 보여주고, 없으면 기존 mock preview를 보여준다.
+- 이벤트 핸들러: 버튼 클릭 시 `generateResult()`를 실행한다.
+- 상태 초기화: 프로젝트나 생성 유형을 바꾸면 이전 생성 결과가 섞이지 않도록 `generatedText`를 비운다.
+
+### 이번 구현에서 사용한 TypeScript/API 개념
+
+- API 경계 파일: `frontend/src/app/api/ai.ts`에서 백엔드 요청/응답 타입을 따로 관리한다.
+- snake_case와 camelCase 변환: 백엔드는 `project_id`, 프론트는 `projectId`처럼 쓰기 때문에 API 경계에서 변환한다.
+- 비용 제어: 화면 진입 시 자동 호출하지 않고 명시적인 버튼 클릭에서만 OpenAI를 호출한다.
+
+### 코드 흐름
+
+1. 사용자가 AI 도우미에서 프로젝트와 결과 유형을 선택한다.
+2. `OpenAI로 생성하기` 버튼을 누른다.
+3. `generateAIContent({ projectId, outputType })`가 `/ai/generate`를 호출한다.
+4. 백엔드가 프로젝트 README, 커밋 메시지, 연결 기록을 prompt로 구성해 OpenAI를 호출한다.
+5. 프론트는 응답의 `content`를 `generatedText`에 저장한다.
+6. 저장 버튼을 누르면 기존 포트폴리오 프로젝트 저장 API로 저장한다.
+
+### 아직 확인할 것
+
+- `backend/.env`의 `OPENAI_API_KEY` 값이 비어 있으면 실제 생성은 실패한다.
+- 키를 넣은 뒤 AI 도우미 화면에서 실제 포트폴리오 글/면접 질문 생성 결과를 확인해야 한다.
