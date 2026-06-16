@@ -700,7 +700,7 @@ export function PostDetail() {
         <div className="border-b border-slate-100 p-6">
           <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900">
             <MessageSquare className="h-5 w-5" />
-            댓글 및 코치 피드백 <span className="text-emerald-600">{comments.length}</span>
+            댓글 <span className="text-emerald-600">{comments.length}</span>
           </h3>
         </div>
 

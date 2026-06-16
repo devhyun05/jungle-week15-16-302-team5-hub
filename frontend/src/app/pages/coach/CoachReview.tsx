@@ -9,9 +9,9 @@ import {
   RefreshCw,
   Search,
   Send,
-  ShieldCheck,
   XCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
@@ -42,13 +42,50 @@ const statusColors: Record<ReviewStatus, string> = {
   "최종 확인": "bg-indigo-100 text-indigo-700",
 };
 
-const reviewStatusOptions: ReviewStatus[] = ["대기 중", "검토 중", "피드백 완료", "수정 요청", "최종 확인"];
+const reviewStatusOptions: ReviewStatus[] = ["대기 중", "검토 중", "피드백 완료", "수정 요청"];
+const feedbackSendStatusOptions = ["검토 중", "수정 요청", "피드백 완료"] as const;
 // /me/posts API는 한 번에 최대 50개까지만 조회할 수 있다.
 // 프론트에서 더 큰 값을 보내면 FastAPI Query 검증에서 422가 발생한다.
 const REVIEW_TARGET_POST_PAGE_SIZE = 50;
 
+type FeedbackSendStatus = (typeof feedbackSendStatusOptions)[number];
+
 function ReviewStatusBadge({ status }: { status: ReviewStatus }) {
   return <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusColors[status]}`}>{status}</span>;
+}
+
+function getFeedbackStatusButtonClass(status: FeedbackSendStatus, selectedStatus: FeedbackSendStatus) {
+  const isSelected = status === selectedStatus;
+
+  if (status === "검토 중") {
+    return isSelected
+      ? "border-blue-300 bg-blue-100 text-blue-800 shadow-sm"
+      : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700";
+  }
+
+  if (status === "수정 요청") {
+    return isSelected
+      ? "border-amber-300 bg-amber-100 text-amber-800 shadow-sm"
+      : "border-slate-200 bg-white text-slate-600 hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700";
+  }
+
+  return isSelected
+    ? "border-emerald-300 bg-emerald-100 text-emerald-800 shadow-sm"
+    : "border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700";
+}
+
+function getDefaultFeedbackSendStatus(status?: ReviewStatus): FeedbackSendStatus {
+  if (status === "수정 요청" || status === "피드백 완료" || status === "검토 중") {
+    return status;
+  }
+
+  return "검토 중";
+}
+
+function getFeedbackSuccessMessage(status: FeedbackSendStatus) {
+  if (status === "검토 중") return "검토 중 상태로 전송했습니다.";
+  if (status === "수정 요청") return "수정 요청을 전송했습니다.";
+  return "피드백을 전송했습니다.";
 }
 
 function formatDate(dateText: string) {
@@ -392,7 +429,8 @@ function CoachInboxView() {
   const [keyword, setKeyword] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
-  const [notice, setNotice] = useState("");
+  const [feedbackStatus, setFeedbackStatus] = useState<FeedbackSendStatus>("검토 중");
+  const [feedbackError, setFeedbackError] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -445,7 +483,9 @@ function CoachInboxView() {
 
   useEffect(() => {
     setFeedback(selectedRequest?.feedback ?? "");
-  }, [selectedRequest?.feedback, selectedRequest?.id]);
+    setFeedbackStatus(getDefaultFeedbackSendStatus(selectedRequest?.status));
+    setFeedbackError("");
+  }, [selectedRequest?.feedback, selectedRequest?.id, selectedRequest?.status]);
 
   useEffect(() => {
     // 필터가 바뀌어 기존 선택 요청이 목록에서 사라지면 상세 패널도 필터된 첫 요청으로 맞춘다.
@@ -459,31 +499,46 @@ function CoachInboxView() {
   const selectRequest = (request: ReviewRequestApiItem) => {
     setSelectedId(request.id);
     setFeedback(request.feedback ?? "");
-    setNotice("");
+    setFeedbackStatus(getDefaultFeedbackSendStatus(request.status));
+    setFeedbackError("");
     setErrorMessage("");
   };
 
-  const saveReview = async (status: ReviewStatus) => {
+  const saveReview = async () => {
     if (!selectedRequest) {
       return;
     }
 
+    const trimmedFeedback = feedback.trim();
+
+    if ((feedbackStatus === "수정 요청" || feedbackStatus === "피드백 완료") && !trimmedFeedback) {
+      const message = "피드백 내용을 입력해 주세요.";
+
+      setFeedbackError(message);
+      toast.error(message);
+      return;
+    }
+
     setIsSaving(true);
-    setNotice("");
+    setFeedbackError("");
     setErrorMessage("");
 
     try {
       const updatedRequest = await updateReviewRequest(selectedRequest.id, {
-        status,
-        feedback,
+        status: feedbackStatus,
+        feedback: trimmedFeedback || undefined,
       });
 
       setRequests((prev) => prev.map((request) => (request.id === updatedRequest.id ? updatedRequest : request)));
       setSelectedId(updatedRequest.id);
       setFeedback(updatedRequest.feedback ?? "");
-      setNotice("피드백과 상태를 학생에게 보냈습니다.");
+      setFeedbackStatus(getDefaultFeedbackSendStatus(updatedRequest.status));
+      toast.success(getFeedbackSuccessMessage(feedbackStatus));
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "피드백을 저장하지 못했습니다.");
+      const message = error instanceof Error ? error.message : "피드백을 저장하지 못했습니다.";
+
+      setFeedbackError(message);
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }
@@ -497,7 +552,6 @@ function CoachInboxView() {
       </div>
 
       {errorMessage && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{errorMessage}</div>}
-      {notice && <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</div>}
 
       {isLoading ? (
         <Card>
@@ -646,9 +700,27 @@ function CoachInboxView() {
 
                 <Card className="shrink-0 border-slate-200 bg-white shadow-sm">
                   <CardContent className="flex flex-col gap-3 p-4">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                      <MessageSquare className="h-4 w-4 text-indigo-500" />
-                      피드백 작성 및 전송
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                        <MessageSquare className="h-4 w-4 text-indigo-500" />
+                        피드백 작성 및 전송
+                      </div>
+                      <div className="inline-flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
+                        {feedbackSendStatusOptions.map((status) => (
+                          <button
+                            key={status}
+                            type="button"
+                            className={`h-8 rounded-md border px-3 text-xs font-semibold transition-colors ${getFeedbackStatusButtonClass(status, feedbackStatus)}`}
+                            onClick={() => {
+                              setFeedbackStatus(status);
+                              setFeedbackError("");
+                            }}
+                            disabled={isSaving}
+                          >
+                            {status}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     <Textarea
                       value={feedback}
@@ -656,25 +728,12 @@ function CoachInboxView() {
                       placeholder="학생에게 전달할 피드백을 작성하세요."
                       className="h-24 resize-none border-slate-300 focus-visible:ring-indigo-500"
                     />
-                    <div className="flex flex-wrap gap-2">
-                      <Button variant="outline" className="h-8 text-xs" onClick={() => void saveReview("검토 중")} disabled={isSaving}>
-                        검토 중으로 변경
-                      </Button>
-                      <Button variant="outline" className="h-8 border-amber-200 bg-amber-50 text-xs text-amber-700" onClick={() => void saveReview("수정 요청")} disabled={isSaving}>
-                        <AlertCircle className="mr-1 h-3 w-3" />
-                        수정 요청 보내기
-                      </Button>
-                      <Button className="h-8 bg-indigo-600 px-4 text-xs text-white hover:bg-indigo-700" onClick={() => void saveReview("피드백 완료")} disabled={isSaving}>
-                        피드백 완료 보내기
-                      </Button>
-                      <Button variant="outline" className="h-8 border-emerald-200 bg-emerald-50 text-xs text-emerald-700" onClick={() => void saveReview("최종 확인")} disabled={isSaving}>
-                        <ShieldCheck className="mr-1 h-3 w-3" />
-                        최종 확인 보내기
+                    {feedbackError && <p className="text-xs font-medium text-red-600">{feedbackError}</p>}
+                    <div className="flex justify-end">
+                      <Button className="h-9 bg-emerald-600 px-5 text-sm text-white shadow-sm hover:bg-emerald-700" onClick={() => void saveReview()} disabled={isSaving}>
+                        {isSaving ? "전송 중" : "피드백 전송"}
                       </Button>
                     </div>
-                    <p className="text-xs text-slate-400">
-                      피드백은 학생의 리뷰 요청 현황에 표시됩니다. 원문 댓글로도 남겨야 하는 내용은 원문 보기에서 별도로 작성해 주세요.
-                    </p>
                   </CardContent>
                 </Card>
               </>

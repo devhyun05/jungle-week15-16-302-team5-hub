@@ -5376,3 +5376,55 @@ GitHub ������Ʈ ���
 - OAuth login redirect
 - role-based QA
 - seed data
+
+---
+
+## 2026-06-16 학습 기록: 코치 리뷰 전송 UI와 상태 관리
+
+### 수정한 파일과 역할
+
+| 파일 | 역할 |
+| --- | --- |
+| `frontend/src/app/pages/coach/CoachReview.tsx` | 코치 리뷰 인박스, 요청 선택, 상태 선택, 피드백 전송 UI를 담당합니다. |
+| `frontend/src/app/pages/posts/PostDetail.tsx` | 게시글 상세 화면과 댓글 영역을 담당합니다. |
+
+### 이번 구현에서 볼 React 개념
+
+- `useState`: 선택한 리뷰 요청, 피드백 내용, 선택한 전송 상태, validation 메시지를 화면 상태로 관리합니다.
+- `useEffect`: 선택한 요청이 바뀔 때 기존 피드백과 상태를 입력 UI에 다시 채웁니다.
+- `useMemo`: 검색어, 카테고리, 상태 필터가 바뀔 때 코치 리뷰 요청 목록을 다시 계산합니다.
+- controlled textarea: textarea 값은 `feedback` state가 관리하고, 사용자가 입력할 때마다 state가 바뀝니다.
+- segmented control: `검토 중`, `수정 요청`, `피드백 완료` 중 하나를 버튼 묶음으로 선택합니다.
+- toast: 성공/실패 안내를 화면 레이아웃을 밀어내지 않고 잠깐 보여줍니다.
+
+### 코드 흐름
+
+1. 코치가 리뷰 요청을 선택합니다.
+2. 선택한 요청의 기존 `feedback`과 `status`가 화면 state에 들어갑니다.
+3. 코치는 `검토 중`, `수정 요청`, `피드백 완료` 중 전송할 상태를 고릅니다.
+4. 피드백 textarea에 내용을 입력합니다.
+5. `피드백 전송` 버튼을 누르면 기존 `PATCH /review-requests/{id}` API로 상태와 피드백을 보냅니다.
+6. 성공하면 요청 목록 state를 갱신하고 선택한 상태에 맞는 toast를 띄웁니다.
+
+### 이해 포인트
+
+- 리뷰 요청의 실제 저장은 백엔드 API가 담당합니다.
+- 프론트는 API 응답을 받은 뒤 `requests` state를 갱신해서 화면을 즉시 바꿉니다.
+- `최종 확인` 상태는 기존 데이터 호환을 위해 표시 값으로는 남겨두되, 코치가 새로 전송하는 액션에서는 제외했습니다.
+- 댓글과 코치 피드백은 역할이 다릅니다. 댓글은 원문 게시글 아래에 남는 공개 대화이고, 코치 피드백은 리뷰 요청 흐름 안에서 학생에게 전달되는 평가/수정 요청입니다.
+
+### 추가로 공부할 키워드
+
+- React controlled component
+- React state lifting
+- segmented control UI
+- toast notification
+- REST PATCH
+- optimistic UI와 server response 기반 갱신의 차이
+
+### 추가 학습 포인트: 상태 값과 필터 옵션 분리
+
+- `ReviewStatus` 타입에는 기존 데이터 호환을 위해 `최종 확인`이 남아 있을 수 있습니다.
+- 하지만 코치가 새로 필터링하거나 전송하는 화면 옵션에서는 `최종 확인`을 보여주지 않도록 `reviewStatusOptions`에서 제외했습니다.
+- 즉, DB/API가 알고 있는 상태 전체와 현재 화면에서 사용자가 선택할 수 있는 상태 목록은 다를 수 있습니다.
+- UI 버튼 색상은 행동의 의미를 빠르게 읽게 해주므로, 코치 리뷰 전송 버튼은 서비스 주요 색상인 emerald 계열로 맞췄습니다.

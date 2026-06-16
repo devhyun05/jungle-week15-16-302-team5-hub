@@ -3749,3 +3749,52 @@ fix: 로그인 화면과 게시글 상호작용 오류 정리
 ```txt
 style: 로그인 화면과 관리자 통계 UI 정리
 ```
+
+---
+
+## 2026-06-16 작업: 코치 리뷰 피드백 전송 UI 정리
+
+상태: 완료
+
+목표:
+
+- 코치 리뷰 인박스에서 피드백 전송 흐름을 `상태 선택 -> 피드백 작성 -> 전송` 구조로 정리했습니다.
+- 성공 안내가 화면 안에 큰 block으로 생기지 않도록 toast로 변경했습니다.
+- 원문 게시글의 댓글 영역은 피드백과 분리해서 `댓글`로만 표시했습니다.
+
+수정 파일:
+
+- `frontend/src/app/pages/coach/CoachReview.tsx`
+- `frontend/src/app/pages/posts/PostDetail.tsx`
+- `README.md`
+- `docs/agent/log.md`
+- `docs/agent/study.md`
+- `docs/agent/test.md`
+
+변경 요약:
+
+- `검토 중`, `수정 요청`, `피드백 완료`만 피드백 전송용 segmented control로 제공합니다.
+- `최종 확인 보내기` 버튼은 제거했습니다.
+- `수정 요청`과 `피드백 완료`는 피드백 내용이 없으면 전송하지 않고 validation을 보여줍니다.
+- 전송 성공 toast 문구는 선택한 상태에 따라 다르게 표시됩니다.
+- 게시글 상세의 댓글 제목에서 `코치 피드백` 표현을 제거했습니다.
+
+QA:
+
+```txt
+rg old coach review UI strings in frontend/src: no matches
+npm run build: success
+backend compileall: success
+```
+
+커밋 추천 제목:
+
+```txt
+refactor: 코치 리뷰 피드백 전송 UI 정리
+```
+
+추가 UI 수정:
+
+- 코치 리뷰 인박스 왼쪽 상태 필터에서 `최종 확인` 옵션을 제거했습니다.
+- 피드백 상태 토글 버튼 사이에 간격을 추가해 너무 붙어 보이지 않게 정리했습니다.
+- `피드백 전송` 버튼을 검정색에서 JungleLog 초록 계열 버튼으로 변경했습니다.

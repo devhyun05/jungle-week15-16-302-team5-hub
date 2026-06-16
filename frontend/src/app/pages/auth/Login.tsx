@@ -46,7 +46,7 @@ export function Login() {
 
         <Button
           type="button"
-          className="mt-10 h-14 w-full gap-3 rounded-none bg-slate-950 text-base font-bold text-white shadow-sm hover:bg-emerald-700"
+          className="mt-10 h-14 w-full gap-3 rounded-md bg-slate-950 text-base font-bold text-white shadow-sm hover:bg-emerald-700"
           onClick={loginWithGoogle}
         >
           <GoogleMark />
