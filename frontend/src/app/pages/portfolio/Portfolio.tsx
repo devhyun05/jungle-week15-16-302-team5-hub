@@ -45,6 +45,10 @@ function feedbackStatusClass(status: string) {
   return "bg-slate-100 text-slate-700";
 }
 
+function getCoachFeedbackStatusLabel(status: string) {
+  return status === "요청함" ? "요청 대기 중" : status;
+}
+
 function categoryVariant(category: string) {
   if (category === "트러블슈팅") return "warning";
   if (category === "면접 질문") return "success";
@@ -443,7 +447,7 @@ export function Portfolio() {
   };
 
   return (
-    <div className="mx-auto max-w-[1440px] space-y-6">
+    <div className="mx-auto max-w-[1680px] space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">포트폴리오 관리</h1>
         <p className="mt-1 text-slate-500">
@@ -482,7 +486,7 @@ export function Portfolio() {
         </Card>
       ) : (
         <div className="flex flex-col gap-6 lg:flex-row">
-          <section className="w-full space-y-4 lg:w-[360px]">
+          <section className="w-full space-y-4 lg:w-[340px]">
             <div className="flex items-center justify-between gap-3 px-1">
               <h2 className="text-lg font-semibold text-slate-900">내 프로젝트</h2>
               <span className="text-xs text-slate-400">{filteredProjects.length}개</span>
@@ -496,24 +500,22 @@ export function Portfolio() {
                 className="bg-white pl-9"
               />
             </div>
-            <div className="rounded-lg border border-slate-200 bg-white p-2">
-              <p className="mb-2 px-1 text-xs font-semibold text-slate-500">코치 리뷰 상태</p>
-              <div className="flex flex-wrap gap-1">
+            <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+              <label htmlFor="coach-status-filter" className="mb-2 block text-xs font-semibold text-slate-500">
+                코치 리뷰 상태
+              </label>
+              <select
+                id="coach-status-filter"
+                value={coachStatusFilter}
+                onChange={(event) => setCoachStatusFilter(event.target.value as CoachFeedbackStatusFilter)}
+                className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition-colors hover:border-emerald-300 hover:bg-emerald-50/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+              >
                 {coachFeedbackStatusFilters.map((status) => (
-                  <button
-                    key={status}
-                    type="button"
-                    onClick={() => setCoachStatusFilter(status)}
-                    className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
-                      coachStatusFilter === status
-                        ? "bg-emerald-600 text-white"
-                        : "bg-slate-50 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
-                    }`}
-                  >
-                    {status}
-                  </button>
+                  <option key={status} value={status}>
+                    {getCoachFeedbackStatusLabel(status)}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
 
             {filteredProjects.length === 0 && (
@@ -586,7 +588,7 @@ export function Portfolio() {
                         )}
                       </div>
                       <span className={`inline-flex max-w-full break-words rounded-full px-2 py-0.5 text-[10px] font-semibold ${feedbackStatusClass(project.coachFeedbackStatus)}`}>
-                        코치: {project.coachFeedbackStatus}
+                        코치: {getCoachFeedbackStatusLabel(project.coachFeedbackStatus)}
                       </span>
                       <div className="flex flex-wrap gap-1">
                         {displayTechStack.slice(0, 3).map((tag) => (
@@ -617,7 +619,7 @@ export function Portfolio() {
           <section className="min-w-0 flex-1 space-y-6">
             {selectedProject ? (
               <Card className="bg-white">
-                <CardContent className="grid gap-6 p-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
+                <CardContent className="grid gap-6 p-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.6fr)_minmax(340px,0.7fr)]">
                   <section className="min-w-0 space-y-6">
                     <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5">
                       <div className="min-w-0">
@@ -648,31 +650,36 @@ export function Portfolio() {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-2 border-t border-slate-200 pt-4">
-                        <Button variant="outline" size="sm" className={`whitespace-nowrap ${sectionActionClass}`} onClick={openPublishDialog} disabled={isSaving}>
-                          포트폴리오 게시글로 발행
-                        </Button>
-                        {selectedProject.publishedPostId && (
-                          <Button variant="outline" size="sm" className={`whitespace-nowrap ${sectionActionClass}`} asChild>
-                            <Link to={`/posts/${selectedProject.publishedPostId}`}>게시글 보러가기</Link>
+                      <div className="space-y-2 border-t border-slate-200 pt-4">
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="outline" size="sm" className={`whitespace-nowrap ${sectionActionClass}`} onClick={openPublishDialog} disabled={isSaving}>
+                            포트폴리오 게시글로 발행
                           </Button>
-                        )}
-                        {selectedProjectGithubHref ? (
-                          <Button variant="outline" size="sm" className={`whitespace-nowrap ${utilityActionClass}`} asChild>
-                            <a href={selectedProjectGithubHref} target="_blank" rel="noreferrer">
-                              <ExternalLink className="mr-1 h-3 w-3" />
-                              GitHub 보기
-                            </a>
+                          {selectedProject.publishedPostId && (
+                            <Button variant="outline" size="sm" className={`whitespace-nowrap ${sectionActionClass}`} asChild>
+                              <Link to={`/posts/${selectedProject.publishedPostId}`}>게시글 보러가기</Link>
+                            </Button>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="outline" size="sm" className={`whitespace-nowrap ${utilityActionClass}`} onClick={() => void refreshGithubInfo()} disabled={analyzing}>
+                            <RefreshCw className={`mr-1 h-3 w-3 ${analyzing ? "animate-spin" : ""}`} />
+                            GitHub 정보 새로고침
                           </Button>
-                        ) : (
-                          <Button variant="outline" size="sm" className="whitespace-nowrap" disabled>
-                            GitHub URL 확인 필요
-                          </Button>
-                        )}
-                        <Button variant="outline" size="sm" className={`whitespace-nowrap ${utilityActionClass}`} onClick={() => void refreshGithubInfo()} disabled={analyzing}>
-                          <RefreshCw className={`mr-1 h-3 w-3 ${analyzing ? "animate-spin" : ""}`} />
-                          GitHub 정보 새로고침
-                        </Button>
+                          {selectedProjectGithubHref ? (
+                            <Button variant="outline" size="sm" className={`whitespace-nowrap ${utilityActionClass}`} asChild>
+                              <a href={selectedProjectGithubHref} target="_blank" rel="noreferrer">
+                                <ExternalLink className="mr-1 h-3 w-3" />
+                                GitHub 보기
+                              </a>
+                            </Button>
+                          ) : (
+                            <Button variant="outline" size="sm" className="whitespace-nowrap" disabled>
+                              GitHub URL 확인 필요
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -714,66 +721,114 @@ export function Portfolio() {
                     </div>
                   </section>
 
-                  <aside className="min-w-0 space-y-4">
-                    <section className="rounded-xl border border-slate-200 bg-white p-4">
-                      <div className="mb-2 flex items-center justify-between gap-2">
+                  <aside className="min-w-0 space-y-5">
+                    <section className="rounded-xl border border-slate-200 bg-white p-5">
+                      <div className="mb-4 space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="text-sm font-semibold text-slate-900">면접 예상 질문</p>
                           <Badge variant={selectedProject.aiInterviewSaved ? "success" : "secondary"}>
                             {selectedProject.aiInterviewSaved ? "저장됨" : "저장 전"}
                           </Badge>
                         </div>
-                        <Button asChild variant="outline" size="sm" className={sectionActionClass}>
-                          <Link to={`/ai-assistant?project=${selectedProject.id}&type=interview`}>면접 질문 만들기</Link>
-                        </Button>
+                        <div className="flex justify-end">
+                          <Button asChild variant="outline" size="sm" className={sectionActionClass}>
+                            <Link to={`/ai-assistant?project=${selectedProject.id}&type=interview`}>면접 질문 만들기</Link>
+                          </Button>
+                        </div>
                       </div>
-                      <p className="line-clamp-6 whitespace-pre-line text-sm leading-6 text-slate-600">
+                      <div className="rounded-lg border border-slate-100 bg-slate-50/80 px-4 py-3">
+                        <p className="line-clamp-6 whitespace-pre-line text-sm leading-6 text-slate-600">
                         {selectedProject.savedInterviewQuestions ??
                           "AI 도우미에서 이 프로젝트를 선택하면 GitHub repo와 연결 기록을 기준으로 면접 예상 질문을 저장할 수 있습니다."}
-                      </p>
+                        </p>
+                      </div>
                     </section>
 
-                    <section className="rounded-xl border border-slate-200 bg-white p-4">
-                      <div className="mb-2 flex items-center justify-between gap-2">
+                    <section className="rounded-xl border border-slate-200 bg-white p-5">
+                      <div className="mb-4 space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-semibold text-slate-900">코치 리뷰/피드백</p>
+                          <p className="whitespace-nowrap text-sm font-semibold text-slate-900">코치 리뷰/피드백</p>
                           <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${feedbackStatusClass(selectedProject.coachFeedbackStatus)}`}>
-                            {selectedProject.coachFeedbackStatus}
+                            {getCoachFeedbackStatusLabel(selectedProject.coachFeedbackStatus)}
                           </span>
                         </div>
-                        <Button asChild variant="outline" size="sm" className={sectionActionClass}>
-                          <Link to="/coach-review">코치 리뷰 요청하기</Link>
-                        </Button>
+                        <div className="flex justify-end">
+                          <Button asChild variant="outline" size="sm" className={sectionActionClass}>
+                            <Link to="/coach-review">코치 리뷰 요청하기</Link>
+                          </Button>
+                        </div>
                       </div>
-                      <p className="text-sm leading-6 text-slate-600">
-                        포트폴리오 글을 저장한 뒤 코치 리뷰를 요청하면 피드백 이력과 상태를 이 프로젝트 기준으로 관리합니다.
-                      </p>
+                      <div className="rounded-lg border border-slate-100 bg-slate-50/80 px-4 py-3">
+                        <p className="text-sm leading-6 text-slate-600">
+                          포트폴리오 글을 저장한 뒤 코치 리뷰를 요청하면 피드백 이력과 상태를 이 프로젝트 기준으로 관리합니다.
+                        </p>
+                      </div>
                     </section>
 
+                    <section className="rounded-xl border border-slate-200 bg-white p-5">
+                      <div className="mb-4 space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-900">
+                            <Link2 className="h-4 w-4 shrink-0 text-slate-500" />
+                            <span className="whitespace-nowrap">연결된 학습 기록</span>
+                          </h3>
+                          <span className="shrink-0 text-xs text-slate-400">{linkedRecords.length}개</span>
+                        </div>
+                        <div className="flex justify-end">
+                          <Button variant="outline" size="sm" className={sectionActionClass} onClick={() => setIsConnectOpen(true)}>
+                            기록 연결하기
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        {linkedRecords.map((record) => (
+                          <Link key={record.id} to={`/posts/${record.id}`} className="block rounded-lg border border-slate-200 bg-slate-50/80 p-4 transition-colors hover:border-emerald-200 hover:bg-emerald-50/60">
+                            <div className="border-l-2 border-emerald-300 pl-3">
+                              <div className="mb-2 flex flex-wrap items-center gap-2">
+                                <Badge variant={categoryVariant(record.category)} className="px-1.5 py-0 text-[10px]">
+                                  {record.category}
+                                </Badge>
+                                <span className="text-xs text-slate-400">{new Date(record.createdAt).toLocaleDateString("ko-KR")}</span>
+                              </div>
+                              <p className="line-clamp-2 text-sm font-semibold leading-6 text-slate-900">{record.title}</p>
+                              <p className="mt-1 line-clamp-3 text-xs leading-5 text-slate-500">{record.summary}</p>
+                            </div>
+                          </Link>
+                        ))}
+                        {linkedRecords.length === 0 && (
+                          <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-6 text-center text-sm text-slate-500">
+                            아직 연결된 기록이 없습니다.
+                          </div>
+                        )}
+                      </div>
+                    </section>
+                  </aside>
+
+                  <aside className="min-w-0">
                     <section className="rounded-xl border border-slate-200 bg-white p-4">
                       <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
                         <Github className="h-4 w-4 text-slate-500" />
                         GitHub 참고 정보
                       </h3>
-                      <div className="space-y-4">
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                          <p className="text-xs font-semibold text-slate-500">기술 스택</p>
+                      <div className="divide-y divide-slate-100">
+                        <div className="pb-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">기술 스택</p>
                           <div className="mt-3 flex flex-wrap gap-2">
                             {selectedDisplayTechStack.map((stack) => (
-                              <span key={stack} className="rounded-md bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm">
+                              <span key={stack} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700">
                                 {stack}
                               </span>
                             ))}
                             {selectedDisplayTechStack.length === 0 && (
-                              <span className="rounded-md bg-white px-2 py-1 text-xs text-slate-500 shadow-sm">
+                              <span className="rounded-md border border-dashed border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-500">
                                 아직 기술 스택을 충분히 감지하지 못했습니다.
                               </span>
                             )}
                           </div>
                         </div>
 
-                        <div className="rounded-lg border border-slate-200 bg-white p-3">
-                          <div className="mb-2 space-y-2">
+                        <div className="py-4">
+                          <div className="space-y-2">
                             <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                               <GitCommit className="h-4 w-4 text-emerald-600" />
                               GitHub 커밋 메시지 참고 자료
@@ -781,7 +836,7 @@ export function Portfolio() {
                             <p className="text-xs leading-5 text-slate-500">
                               화면에는 최근 일부만 보이고, AI/RAG 단계에서는 수집된 커밋 메시지 전체를 참고합니다.
                             </p>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                               <Button type="button" variant="outline" size="sm" className={utilityActionClass} onClick={() => setIsCommitDialogOpen(true)}>
                                 수집된 커밋 {selectedProject.githubCommits.length}개 보기
                               </Button>
@@ -794,9 +849,13 @@ export function Portfolio() {
                               )}
                             </div>
                           </div>
+                        </div>
+
+                        <div className="py-4">
+                          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">최근 커밋 preview</p>
                           <ul className="space-y-2">
                             {selectedProject.recentCommitSummary.slice(0, 3).map((commit) => (
-                              <li key={commit} className="flex gap-2 text-sm text-slate-700">
+                              <li key={commit} className="flex gap-2 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">
                                 <GitCommit className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
                                 <span>{commit}</span>
                               </li>
@@ -809,8 +868,8 @@ export function Portfolio() {
                           </ul>
                         </div>
 
-                        <details className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                          <summary className="cursor-pointer text-sm font-semibold text-slate-900">
+                        <details className="pt-4">
+                          <summary className="cursor-pointer text-sm font-semibold text-slate-900 hover:text-emerald-700">
                             GitHub README 참고 자료
                           </summary>
                           <p className="mt-2 text-xs leading-5 text-slate-500">
@@ -832,40 +891,6 @@ export function Portfolio() {
                             {selectedProject.readmeSummary ?? "아직 README 요약이 없습니다."}
                           </p>
                         </details>
-                      </div>
-                    </section>
-
-                    <section className="rounded-xl border border-slate-200 bg-white p-4">
-                      <div className="mb-3 flex items-center justify-between gap-2">
-                        <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                          <Link2 className="h-4 w-4 text-slate-500" />
-                          연결된 학습 기록
-                        </h3>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-slate-400">{linkedRecords.length}개</span>
-                          <Button variant="outline" size="sm" className={sectionActionClass} onClick={() => setIsConnectOpen(true)}>
-                            기록 연결하기
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        {linkedRecords.map((record) => (
-                          <Link key={record.id} to={`/posts/${record.id}`} className="block rounded-md border border-slate-200 bg-white p-3 transition-colors hover:border-emerald-200 hover:bg-emerald-50/40">
-                            <div className="mb-1 flex items-center gap-2">
-                              <Badge variant={categoryVariant(record.category)} className="px-1.5 py-0 text-[10px]">
-                                {record.category}
-                              </Badge>
-                              <span className="text-xs text-slate-400">{new Date(record.createdAt).toLocaleDateString("ko-KR")}</span>
-                            </div>
-                            <p className="text-sm font-medium text-slate-800">{record.title}</p>
-                            <p className="mt-1 line-clamp-2 text-xs text-slate-500">{record.summary}</p>
-                          </Link>
-                        ))}
-                        {linkedRecords.length === 0 && (
-                          <div className="rounded-md border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
-                            아직 연결된 기록이 없습니다.
-                          </div>
-                        )}
                       </div>
                     </section>
                   </aside>

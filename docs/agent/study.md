@@ -324,3 +324,111 @@ AI:
 - function calling
 - MCP server
 - Agent loop
+
+## 2026-06-16 학습 기록: 포트폴리오 UI 구조 정리
+
+### 수정한 파일
+
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`: 포트폴리오 관리 화면의 상태 필터와 GitHub 참고 정보 렌더링을 담당한다.
+
+### 이번 구현에서 볼 React 개념
+
+- `useState`: `coachStatusFilter`에 현재 선택된 코치 리뷰 상태를 저장한다.
+- `useMemo`: 검색어와 코치 리뷰 상태가 바뀔 때 `filteredProjects`를 다시 계산한다.
+- 조건부 className: 선택된 필터와 선택되지 않은 필터의 스타일을 다르게 보여준다.
+- 배열 `map`: 필터 항목, 기술 스택, 최근 커밋 목록을 반복 렌더링한다.
+- `details` / `summary`: README 참고 자료를 접힘/펼침 UI로 보여준다.
+
+### 이해 포인트
+
+- segmented control은 여러 선택지 중 하나만 고르는 UI다. 기능은 기존 버튼과 같지만, 하나의 묶음처럼 보여서 화면이 덜 어수선하다.
+- GitHub 참고 정보는 AI/RAG의 재료이지만 사용자가 매번 자세히 읽는 핵심 산출물은 아니다. 그래서 포트폴리오 글보다 작은 오른쪽 보조 영역에 정리한다.
+- 이번 작업은 API 응답 구조를 바꾸지 않고 렌더링만 바꿨기 때문에 기존 포트폴리오 프로젝트/코치 리뷰/GitHub 데이터 흐름은 유지된다.
+
+## 2026-06-16 학습 기록: select 필터와 3단 grid
+
+### 수정한 파일
+
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`: 포트폴리오 관리 화면의 필터와 선택 프로젝트 상세 레이아웃을 담당한다.
+
+### 이번 구현에서 볼 개념
+
+- `select` controlled component: `value={coachStatusFilter}`와 `onChange`로 현재 필터 상태를 React state에 저장한다.
+- 표시명 변환 함수: `getCoachFeedbackStatusLabel()`은 DB/API 값은 유지하면서 화면에 보이는 말만 바꾼다.
+- CSS grid column: `xl:grid-cols-[...]`로 큰 화면에서 포트폴리오 글 / 보조 정보 / GitHub 참고 정보를 3단으로 배치한다.
+- 관심사 분리: GitHub 참고 정보는 AI/RAG 참고자료이고, 면접 질문/코치 리뷰/연결 기록은 프로젝트 관리 보조 정보라 column을 분리했다.
+
+### 이해 포인트
+
+- 데이터 값을 직접 바꾸면 필터 비교나 백엔드 저장 값이 꼬일 수 있다. 그래서 `요청함` 값은 그대로 두고 UI label만 `요청 대기 중`으로 바꿨다.
+- 드롭다운은 항목이 많을 때 화면을 덜 어수선하게 만들고, 클릭하면 아래로 목록이 펼쳐지는 선택 UI다.
+- GitHub README와 커밋 메시지는 AI가 참고하는 자료라 별도 오른쪽 column에 배치하는 편이 포트폴리오 글을 읽는 흐름을 방해하지 않는다.
+
+## 2026-06-16 학습 기록: 카드 내부 계층 정리
+
+### 수정한 파일
+
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`: 포트폴리오 상세 가운데 column의 보조 정보 UI를 담당한다.
+
+### 이번 구현에서 볼 개념
+
+- spacing scale: `space-y-5`, `p-5`, `mb-4`처럼 반복 간격을 맞춰 같은 영역처럼 보이게 한다.
+- content hierarchy: 제목/액션 버튼과 본문을 별도 박스로 나누면 사용자가 섹션 구조를 더 쉽게 읽는다.
+- nested link card: 연결된 학습 기록 전체가 하나의 Link이며, 안쪽에 metadata/title/summary를 계층적으로 배치한다.
+- line clamp: 긴 제목과 요약은 `line-clamp`로 고정해 카드 높이가 지나치게 늘어나는 것을 막는다.
+
+### 이해 포인트
+
+- UI가 어색한 이유가 기능 문제가 아니라 정보 계층 문제일 때가 많다.
+- 같은 column 안의 카드들은 padding, header margin, body box 스타일을 통일해야 정돈되어 보인다.
+
+## 2026-06-16 학습 기록: header 줄바꿈 제어
+
+### 수정한 파일
+
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`
+
+### 이번 구현에서 볼 개념
+
+- `whitespace-nowrap`: 짧은 제목이 단어 중간에서 줄바꿈되지 않도록 막는다.
+- header/body 분리: 제목과 액션 버튼을 같은 줄에 넣으면 좁은 column에서 깨지기 쉬워, `space-y` 구조로 위아래를 나눴다.
+- grid minmax: `minmax(320px, 0.6fr)`처럼 최소 폭을 지정하면 특정 column이 너무 좁아지는 것을 막을 수 있다.
+
+### 이해 포인트
+
+- 반응형 UI에서 텍스트가 이상하게 줄바꿈되면, 글자 크기보다 레이아웃 압박이 원인인 경우가 많다.
+- 제목과 버튼은 같은 줄에 두면 예쁘지만, 좁은 column에서는 분리하는 편이 안정적이다.
+
+## 2026-06-16 학습 기록: 버튼 렌더링 순서
+
+### 수정한 파일
+
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`
+
+### 이해 포인트
+
+- flex-wrap 영역에서는 JSX에 적힌 버튼 순서대로 줄바꿈이 결정된다.
+- 버튼 기능을 바꾸지 않아도 렌더링 순서를 바꾸면 사용자가 보는 그룹감이 달라진다.
+
+## 2026-06-16 학습 기록: flex 그룹 정렬
+
+### 수정한 파일
+
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`
+
+### 이해 포인트
+
+- 하나의 `flex-wrap` 안에 모든 버튼을 넣으면 화면 폭에 따라 마지막 버튼만 아래로 떨어질 수 있다.
+- 관련 버튼끼리 wrapper로 묶으면 줄바꿈이 생겨도 그룹 단위로 움직이기 때문에 UI가 덜 흩어진다.
+- 이번 작업은 버튼 동작을 바꾸지 않고 JSX 구조와 className만 조정했다.
+
+## 2026-06-16 학습 기록: 액션 버튼 줄 구성
+
+### 수정한 파일
+
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`
+
+### 이해 포인트
+
+- `justify-between`은 남는 공간을 좌우로 벌리기 때문에 좁은 카드 안에서는 버튼 그룹이 흩어져 보일 수 있다.
+- 이번에는 `space-y-2`로 줄을 직접 나누고, 각 줄 안에서만 `flex-wrap`을 사용해 원하는 순서를 안정적으로 만들었다.

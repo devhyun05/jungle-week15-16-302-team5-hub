@@ -384,3 +384,49 @@ AI 기능 전 마지막 확인:
 2. 코치 계정에서 리뷰 인박스와 피드백 전송을 확인한다.
 3. 관리자 계정에서 승인/역할 변경과 최고관리자 보호를 확인한다.
 4. AI 단계에서는 OpenAI/RAG/MCP/Agent 설계와 API를 시작한다.
+
+## 2026-06-16 포트폴리오 관리 UI 정리
+
+- 작업 파일: `frontend/src/app/pages/portfolio/Portfolio.tsx`
+- 내 프로젝트 목록의 코치 리뷰 상태 필터를 segmented control 형태로 변경했다.
+- 오른쪽 보조 column의 GitHub 참고 정보를 세로 section으로 나누어 기술 스택, 커밋 참고, 최근 커밋 preview, README 참고가 섞이지 않게 정리했다.
+- 데이터/API 구조는 변경하지 않고 기존 `coachStatusFilter`, `selectedProject.githubCommits`, `recentCommitSummary`, `readmeSummary` 값을 그대로 사용했다.
+
+## 2026-06-16 포트폴리오 상세 3단 UI 조정
+
+- 작업 파일: `frontend/src/app/pages/portfolio/Portfolio.tsx`
+- 코치 리뷰 상태 필터를 select/dropdown UI로 변경했다.
+- `요청함`은 백엔드/API 값으로 유지하고, 화면에서는 `요청 대기 중`으로 변환해 보여준다.
+- 선택 프로젝트 상세를 3단 grid로 변경해 왼쪽은 포트폴리오 글, 가운데는 면접 질문/코치 리뷰/연결 기록, 오른쪽은 GitHub 참고 정보가 담당하도록 나눴다.
+- GitHub 참고 정보는 별도 오른쪽 column으로 분리했기 때문에 긴 연결 기록이나 면접 질문과 시각적으로 섞이지 않는다.
+
+## 2026-06-16 포트폴리오 보조 정보 column UI 정리
+
+- 작업 파일: `frontend/src/app/pages/portfolio/Portfolio.tsx`
+- 가운데 column의 section padding과 gap을 맞춰 면접 질문, 코치 리뷰, 연결 기록이 같은 리듬으로 보이게 정리했다.
+- 연결된 학습 기록 카드는 왼쪽 emerald line과 내부 padding을 넣어 카테고리, 날짜, 제목, 요약이 한 묶음으로 읽히게 했다.
+
+## 2026-06-16 포트폴리오 보조 카드 header 줄바꿈 정리
+
+- 작업 파일: `frontend/src/app/pages/portfolio/Portfolio.tsx`
+- 가운데 column의 카드 header에서 제목과 버튼을 분리했다.
+- `코치 리뷰/피드백`, `연결된 학습 기록` 제목이 버튼 때문에 중간에서 잘리지 않도록 `whitespace-nowrap`과 header 구조를 조정했다.
+- 상세 grid의 가운데 column 최소 폭을 320px로 키웠다.
+
+## 2026-06-16 포트폴리오 GitHub 액션 버튼 순서 조정
+
+- 작업 파일: `frontend/src/app/pages/portfolio/Portfolio.tsx`
+- `GitHub 정보 새로고침` 버튼을 `GitHub 보기` 왼쪽으로 옮겼다.
+- 버튼 기능은 그대로 두고 렌더링 순서만 변경했다.
+
+## 2026-06-16 포트폴리오 액션 버튼 그룹 정렬
+
+- 작업 파일: `frontend/src/app/pages/portfolio/Portfolio.tsx`
+- 상단 액션 영역을 초록색 포트폴리오 작업 그룹과 흰색 GitHub 작업 그룹으로 나눴다.
+- 흰색 버튼들이 서로 떨어져 줄바꿈되지 않도록 같은 wrapper 안에서 정렬했다.
+
+## 2026-06-16 포트폴리오 액션 버튼 2줄 정렬
+
+- 작업 파일: `frontend/src/app/pages/portfolio/Portfolio.tsx`
+- 포트폴리오 액션과 GitHub 액션을 각각 한 줄씩 보이도록 정렬했다.
+- 이전처럼 좌우로 벌어지는 구조를 제거하고 왼쪽 정렬된 2줄 구조로 단순화했다.
