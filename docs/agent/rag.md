@@ -86,8 +86,8 @@ text chunk -> OpenAI embedding -> PostgreSQL embedding_json 저장 -> Python cos
 ## 비용 안전 기준
 
 - RAG indexing은 OpenAI embedding API를 호출하므로 비용이 발생한다.
-- 자동 QA에서는 실제 embedding 호출을 실행하지 않았다.
-- 실제 호출 QA는 사용자가 명시적으로 허락한 뒤 진행한다.
+- 자동 QA에서는 실제 embedding 호출을 반복 실행하지 않는다.
+- 사용자 허락 후 최소 실제 호출 QA를 1회 수행했다.
 
 ## 검증 결과
 
@@ -129,3 +129,14 @@ frontend npm run build: success
 from app.main import app: success
 embed_texts([]): []
 ```
+
+## 2026-06-17 실제 RAG QA
+
+사용자 허락 후 `ai-board-lab` 프로젝트로 실제 RAG 색인을 1회 실행했다.
+
+```txt
+rag_index_project: ai-board-lab
+rag_indexed_count: 10
+```
+
+README 원문, GitHub commit message, 연결 기록 등을 chunk로 분리하고 OpenAI embedding을 저장하는 흐름이 실제로 동작함을 확인했다.

@@ -102,3 +102,21 @@ frontend npm run build: success
 FastAPI app import: success
 registered route: /ai/agent/run
 ```
+
+### 실제 Agent QA
+
+사용자 허락 후 실제 비용이 발생하는 Agent 호출을 1회만 수행했다.
+
+```txt
+project: ai-board-lab
+output_type: interview
+rag_indexed_count: 10
+agent_stopped_reason: completed
+tool_calls:
+  1. get_portfolio_project success
+  2. rag_search success
+  3. generate_project_content success
+final_content_length: 1142
+```
+
+이 결과로 MCP 프로젝트 조회, RAG 검색, OpenAI 생성이 Agent loop 안에서 연결되는 것을 확인했다.

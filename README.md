@@ -905,4 +905,17 @@ FastAPI app import: success
 registered AI routes: /ai/generate, /ai/rag/index, /ai/rag/search, /mcp, /ai/agent/run
 ```
 
-비용 안전 기준에 따라 이번 자동 검증에서는 실제 OpenAI 생성/embedding 호출은 실행하지 않았습니다. 실제 AI 호출 QA는 사용자가 명시적으로 허락한 뒤 진행합니다.
+비용 안전 기준에 따라 자동 검증에서는 실제 OpenAI 생성/embedding 호출을 반복 실행하지 않습니다.
+
+사용자 허락 후 최소 실제 QA를 1회 수행했습니다.
+
+```txt
+project: ai-board-lab
+rag_indexed_count: 10
+mcp_project_title: ai-board-lab
+agent_stopped_reason: completed
+agent_tool_calls: get_portfolio_project -> rag_search -> generate_project_content
+agent_content_length: 1142
+```
+
+이 검증으로 OpenAI embedding, RAG 검색, MCP tool, Agent loop, OpenAI generation이 과제 요구사항 흐름대로 연결됨을 확인했습니다.

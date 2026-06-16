@@ -772,3 +772,21 @@ embed_texts([]): []
 - 이유:
   - Agent tool call 로그에 남긴 RAG 검색 결과와 실제 생성에 쓰는 근거를 일치시키기 위해서다.
   - 같은 Agent 실행 안에서 embedding/search 비용이 두 번 발생하지 않게 하기 위해서다.
+
+## 2026-06-17 실제 AI 최소 QA
+
+- 사용자 허락 후 비용이 발생하는 실제 AI QA를 최소 1회 수행했다.
+- 프로젝트: `ai-board-lab`
+- 사용자: `leejunhee2796@gmail.com`
+- 확인한 흐름:
+  - `rag_service.index_project_documents`
+  - `mcp_service.call_tool("get_portfolio_project")`
+  - `agent_service.run_project_agent`
+- 결과:
+  - RAG 문서 10개 색인
+  - MCP 프로젝트 조회 성공
+  - Agent stopped reason: `completed`
+  - Agent tool call 순서: `get_portfolio_project -> rag_search -> generate_project_content`
+  - 생성 결과 길이: 1142자
+- 의미:
+  - OpenAI embedding, RAG 검색, MCP tool, Agent loop, OpenAI generation이 한 번의 최소 QA에서 연결됨을 확인했다.

@@ -847,3 +847,32 @@ Agent
 - OpenAI embedding은 비용이 발생하므로 불필요한 중복 호출을 줄여야 한다.
 - Agent tool call log와 실제 prompt context가 같아야 “왜 이런 답변이 나왔는지” 설명하기 쉽다.
 - 이 구조는 나중에 Agent 실행 로그를 DB에 저장할 때도 사용 근거를 추적하기 좋다.
+
+## 2026-06-17 학습 기록: 실제 AI QA에서 확인한 것
+
+### 실행한 최소 QA
+
+`ai-board-lab` 프로젝트로 실제 AI 호출을 1회 수행했다.
+
+```txt
+RAG index -> MCP project tool -> Agent run -> OpenAI generation
+```
+
+### 확인한 값
+
+- RAG 문서 색인 수: 10
+- MCP 프로젝트 제목: `ai-board-lab`
+- MCP 연결 기록 수: 1
+- Agent 종료 이유: `completed`
+- Agent tool call 순서:
+  - `get_portfolio_project`
+  - `rag_search`
+  - `generate_project_content`
+- 생성 결과 길이: 1142자
+
+### 배운 점
+
+- RAG는 실제로 embedding 비용이 발생하므로 색인을 반복 실행하지 않는 습관이 중요하다.
+- MCP tool은 LLM이 직접 DB나 외부 시스템을 만지는 대신, backend가 허용한 함수만 호출하게 하는 경계 역할을 한다.
+- Agent는 “도구 실행 기록”을 남기기 때문에 발표 때 AI가 어떤 과정을 거쳤는지 설명하기 좋다.
+- 실제 QA는 모든 케이스를 무작정 많이 돌리는 것보다, 대표 프로젝트 1개로 핵심 경로를 먼저 확인하는 편이 비용과 시간 면에서 안전하다.

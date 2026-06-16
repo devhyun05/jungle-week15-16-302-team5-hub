@@ -625,3 +625,27 @@ docs/demo/login.png
 3. 응답에 `tool_calls`가 `get_portfolio_project`, `rag_search`, `generate_project_content` 순서로 보이는지 확인한다.
 4. 같은 실행에서 서버 오류가 없는지 확인한다.
 5. 응답 내용을 바로 저장하지 않고, 화면에서 결과가 자연스럽게 보이는지만 먼저 확인한다.
+
+### 실제 QA 결과
+
+```txt
+project: ai-board-lab
+user: leejunhee2796@gmail.com
+rag_indexed_count: 10
+mcp_project_title: ai-board-lab
+mcp_linked_record_count: 1
+agent_stopped_reason: completed
+agent_tool_calls:
+  1. get_portfolio_project success
+  2. rag_search success
+  3. generate_project_content success
+agent_content_length: 1142
+```
+
+확인 결과:
+
+- RAG 색인이 실제 OpenAI embedding 호출을 통해 생성되었다.
+- MCP tool이 프로젝트 정보를 정상 반환했다.
+- Agent가 제한된 3단계 loop를 완료했다.
+- OpenAI generation 응답으로 한국어 면접 예상 질문이 생성되었다.
+- 같은 Agent 실행에서 tool call 로그가 기대한 순서로 반환되었다.

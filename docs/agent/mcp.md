@@ -111,3 +111,15 @@ backend compileall app: success
 FastAPI app import: success
 registered route: /mcp
 ```
+
+## 2026-06-17 실제 MCP tool QA
+
+Agent 실제 QA 전에 `mcp_service.call_tool("get_portfolio_project")`를 직접 호출해 DB 프로젝트 조회 tool을 확인했다.
+
+```txt
+project: ai-board-lab
+mcp_project_title: ai-board-lab
+mcp_linked_record_count: 1
+```
+
+이 결과로 Agent가 사용할 외부 도구 역할의 프로젝트 조회 tool이 정상 동작함을 확인했다.
