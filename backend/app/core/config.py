@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     slack_client_secret: str = ""
     slack_redirect_uri: str = "http://localhost:8000/api/auth/slack/callback"
     allowed_slack_team_id: str = ""
+    allowed_email_csv_path: str = ""
+    slack_bot_token: str = ""
+    slack_trade_alert_channel_id: str = ""
 
     jwt_secret_key: str = Field(default="", min_length=1)
     jwt_algorithm: str = "HS256"
@@ -35,6 +38,12 @@ class Settings(BaseSettings):
     oauth_state_cookie_name: str = "slack_oauth_state"
     cookie_secure: bool = False
     cookie_samesite: str = "lax"
+
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    aws_region: str = "ap-northeast-2"
+    s3_bucket_name: str = ""
+    s3_public_base_url: str = ""
 
 
 @lru_cache
