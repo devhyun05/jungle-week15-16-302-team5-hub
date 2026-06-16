@@ -19,7 +19,7 @@ async def create(
     if len(tags) != len(set(body.tag_ids)):
         found = {t.slug for t in tags}
         missing = set(body.tag_ids) - found
-        raise ValueError(f"unkown tags: {missing}")
+        raise ValueError(f"unknown tags: {missing}")
     
     # 완성된 post를 INSERT 한다.(commit 전)
     post = await create_post(
