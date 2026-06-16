@@ -30,6 +30,7 @@ erDiagram
     sessions ||--o{ refresh_tokens : rotates
     users ||--o{ posts : writes
     users ||--o{ comments : writes
+    users ||--o{ admin_action_logs : performs
     posts ||--o{ comments : has
     posts ||--o{ post_tags : has
     tags ||--o{ post_tags : used_by
@@ -42,6 +43,7 @@ erDiagram
         string email UK
         string display_name
         string password_hash
+        string role
         datetime created_at
         datetime updated_at
     }
@@ -79,6 +81,9 @@ erDiagram
         datetime created_at
         datetime updated_at
         datetime deleted_at
+        datetime hidden_at
+        bigint hidden_by_id FK
+        string hidden_reason
     }
 
     comments {
@@ -90,6 +95,9 @@ erDiagram
         datetime created_at
         datetime updated_at
         datetime deleted_at
+        datetime hidden_at
+        bigint hidden_by_id FK
+        string hidden_reason
     }
 
     tags {
@@ -135,6 +143,16 @@ erDiagram
         string image_url
         datetime fetched_at
     }
+
+    admin_action_logs {
+        bigint id PK
+        bigint actor_id FK
+        string action
+        string target_type
+        bigint target_id
+        text reason
+        datetime created_at
+    }
 ```
 
 ## Relationship Notes
@@ -144,6 +162,7 @@ erDiagram
 | `users -> posts` | 1:N | 한 사용자는 여러 topic을 작성할 수 있다. |
 | `users -> comments` | 1:N | 한 사용자는 여러 댓글을 작성할 수 있다. |
 | `users -> sessions` | 1:N | 같은 계정은 여러 기기/브라우저에서 로그인할 수 있다. |
+| `users -> admin_action_logs` | 1:N | admin 사용자는 여러 moderation action을 수행할 수 있다. |
 | `sessions -> refresh_tokens` | 1:N | 한 로그인 session 안에서 refresh token이 rotation되며 이력이 쌓인다. |
 | `posts -> comments` | 1:N | 한 topic에는 여러 댓글이 달린다. |
 | `posts <-> tags` | N:M | 한 topic에는 여러 tag가 있고, 한 tag는 여러 topic에 쓰인다. |
@@ -340,7 +359,7 @@ post_tags.tag_id -> tags.id
 
 ## Day 3 ERD Extension
 
-Day 3 is being split. The completed backend slices add admin authorization, admin soft hide/restore for posts and comments, and compact audit logging.
+Day 3 added admin authorization, admin soft hide/restore for posts and comments, author post soft delete, MyPage activity queries, and compact audit logging.
 
 ### Implemented: Admin Role Guard
 
@@ -391,6 +410,7 @@ Policy target:
 - Public post list/detail should exclude posts where `deleted_at IS NOT NULL`.
 - Public post list/detail should exclude posts where `hidden_at IS NOT NULL`.
 - Public comment list and comment update/delete lookup should exclude comments where `hidden_at IS NOT NULL`.
+- Admin post/comment list endpoints include visible and admin-hidden rows but exclude author-deleted content.
 - Author comment deletion still uses `comments.deleted_at`; admin hide uses `comments.hidden_at`.
 - Future vector search/RAG should exclude hidden posts and hidden comments from retrieval sources.
 - Admin hide/restore creates a compact audit log row without storing raw content snapshots.

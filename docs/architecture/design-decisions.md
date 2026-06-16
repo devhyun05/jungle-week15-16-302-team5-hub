@@ -74,7 +74,7 @@
 
 | Decision | Reason |
 |---|---|
-| Day 3 first slice is admin role guard before MyPage/Admin UI. | Day 5~6 RAG/Agent work needs a backend trust boundary more urgently than a user-facing account page. |
+| Day 3 implementation order put backend admin guard before user/admin pages. | Day 5~6 RAG/Agent work needs a backend trust boundary more urgently than a user-facing account page. |
 | Admin role is stored as `users.role` with `"user"` and `"admin"`. | It is more extensible than `is_admin` but much smaller than a permissions table for the current MVP. |
 | Admin routes use `require_admin`, which depends on `get_current_user`. | Missing/invalid token stays 401, while logged-in non-admin users get 403. |
 | `/api/admin/health` is the first admin smoke endpoint. | It proves backend authorization before adding moderation behavior with larger side effects. |

@@ -80,10 +80,15 @@ Comment fields:
 
 ## Required User Features
 
-Current MVP status after Day 2:
+Current MVP status after Day 3:
 
 - Auth, posts CRUD, comments CRUD, tags, search, pagination, Zustand auth state,
   cookie refresh auth, CSRF for refresh/logout, and Redis comment rate limit are implemented.
+- Post and comment author deletion uses soft delete semantics.
+- MyPage is implemented for the current user's profile, visible posts, and visible comments.
+- Admin role guard, admin post/comment hide and restore, compact admin action logging,
+  admin list APIs, and AdminPage moderation controls are implemented.
+- Public board views exclude author-deleted and admin-hidden content.
 - AI, GraphQL, SSR, realtime, worker queue, pgvector/RAG, MCP, and Agent features remain in later phases.
 
 ### Authentication
@@ -126,7 +131,25 @@ Current MVP status after Day 2:
 - Error state
 - Empty state
 - Protected route state
+- Role-aware admin navigation state
 - AI-running state
+
+### MyPage
+
+- Show the current user's profile.
+- Show visible posts written by the current user.
+- Show visible comments written by the current user.
+- Exclude deleted or admin-hidden content from the user's activity list.
+
+### Admin Moderation
+
+- Store user role on the backend.
+- Protect admin APIs with backend authorization.
+- Let admins hide and restore posts.
+- Let admins hide and restore comments.
+- Record moderation actions in an audit log.
+- Show a small admin moderation page for posts and comments.
+- Hide Admin navigation from non-admin frontend users while keeping backend authorization as the source of truth.
 
 ## AI Features
 

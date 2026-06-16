@@ -7,17 +7,22 @@ content discussion.
 
 ## Current Status
 
-Day 2 MVP scope is implemented:
+Board MVP through Day 3 is implemented:
 
 - Auth: signup, login, current user lookup, Swagger form token endpoint
 - Posts: create, list, detail, update, delete with backend owner checks
 - Comments: create, list, update, soft delete with backend owner checks
 - Tags: create/reuse tags through post create/update, filter posts by tags
 - Search and pagination: keyword search, tag filters, page/size response
-- Frontend state: Zustand auth store for current user and access token
+- Frontend state: Zustand auth store for current user id, role, and access token
 - Cookie refresh auth: HttpOnly refresh cookie, readable CSRF cookie,
   refresh/logout CSRF check, refresh token rotation, logout session revoke
 - Redis rate limit: comment creation is limited with a fixed-window counter
+- MyPage: current user profile, visible own posts, and visible own comments
+- Admin: backend role guard, post/comment soft hide and restore, audit log,
+  admin moderation page, and role-aware frontend navigation
+- Deletion policy: post and comment author deletes preserve rows with
+  `deleted_at`; admin moderation uses separate `hidden_at` fields
 
 AI, pgvector RAG, MCP, Agent, worker queue, GraphQL, SSR, and realtime features
 remain in the later project phases.
@@ -47,6 +52,10 @@ Refresh sessions use:
 
 Refresh and logout require a readable `csrf_token` cookie plus a matching
 `X-CSRF-Token` header.
+
+Admin authorization uses `users.role`. The frontend hides Admin navigation for
+non-admin users, but the backend `require_admin` dependency is the security
+boundary.
 
 Detailed docs:
 
@@ -127,10 +136,10 @@ cd frontend
 npm run build
 ```
 
-Latest Day 2 verification:
+Latest verification:
 
-- `tests/test_auth.py`: 15 passed
-- backend full test suite: 51 passed
+- `tests/test_admin.py`: 11 passed
+- backend full test suite: 69 passed
 - frontend build: passed
 - browser manual auth check: login cookies, readable CSRF cookie, HttpOnly
   refresh token hiding, logout CSRF header, and cookie deletion passed
@@ -138,6 +147,8 @@ Latest Day 2 verification:
 ## Known Follow-Ups
 
 - Comment pagination for `GET /api/posts/{post_id}/comments?page=&size=`
+- Admin seed command or documented repeatable seed procedure
+- Ensure Day 5 RAG/vector retrieval excludes deleted or admin-hidden posts and comments
 - Access token forced-expiry E2E check
 - Production HTTPS `Secure` cookie verification
 - Access token denylist or per-request session check, if stronger immediate

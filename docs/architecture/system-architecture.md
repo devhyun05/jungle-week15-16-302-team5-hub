@@ -136,6 +136,8 @@ flowchart LR
 | DB | PostgreSQL | 결정 | 요구사항 |
 | Vector | pgvector | 결정 | 요구사항 |
 | Redis | 댓글 작성 rate limit 구현, AI cache/status는 후보 | 결정 일부 완료 | Day 2에서 fixed-window rate limit을 붙였고, AI cache/status는 Day 5 이후 결정 |
+| Admin authorization | `users.role` + backend `require_admin` | 결정 | frontend UI 숨김은 UX이고 실제 권한은 backend dependency가 강제 |
+| Moderation visibility | author delete는 `deleted_at`, admin hide는 `hidden_at` | 결정 | 작성자 삭제와 운영자 숨김/복구를 분리하고 RAG source 제외 조건을 명확히 하기 위함 |
 | Job Queue | RabbitMQ + Celery | 결정 | Job Queue 구현 근거가 명확함 |
 | MCP | JSON-RPC server + external tool | 결정 | 요구사항 |
 | Agent | LangGraph graph | 결정 | 사용자 판단에 따라 고정 |
@@ -161,6 +163,8 @@ flowchart LR
 - React가 REST API를 호출한다.
 - FastAPI가 인증과 권한을 검사한다.
 - PostgreSQL에 게시글과 댓글을 저장한다.
+- author delete는 row를 제거하지 않고 `deleted_at`을 기록한다.
+- public 조회는 deleted/hidden 콘텐츠를 제외한다.
 
 ```mermaid
 sequenceDiagram
@@ -180,8 +184,41 @@ sequenceDiagram
 
 나중에 확인할 것:
 
-- 삭제는 hard delete로 시작할지 soft delete로 할지 정한다.
 - 목록 검색은 단순 `ilike`로 시작하고, 필요하면 full-text search를 개선안에 적는다.
+
+### Admin Moderation
+
+현재 결정:
+
+- admin 권한은 `users.role = "admin"`으로 판단한다.
+- backend route는 `require_admin` dependency로 보호한다.
+- frontend는 current user role을 동기화하고 non-admin에게 Admin nav를 숨긴다.
+- admin hide/restore는 posts/comments의 `hidden_at`, `hidden_by_id`, `hidden_reason`을 변경한다.
+- admin action은 `admin_action_logs`에 요약 기록한다.
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant React
+    participant FastAPI
+    participant DB as PostgreSQL
+
+    Admin->>React: Open AdminPage
+    React->>FastAPI: GET /api/admin/posts and /comments
+    FastAPI->>FastAPI: require_admin
+    FastAPI->>DB: Load visible and hidden moderation targets
+    DB-->>FastAPI: Moderation rows
+    FastAPI-->>React: JSON list
+    Admin->>React: Hide or restore target
+    React->>FastAPI: POST /api/admin/.../hide or restore
+    FastAPI->>DB: Update hidden fields and write admin_action_logs
+    FastAPI-->>React: Moderation response
+```
+
+나중에 확인할 것:
+
+- admin seed command를 만들지, README에 수동 SQL을 남길지 정한다.
+- 전체 audit log 조회 화면은 Day 9 개선 후보로 둔다.
 
 ### Embedding Job
 

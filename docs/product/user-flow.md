@@ -21,8 +21,10 @@ GlowBoard is designed around focused topic discussions. A user lands on a beauty
 3. Backend hashes the password and creates the user.
 4. User logs in.
 5. Backend returns an access token and records session state.
-6. Frontend stores auth state with Zustand.
-7. Protected routes and actions become available.
+6. Frontend stores access token, current user id, and current user role with Zustand.
+7. App startup or token changes sync the current user role from `/api/auth/me`.
+8. Protected routes and actions become available.
+9. Admin navigation appears only when the current user role is `admin`.
 
 ## Topic Creation Flow
 
@@ -56,6 +58,28 @@ GlowBoard is designed around focused topic discussions. A user lands on a beauty
 3. Backend returns paginated posts.
 4. User opens a topic.
 5. Similar topics are shown through RAG/vector search.
+
+## MyPage Flow
+
+1. Logged-in user opens My Page.
+2. Frontend calls `/api/users/me/activity`.
+3. Backend uses the access token to identify the current user.
+4. Backend returns the current user profile, visible posts written by the user, and visible comments written by the user.
+5. Deleted or admin-hidden posts/comments are excluded.
+6. Frontend shows loading, error, and empty states for the activity lists.
+
+## Admin Moderation Flow
+
+1. Admin user logs in.
+2. Frontend syncs the current user role and shows the Admin navigation link.
+3. Admin opens the moderation page.
+4. Frontend calls `/api/admin/posts` and `/api/admin/comments`.
+5. Backend verifies `users.role = "admin"` through `require_admin`.
+6. Admin sees visible and hidden posts/comments, excluding author-deleted content.
+7. Admin hides or restores a post/comment.
+8. Backend updates `hidden_at`, `hidden_by_id`, and `hidden_reason`.
+9. Backend writes a compact row to `admin_action_logs`.
+10. Public post/comment views exclude hidden content.
 
 ## RAG Flow
 
@@ -94,7 +118,9 @@ GlowBoard is designed around focused topic discussions. A user lands on a beauty
 2. UI shows edit/delete actions only when the user is the owner.
 3. Backend still checks authorization for every protected request.
 4. User updates or deletes the resource.
-5. UI refreshes the topic list or detail page.
+5. Delete preserves the row by setting `deleted_at`.
+6. Public list/detail/comment lookups exclude deleted content.
+7. UI refreshes the topic list or detail page.
 
 ## Demo Flow
 
@@ -103,11 +129,14 @@ GlowBoard is designed around focused topic discussions. A user lands on a beauty
 3. Add tags and a source URL.
 4. Show the post detail page.
 5. Add a comment in another language.
-6. Translate the comment.
-7. Show similar topics from RAG.
-8. Run the Topic Curator Agent.
-9. Show MCP source preview.
-10. Show README architecture summary and test result.
+6. Open My Page and show visible own activity.
+7. Log in as or seed an admin user.
+8. Open AdminPage and hide/restore a post or comment.
+9. Translate the comment.
+10. Show similar topics from RAG.
+11. Run the Topic Curator Agent.
+12. Show MCP source preview.
+13. Show README architecture summary and test result.
 
 ## Day 1 MVP Screen Memo
 
