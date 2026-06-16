@@ -430,3 +430,18 @@ AI 기능 전 마지막 확인:
 - 작업 파일: `frontend/src/app/pages/portfolio/Portfolio.tsx`
 - 포트폴리오 액션과 GitHub 액션을 각각 한 줄씩 보이도록 정렬했다.
 - 이전처럼 좌우로 벌어지는 구조를 제거하고 왼쪽 정렬된 2줄 구조로 단순화했다.
+
+## 2026-06-16 OpenAI 기본 연결 1차 구현
+
+- 작업 파일:
+  - `backend/app/core/config.py`
+  - `backend/app/schemas/ai.py`
+  - `backend/app/services/ai_service.py`
+  - `backend/app/routers/ai.py`
+  - `backend/app/main.py`
+  - `backend/.env.example`
+  - `backend/requirements.txt`
+- OpenAI Python SDK `openai==2.41.1`을 설치했다.
+- `POST /ai/generate` API를 추가했다.
+- 지금은 RAG가 아니라 선택 프로젝트 자료를 직접 prompt context로 넣는 구조다.
+- `OPENAI_API_KEY`가 없으면 API는 400으로 `OPENAI_API_KEY가 설정되어 있지 않습니다.`를 반환한다.

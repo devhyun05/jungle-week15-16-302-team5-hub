@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.db.init_db import init_db
 from app.routers.admin import router as admin_router
+from app.routers.ai import router as ai_router
 from app.routers.auth import router as auth_router
 from app.routers.comments import router as comments_router
 from app.routers.health import router as health_router
@@ -61,3 +62,4 @@ app.include_router(admin_router)
 app.include_router(portfolio_router)
 app.include_router(reviews_router)
 app.include_router(notifications_router)
+app.include_router(ai_router)

@@ -432,3 +432,36 @@ AI:
 
 - `justify-between`은 남는 공간을 좌우로 벌리기 때문에 좁은 카드 안에서는 버튼 그룹이 흩어져 보일 수 있다.
 - 이번에는 `space-y-2`로 줄을 직접 나누고, 각 줄 안에서만 `flex-wrap`을 사용해 원하는 순서를 안정적으로 만들었다.
+
+## 2026-06-16 학습 기록: OpenAI 기본 연결
+
+### 수정한 파일
+
+- `backend/app/core/config.py`: `.env`에서 OpenAI API key, model, max token 설정을 읽는다.
+- `backend/app/schemas/ai.py`: AI 요청/응답 JSON 모양을 Pydantic schema로 정의한다.
+- `backend/app/services/ai_service.py`: 프로젝트 자료를 prompt로 정리하고 OpenAI Responses API를 호출한다.
+- `backend/app/routers/ai.py`: 프론트가 호출할 `/ai/generate` endpoint를 등록한다.
+- `backend/app/main.py`: AI router를 FastAPI app에 포함한다.
+
+### 이번 구현에서 사용한 개념
+
+- FastAPI router: `/ai/generate` 같은 API 경로를 만든다.
+- Service layer: OpenAI 호출처럼 비즈니스 로직이 들어가는 코드를 router 밖으로 분리한다.
+- Pydantic schema: request/response의 데이터 타입을 검증한다.
+- 환경변수: API key 같은 비밀값은 코드가 아니라 `.env`에서 읽는다.
+- OpenAI Responses API: `client.responses.create()`로 모델 응답을 생성한다.
+
+### 지금 단계가 RAG가 아닌 이유
+
+- 지금은 선택된 프로젝트의 README, 커밋 메시지, 연결된 기록을 그대로 prompt에 넣는다.
+- RAG는 많은 데이터 중 관련 있는 자료를 vector search로 찾은 뒤 prompt에 넣는 구조다.
+- 따라서 이번 단계는 `OpenAI 단일 호출`, 다음 단계가 `RAG 검색 연결`이다.
+
+### 내가 이해해야 할 흐름
+
+1. 프론트가 프로젝트 id와 생성 유형을 백엔드에 보낸다.
+2. 백엔드가 현재 로그인 사용자 권한을 확인한다.
+3. 백엔드가 포트폴리오 프로젝트를 조회한다.
+4. 백엔드가 README, 커밋, 연결 기록을 prompt로 만든다.
+5. 백엔드가 OpenAI API를 호출한다.
+6. 생성된 text를 프론트로 반환한다.

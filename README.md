@@ -761,3 +761,18 @@ OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 �
 - 포트폴리오 상세 상단 액션 버튼을 2줄로 정리했습니다.
 - 첫 줄은 `포트폴리오 게시글로 발행`, `게시글 보러가기`이고, 둘째 줄은 `GitHub 정보 새로고침`, `GitHub 보기`입니다.
 - 버튼을 좌우로 벌리지 않고 왼쪽 기준으로 같은 리듬에 맞춰 정렬했습니다.
+
+## 최근 변경: OpenAI 기본 연결 1차 구현
+
+- 백엔드에 `openai` Python SDK를 설치하고 `requirements.txt`에 반영했습니다.
+- `backend/app/core/config.py`에 `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_MAX_OUTPUT_TOKENS` 설정을 추가했습니다.
+- `backend/app/services/ai_service.py`를 추가해 포트폴리오 프로젝트 자료를 OpenAI Responses API prompt로 구성하는 경계를 만들었습니다.
+- `backend/app/routers/ai.py`와 `backend/app/schemas/ai.py`를 추가해 `POST /ai/generate` API를 만들었습니다.
+- 현재 API는 RAG/MCP/Agent 전 단계이며, 선택 프로젝트의 README, 커밋 메시지, 연결된 학습 기록을 직접 context로 넣어 포트폴리오 글 또는 면접 질문을 생성합니다.
+- 실제 호출을 위해서는 `backend/.env`에 `OPENAI_API_KEY`를 설정해야 합니다.
+
+### AI API
+
+- `POST /ai/generate`
+- 요청 예시: `{ "projectId": 25, "outputType": "portfolio" }`가 아니라 백엔드 스키마 기준 `{ "project_id": 25, "output_type": "portfolio" }`입니다.
+- 출력 유형: `portfolio`, `interview`

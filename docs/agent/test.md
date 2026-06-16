@@ -307,3 +307,23 @@ rg -n "\?\?\?" README.md docs
 - 첫 줄에 `포트폴리오 게시글로 발행`, `게시글 보러가기`가 보여야 한다.
 - 둘째 줄에 `GitHub 정보 새로고침`, `GitHub 보기`가 보여야 한다.
 - 버튼 그룹이 좌우로 과하게 벌어져 보이지 않아야 한다.
+
+## 2026-06-16 QA: OpenAI 기본 연결
+
+### 확인할 것
+
+- `backend/.env`에 `OPENAI_API_KEY`가 없으면 `/ai/generate`는 400을 반환해야 한다.
+- `OPENAI_API_KEY`가 있으면 선택 프로젝트 기준으로 포트폴리오 글 또는 면접 질문이 생성되어야 한다.
+- STUDENT와 ADMIN만 `/ai/generate`를 호출할 수 있어야 한다.
+- 다른 사용자의 프로젝트 id를 요청하면 404 또는 권한 제한 결과가 나와야 한다.
+- OpenAI API key는 프론트엔드로 절대 전달되지 않아야 한다.
+
+### 자동 검증
+
+- `backend`: `.venv\\Scripts\\python.exe -m compileall app`
+- `frontend`: `npm run build`
+
+### 수동 검증 예정
+
+- `backend/.env`에 `OPENAI_API_KEY` 추가 후 Swagger에서 `POST /ai/generate` 호출
+- 이후 AI 도우미 화면에서 실제 API 연결 확인

@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     github_api_base_url: str = "https://api.github.com"
     github_api_version: str = "2022-11-28"
     github_token: str = ""
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4.1-mini"
+    openai_max_output_tokens: int = 1800
 
     model_config = SettingsConfigDict(
         env_file=".env",
