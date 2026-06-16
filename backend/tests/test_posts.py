@@ -1,4 +1,7 @@
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.models.post import Post
 
 
 def signup_and_login(
@@ -282,7 +285,10 @@ def test_update_post_rejects_blank_body(client: TestClient):
     assert response.json()["detail"] == "Body cannot be empty or whitespace"
 
 
-def test_author_can_delete_post(client: TestClient):
+def test_author_can_delete_post(
+    client: TestClient,
+    db_session: Session,
+):
     token = signup_and_login(
         client,
         email="author@example.com",
@@ -302,6 +308,9 @@ def test_author_can_delete_post(client: TestClient):
 
     detail_response = client.get(f"/api/posts/{post['id']}")
     assert detail_response.status_code == 404
+
+    deleted_post = db_session.query(Post).filter(Post.id == post["id"]).one()
+    assert deleted_post.deleted_at is not None
 
 
 def test_delete_post_without_token_returns_401(client: TestClient):

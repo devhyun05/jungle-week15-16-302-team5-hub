@@ -24,6 +24,11 @@
 | Auth | login success |
 | Auth | wrong password fails |
 | Auth | `/auth/me` requires JWT |
+| Auth | login sets refresh and CSRF cookies |
+| Auth | refresh without CSRF fails with 403 |
+| Auth | refresh rotates token and returns a new access token |
+| Auth | old refresh token reuse revokes the parent session |
+| Auth | logout revokes session/token and clears cookies |
 | Posts | create post |
 | Posts | list posts with pagination |
 | Posts | read post detail |
@@ -83,6 +88,7 @@ AI mock E2E candidate:
 - [ ] Post CRUD works.
 - [ ] Comment/tag/search/pagination works.
 - [ ] Redis rate limit can be explained or demonstrated.
+- [ ] Cookie refresh auth can be demonstrated in browser devtools.
 - [ ] RabbitMQ/Celery worker receives an embedding job.
 - [ ] pgvector similar search works.
 - [ ] RAG answer shows sources.
@@ -104,13 +110,28 @@ If time is short, test in this order:
 
 ## Test Result Log
 
-Fill this during Day 8 and Day 9.
+Fill this during implementation and again during Day 8/Day 9.
 
 | Date | Command | Result | Notes |
 |---|---|---|---|
-| TBD | `pytest` | TBD |  |
-| TBD | `npm test` | TBD |  |
-| TBD | `npx playwright test` | TBD |  |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest tests/test_auth.py` | 15 passed | login cookies/session rows, refresh CSRF 403, rotation, old token reuse revoke, logout revoke/cookie delete |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest` | 51 passed | backend auth/posts/comments/tags/search regression |
+| 2026-06-16 | `cd frontend && npm run build` | passed | frontend API client, auth logout, credentials, CSRF header, refresh retry build check |
+| 2026-06-16 | Browser manual auth check | passed | `localhost:5173`, login cookies, readable CSRF cookie, HttpOnly refresh token hiding, logout CSRF header, cookie deletion |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest tests/test_admin.py` | 3 passed | `/api/admin/health`: no token 401, regular user 403, admin user 200 |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest` | 58 passed | admin role guard added; backend full regression |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest tests/test_admin.py` | 6 passed | admin post/comment hide/restore, public lookup exclusion, audit log writes |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest` | 61 passed | admin moderation added; backend full regression |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest tests/test_posts.py tests/test_admin.py` | 21 passed | post author delete sets `deleted_at`; admin cannot hide author-deleted post |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest` | 62 passed | post soft delete added; backend full regression |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest tests/test_users.py tests/test_auth.py` | 19 passed | MyPage activity endpoint and auth response role |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest` | 65 passed | MyPage activity added; backend full regression |
+| 2026-06-16 | `cd frontend && npm run build` | passed | MyPage route, API client, and type build check |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest tests/test_admin.py` | 11 passed | admin post/comment list endpoints, hide/restore, auth guard |
+| 2026-06-16 | `cd backend && ../.venv/bin/python -m pytest` | 69 passed | admin moderation lists added; backend full regression |
+| 2026-06-16 | `cd frontend && npm run build` | passed | Admin page, moderation API client, and frontend role sync build check |
+| TBD | `npm test` | TBD | frontend unit tests are not set up yet |
+| TBD | `npx playwright test` | TBD | automated E2E is not set up yet |
 
 ## Unfinished Test Disclosure
 

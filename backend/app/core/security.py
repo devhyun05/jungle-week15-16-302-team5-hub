@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta, timezone
+import hashlib
+import secrets
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -36,3 +38,15 @@ def decode_access_token(token: str) -> dict:
         )
     except JWTError as exc:
         raise ValueError("Invalid token") from exc
+
+
+def generate_refresh_token() -> str:
+    return secrets.token_urlsafe(64)
+
+
+def hash_refresh_token(raw_token: str) -> str:
+    return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+
+
+def generate_csrf_token() -> str:
+    return secrets.token_urlsafe(32)

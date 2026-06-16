@@ -2,11 +2,28 @@ import { apiRequest } from './client'
 import type {
     Comment,
     CommentCreateRequest,
+    CommentListParams,
+    CommentPage,
     CommentUpdateRequest,
 } from '../types/comment'
 
-export function listComments(postId: number) {
-    return apiRequest<Comment[]>(`/api/posts/${postId}/comments`)
+export function listComments(postId: number, params: CommentListParams = {}) {
+    const searchParams = new URLSearchParams()
+
+    if (params.page) {
+        searchParams.set('page', String(params.page))
+    }
+
+    if (params.size) {
+        searchParams.set('size', String(params.size))
+    }
+
+    const queryString = searchParams.toString()
+    const path = queryString
+        ? `/api/posts/${postId}/comments?${queryString}`
+        : `/api/posts/${postId}/comments`
+
+    return apiRequest<CommentPage>(path)
 }
 
 export function createComment(

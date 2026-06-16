@@ -128,10 +128,56 @@ def test_public_users_can_list_comments_for_post(client: TestClient):
     response = client.get(f"/api/posts/{post['id']}/comments")
 
     assert response.status_code == 200
-    comments = response.json()
-    assert len(comments) == 1
-    assert comments[0]["id"] == comment["id"]
-    assert comments[0]["body"] == "Visible comment"
+    page = response.json()
+    assert page["page"] == 1
+    assert page["size"] == 20
+    assert page["total"] == 1
+    assert page["has_next"] is False
+    assert page["has_prev"] is False
+    assert len(page["items"]) == 1
+    assert page["items"][0]["id"] == comment["id"]
+    assert page["items"][0]["body"] == "Visible comment"
+
+
+def test_list_comments_supports_offset_pagination(client: TestClient):
+    token = signup_and_login(
+        client,
+        email="author@example.com",
+        display_name="Author",
+    )
+    post = create_post(client, token)
+    first = create_comment(client, token, post["id"], body="First comment")
+    second = create_comment(client, token, post["id"], body="Second comment")
+    third = create_comment(client, token, post["id"], body="Third comment")
+
+    first_page_response = client.get(
+        f"/api/posts/{post['id']}/comments?page=1&size=2"
+    )
+    second_page_response = client.get(
+        f"/api/posts/{post['id']}/comments?page=2&size=2"
+    )
+
+    assert first_page_response.status_code == 200
+    assert second_page_response.status_code == 200
+
+    first_page = first_page_response.json()
+    assert first_page["page"] == 1
+    assert first_page["size"] == 2
+    assert first_page["total"] == 3
+    assert first_page["has_next"] is True
+    assert first_page["has_prev"] is False
+    assert [comment["id"] for comment in first_page["items"]] == [
+        first["id"],
+        second["id"],
+    ]
+
+    second_page = second_page_response.json()
+    assert second_page["page"] == 2
+    assert second_page["size"] == 2
+    assert second_page["total"] == 3
+    assert second_page["has_next"] is False
+    assert second_page["has_prev"] is True
+    assert [comment["id"] for comment in second_page["items"]] == [third["id"]]
 
 
 def test_missing_post_comments_return_404(client: TestClient):
@@ -229,7 +275,9 @@ def test_author_can_soft_delete_comment(client: TestClient):
 
     list_response = client.get(f"/api/posts/{post['id']}/comments")
     assert list_response.status_code == 200
-    assert list_response.json() == []
+    comment_page = list_response.json()
+    assert comment_page["items"] == []
+    assert comment_page["total"] == 0
 
 
 def test_delete_comment_without_token_returns_401(client: TestClient):

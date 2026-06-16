@@ -3,24 +3,42 @@ from sqlalchemy.orm import Session
 
 from app.models.comment import Comment, utc_now
 from app.models.user import User
-from app.schemas.comment import CommentCreateRequest, CommentUpdateRequest
+from app.schemas.comment import (
+    CommentCreateRequest,
+    CommentPageResponse,
+    CommentUpdateRequest,
+)
 from app.services.post_service import get_post
+from app.services.visibility import public_comments_query
 
 
 def list_comments_by_post(
     db: Session,
     post_id: int,
-) -> list[Comment]:
+    page: int = 1,
+    size: int = 20,
+) -> CommentPageResponse:
     get_post(db, post_id)
 
-    return (
-        db.query(Comment)
-        .filter(
-            Comment.post_id == post_id,
-            Comment.deleted_at.is_(None),
-        )
+    query = public_comments_query(db).filter(Comment.post_id == post_id)
+    total = query.count()
+    offset = (page - 1) * size
+
+    items = (
+        query
         .order_by(Comment.created_at.asc())
+        .offset(offset)
+        .limit(size)
         .all()
+    )
+
+    return CommentPageResponse(
+        items=items,
+        page=page,
+        size=size,
+        total=total,
+        has_next=offset + len(items) < total,
+        has_prev=page > 1,
     )
 
 
@@ -50,11 +68,8 @@ def get_comment(
     comment_id: int,
 ) -> Comment:
     comment = (
-        db.query(Comment)
-        .filter(
-            Comment.id == comment_id,
-            Comment.deleted_at.is_(None),
-        )
+        public_comments_query(db)
+        .filter(Comment.id == comment_id)
         .first()
     )
 

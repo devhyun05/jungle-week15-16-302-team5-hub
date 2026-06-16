@@ -4,6 +4,9 @@
 
 이 문서는 frontend와 backend 사이의 약속을 정리한다. 실제 구현이 바뀌면 이 문서도 같이 갱신한다.
 
+주요 설계 결정은 `docs/architecture/design-decisions.md`를 보고, 기능별 파일/API/DB 지도는 `docs/architecture/feature-implementation-map.md`를 본다.
+Auth/session 상세 정책은 `docs/architecture/auth-session-design.md`를 따른다.
+
 ## 작성 방법
 
 각 API는 아래 항목을 반드시 가진다.
@@ -35,18 +38,52 @@
   "total": 0,
   "page": 1,
   "size": 20,
-  "total_pages": 0
+  "has_next": false,
+  "has_prev": false
 }
+```
+
+### Job Status Shape
+
+Long-running AI preparation work should be represented as a job instead of
+blocking the original HTTP request.
+
+```json
+{
+  "id": 1,
+  "job_type": "post_embedding",
+  "target_type": "post",
+  "target_id": 12,
+  "idempotency_key": "embedding:post:12:v1",
+  "status": "queued",
+  "progress": 0,
+  "result_json": null,
+  "error_message": null,
+  "attempt_count": 0,
+  "max_attempts": 2,
+  "created_at": "datetime",
+  "updated_at": "datetime",
+  "started_at": null,
+  "finished_at": null
+}
+```
+
+Allowed job statuses:
+
+```text
+queued -> running -> succeeded
+queued -> running -> failed
 ```
 
 ## Auth APIs
 
 | Method | Path | Auth | Request | Response | Error |
 |---|---|---|---|---|---|
-| POST | `/auth/signup` | no | email, display_name, password | user | 400, 409, 422 |
-| POST | `/auth/login` | no | email, password | access_token, user | 400, 401, 422 |
-| POST | `/auth/logout` | yes | none | success | 401 |
-| GET | `/auth/me` | yes | none | user | 401 |
+| POST | `/api/auth/signup` | no | email, display_name, password | user | 400, 409, 422 |
+| POST | `/api/auth/login` | no | email, password | access_token, user, refresh/csrf cookies | 400, 401, 422 |
+| POST | `/api/auth/refresh` | refresh cookie + CSRF | none | access_token | 401, 403 |
+| POST | `/api/auth/logout` | refresh cookie + CSRF | none | success, cleared cookies | 401, 403 |
+| GET | `/api/auth/me` | yes | none | user | 401 |
 
 ## Post APIs
 
@@ -56,7 +93,7 @@
 | GET | `/posts` | optional | q?, tag?, board?, page?, size? | paginated posts | 400 |
 | GET | `/posts/{post_id}` | optional | none | post detail | 404 |
 | PUT | `/posts/{post_id}` | owner | title?, body?, tags? | post | 401, 403, 404, 422 |
-| DELETE | `/posts/{post_id}` | owner | none | success | 401, 403, 404 |
+| DELETE | `/posts/{post_id}` | owner | none | soft delete success | 401, 403, 404 |
 | GET | `/posts/{post_id}/similar` | optional | limit? | similar posts | 404 |
 
 ## Comment APIs
@@ -73,6 +110,51 @@
 |---|---|---|---|---|---|
 | GET | `/tags` | optional | q? | tags | 400 |
 | POST | `/tags` | yes | name | tag | 401, 409, 422 |
+
+## Admin APIs
+
+| Method | Path | Auth | Request | Response | Error |
+|---|---|---|---|---|---|
+| GET | `/api/admin/health` | admin | none | status, admin_user_id | 401, 403 |
+| GET | `/api/admin/posts` | admin | none | admin post[] including hidden fields | 401, 403 |
+| GET | `/api/admin/comments` | admin | none | admin comment[] including hidden fields | 401, 403 |
+| POST | `/api/admin/posts/{post_id}/hide` | admin | reason? | target_type, target_id, hidden fields | 401, 403, 404, 422 |
+| POST | `/api/admin/posts/{post_id}/restore` | admin | reason? | target_type, target_id, hidden fields | 401, 403, 404, 422 |
+| POST | `/api/admin/comments/{comment_id}/hide` | admin | reason? | target_type, target_id, hidden fields | 401, 403, 404, 422 |
+| POST | `/api/admin/comments/{comment_id}/restore` | admin | reason? | target_type, target_id, hidden fields | 401, 403, 404, 422 |
+
+Admin auth is enforced by the backend `require_admin` dependency. Missing or invalid token returns 401 through `get_current_user`; a logged-in non-admin user returns 403. The frontend also stores the current user's role and only shows the Admin navigation/page for `role = "admin"`, but backend authorization remains the source of truth.
+
+## User APIs
+
+| Method | Path | Auth | Request | Response | Error |
+|---|---|---|---|---|---|
+| GET | `/api/users/me/activity` | yes | none | user, posts, comments | 401 |
+
+`/api/users/me/activity` returns the current user profile, visible posts written by the current user, and visible comments written by the current user. Deleted or admin-hidden posts/comments are excluded.
+
+## Job APIs
+
+Day 4 introduces the job contract before real embedding generation starts.
+The first job type is `post_embedding`, created after post create/update and
+processed by a Celery worker through RabbitMQ.
+
+| Method | Path | Auth | Request | Response | Error |
+|---|---|---|---|---|---|
+| GET | `/api/jobs/{job_id}` | yes | none | job status | 401, 403, 404 |
+| GET | `/api/jobs/{job_id}/events` | yes | none | SSE stream | 401, 403, 404 |
+
+SSE event payloads use the same job status fields:
+
+```text
+data: {"id":1,"status":"queued","error_message":null}
+
+data: {"id":1,"status":"running","error_message":null}
+
+data: {"id":1,"status":"succeeded","error_message":null}
+```
+
+The event stream should close after `succeeded` or `failed`.
 
 ## AI APIs
 
@@ -116,7 +198,8 @@ SSR implementation can be a FastAPI `HTMLResponse` that returns a public topic p
 
 | Type | Path | Auth | Purpose | Events |
 |---|---|---|---|---|
-| WebSocket | `/ws/topics/{post_id}` | optional | comment/activity demo | `connected`, `message` |
+| WebSocket | `/ws/activity` | optional | activity echo demo | `connected`, `message` |
+| SSE | `/api/jobs/{job_id}/events` | yes | worker job progress | `queued`, `running`, `succeeded`, `failed` |
 | SSE | `/events/ai/{run_id}` | yes | AI progress | `progress`, `tool_call`, `done`, `error` |
 
 ## MCP JSON-RPC Shape
@@ -193,16 +276,38 @@ Day 1에서는 auth와 posts CRUD만 먼저 구현한다.
 
 Day 2에서는 댓글, 태그, 검색, 페이징, frontend 상태 정책, Redis rate limit 기준을 추가한다.
 
-### Auth Token Note
+### Auth Session Note
 
-현재 구현은 access token만 발급한다.
+Day 2-B에서는 access token만 쓰던 구조에서 cookie refresh auth로 확장한다.
+상세 설계 기준은 `docs/architecture/auth-session-design.md`를 따른다.
 
 ```text
 POST /api/auth/login
--> access_token, token_type, user
+-> response body: access_token, token_type, user
+-> Set-Cookie: refresh_token, csrf_token
+
+POST /api/auth/refresh
+-> request cookies: refresh_token, csrf_token
+-> request header: X-CSRF-Token
+-> response body: access_token, token_type
+-> Set-Cookie: rotated refresh_token, csrf_token
+
+POST /api/auth/logout
+-> request cookies: refresh_token, csrf_token
+-> request header: X-CSRF-Token
+-> response: 204 or success body
+-> clear refresh_token, csrf_token cookies with matching path, secure, and samesite attributes
 ```
 
-`refresh_token`은 아직 구현하지 않았다. 장기 ERD의 `sessions.refresh_token_hash`는 refresh/session 전략을 확장할 때 사용할 후보 구조다.
+Policy:
+
+- normal APIs use `Authorization: Bearer <access_token>`; GlowBoard access token lifetime is 30 minutes.
+- refresh/logout use refresh cookie and CSRF check.
+- access token expiry triggers one shared refresh attempt inside the same tab and one original request retry per failed request.
+- login creates one `sessions` row and one `refresh_tokens` row.
+- refresh marks the old refresh token `used_at`, creates a new `refresh_tokens` row, and keeps the parent session as the same device/browser login.
+- logout clears frontend access token state, revokes the backend refresh session, and deletes refresh/csrf cookies. Existing stateless access tokens are not denylisted in the Day 2-B baseline and naturally expire within 30 minutes.
+- logout delete-cookie headers use the configured cookie path, `Secure`, and `SameSite` policy so production HTTPS cookies are actually cleared.
 
 ### Post List Search and Pagination
 
@@ -292,7 +397,7 @@ Tag policy:
 
 | Method | Path | Auth | Purpose | Request | Response | Error |
 |---|---|---|---|---|---|---|
-| GET | `/api/posts/{post_id}/comments` | no | 댓글 목록 조회 | path: post_id | comment[] | 404 |
+| GET | `/api/posts/{post_id}/comments` | no | 댓글 목록 조회 | path: post_id, query: page?, size? | CommentPage | 404, 422 |
 | POST | `/api/posts/{post_id}/comments` | yes | 댓글 작성 | body | comment | 401, 404, 422, 429 |
 | PUT | `/api/comments/{comment_id}` | owner | 댓글 수정 | body | comment | 401, 403, 404, 422 |
 | DELETE | `/api/comments/{comment_id}` | owner | 댓글 soft delete | none | 204 no content | 401, 403, 404 |
@@ -303,6 +408,13 @@ Comment request:
 {
   "body": "string"
 }
+```
+
+Comment pagination:
+
+```text
+GET /api/posts/{post_id}/comments?page=1&size=20
+-> response: items, total, page, size, has_next, has_prev
 ```
 
 Comment response:
@@ -375,6 +487,7 @@ exceeded response:
 ```
 
 가능하면 `Retry-After` header를 포함한다.
+`Retry-After`를 만들기 위한 Redis `TTL` 조회는 제한 초과 시에만 수행한다.
 
 ### Day 2 Implementation Files
 
@@ -392,3 +505,75 @@ exceeded response:
 | Tag service | `backend/app/services/tag_service.py` |
 | Post service updates | `backend/app/services/post_service.py` |
 | Rate limit service | `backend/app/services/rate_limit_service.py` |
+
+## Day 3 API Contract
+
+Day 3 was split because of deadline pressure. The implemented slices are admin role guard, admin soft hide/restore for posts and comments, author post soft delete, MyPage activity, and the Admin moderation page.
+
+### Admin Role Guard
+
+| Method | Path | Auth | Purpose | Request | Response | Error |
+|---|---|---|---|---|---|---|
+| GET | `/api/admin/health` | admin | admin guard smoke endpoint | none | status, admin_user_id | 401, 403 |
+
+Response:
+
+```json
+{
+  "status": "ok",
+  "admin_user_id": 1
+}
+```
+
+Policy:
+
+- `users.role` stores `"user"` or `"admin"`.
+- New users default to `"user"`.
+- `require_admin` depends on `get_current_user` first, so missing/invalid token is 401.
+- A logged-in user whose role is not `"admin"` receives 403 with `detail = "Admin access required"`.
+- Test coverage lives in `backend/tests/test_admin.py`.
+
+### Admin Soft Hide/Restore
+
+The moderation endpoints are admin-only and preserve rows instead of deleting content.
+
+```text
+GET /api/admin/posts
+GET /api/admin/comments
+POST /api/admin/posts/{post_id}/hide
+POST /api/admin/posts/{post_id}/restore
+POST /api/admin/comments/{comment_id}/hide
+POST /api/admin/comments/{comment_id}/restore
+```
+
+Request:
+
+```json
+{
+  "reason": "Off-topic"
+}
+```
+
+The request body is optional.
+
+Response:
+
+```json
+{
+  "target_type": "post",
+  "target_id": 1,
+  "hidden_at": "datetime or null",
+  "hidden_by_id": 2,
+  "hidden_reason": "Off-topic"
+}
+```
+
+Policy:
+
+- public post list/detail excludes posts where `hidden_at IS NOT NULL`.
+- author post deletion uses `posts.deleted_at`; public post list/detail excludes posts where `deleted_at IS NOT NULL`.
+- public comment list and comment update/delete lookup exclude comments where `hidden_at IS NOT NULL`.
+- author comment deletion still uses `deleted_at`; admin hide uses separate `hidden_at`.
+- admin list endpoints include visible and admin-hidden rows, but exclude author-deleted posts and comments under author-deleted posts.
+- future vector search/RAG retrieval must exclude hidden posts and hidden comments.
+- admin action logging records actor, action, target type, target id, reason, and timestamp in `admin_action_logs`.
