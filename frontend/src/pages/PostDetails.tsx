@@ -150,8 +150,8 @@ const PostDetailPage = () => {
         type: result.status === "failed" ? "error" : "success",
         title:
           result.status === "sent"
-            ? "Slack 거래 알림을 보냈습니다."
-            : "Slack 거래 알림 preview를 만들었습니다.",
+            ? "판매자에게 Slack 문의를 보냈습니다."
+            : "Slack 문의 preview를 만들었습니다.",
         message: result.message,
       })
     } catch {
@@ -333,14 +333,16 @@ const PostDetailPage = () => {
               프로필 보기
             </button>
 
-            {isOwner && (
+            {user && !isOwner && (
               <button
                 type="button"
                 disabled={isSendingSlackAlert}
                 onClick={handleSendSlackAlert}
                 className="mt-2 w-full rounded-md bg-[#00C471] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#00A862] disabled:cursor-not-allowed disabled:bg-gray-300"
               >
-                {isSendingSlackAlert ? "알림 전송 중" : "Slack 거래 알림 보내기"}
+                {isSendingSlackAlert
+                  ? "문의 전송 중"
+                  : "판매자에게 Slack 문의 보내기"}
               </button>
             )}
           </section>

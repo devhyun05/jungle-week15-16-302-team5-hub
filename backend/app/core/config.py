@@ -26,7 +26,6 @@ class Settings(BaseSettings):
     allowed_slack_team_id: str = ""
     allowed_email_csv_path: str = ""
     slack_bot_token: str = ""
-    slack_trade_alert_channel_id: str = ""
 
     jwt_secret_key: str = Field(default="", min_length=1)
     jwt_algorithm: str = "HS256"
