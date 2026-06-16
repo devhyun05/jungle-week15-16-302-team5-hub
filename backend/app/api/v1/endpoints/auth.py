@@ -1,13 +1,12 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import CurrentUser
+from app.api.deps import get_current_user
 from app.core.config import get_settings
 from app.core.security import create_oauth_state
 from app.db.session import get_db
+from app.models.user import User
 from app.repositories.user_repository import (
     delete_refresh_token_by_user_id,
     get_user_by_id,
@@ -29,7 +28,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 settings = get_settings()
 
 
-def set_auth_cookies(response: Response, *, access_token: str, refresh_token: str) -> None:
+def set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
     response.set_cookie(
         key=settings.access_token_cookie_name,
         value=access_token,
@@ -75,13 +74,13 @@ def start_slack_login() -> RedirectResponse:
 
 @router.get("/slack/callback")
 async def slack_callback(
-    db: Annotated[Session, Depends(get_db)],
-    code: Annotated[str, Query()],
-    state: Annotated[str, Query()],
-    saved_state: Annotated[
-        str | None,
-        Cookie(alias=settings.oauth_state_cookie_name),
-    ] = None,
+    code: str,
+    state: str,
+    db: Session = Depends(get_db),
+    saved_state: str | None = Cookie(
+        default=None,
+        alias=settings.oauth_state_cookie_name,
+    ),
 ) -> RedirectResponse:
     if saved_state is None or saved_state != state:
         raise HTTPException(
@@ -104,11 +103,11 @@ async def slack_callback(
 @router.post("/refresh", response_model=TokenRefreshResponse)
 def refresh_access_token(
     response: Response,
-    db: Annotated[Session, Depends(get_db)],
-    refresh_token: Annotated[
-        str | None,
-        Cookie(alias=settings.refresh_token_cookie_name),
-    ] = None,
+    db: Session = Depends(get_db),
+    refresh_token: str | None = Cookie(
+        default=None,
+        alias=settings.refresh_token_cookie_name,
+    ),
 ) -> TokenRefreshResponse:
     if refresh_token is None:
         raise HTTPException(
@@ -154,18 +153,18 @@ def refresh_access_token(
 
 
 @router.get("/me", response_model=UserMe)
-def read_me(current_user: CurrentUser) -> UserMe:
+def read_me(current_user: User = Depends(get_current_user)) -> UserMe:
     return UserMe.model_validate(current_user)
 
 
 @router.post("/logout")
 def logout(
     response: Response,
-    db: Annotated[Session, Depends(get_db)],
-    refresh_token: Annotated[
-        str | None,
-        Cookie(alias=settings.refresh_token_cookie_name),
-    ] = None,
+    db: Session = Depends(get_db),
+    refresh_token: str | None = Cookie(
+        default=None,
+        alias=settings.refresh_token_cookie_name,
+    ),
 ) -> dict[str, str]:
     if refresh_token is not None:
         try:

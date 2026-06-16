@@ -1,5 +1,3 @@
-from typing import Annotated
-
 from fastapi import Cookie, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -13,8 +11,11 @@ settings = get_settings()
 
 
 def get_current_user(
-    db: Annotated[Session, Depends(get_db)],
-    access_token: Annotated[str | None, Cookie(alias=settings.access_token_cookie_name)] = None,
+    db: Session = Depends(get_db),
+    access_token: str | None = Cookie(
+        default=None,
+        alias=settings.access_token_cookie_name,
+    ),
 ) -> User:
     if access_token is None:
         raise HTTPException(
@@ -35,12 +36,12 @@ def get_current_user(
     return user
 
 
-CurrentUser = Annotated[User, Depends(get_current_user)]
-
-
 def get_optional_current_user(
-    db: Annotated[Session, Depends(get_db)],
-    access_token: Annotated[str | None, Cookie(alias=settings.access_token_cookie_name)] = None,
+    db: Session = Depends(get_db),
+    access_token: str | None = Cookie(
+        default=None,
+        alias=settings.access_token_cookie_name,
+    ),
 ) -> User | None:
     if access_token is None:
         return None
@@ -51,6 +52,3 @@ def get_optional_current_user(
         return None
 
     return get_user_by_id(db, user_id=int(payload["sub"]))
-
-
-OptionalCurrentUser = Annotated[User | None, Depends(get_optional_current_user)]
