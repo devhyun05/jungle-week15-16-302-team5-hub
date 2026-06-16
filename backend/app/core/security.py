@@ -17,7 +17,6 @@ def create_oauth_state() -> str:
 
 
 def create_token(
-    *,
     subject: str,
     expires_delta: timedelta,
     token_type: str,
@@ -41,7 +40,7 @@ def create_token(
     )
 
 
-def decode_token(token: str, *, expected_type: str) -> dict[str, Any]:
+def decode_token(token: str, expected_type: str) -> dict[str, Any]:
     try:
         payload = jwt.decode(
             token,

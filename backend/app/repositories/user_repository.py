@@ -8,14 +8,13 @@ from app.models.user import RefreshToken, User
 from app.services.slack_service import SlackUserInfo
 
 
-def get_user_by_id(db: Session, *, user_id: int) -> User | None:
+def get_user_by_id(db: Session, user_id: int) -> User | None:
     statement = select(User).where(User.id == user_id, User.deleted_at.is_(None))
     return db.scalar(statement)
 
 
 def get_user_by_slack_identity(
     db: Session,
-    *,
     slack_team_id: str,
     slack_user_id: str,
 ) -> User | None:
@@ -27,7 +26,7 @@ def get_user_by_slack_identity(
     return db.scalar(statement)
 
 
-def get_or_create_user_from_slack(db: Session, *, slack_user: SlackUserInfo) -> User:
+def get_or_create_user_from_slack(db: Session, slack_user: SlackUserInfo) -> User:
     user = get_user_by_slack_identity(
         db,
         slack_team_id=slack_user.slack_team_id,
@@ -55,7 +54,6 @@ def get_or_create_user_from_slack(db: Session, *, slack_user: SlackUserInfo) -> 
 
 def save_refresh_token(
     db: Session,
-    *,
     user_id: int,
     refresh_token: str,
     expires_at: datetime,
@@ -83,14 +81,13 @@ def save_refresh_token(
     return db_token
 
 
-def get_refresh_token_by_user_id(db: Session, *, user_id: int) -> RefreshToken | None:
+def get_refresh_token_by_user_id(db: Session, user_id: int) -> RefreshToken | None:
     statement = select(RefreshToken).where(RefreshToken.user_id == user_id)
     return db.scalar(statement)
 
 
 def verify_stored_refresh_token(
     db: Session,
-    *,
     user_id: int,
     refresh_token: str,
 ) -> bool:
@@ -105,12 +102,12 @@ def verify_stored_refresh_token(
     return db_token.token_hash == token_hash
 
 
-def delete_refresh_token_by_user_id(db: Session, *, user_id: int) -> None:
+def delete_refresh_token_by_user_id(db: Session, user_id: int) -> None:
     db.execute(delete(RefreshToken).where(RefreshToken.user_id == user_id))
     db.commit()
 
 
-def get_active_refresh_token(db: Session, *, refresh_token: str) -> RefreshToken | None:
+def get_active_refresh_token(db: Session, refresh_token: str) -> RefreshToken | None:
     statement = select(RefreshToken).where(
         RefreshToken.revoked_at.is_(None),
         RefreshToken.expires_at > datetime.now(UTC),
@@ -121,7 +118,7 @@ def get_active_refresh_token(db: Session, *, refresh_token: str) -> RefreshToken
     return None
 
 
-def revoke_refresh_token(db: Session, *, refresh_token: str) -> None:
+def revoke_refresh_token(db: Session, refresh_token: str) -> None:
     db_token = get_active_refresh_token(db, refresh_token=refresh_token)
     if db_token is None:
         return

@@ -1,10 +1,12 @@
+import csv
 from dataclasses import dataclass
+from pathlib import Path
 from urllib.parse import urlencode
 
 import httpx
 from fastapi import HTTPException, status
 
-from app.core.config import get_settings
+from app.core.config import BACKEND_DIR, get_settings
 
 settings = get_settings()
 
@@ -22,7 +24,7 @@ class SlackUserInfo:
     profile_image_url: str | None
 
 
-def build_slack_authorize_url(*, state: str) -> str:
+def build_slack_authorize_url(state: str) -> str:
     params = {
         "client_id": settings.slack_client_id,
         "scope": "openid profile email",
@@ -38,7 +40,7 @@ def build_slack_authorize_url(*, state: str) -> str:
     return f"{SLACK_AUTHORIZE_URL}?{query}"
 
 
-async def exchange_code_for_access_token(*, code: str) -> str:
+async def exchange_code_for_access_token(code: str) -> str:
     async with httpx.AsyncClient(timeout=10) as client:
         response = await client.post(
             SLACK_TOKEN_URL,
@@ -60,7 +62,7 @@ async def exchange_code_for_access_token(*, code: str) -> str:
     return data["access_token"]
 
 
-async def fetch_slack_user_info(*, access_token: str) -> SlackUserInfo:
+async def fetch_slack_user_info(access_token: str) -> SlackUserInfo:
     async with httpx.AsyncClient(timeout=10) as client:
         response = await client.get(
             SLACK_USER_INFO_URL,
@@ -99,7 +101,7 @@ async def fetch_slack_user_info(*, access_token: str) -> SlackUserInfo:
     )
 
 
-def validate_allowed_workspace(*, slack_team_id: str) -> None:
+def validate_allowed_workspace(slack_team_id: str) -> None:
     if not settings.allowed_slack_team_id:
         return
 
@@ -107,4 +109,47 @@ def validate_allowed_workspace(*, slack_team_id: str) -> None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This Slack workspace is not allowed.",
+        )
+
+
+def get_allowed_email_set() -> set[str]:
+    if not settings.allowed_email_csv_path:
+        return set()
+
+    csv_path = Path(settings.allowed_email_csv_path)
+    if not csv_path.is_absolute():
+        csv_path = BACKEND_DIR / csv_path
+
+    if not csv_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Allowed email CSV file does not exist.",
+        )
+
+    allowed_emails: set[str] = set()
+
+    with csv_path.open(newline="", encoding="utf-8") as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if not row:
+                continue
+
+            email = row[0].strip().lower()
+            if not email or email == "email":
+                continue
+
+            allowed_emails.add(email)
+
+    return allowed_emails
+
+
+def validate_allowed_email(email: str) -> None:
+    allowed_emails = get_allowed_email_set()
+    if not allowed_emails:
+        return
+
+    if email.strip().lower() not in allowed_emails:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This email is not allowed to use Jungle Market.",
         )

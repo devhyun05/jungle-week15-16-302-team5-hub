@@ -6,7 +6,7 @@ from app.core.security import create_token, decode_token
 settings = get_settings()
 
 
-def create_access_token(*, user_id: int, role: str) -> str:
+def create_access_token(user_id: int, role: str) -> str:
     return create_token(
         subject=str(user_id),
         expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
@@ -15,7 +15,7 @@ def create_access_token(*, user_id: int, role: str) -> str:
     )
 
 
-def create_refresh_token(*, user_id: int) -> str:
+def create_refresh_token(user_id: int) -> str:
     return create_token(
         subject=str(user_id),
         expires_delta=timedelta(days=settings.refresh_token_expire_days),
