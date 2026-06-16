@@ -9,6 +9,7 @@ from app.schemas.comment import (
     CommentUpdateRequest,
 )
 from app.services.post_service import get_post
+from app.services.visibility import public_comments_query
 
 
 def list_comments_by_post(
@@ -19,11 +20,7 @@ def list_comments_by_post(
 ) -> CommentPageResponse:
     get_post(db, post_id)
 
-    query = db.query(Comment).filter(
-        Comment.post_id == post_id,
-        Comment.deleted_at.is_(None),
-        Comment.hidden_at.is_(None),
-    )
+    query = public_comments_query(db).filter(Comment.post_id == post_id)
     total = query.count()
     offset = (page - 1) * size
 
@@ -71,12 +68,8 @@ def get_comment(
     comment_id: int,
 ) -> Comment:
     comment = (
-        db.query(Comment)
-        .filter(
-            Comment.id == comment_id,
-            Comment.deleted_at.is_(None),
-            Comment.hidden_at.is_(None),
-        )
+        public_comments_query(db)
+        .filter(Comment.id == comment_id)
         .first()
     )
 

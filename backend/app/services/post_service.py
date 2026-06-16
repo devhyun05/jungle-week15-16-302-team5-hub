@@ -7,6 +7,7 @@ from app.models.user import User
 from app.models.tag import Tag
 from app.schemas.post import PostCreateRequest, PostPageResponse, PostUpdateRequest
 from app.services.tag_service import resolve_tags, normalize_tag_name
+from app.services.visibility import public_posts_query
 
 def create_post(
     db: Session,
@@ -37,10 +38,7 @@ def list_posts(
     page: int = 1,
     size: int = 10,
 ) -> PostPageResponse:
-    query = db.query(Post).filter(
-        Post.deleted_at.is_(None),
-        Post.hidden_at.is_(None),
-    )
+    query = public_posts_query(db)
 
     search_text = q.strip() if q else None
 
@@ -94,12 +92,8 @@ def get_post(
         post_id: int,
 ) -> Post:
     post = (
-        db.query(Post)
-        .filter(
-            Post.id == post_id,
-            Post.deleted_at.is_(None),
-            Post.hidden_at.is_(None),
-        )
+        public_posts_query(db)
+        .filter(Post.id == post_id)
         .first()
     )
 
