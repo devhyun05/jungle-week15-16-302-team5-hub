@@ -14,7 +14,7 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 - 데이터베이스: PostgreSQL
 - 인증: Google OAuth 2.0, JWT access token, refresh token rotation, HttpOnly cookie
 - 외부 연동: GitHub REST API
-- AI 모델 예정: OpenAI API
+- AI 모델: OpenAI API
 
 ## 현재 구현 상태
 
@@ -50,7 +50,7 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 - 관리자 승인, 리뷰 요청, 리뷰 피드백 이벤트 알림 생성
 - 게시글 상세 조회 시 조회수 증가 처리
 - 대시보드 주요 통계 API 기반 정리
-- AI 도우미 화면을 포트폴리오 API 데이터 기반 샘플로 정리
+- AI 도우미 화면을 포트폴리오 API 데이터 기반 실제 생성/저장 흐름으로 정리
 - AI 도우미 화면을 프로젝트 선택, 참고 자료, 생성 결과 중심으로 재정리
 - AI 도우미 화면에 포트폴리오 글/면접 질문 저장 상태 UI 추가
 - 포트폴리오/AI 도우미의 내 기록 조회를 `/me/posts` API 계약(`size <= 50`)에 맞게 정리
@@ -63,11 +63,11 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 
 ### 아직 다음 단계
 
-- 실제 OpenAI API 호출
-- RAG vector search와 요약 생성
-- MCP server 구현
-- GitHub 연동을 MCP tool 형태로 감싸는 구조
-- Agent 추론 루프 구현
+- 실제 OpenAI/RAG/Agent 호출 수동 QA
+- 제출용 데모 스크린샷 정리
+- README 최종 제출 문서 다듬기
+- 실서비스 수준에서는 pgvector index 또는 전용 Vector DB로 RAG 성능 개선
+- OpenAI tool/function calling 기반 Agent 고도화
 - 실시간 알림
 - 실제 Google 계정 선택/동의 화면 수동 QA
 
@@ -81,7 +81,7 @@ JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, �
 4. 학습 로그, 트러블슈팅, 프로젝트 회고, 면접 질문, 포트폴리오 관리 글을 작성한다.
 5. GitHub repo 또는 `/tree/{branch}` URL로 포트폴리오 프로젝트를 등록하고 README, 사용 언어, 최근 커밋을 가져온다.
 6. 프로젝트와 자신의 기록을 연결한다.
-7. AI 도우미에서 포트폴리오 글/면접 예상 질문 샘플을 생성한다.
+7. AI 도우미에서 일반 생성/RAG 기반 생성/Agent 기반 생성 중 하나를 선택해 포트폴리오 글 또는 면접 예상 질문을 생성한다.
 8. 게시글 또는 포트폴리오 프로젝트를 선택해 코치 리뷰를 요청한다.
 
 ### 코치
@@ -244,39 +244,43 @@ WEEK15_AI_BOARD/
 
 ## AI 기능 설계
 
-현재 AI 도우미는 아직 실제 OpenAI 호출 전입니다. 화면은 실제 포트폴리오/게시글 API 데이터를 기반으로 동작하며, 생성 결과는 **AI 연결 전 샘플**로 표시합니다.
+AI 도우미는 포트폴리오 관리에 등록된 프로젝트를 기준으로 포트폴리오 글과 면접 예상 질문을 생성합니다.
 
-### RAG 예정 기능
+생성 방식은 세 가지입니다.
 
-- 데이터 소스: JungleLog 게시글, 댓글, 포트폴리오 프로젝트, GitHub REST API로 가져온 branch별 README/커밋 요약
-- 검색 대상: 학생이 작성한 학습 로그, 트러블슈팅, 회고, 면접 질문, 포트폴리오 관리 글
-- 예정 Vector DB: PostgreSQL pgvector 또는 ChromaDB
-- 예정 기능:
-  - 포트폴리오 프로젝트와 연결된 기록 검색
-  - 비슷한 게시글 추천
-  - 포트폴리오 글 작성 시 근거 기록 요약
-  - 면접 예상 질문 생성 시 프로젝트/기록 기반 근거 제공
+- `일반 생성`: 프로젝트의 README, commit message, 연결 기록을 직접 prompt에 넣습니다.
+- `RAG 기반 생성`: RAG 문서 색인/검색 결과를 prompt에 추가합니다.
+- `Agent 기반 생성`: 프로젝트 조회, RAG 검색, 생성 도구를 제한된 loop로 실행하고 tool call 로그를 보여줍니다.
 
-### MCP 예정 기능
+### RAG 기능
 
-- MCP server를 통해 외부 시스템을 호출할 예정입니다.
-- 기본 GitHub REST API 연동은 이미 FastAPI service로 구현했고, 다음 단계에서는 이를 MCP tool 형태로 분리/호출하는 구조를 검토합니다.
-- 예정 기능:
-  - GitHub repo URL 분석
-  - README 가져오기
-  - 최근 커밋 요약 가져오기
-  - 포트폴리오 프로젝트 데이터 자동 보강
+- 데이터 소스: GitHub README 원문, GitHub commit message 전체, 연결된 학습 기록, 저장된 포트폴리오 글, 저장된 면접 예상 질문
+- Vector 저장소: PostgreSQL `rag_documents` 테이블
+- embedding 모델: `OPENAI_EMBEDDING_MODEL`, 기본값 `text-embedding-3-small`
+- 검색 방식: query embedding과 문서 embedding의 cosine similarity
+- API:
+  - `POST /ai/rag/index`
+  - `POST /ai/rag/search`
 
-### Agent 예정 기능
+### MCP 기능
 
-- OpenAI function calling 또는 유사 tool calling 구조를 사용합니다.
-- Agent는 아래 도구 중 필요한 작업을 선택하는 구조로 설계할 예정입니다.
-  - 게시글 검색
-  - 포트폴리오 프로젝트 조회
-  - GitHub 정보 조회
-  - 포트폴리오 초안 생성
-  - 면접 예상 질문 생성
-- 무한 루프 방지를 위해 최대 반복 횟수와 예외 처리 정책을 둡니다.
+- JSON-RPC 2.0 기반 `/mcp` endpoint를 제공합니다.
+- 지원 method:
+  - `mcp.list_tools`
+  - `mcp.call_tool`
+- 지원 tool:
+  - `get_github_repository`
+  - `get_portfolio_project`
+
+### Agent 기능
+
+- API: `POST /ai/agent/run`
+- 현재 tool loop:
+  1. `get_portfolio_project`
+  2. `rag_search`
+  3. `generate_project_content`
+- 무한 루프 방지를 위해 `max_iterations`를 1~5로 제한합니다.
+- 응답에는 생성 결과와 tool call 로그가 포함됩니다.
 
 ## 실행 방법
 
@@ -430,17 +434,17 @@ Google Cloud Console 설정:
 
 - 실제 Google 계정 선택 후 callback 수동 QA가 아직 남아 있다.
 - 알림은 현재 API 기반 조회/읽음 처리까지 지원하며, 실시간 push는 아직 없다.
-- GitHub repo 분석은 기본 REST API로 연결됐고, MCP tool 구조는 아직 남아 있다.
-- AI 도우미는 아직 OpenAI/RAG/MCP/Agent를 호출하지 않는다.
+- GitHub repo 분석은 기본 REST API와 MCP tool endpoint 양쪽에서 사용할 수 있다.
+- AI 도우미는 OpenAI/RAG/Agent API와 연결됐지만, 비용 안전 기준 때문에 실제 호출 QA는 사용자 허락 후 진행해야 한다.
 - AI 도우미 화면은 프로젝트 기반 생성 결과 보관함과 클립보드 복사 흐름까지 UI 기준으로 정리했다.
 - 프로필 이름 수정과 이미지 업로드는 API 기준으로 검증했고, 업로드 이미지 URL이 게시글/댓글/리뷰 요청 응답까지 이어진다.
 - 학생 게시글 작성/상세/댓글/수정/삭제/내 기록 반영 흐름을 브라우저에서 확인했고, 댓글 시간은 한국식 날짜/시간으로 표시한다.
 
 ### 개선 아이디어
 
-- pgvector 기반 RAG 검색 추가
-- GitHub MCP server 구현
-- OpenAI function calling 기반 Agent 구현
+- pgvector 기반 RAG index로 검색 성능 개선
+- 표준 MCP SDK 기반 서버로 분리
+- OpenAI function calling 기반 Agent 고도화
 - WebSocket 또는 SSE 기반 실시간 알림 추가
 - 테스트 자동화 파일 분리
 - Playwright 기반 프론트 E2E 테스트 추가
@@ -484,7 +488,7 @@ OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 �
 
 - AI 도우미에서 만든 면접 예상 질문을 포트폴리오 프로젝트에 저장할 수 있도록 `savedInterviewQuestions` 흐름을 추가했습니다.
 - 포트폴리오 프로젝트 응답에 `aiInterviewSaved`를 추가해 저장 여부를 화면 badge로 보여줍니다.
-- 현재 생성은 OpenAI 연결 전 샘플 결과이며, 저장/조회 흐름은 실제 포트폴리오 API와 DB 기준으로 동작합니다.
+- 현재 생성은 OpenAI API 기반 결과를 저장할 수 있으며, 저장/조회 흐름은 실제 포트폴리오 API와 DB 기준으로 동작합니다.
 - 백엔드 로컬 개발 DB는 Alembic 도입 전 단계이므로 `ADD COLUMN IF NOT EXISTS`로 새 nullable column을 보강합니다.
 
 ## 최근 변경: 포트폴리오 빈 상태 문구 정리
