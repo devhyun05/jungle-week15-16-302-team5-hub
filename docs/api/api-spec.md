@@ -790,7 +790,407 @@ POST /api/users/me/profile-image
 
 ---
 
-## 10. Status Code
+## 10. AI API
+
+AI API는 RAG, MCP, AI Agent 기능을 제공한다.
+
+MVP에서는 AI 기능을 기존 중고거래 기능과 분리해서 `/api/ai` prefix 아래에 둔다.
+
+### 10.1 유사 상품 추천
+
+```txt
+GET /api/ai/products/{product_id}/similar
+```
+
+특정 상품과 유사한 상품을 RAG 기반으로 추천한다.
+
+#### 분류
+
+RAG
+
+#### 인증
+
+선택
+
+#### 사용 위치
+
+- 상품 상세 페이지의 유사 상품 영역
+- 상품 작성 중 중복 게시글 확인
+
+#### Path Parameters
+
+| 이름       | 타입   | 설명    |
+| ---------- | ------ | ------- |
+| product_id | number | 상품 ID |
+
+#### Response
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "product_id": 2,
+      "title": "무선 키보드 판매합니다",
+      "price": 25000,
+      "similarity": 0.87,
+      "reason": "제목과 설명에서 키보드, 무선, 사용감 키워드가 유사합니다."
+    }
+  ]
+}
+```
+
+---
+
+### 10.2 중복 상품 감지
+
+```txt
+POST /api/ai/products/duplicate-check
+```
+
+상품 등록 또는 수정 전에 기존 상품과 내용이 너무 비슷한지 확인한다.
+
+#### 분류
+
+RAG
+
+#### 인증
+
+필요
+
+#### 사용 위치
+
+- 상품 등록 페이지
+- 상품 수정 페이지
+
+#### Request Body
+
+```json
+{
+  "title": "키보드 팝니다",
+  "description": "상태 좋은 무선 키보드입니다.",
+  "price": 30000
+}
+```
+
+#### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "is_duplicate_like": true,
+    "matched_products": [
+      {
+        "product_id": 3,
+        "title": "무선 키보드 판매",
+        "similarity": 0.91
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 10.3 AI 글쓰기 도움
+
+```txt
+POST /api/ai/products/draft-assist
+```
+
+사용자가 입력한 상품 정보를 바탕으로 판매글 문장을 다듬거나 태그를 추천한다.
+
+#### 분류
+
+AI Agent
+
+#### 인증
+
+필요
+
+#### 사용 위치
+
+- 상품 등록 페이지
+- 상품 수정 페이지
+
+#### Request Body
+
+```json
+{
+  "title": "맥북 팔아요",
+  "description": "조금 썼고 상태 괜찮아요",
+  "action": "improve_text"
+}
+```
+
+#### action 값
+
+| 값            | 의미        |
+| ------------- | ----------- |
+| improve_text  | 문장 다듬기 |
+| fix_typo      | 오타 수정   |
+| suggest_tags  | 태그 추천   |
+
+#### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "title": "맥북 판매합니다",
+    "description": "사용감은 조금 있지만 전체적으로 상태가 좋은 맥북입니다.",
+    "suggested_tags": ["노트북", "맥북", "전자기기"],
+    "ai_log_id": 1
+  }
+}
+```
+
+---
+
+### 10.4 게시글 기반 Q&A
+
+```txt
+POST /api/ai/rag/ask
+```
+
+게시글, 댓글, 운영 문서 등 내부 데이터를 기반으로 질문에 답변한다.
+
+#### 분류
+
+RAG
+
+#### 인증
+
+필요
+
+#### 사용 위치
+
+- AI Q&A 화면
+- 상품 탐색 보조 기능
+
+#### Request Body
+
+```json
+{
+  "question": "최근에 올라온 모니터 중 10만원 이하 상품이 있어?"
+}
+```
+
+#### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "answer": "최근 등록된 상품 중 10만원 이하 모니터가 2개 있습니다.",
+    "references": [
+      {
+        "source_type": "product",
+        "source_id": 7,
+        "title": "24인치 모니터 판매"
+      }
+    ],
+    "ai_log_id": 2
+  }
+}
+```
+
+---
+
+### 10.5 MCP 도구 호출
+
+```txt
+POST /api/ai/mcp/tools/{tool_name}/call
+```
+
+AI 기능에서 필요한 외부 도구를 MCP를 통해 호출한다.
+
+#### 분류
+
+MCP
+
+#### 인증
+
+필요
+
+#### 사용 위치
+
+- Slack 알림 전송
+- 외부 URL 메타데이터 조회
+- S3 이미지 정보 확인
+
+#### Path Parameters
+
+| 이름      | 타입   | 설명                  |
+| --------- | ------ | --------------------- |
+| tool_name | string | 호출할 MCP tool 이름  |
+
+#### Request Body
+
+```json
+{
+  "payload": {
+    "url": "https://example.com"
+  }
+}
+```
+
+#### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "tool_name": "fetch_url_metadata",
+    "result": {
+      "title": "Example Domain",
+      "description": "Example page description"
+    },
+    "mcp_tool_call_id": 1
+  }
+}
+```
+
+---
+
+### 10.6 Agent 실행 시작
+
+```txt
+POST /api/ai/agent-runs
+```
+
+사용자의 목표를 받아 AI Agent 실행을 시작한다.
+
+#### 분류
+
+AI Agent
+
+#### 인증
+
+필요
+
+#### 사용 위치
+
+- AI 글쓰기 도우미
+- 신고 검토 보조
+- 상품 등록 자동 보조
+
+#### Request Body
+
+```json
+{
+  "goal": "이 상품 설명을 더 신뢰감 있게 다듬고 적절한 태그를 추천해줘.",
+  "post_id": 1
+}
+```
+
+#### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "agent_run_id": 1,
+    "status": "running"
+  }
+}
+```
+
+---
+
+### 10.7 Agent 실행 조회
+
+```txt
+GET /api/ai/agent-runs/{agent_run_id}
+```
+
+AI Agent 실행 상태와 결과를 조회한다.
+
+#### 분류
+
+AI Agent
+
+#### 인증
+
+필요
+
+#### Path Parameters
+
+| 이름         | 타입   | 설명          |
+| ------------ | ------ | ------------- |
+| agent_run_id | number | Agent 실행 ID |
+
+#### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "agent_run_id": 1,
+    "status": "success",
+    "final_answer": "상품 설명을 더 구체적으로 다듬었습니다.",
+    "steps": [
+      {
+        "step_order": 1,
+        "action_type": "rag_search",
+        "status": "success"
+      },
+      {
+        "step_order": 2,
+        "action_type": "llm",
+        "status": "success"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 10.8 AI 로그 조회
+
+```txt
+GET /api/ai/logs
+```
+
+내가 실행한 AI 기능 로그를 조회한다.
+
+#### 분류
+
+AI Log
+
+#### 인증
+
+필요
+
+#### Query Parameters
+
+| 이름         | 타입   | 필수 여부 | 설명                         |
+| ------------ | ------ | --------- | ---------------------------- |
+| feature_type | string | 선택      | AI 기능 종류                 |
+| page         | number | 선택      | 페이지 번호                  |
+| size         | number | 선택      | 한 페이지당 개수             |
+
+#### Response
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "ai_log_id": 1,
+      "feature_type": "draft_assist",
+      "status": "success",
+      "created_at": "2026-06-15T12:00:00"
+    }
+  ]
+}
+```
+
+---
+
+## 11. Status Code
 
 | Status Code               | 의미                  |
 | ------------------------- | --------------------- |
@@ -805,7 +1205,7 @@ POST /api/users/me/profile-image
 
 ---
 
-## 11. 에러 응답 예시
+## 12. 에러 응답 예시
 
 ### 로그인하지 않은 경우
 
