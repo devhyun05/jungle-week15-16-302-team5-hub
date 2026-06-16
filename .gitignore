@@ -1,0 +1,8 @@
+# Local secrets
+.env
+.env.*
+!.env.example
+openAIKey.rtf
+__pycache__/
+*.pyc
+node_modules/
