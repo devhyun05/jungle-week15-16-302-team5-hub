@@ -340,7 +340,7 @@ Tag policy:
 
 | Method | Path | Auth | Purpose | Request | Response | Error |
 |---|---|---|---|---|---|---|
-| GET | `/api/posts/{post_id}/comments` | no | 댓글 목록 조회 | path: post_id, query: page?, size? | comment[] currently; target: CommentPage | 404, 422 |
+| GET | `/api/posts/{post_id}/comments` | no | 댓글 목록 조회 | path: post_id, query: page?, size? | CommentPage | 404, 422 |
 | POST | `/api/posts/{post_id}/comments` | yes | 댓글 작성 | body | comment | 401, 404, 422, 429 |
 | PUT | `/api/comments/{comment_id}` | owner | 댓글 수정 | body | comment | 401, 403, 404, 422 |
 | DELETE | `/api/comments/{comment_id}` | owner | 댓글 soft delete | none | 204 no content | 401, 403, 404 |
@@ -353,14 +353,12 @@ Comment request:
 }
 ```
 
-Comment pagination target:
+Comment pagination:
 
 ```text
 GET /api/posts/{post_id}/comments?page=1&size=20
 -> response: items, total, page, size, has_next, has_prev
 ```
-
-댓글 페이지네이션은 추가 구현 플랜이다. 구현 시 `PostPageResponse`와 비슷한 `CommentPageResponse`를 두고, `PostDetailPage`의 댓글 목록 상태와 `backend/tests/test_comments.py` pagination test를 함께 갱신한다.
 
 Comment response:
 

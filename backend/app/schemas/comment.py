@@ -21,3 +21,12 @@ class CommentResponse(BaseModel):
     deleted_at: datetime | None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CommentPageResponse(BaseModel):
+    items: list[CommentResponse]
+    page: int
+    size: int
+    total: int
+    has_next: bool
+    has_prev: bool

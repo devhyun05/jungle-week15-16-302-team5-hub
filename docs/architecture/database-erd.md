@@ -335,7 +335,7 @@ post_tags.tag_id -> tags.id
 
 - Day 2 댓글은 soft delete로 시작하므로 `comments.deleted_at`을 둔다.
 - `DELETE /api/comments/{comment_id}`는 row를 실제로 삭제하지 않고 `deleted_at`에 현재 시각을 기록한다.
-- `GET /api/posts/{post_id}/comments`는 `deleted_at IS NULL`인 댓글만 반환한다.
+- `GET /api/posts/{post_id}/comments`는 `deleted_at IS NULL`이고 `hidden_at IS NULL`인 댓글만 반환한다.
 - audit log, 삭제된 댓글 표시 문구, 관리자 복구 UI는 개선 후보로 남긴다.
 
 ### Tag Normalization Policy

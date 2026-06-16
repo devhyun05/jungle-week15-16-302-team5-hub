@@ -352,13 +352,13 @@ Implemented for Day 2 MVP. Redis rate limit is applied to comment creation.
 |---|---|
 | `frontend/src/api/comments.ts` | comment API wrappers |
 | `frontend/src/types/comment.ts` | comment request/response types |
-| `frontend/src/pages/PostDetailPage.tsx` | comment list/create/edit/delete UI; target: comment pagination controls |
+| `frontend/src/pages/PostDetailPage.tsx` | comment list/create/edit/delete UI with pagination controls |
 
 ### API Contract
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| GET | `/api/posts/{post_id}/comments` | none | list visible comments; target query: `page`, `size` |
+| GET | `/api/posts/{post_id}/comments` | none | list visible comments; query: `page`, `size` |
 | POST | `/api/posts/{post_id}/comments` | Bearer | create comment |
 | PUT | `/api/comments/{comment_id}` | owner Bearer | update own comment |
 | DELETE | `/api/comments/{comment_id}` | owner Bearer | soft delete own comment |
@@ -390,7 +390,7 @@ DELETE /api/comments/{comment_id}
 
 GET /api/posts/{post_id}/comments
 -> filter deleted_at IS NULL
--> target: apply page/size and return CommentPage
+-> apply page/size and return CommentPage
 ```
 
 ### Security Rules
@@ -405,19 +405,19 @@ GET /api/posts/{post_id}/comments
 
 | File | Coverage |
 |---|---|
-| `backend/tests/test_comments.py` | create/list/update/soft delete, 401/403/404 |
+| `backend/tests/test_comments.py` | create/list pagination/update/soft delete, 401/403/404 |
 
-### Additional Implementation Plan
+### Pagination
 
-Comment pagination is a planned follow-up for the existing comment list.
+Implemented with offset pagination.
 
-| Area | Planned Change |
+| Area | Implementation |
 |---|---|
 | API | `GET /api/posts/{post_id}/comments?page=&size=` |
 | Response | `CommentPageResponse` with `items`, `total`, `page`, `size`, `has_next`, `has_prev` |
-| Backend | apply `offset`/`limit` to visible comments only, excluding `deleted_at` rows |
-| Frontend | add comment page state and controls to `PostDetailPage` or `CommentList` |
-| Tests | add comment pagination ordering, total, empty page, and deleted-comment exclusion cases |
+| Backend | applies `offset`/`limit` to visible comments only, excluding `deleted_at` and `hidden_at` rows |
+| Frontend | `PostDetailPage` stores comment page metadata and shows previous/next controls |
+| Tests | comment pagination ordering, total, and page metadata |
 
 ## Tags
 

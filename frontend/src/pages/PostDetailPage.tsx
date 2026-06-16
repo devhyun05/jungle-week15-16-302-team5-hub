@@ -19,6 +19,8 @@ function formatDate(value: string) {
     }).format(new Date(value))
 }
 
+const COMMENTS_PAGE_SIZE = 20
+
 export function PostDetailPage() {
     const navigate = useNavigate()
     const { postId } = useParams()
@@ -28,6 +30,10 @@ export function PostDetailPage() {
 
     const [post, setPost] = useState<Post | null>(null)
     const [comments, setComments] = useState<BoardComment[]>([])
+    const [commentsPage, setCommentsPage] = useState(1)
+    const [commentsTotal, setCommentsTotal] = useState(0)
+    const [commentsHasNext, setCommentsHasNext] = useState(false)
+    const [commentsHasPrev, setCommentsHasPrev] = useState(false)
     const [loading, setLoading] = useState(false)
     const [commentsLoading, setCommentsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -41,6 +47,33 @@ export function PostDetailPage() {
     const [deletingCommentId, setDeletingCommentId] = useState<number | null>(null)
     const [commentActionError, setCommentActionError] = useState<string | null>(null)
 
+    async function loadCommentsPage(nextPage: number) {
+        const postIdAsNumber = Number(postId)
+
+        if (Number.isNaN(postIdAsNumber)) {
+            return
+        }
+
+        setCommentsLoading(true)
+        setCommentsError(null)
+
+        try {
+            const result = await listComments(postIdAsNumber, {
+                page: nextPage,
+                size: COMMENTS_PAGE_SIZE,
+            })
+            setComments(result.items)
+            setCommentsPage(result.page)
+            setCommentsTotal(result.total)
+            setCommentsHasNext(result.has_next)
+            setCommentsHasPrev(result.has_prev)
+        } catch {
+            setCommentsError('Failed to load comments.')
+        } finally {
+            setCommentsLoading(false)
+        }
+    }
+
     useEffect(() => {
         async function loadPost() {
             const postIdAsNumber = Number(postId)
@@ -53,6 +86,10 @@ export function PostDetailPage() {
             setLoading(true)
             setError(null)
             setComments([])
+            setCommentsPage(1)
+            setCommentsTotal(0)
+            setCommentsHasNext(false)
+            setCommentsHasPrev(false)
             setCommentsError(null)
             setCommentActionError(null)
 
@@ -66,16 +103,7 @@ export function PostDetailPage() {
                 setLoading(false)
             }
 
-            setCommentsLoading(true)
-
-            try {
-                const result = await listComments(postIdAsNumber)
-                setComments(result)
-            } catch {
-                setCommentsError('Failed to load comments.')
-            } finally {
-                setCommentsLoading(false)
-            }
+            await loadCommentsPage(1)
         }
 
         loadPost()
@@ -132,9 +160,13 @@ export function PostDetailPage() {
         setCommentActionError(null)
 
         try {
-            const createdComment = await createComment(post.id, { body }, token)
-            setComments((prevComments) => [...prevComments, createdComment])
+            await createComment(post.id, { body }, token)
             setNewCommentBody('')
+            const lastPage = Math.max(
+                1,
+                Math.ceil((commentsTotal + 1) / COMMENTS_PAGE_SIZE),
+            )
+            await loadCommentsPage(lastPage)
         } catch {
             setCommentActionError('Failed to create comment.')
         } finally {
@@ -203,9 +235,12 @@ export function PostDetailPage() {
 
         try {
             await deleteComment(commentId, token)
-            setComments((prevComments) =>
-                prevComments.filter((comment) => comment.id !== commentId),
+            const nextTotal = Math.max(0, commentsTotal - 1)
+            const lastPage = Math.max(
+                1,
+                Math.ceil(nextTotal / COMMENTS_PAGE_SIZE),
             )
+            await loadCommentsPage(Math.min(commentsPage, lastPage))
         } catch {
             setCommentActionError('Failed to delete comment.')
         } finally {
@@ -271,7 +306,7 @@ export function PostDetailPage() {
             <section className="comments-section" aria-labelledby="comments-title">
                 <div className="section-heading">
                     <h2 id="comments-title">Comments</h2>
-                    <span>{comments.length}</span>
+                    <span>{commentsTotal}</span>
                 </div>
 
                 {isLoggedIn ? (
@@ -308,7 +343,7 @@ export function PostDetailPage() {
                     <p className="error-message">{commentsError}</p>
                 )}
 
-                {!commentsLoading && !commentsError && comments.length === 0 && (
+                {!commentsLoading && !commentsError && commentsTotal === 0 && (
                     <p className="empty-message">No comments yet.</p>
                 )}
 
@@ -394,6 +429,32 @@ export function PostDetailPage() {
                         })}
                     </ul>
                 )}
+
+                {!commentsLoading &&
+                    !commentsError &&
+                    commentsTotal > COMMENTS_PAGE_SIZE && (
+                        <div className="pagination">
+                            <button
+                                type="button"
+                                onClick={() => loadCommentsPage(commentsPage - 1)}
+                                disabled={!commentsHasPrev}
+                            >
+                                Previous
+                            </button>
+
+                            <span>
+                                Page {commentsPage} · {commentsTotal} comments
+                            </span>
+
+                            <button
+                                type="button"
+                                onClick={() => loadCommentsPage(commentsPage + 1)}
+                                disabled={!commentsHasNext}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
             </section>
         </main>
     )

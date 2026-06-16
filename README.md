@@ -146,7 +146,6 @@ Latest verification:
 
 ## Known Follow-Ups
 
-- Comment pagination for `GET /api/posts/{post_id}/comments?page=&size=`
 - Admin seed command or documented repeatable seed procedure
 - Ensure Day 5 RAG/vector retrieval excludes deleted or admin-hidden posts and comments
 - Access token forced-expiry E2E check

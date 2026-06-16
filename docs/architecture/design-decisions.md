@@ -172,7 +172,6 @@ Decisions:
 
 - repository layer
 - comment edit history
-- comment pagination for `GET /api/posts/{post_id}/comments`
 - orphan tag cleanup batch
 - full-text search
 - cursor pagination

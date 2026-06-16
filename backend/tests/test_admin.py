@@ -466,7 +466,9 @@ def test_admin_can_hide_and_restore_comment(
 
     comments_response = client.get(f"/api/posts/{post['id']}/comments")
     assert comments_response.status_code == 200
-    assert comments_response.json() == []
+    comment_page = comments_response.json()
+    assert comment_page["items"] == []
+    assert comment_page["total"] == 0
 
     restore_response = client.post(
         f"/api/admin/comments/{comment['id']}/restore",
@@ -483,7 +485,7 @@ def test_admin_can_hide_and_restore_comment(
 
     restored_comments_response = client.get(f"/api/posts/{post['id']}/comments")
     assert restored_comments_response.status_code == 200
-    comments = restored_comments_response.json()
+    comments = restored_comments_response.json()["items"]
     assert len(comments) == 1
     assert comments[0]["id"] == comment["id"]
 
