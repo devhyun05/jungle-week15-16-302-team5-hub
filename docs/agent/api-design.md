@@ -424,3 +424,61 @@ POST /agent/run
 - RAG: README 원문, GitHub 커밋 메시지, JungleLog 게시글을 검색 근거로 사용
 - MCP: GitHub 같은 외부 시스템 호출
 - Agent: 필요한 도구를 선택하고 실행하는 추론 루프
+# 2026-06-17 AI/RAG/MCP/Agent API 추가
+
+## AI Generate
+
+```txt
+POST /ai/generate
+```
+
+Request:
+
+```json
+{
+  "project_id": 1,
+  "output_type": "portfolio",
+  "generation_mode": "direct"
+}
+```
+
+`generation_mode`:
+
+- `direct`: 프로젝트 자료를 직접 prompt에 넣는다.
+- `rag`: RAG 검색 context를 추가한다.
+- `agent`: 현재 `/ai/generate`에서는 direct로 fallback하고, 실제 agent loop는 `/ai/agent/run`을 사용한다.
+
+## RAG
+
+```txt
+POST /ai/rag/index
+POST /ai/rag/search
+```
+
+RAG는 프로젝트별 README, commit message, 연결 기록을 `rag_documents`에 저장하고 검색한다.
+
+## MCP
+
+```txt
+POST /mcp
+```
+
+JSON-RPC 2.0 endpoint다.
+
+지원 method:
+
+- `mcp.list_tools`
+- `mcp.call_tool`
+
+지원 tool:
+
+- `get_github_repository`
+- `get_portfolio_project`
+
+## Agent
+
+```txt
+POST /ai/agent/run
+```
+
+Agent는 `get_portfolio_project -> rag_search -> generate_project_content` 순서로 tool loop를 실행한다.

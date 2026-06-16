@@ -26,6 +26,7 @@ def generate_ai_content(
             db=db,
             project_id=request.project_id,
             output_type=request.output_type,
+            generation_mode=request.generation_mode,
             current_user=current_user,
         )
     except ai_service.AIConfigurationError as error:
@@ -37,4 +38,3 @@ def generate_ai_content(
         raise HTTPException(status_code=404, detail="포트폴리오 프로젝트를 찾을 수 없습니다.")
 
     return result
-

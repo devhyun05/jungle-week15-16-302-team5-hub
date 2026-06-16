@@ -1,49 +1,100 @@
 # RAG 구현 학습 문서
 
-이 문서는 JungleLog의 RAG 기능을 구현하면서 업데이트한다.
+## RAG 역할
 
-## RAG란?
+RAG는 LLM이 답변을 만들기 전에 우리 서비스 데이터를 먼저 검색해서 근거 자료로 넣는 구조다.
 
-RAG는 Retrieval-Augmented Generation의 약자다.
+JungleLog에서는 포트폴리오 글과 면접 질문을 만들 때 다음 데이터를 검색 대상으로 사용한다.
 
-LLM이 답변을 만들기 전에 우리 서비스의 데이터를 먼저 검색하고, 검색된 자료를 근거로 답변을 생성하는 구조다.
+- GitHub README 원문
+- GitHub commit message 전체
+- 포트폴리오 프로젝트에 연결된 학습 기록
+- 저장된 포트폴리오 글
+- 저장된 면접 예상 질문
 
-## JungleLog에서 RAG가 필요한 이유
+## 이번 구현
 
-JungleLog의 AI는 단순히 일반적인 포트폴리오 문장을 만드는 것이 아니라, 사용자가 실제로 작성한 기록을 근거로 글을 만들어야 한다.
+### 추가 파일
 
-검색 대상 후보:
+- `backend/app/db/models/rag_document.py`
+  - RAG 검색 대상 chunk와 embedding을 저장하는 DB 모델.
+- `backend/app/repositories/rag_repository.py`
+  - RAG 문서 삭제, 생성, 조회 repository.
+- `backend/app/services/rag_service.py`
+  - 프로젝트 자료를 chunk로 나누고 embedding을 만들고 검색하는 service.
+- `backend/app/schemas/rag.py`
+  - RAG index/search API request/response schema.
+- `backend/app/routers/rag.py`
+  - `/ai/rag/index`, `/ai/rag/search` endpoint.
 
-- 학습 로그
-- 트러블슈팅
-- 프로젝트 회고
-- 면접 질문
-- 포트폴리오 프로젝트
-- GitHub README
-- GitHub 커밋 메시지
+### API
 
-## 구현 예정 순서
+```txt
+POST /ai/rag/index
+POST /ai/rag/search
+```
 
-1. 게시글/포트폴리오/GitHub 자료를 embedding 대상으로 정리한다.
-2. PostgreSQL pgvector 또는 별도 vector DB를 선택한다.
-3. 텍스트를 embedding으로 변환해 저장한다.
-4. AI 생성 요청 시 관련 자료를 유사도 검색한다.
-5. 검색 결과를 OpenAI prompt context에 포함한다.
+### DB 구조
 
-## 현재는 왜 아직 RAG가 아닌가?
+`rag_documents` 테이블을 추가했다.
 
-초기 AI 단계에서는 선택된 프로젝트 자료를 직접 context로 넣는다.
+주요 필드:
 
-이 방식은 RAG라기보다 “직접 context 주입”이다. 이후 데이터가 많아지면 모든 자료를 넣기 어렵기 때문에, 그때 RAG 검색이 필요해진다.
+- `project_id`: 어떤 포트폴리오 프로젝트의 RAG 문서인지 구분.
+- `owner_id`: 접근 권한 확인을 위한 사용자 id.
+- `source_type`: `github_readme`, `github_commit`, `linked_post`, `saved_portfolio`, `saved_interview`.
+- `source_id`: 원본 자료 식별자.
+- `title`: 검색 결과에 보여줄 제목.
+- `content`: 실제 검색/생성에 사용할 chunk 본문.
+- `embedding_json`: OpenAI embedding vector를 JSON 문자열로 저장.
+- `token_estimate`: 대략적인 토큰 수 추정값.
 
-## 이번 구현에서 볼 키워드
+## 왜 PostgreSQL 테이블을 썼나
 
-- embedding
-- vector DB
-- pgvector
-- similarity search
-- retrieval
-- context window
-- chunking
-- top-k
+과제에서는 Pinecone, FAISS, ChromaDB, pgvector 같은 선택지가 있다.
 
+이번 v1에서는 이미 PostgreSQL을 사용하고 있으므로 별도 인프라를 늘리지 않고 `rag_documents` 테이블을 vector store처럼 사용했다.
+
+현재 방식:
+
+```txt
+text chunk -> OpenAI embedding -> PostgreSQL embedding_json 저장 -> Python cosine similarity 검색
+```
+
+장점:
+
+- 로컬 개발 환경이 단순하다.
+- DB와 권한 흐름이 기존 프로젝트와 잘 맞는다.
+- RAG 구조를 학습하기 쉽다.
+
+한계:
+
+- 데이터가 많아지면 Python에서 모든 embedding을 비교하므로 느려진다.
+- 실제 서비스에서는 `pgvector` extension으로 index를 만들거나 전용 Vector DB를 쓰는 편이 좋다.
+
+## AI 생성과 연결된 흐름
+
+`POST /ai/generate`에 `generation_mode: "rag"`를 보내면:
+
+1. 선택한 프로젝트를 조회한다.
+2. 프로젝트 자료를 RAG 문서로 색인한다. 이미 없으면 자동 색인한다.
+3. 생성 목적에 맞는 query를 만든다.
+4. `/ai/rag/search`와 같은 방식으로 관련 chunk를 찾는다.
+5. 검색 결과를 OpenAI prompt의 `RAG search context`에 넣는다.
+6. 포트폴리오 글 또는 면접 예상 질문을 생성한다.
+
+## 비용 안전 기준
+
+- RAG indexing은 OpenAI embedding API를 호출하므로 비용이 발생한다.
+- 자동 QA에서는 실제 embedding 호출을 실행하지 않았다.
+- 실제 호출 QA는 사용자가 명시적으로 허락한 뒤 진행한다.
+
+## 검증 결과
+
+```txt
+backend compileall app: success
+frontend npm run build: success
+FastAPI app import: success
+registered route: /ai/rag/index
+registered route: /ai/rag/search
+```

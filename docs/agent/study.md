@@ -778,3 +778,37 @@ AI:
 - 한글 label을 정규식으로 파싱할 때 파일/터미널 인코딩이 깨지면 parser가 엉뚱하게 동작할 수 있다.
 - 중요한 label matcher는 `\uC9C8\uBB38` 같은 유니코드 escape를 쓰면 소스 인코딩 영향을 덜 받는다.
 - preview와 modal이 서로 다른 parser를 쓰면 한쪽은 3개 요약, 한쪽은 전체가 한 카드로 들어가는 식의 불일치가 생긴다.
+
+## 2026-06-17 학습 기록: RAG/MCP/Agent 연결
+
+### RAG
+
+RAG는 AI가 답변을 만들기 전에 관련 자료를 검색해서 prompt에 넣는 구조다.
+
+이번 구현에서는 `rag_documents` 테이블에 README, commit message, 연결 게시글을 chunk로 저장하고, OpenAI embedding을 `embedding_json`에 저장하도록 설계했다.
+
+검색은 query embedding과 문서 embedding의 cosine similarity를 계산해서 가까운 chunk를 찾는다.
+
+### MCP
+
+MCP는 LLM/Agent가 외부 시스템을 도구처럼 호출할 수 있게 하는 프로토콜이다.
+
+이번 구현에서는 `/mcp` endpoint가 JSON-RPC 요청을 받고, GitHub 조회와 포트폴리오 프로젝트 조회를 tool로 제공한다.
+
+### Agent
+
+Agent는 목표를 달성하기 위해 도구를 순서대로 실행하는 루프다.
+
+이번 구현의 Agent는 다음 순서로 동작한다.
+
+```txt
+get_portfolio_project -> rag_search -> generate_project_content
+```
+
+`max_iterations`를 1~5로 제한해서 무한 루프를 막는다.
+
+### 배운 점
+
+- RAG는 검색, MCP는 외부 연결, Agent는 도구 실행 루프다.
+- RAG embedding과 AI generation은 비용이 발생하므로 자동 테스트에서 호출하면 안 된다.
+- 과제용 v1에서는 완전 자율 Agent보다 흐름이 보이는 제한된 Agent가 학습과 설명에 유리하다.

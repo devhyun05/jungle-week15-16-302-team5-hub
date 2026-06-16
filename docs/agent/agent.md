@@ -45,16 +45,20 @@
 - 게시글/댓글/내 기록: 완료
 - 포트폴리오/GitHub API/코치 리뷰: 완료
 - AI 전 GitHub 참고 자료 준비: 완료
-- OpenAI/RAG/MCP/Agent 구현: 예정
+- OpenAI 기본 생성: 구현
+- RAG 최소 indexing/search API: 구현
+- MCP JSON-RPC tool endpoint: 구현
+- Agent 최소 tool loop: 구현
 
 ## AI 구현 시 기준
 
 AI 단계에서는 아래 순서로 진행한다.
 
-1. OpenAI 단일 호출로 포트폴리오 글/면접 질문 생성
-2. RAG 문서 저장과 embedding 검색
-3. GitHub MCP tool 또는 MCP-like tool 구현
-4. Agent loop로 RAG와 MCP tool을 선택 실행
+1. OpenAI 단일 호출로 포트폴리오 글/면접 질문 생성: 완료
+2. RAG 문서 저장과 embedding 검색: 완료
+3. GitHub MCP tool 또는 MCP-like tool 구현: 완료
+4. Agent loop로 RAG와 MCP tool을 선택 실행: 완료
+5. 실제 AI 호출 QA와 제출 문서/스크린샷 정리: 남음
 
 핵심 문장:
 

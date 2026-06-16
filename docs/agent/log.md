@@ -703,3 +703,42 @@ from app.main import app: success
 frontend npm run build: success
 backend compileall app: success
 ```
+
+## 2026-06-17 RAG/MCP/Agent 최소 기능 연결
+
+- 작업 파일:
+  - `backend/app/db/models/rag_document.py`
+  - `backend/app/repositories/rag_repository.py`
+  - `backend/app/services/rag_service.py`
+  - `backend/app/schemas/rag.py`
+  - `backend/app/routers/rag.py`
+  - `backend/app/schemas/mcp.py`
+  - `backend/app/services/mcp_service.py`
+  - `backend/app/routers/mcp.py`
+  - `backend/app/schemas/agent.py`
+  - `backend/app/services/agent_service.py`
+  - `backend/app/routers/agent.py`
+  - `backend/app/services/ai_service.py`
+  - `frontend/src/app/api/ai.ts`
+  - `frontend/src/app/pages/ai/AIAssistant.tsx`
+  - `README.md`
+  - `docs/agent/rag.md`
+  - `docs/agent/mcp.md`
+  - `docs/agent/ai-agent.md`
+- 구현:
+  - RAG 문서 저장 테이블 `rag_documents`를 추가했다.
+  - `/ai/rag/index`, `/ai/rag/search` API를 추가했다.
+  - `/mcp` JSON-RPC endpoint와 `get_github_repository`, `get_portfolio_project` tool을 추가했다.
+  - `/ai/agent/run` API를 추가해 `get_portfolio_project -> rag_search -> generate_project_content` tool loop를 구성했다.
+  - AI 도우미 화면에 `일반 생성`, `RAG 기반 생성`, `Agent 기반 생성` 선택 UI를 추가했다.
+- 안전 기준:
+  - OpenAI generation/embedding은 비용이 발생하므로 자동 QA에서는 실제 호출하지 않았다.
+  - 실제 AI 호출 QA는 사용자의 명시적 허락 후 진행한다.
+- 검증:
+
+```txt
+frontend npm run build: success
+backend compileall app: success
+from app.main import app: success
+registered routes: /ai/generate, /ai/rag/index, /ai/rag/search, /mcp, /ai/agent/run
+```

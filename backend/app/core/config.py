@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     github_token: str = ""
     openai_api_key: str = ""
     openai_model: str = "gpt-4.1-mini"
+    openai_embedding_model: str = "text-embedding-3-small"
     openai_max_output_tokens: int = 1800
 
     model_config = SettingsConfigDict(

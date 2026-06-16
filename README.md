@@ -2,7 +2,7 @@
 
 JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, 프로젝트 회고, 면접 질문, 포트폴리오 자료를 관리하고 코치가 기록을 보고 피드백할 수 있는 AI 게시판 프로젝트입니다.
 
-현재 목표는 **AI 기능 연결 직전까지 실제 웹서비스처럼 동작하는 상태**를 만드는 것입니다. OpenAI/RAG/MCP/Agent 호출은 다음 단계로 남겨두고, 인증/권한/게시판/포트폴리오/GitHub repo 분석/코치 리뷰 흐름은 실제 FastAPI API 기준으로 연결했습니다.
+현재 목표는 **AI 응용 기능을 과제 제출 가능한 수준까지 연결하는 것**입니다. 인증/권한/게시판/포트폴리오/GitHub repo 분석/코치 리뷰 흐름은 실제 FastAPI API 기준으로 연결했고, OpenAI 기본 생성에 이어 RAG, MCP, Agent 최소 동작 API를 추가했습니다.
 
 ## 프로젝트 개요
 
@@ -867,3 +867,26 @@ OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 �
 - 질문은 굵고 조금 크게 표시하고, 답변은 `POINT` 영역 안에 묶어 같은 질문의 답변처럼 읽히게 정리했습니다.
 - 면접 질문 parser의 한글 정규식을 유니코드 escape 기반으로 바꿔 인코딩 깨짐 때문에 질문/답변 분리가 실패하는 문제를 줄였습니다.
 - 포트폴리오 관리 preview와 전체보기 modal이 같은 parser 기준을 사용하도록 정리했습니다.
+
+## 최근 변경: RAG/MCP/Agent 최소 기능 연결
+
+- AI 도우미에 `일반 생성`, `RAG 기반 생성`, `Agent 기반 생성` 모드를 추가했습니다.
+- `POST /ai/generate`는 `generation_mode`를 받아 `direct` 또는 `rag` 생성 흐름을 구분합니다.
+- `POST /ai/rag/index`는 README 원문, GitHub commit message, 연결된 학습 기록, 저장된 포트폴리오 글/면접 질문을 RAG 문서로 색인합니다.
+- `POST /ai/rag/search`는 query와 가까운 RAG 문서를 검색합니다.
+- Vector 저장소는 PostgreSQL의 `rag_documents` 테이블을 사용하며, v1에서는 `embedding_json`에 embedding을 저장하고 Python에서 cosine similarity를 계산합니다.
+- `POST /mcp`는 JSON-RPC 2.0 형태의 MCP-like endpoint입니다.
+- MCP tool은 `get_github_repository`, `get_portfolio_project`를 제공합니다.
+- `POST /ai/agent/run`은 `get_portfolio_project -> rag_search -> generate_project_content` 순서의 제한된 tool loop를 실행하고 tool call 로그를 반환합니다.
+- Agent는 `max_iterations`를 1~5로 제한해 무한 루프를 방지합니다.
+
+### 이번 AI 단계 검증
+
+```txt
+frontend npm run build: success
+backend compileall app: success
+FastAPI app import: success
+registered AI routes: /ai/generate, /ai/rag/index, /ai/rag/search, /mcp, /ai/agent/run
+```
+
+비용 안전 기준에 따라 이번 자동 검증에서는 실제 OpenAI 생성/embedding 호출은 실행하지 않았습니다. 실제 AI 호출 QA는 사용자가 명시적으로 허락한 뒤 진행합니다.

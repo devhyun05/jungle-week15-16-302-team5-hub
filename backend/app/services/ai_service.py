@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.models import PortfolioProject, User
 from app.repositories import portfolio_repository
-from app.schemas.ai import AIGenerateResponse, AIReferenceSummary, AIOutputType
+from app.schemas.ai import AIGenerateResponse, AIGenerationMode, AIReferenceSummary, AIOutputType
+from app.services import rag_service
 from app.services.portfolio_service import parse_recent_commit_summary, parse_tech_stack
 
 
@@ -30,10 +31,15 @@ def generate_project_content(
     db: Session,
     project_id: int,
     output_type: AIOutputType,
+    generation_mode: AIGenerationMode,
     current_user: User,
 ) -> AIGenerateResponse | None:
     """
-    선택한 포트폴리오 프로젝트 자료를 모아 OpenAI로 포트폴리오 글 또는 면접 질문을 생성한다.
+    Generate portfolio text or interview questions from one portfolio project.
+
+    direct: sends the selected project context directly to OpenAI.
+    rag: indexes/searches project references first, then sends retrieved context.
+    agent: currently delegates to direct generation until the Agent router is wired.
     """
 
     project = portfolio_repository.get_project_by_id(
@@ -45,10 +51,27 @@ def generate_project_content(
     if project is None:
         return None
 
+    effective_mode: AIGenerationMode = "direct" if generation_mode == "agent" else generation_mode
     context = build_ai_context(project)
+    rag_context = ""
+
+    if effective_mode == "rag":
+        rag_context = rag_service.build_rag_context(
+            db=db,
+            project_id=project.id,
+            query=build_rag_query(context=context, output_type=output_type),
+            current_user=current_user,
+            top_k=5,
+        )
+
     content = call_openai_response(
-        instructions=build_system_instructions(output_type),
-        input_text=build_user_prompt(context=context, output_type=output_type),
+        instructions=build_system_instructions(output_type=output_type, generation_mode=effective_mode),
+        input_text=build_user_prompt(
+            context=context,
+            output_type=output_type,
+            generation_mode=effective_mode,
+            rag_context=rag_context,
+        ),
     )
 
     return AIGenerateResponse(
@@ -61,17 +84,13 @@ def generate_project_content(
             linked_record_count=len(project.portfolio_project_posts),
             github_commit_count=len(project.github_commits),
             readme_included=bool(context.readme_text),
+            rag_context_count=count_rag_blocks(rag_context),
+            generation_mode=effective_mode,
         ),
     )
 
 
 def build_ai_context(project: PortfolioProject) -> AIContext:
-    """
-    OpenAI에 전달할 프로젝트 참고자료를 하나의 context로 정리한다.
-
-    지금은 선택 프로젝트에 연결된 자료를 직접 넣고, RAG 단계에서는 이 함수 앞에 검색 단계를 추가한다.
-    """
-
     linked_records = []
 
     for link in project.portfolio_project_posts:
@@ -80,9 +99,11 @@ def build_ai_context(project: PortfolioProject) -> AIContext:
         if post is None or post.deleted_at is not None:
             continue
 
-        category = post.category.label if post.category is not None else "기록"
+        category = post.category.label if post.category is not None else "record"
         linked_records.append(
-            f"- [{category}] {post.title}\n  요약: {post.summary or '요약 없음'}\n  내용: {post.content[:1000]}"
+            f"- [{category}] {post.title}\n"
+            f"  summary: {post.summary or 'No summary.'}\n"
+            f"  content: {post.content[:1000]}"
         )
 
     github_commits = sorted(
@@ -91,81 +112,119 @@ def build_ai_context(project: PortfolioProject) -> AIContext:
         reverse=True,
     )
     commit_lines = [f"- {commit.message}" for commit in github_commits]
+    fallback_commit_lines = parse_recent_commit_summary(project.recent_commit_summary)
 
     return AIContext(
         project=project,
-        linked_record_text="\n".join(linked_records) or "연결된 학습 기록이 없습니다.",
-        commit_text="\n".join(commit_lines) or "\n".join(parse_recent_commit_summary(project.recent_commit_summary)) or "수집된 커밋 메시지가 없습니다.",
+        linked_record_text="\n".join(linked_records) or "No linked JungleLog records.",
+        commit_text="\n".join(commit_lines) or "\n".join(fallback_commit_lines) or "No commit messages.",
         readme_text=(project.readme_content or project.readme_summary or "").strip(),
     )
 
 
-def build_system_instructions(output_type: AIOutputType) -> str:
+def build_system_instructions(output_type: AIOutputType, generation_mode: AIGenerationMode) -> str:
+    mode_note = (
+        "When RAG context is provided, prioritize the retrieved evidence over broad assumptions."
+        if generation_mode == "rag"
+        else "Use only the provided project data and avoid unsupported claims."
+    )
+
     if output_type == "interview":
         return (
-            "너는 개발자 포트폴리오와 기술 면접을 도와주는 코치다. "
-            "주어진 프로젝트 자료만 근거로 면접 예상 질문과 답변 포인트를 한국어로 작성한다. "
-            "과장된 표현을 피하고, 사용자가 실제로 설명할 수 있는 수준으로 정리한다."
+            "You are a technical interview coach for a Korean developer portfolio service. "
+            "Write in Korean. Create practical interview questions grounded in the project evidence. "
+            "Each item must have a clear question and concise POINT bullets. "
+            "Do not include follow-up questions. "
+            f"{mode_note}"
         )
 
     return (
-        "너는 개발자 포트폴리오 글 작성을 도와주는 코치다. "
-        "주어진 프로젝트 자료만 근거로 포트폴리오 글을 한국어로 작성한다. "
-        "문제 정의, 나의 역할, 구현 내용, 트러블슈팅, 배운 점이 드러나게 정리한다."
+        "You are a Korean developer portfolio writing coach. "
+        "Write a polished portfolio article using Markdown headings and bullet lists. "
+        "Cover problem definition, my role, implementation, troubleshooting, and lessons learned. "
+        f"{mode_note}"
     )
 
 
-def build_user_prompt(context: AIContext, output_type: AIOutputType) -> str:
+def build_rag_query(context: AIContext, output_type: AIOutputType) -> str:
     project = context.project
-    tech_stack = ", ".join(parse_tech_stack(project.tech_stack)) or "기술 스택 미감지"
-    existing_portfolio = project.saved_portfolio_draft or "저장된 포트폴리오 글 없음"
+    task_label = "interview questions" if output_type == "interview" else "portfolio article"
+
+    return (
+        f"{project.title} {task_label} role problem solving implementation "
+        f"tech stack {project.tech_stack or ''} {project.summary or ''}"
+    )
+
+
+def build_user_prompt(
+    context: AIContext,
+    output_type: AIOutputType,
+    generation_mode: AIGenerationMode,
+    rag_context: str = "",
+) -> str:
+    project = context.project
+    tech_stack = ", ".join(parse_tech_stack(project.tech_stack)) or "unknown"
+    existing_portfolio = project.saved_portfolio_draft or "No saved portfolio text."
 
     if output_type == "interview":
         task = (
-            "아래 자료를 바탕으로 면접 예상 질문 8개를 만들어줘. "
-            "각 질문마다 답변 포인트만 간결하게 정리하고, 꼬리 질문은 포함하지 마."
+            "Create 8 Korean interview questions. "
+            "Use this format for every item:\n"
+            "1. question text\n"
+            "POINT\n"
+            "- answer point\n"
+            "- answer point"
         )
     else:
         task = (
-            "아래 자료를 바탕으로 포트폴리오 글을 작성해줘. "
-            "소제목은 자연스럽게 붙이고, 지원서에 옮겨도 어색하지 않은 문장으로 정리해줘."
+            "Write a Korean portfolio article. "
+            "Use Markdown headings, natural section titles, and readable bullet lists."
         )
 
     return f"""
-작업:
+Task:
 {task}
 
-프로젝트:
-- 이름: {project.title}
-- GitHub: {project.repo_full_name}
-- Branch: {project.github_branch or "main"}
-- 기술 스택: {tech_stack}
-- 프로젝트 설명: {project.summary or "설명 없음"}
-- 코치 피드백 상태: {project.coach_feedback_status}
+Generation mode:
+- mode: {generation_mode}
+- If RAG search context exists, use it as the strongest evidence.
+- Do not invent facts that are not supported by the project data.
 
-기존 포트폴리오 글:
+Project:
+- title: {project.title}
+- GitHub: {project.repo_full_name}
+- branch: {project.github_branch or "main"}
+- tech stack: {tech_stack}
+- summary: {project.summary or "No summary."}
+- coach feedback status: {project.coach_feedback_status}
+
+Existing portfolio text:
 {existing_portfolio}
 
-연결된 학습 기록:
+Linked JungleLog records:
 {context.linked_record_text}
 
 GitHub README:
-{context.readme_text or "README 자료 없음"}
+{context.readme_text or "No README content."}
 
-GitHub 커밋 메시지:
+GitHub commit messages:
 {context.commit_text}
+
+RAG search context:
+{rag_context or "No RAG search context was used."}
 """.strip()
 
 
+def count_rag_blocks(rag_context: str) -> int:
+    if not rag_context.strip():
+        return 0
+
+    return rag_context.count("\n\n[") + 1
+
+
 def call_openai_response(instructions: str, input_text: str) -> str:
-    """
-    OpenAI Responses API를 호출한다.
-
-    API key는 backend/.env에서만 읽고, 프론트엔드로 노출하지 않는다.
-    """
-
     if not settings.openai_api_key:
-        raise AIConfigurationError("OPENAI_API_KEY가 설정되어 있지 않습니다.")
+        raise AIConfigurationError("OPENAI_API_KEY is not configured.")
 
     client = OpenAI(api_key=settings.openai_api_key)
 
@@ -177,11 +236,11 @@ def call_openai_response(instructions: str, input_text: str) -> str:
             max_output_tokens=settings.openai_max_output_tokens,
         )
     except OpenAIError as error:
-        raise AIGenerationError("OpenAI 응답 생성에 실패했습니다.") from error
+        raise AIGenerationError("OpenAI generation request failed.") from error
 
     content = getattr(response, "output_text", None)
 
     if not content:
-        raise AIGenerationError("OpenAI 응답 본문이 비어 있습니다.")
+        raise AIGenerationError("OpenAI response body was empty.")
 
     return content.strip()

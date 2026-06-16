@@ -7,14 +7,17 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.db.init_db import init_db
 from app.routers.admin import router as admin_router
+from app.routers.agent import router as agent_router
 from app.routers.ai import router as ai_router
 from app.routers.auth import router as auth_router
 from app.routers.comments import router as comments_router
 from app.routers.health import router as health_router
 from app.routers.me import router as me_router
+from app.routers.mcp import router as mcp_router
 from app.routers.notifications import router as notifications_router
 from app.routers.portfolio import router as portfolio_router
 from app.routers.posts import router as posts_router
+from app.routers.rag import router as rag_router
 from app.routers.reviews import router as reviews_router
 
 
@@ -63,3 +66,6 @@ app.include_router(portfolio_router)
 app.include_router(reviews_router)
 app.include_router(notifications_router)
 app.include_router(ai_router)
+app.include_router(rag_router)
+app.include_router(mcp_router)
+app.include_router(agent_router)

@@ -19,6 +19,7 @@ from app.db.models.post_tag import PostTag
 from app.db.models.portfolio_project import PortfolioProject
 # 포트폴리오 프로젝트-게시글 N:M 연결 테이블 모델
 from app.db.models.portfolio_project_post import PortfolioProjectPost
+from app.db.models.rag_document import RagDocument
 # 코치 리뷰 요청 테이블 모델
 from app.db.models.review_request import ReviewRequest
 # 코치 리뷰 요청-코치 N:M 연결 테이블 모델
@@ -42,6 +43,7 @@ __all__ = [
     "Post",
     "PostCategory",
     "PostTag",
+    "RagDocument",
     "ReviewRequest",
     "ReviewRequestCoach",
     "Tag",

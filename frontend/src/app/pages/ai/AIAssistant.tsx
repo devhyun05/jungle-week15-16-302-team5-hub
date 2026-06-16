@@ -19,7 +19,7 @@ import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import { getMyPosts, type PostListApiItem } from "../../api/posts";
 import { getPortfolioProjects, updatePortfolioProject, type PortfolioProjectApiItem } from "../../api/portfolio";
-import { generateAIContent } from "../../api/ai";
+import { generateAIContent, runAIAgent, type AIGenerationMode } from "../../api/ai";
 import { getDisplayTechStack } from "../../utils/techStack";
 import { cleanInterviewQuestionsText } from "../../utils/interviewQuestions";
 
@@ -42,6 +42,28 @@ const outputOptions = [
     icon: MessageSquare,
   },
 ] as const;
+
+const generationModeOptions: Array<{
+  value: AIGenerationMode;
+  title: string;
+  description: string;
+}> = [
+  {
+    value: "direct",
+    title: "일반 생성",
+    description: "선택한 프로젝트 자료를 한 번에 OpenAI prompt로 전달합니다.",
+  },
+  {
+    value: "rag",
+    title: "RAG 기반 생성",
+    description: "README, 커밋, 연결 기록을 검색한 뒤 관련 근거를 prompt에 넣습니다.",
+  },
+  {
+    value: "agent",
+    title: "Agent 기반 생성",
+    description: "프로젝트 조회, RAG 검색, 생성 도구를 순서대로 선택해 실행합니다.",
+  },
+];
 
 function buildPortfolioDraft(project: PortfolioProjectApiItem, linkedRecords: PostListApiItem[]) {
   // 실제 OpenAI 연결 전까지 선택 프로젝트 정보를 이용해 포트폴리오 글 미리보기를 만든다.
@@ -100,6 +122,8 @@ export function AIAssistant() {
   const [projects, setProjects] = useState<PortfolioProjectApiItem[]>([]);
   const [records, setRecords] = useState<PostListApiItem[]>([]);
   const [outputType, setOutputType] = useState<OutputType>(initialType);
+  const [generationMode, setGenerationMode] = useState<AIGenerationMode>("direct");
+  const [agentToolCalls, setAgentToolCalls] = useState<Array<{ step: number; toolName: string; status: string; summary: string }>>([]);
   const [savedNotice, setSavedNotice] = useState("");
   const [copyNotice, setCopyNotice] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -209,14 +233,27 @@ export function AIAssistant() {
     setIsGenerating(true);
     setSavedNotice("");
     setErrorMessage("");
+    setAgentToolCalls([]);
 
     try {
-      const response = await generateAIContent({
-        projectId: selectedProject.id,
-        outputType,
-      });
+      const generatedContent =
+        generationMode === "agent"
+          ? await runAIAgent({
+              projectId: selectedProject.id,
+              outputType,
+              userGoal: outputType === "portfolio" ? "포트폴리오 글 생성" : "면접 예상 질문 생성",
+            }).then((response) => {
+              setAgentToolCalls(response.toolCalls);
 
-      setGeneratedText(response.content);
+              return response.finalContent;
+            })
+          : await generateAIContent({
+              projectId: selectedProject.id,
+              outputType,
+              generationMode,
+            }).then((response) => response.content);
+
+      setGeneratedText(generatedContent);
       toast.success(outputType === "portfolio" ? "AI 포트폴리오 글을 생성했습니다." : "AI 면접 예상 질문을 생성했습니다.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "AI 생성에 실패했습니다.";
@@ -355,6 +392,32 @@ export function AIAssistant() {
                       </span>
                     </button>
                   ))}
+                </div>
+
+                <div className="space-y-2 border-t border-slate-100 pt-3">
+                  <p className="text-sm font-semibold text-slate-800">생성 방식</p>
+                  <div className="grid gap-2">
+                    {generationModeOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          setGenerationMode(option.value);
+                          setGeneratedText("");
+                          setSavedNotice("");
+                          setAgentToolCalls([]);
+                        }}
+                        className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                          generationMode === option.value
+                            ? "border-emerald-500 bg-emerald-50 text-emerald-900"
+                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        <span className="block text-sm font-semibold">{option.title}</span>
+                        <span className="mt-1 block text-xs leading-5 text-slate-500">{option.description}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -507,6 +570,18 @@ export function AIAssistant() {
                   )}
                 </div>
                 <div className="space-y-2 border-t border-slate-100 bg-slate-50 p-4">
+                  {agentToolCalls.length > 0 && (
+                    <div className="rounded-lg border border-emerald-100 bg-white p-3">
+                      <p className="text-xs font-semibold text-emerald-700">Agent tool calls</p>
+                      <ol className="mt-2 space-y-1 text-xs leading-5 text-slate-600">
+                        {agentToolCalls.map((toolCall) => (
+                          <li key={`${toolCall.step}-${toolCall.toolName}`}>
+                            {toolCall.step}. {toolCall.toolName} - {toolCall.summary}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
                   <Button variant="secondary" className="w-full" onClick={() => void generateResult()} disabled={isGenerating}>
                     <Sparkles className="mr-2 h-4 w-4" />
                     {isGenerating ? "AI 생성 중..." : "OpenAI로 생성하기"}

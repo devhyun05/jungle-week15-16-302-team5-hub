@@ -553,3 +553,32 @@ from app.main import app: success
 - 면접 예상 질문 preview에 질문 3개 요약이 보이고, 전체 답변 포인트가 preview 카드에 한꺼번에 펼쳐지지 않는지 확인한다.
 - `전체 예상 질문 보기` modal에서 질문 여러 개가 하나의 카드에 몰리지 않고 질문별 카드로 나뉘는지 확인한다.
 - 기존 저장 데이터가 `질문:`, `답변 포인트:`, `**질문**`, `- 답변 포인트:` 형식이어도 질문/POINT가 분리되는지 확인한다.
+
+## 2026-06-17 QA: RAG/MCP/Agent 최소 기능
+
+### 자동 검증 결과
+
+```txt
+frontend npm run build: success
+backend compileall app: success
+from app.main import app: success
+registered routes: /ai/generate, /ai/rag/index, /ai/rag/search, /mcp, /ai/agent/run
+```
+
+### 비용 발생 때문에 자동 실행하지 않은 것
+
+- `/ai/generate`
+- `/ai/rag/index`
+- `/ai/rag/search`
+- `/ai/agent/run`
+
+위 API는 OpenAI generation 또는 embedding 호출을 포함할 수 있으므로 사용자가 명시적으로 허락한 뒤 Swagger 또는 프론트에서 수동 QA한다.
+
+### 수동 확인할 것
+
+- AI 도우미 화면에서 생성 방식이 `일반 생성`, `RAG 기반 생성`, `Agent 기반 생성`으로 보이는지 확인한다.
+- `일반 생성`은 기존 OpenAI 직접 생성 흐름으로 동작하는지 확인한다.
+- `RAG 기반 생성`은 RAG 문서 색인/검색 후 생성되는지 확인한다.
+- `Agent 기반 생성`은 결과와 함께 tool call 로그가 보이는지 확인한다.
+- Swagger에서 `/ai/rag/index`, `/ai/rag/search`, `/mcp`, `/ai/agent/run`이 보이는지 확인한다.
+- `/mcp`의 `mcp.list_tools`가 도구 목록을 반환하는지 확인한다.

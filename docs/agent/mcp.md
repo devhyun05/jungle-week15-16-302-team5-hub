@@ -1,41 +1,113 @@
 # MCP 구현 학습 문서
 
-이 문서는 JungleLog에 MCP 기능을 구현하면서 업데이트한다.
+## MCP 역할
 
-## MCP란?
+MCP는 LLM 또는 Agent가 외부 시스템을 정해진 프로토콜로 호출할 수 있게 하는 구조다.
 
-MCP는 Model Context Protocol의 약자다.
+JungleLog에서는 GitHub 외부 데이터를 가져오는 기능을 MCP tool 형태로 감쌌다.
 
-LLM이나 Agent가 외부 도구를 표준 방식으로 호출할 수 있게 해주는 프로토콜이다.
+## 이번 구현
 
-## JungleLog에서 MCP가 맡을 역할
+### 추가 파일
 
-현재 GitHub REST API 연동은 FastAPI service 안에 직접 구현되어 있다.
+- `backend/app/schemas/mcp.py`
+  - JSON-RPC request/response schema.
+- `backend/app/services/mcp_service.py`
+  - MCP method와 tool 실행 로직.
+- `backend/app/routers/mcp.py`
+  - `/mcp` endpoint.
 
-MCP 단계에서는 이 GitHub 조회 기능을 tool 형태로 분리해, AI/Agent가 필요할 때 호출할 수 있게 만든다.
+### API
 
-## MCP tool 후보
+```txt
+POST /mcp
+```
 
-- `get_github_repo_info`
-- `get_github_readme`
-- `get_github_commits`
-- `search_junglelog_posts`
-- `get_portfolio_project`
+요청은 JSON-RPC 2.0 형태다.
 
-## 구현 예정 순서
+도구 목록 조회:
 
-1. MCP server의 역할과 JSON-RPC 요청/응답 구조를 정리한다.
-2. GitHub 조회 기능 중 하나를 MCP tool로 분리한다.
-3. FastAPI 또는 별도 프로세스에서 MCP server를 실행하는 방식을 결정한다.
-4. Agent가 MCP tool을 호출할 수 있도록 연결한다.
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "mcp.list_tools",
+  "params": {}
+}
+```
 
-## 이번 구현에서 볼 키워드
+도구 호출:
 
-- MCP server
-- JSON-RPC
-- tool
-- external system
-- API key boundary
-- GitHub API
-- function calling과 MCP 차이
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "mcp.call_tool",
+  "params": {
+    "name": "get_portfolio_project",
+    "arguments": {
+      "project_id": 1
+    }
+  }
+}
+```
 
+## 구현한 MCP tool
+
+### get_github_repository
+
+GitHub REST API를 호출해서 repository 정보를 가져온다.
+
+반환 데이터:
+
+- title
+- repo_full_name
+- github_branch
+- github_url
+- summary
+- tech_stack
+- readme_summary
+- readme_content
+- commit_messages
+
+### get_portfolio_project
+
+DB에 저장된 포트폴리오 프로젝트 정보를 가져온다.
+
+반환 데이터:
+
+- id
+- title
+- repo_full_name
+- github_branch
+- github_url
+- summary
+- tech_stack
+- linked_record_count
+- github_commit_count
+- has_readme_content
+
+## 권한 관리
+
+`/mcp` endpoint는 `STUDENT`, `ADMIN`만 호출할 수 있다.
+
+GitHub API Key는 프론트에 노출하지 않고 backend `.env`의 `GITHUB_TOKEN`을 사용한다.
+
+## 한계와 개선
+
+현재 구현은 과제 요구사항을 만족하기 위한 MCP-like JSON-RPC server다.
+
+추후 개선:
+
+- 표준 MCP SDK 기반 서버로 분리
+- stdio 또는 SSE transport 지원
+- tool schema를 더 엄격하게 정의
+- Agent와 MCP server를 별도 프로세스로 분리
+
+## 검증 결과
+
+```txt
+backend compileall app: success
+FastAPI app import: success
+registered route: /mcp
+```
