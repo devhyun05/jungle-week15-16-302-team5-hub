@@ -55,9 +55,13 @@ def clear_auth_cookies(response: Response) -> None:
 
 @router.get("/slack/login")
 def start_slack_login() -> RedirectResponse:
+    # OAuth callback 검증에 사용할 state 값을 만든다.
     state = create_oauth_state()
+
+    # 사용자를 Slack 인증 페이지로 보낸다.
     response = RedirectResponse(build_slack_authorize_url(state=state))
 
+    # callback에서 비교할 수 있도록 같은 state를 쿠키에 저장한다.
     response.set_cookie(
         key=settings.oauth_state_cookie_name,
         value=state,
