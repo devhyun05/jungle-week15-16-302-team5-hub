@@ -135,13 +135,20 @@ ADMIN_EMAILS=최고관리자이메일@example.com
 GITHUB_API_BASE_URL=https://api.github.com
 GITHUB_API_VERSION=2022-11-28
 GITHUB_TOKEN=
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4.1-mini
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OPENAI_MAX_OUTPUT_TOKENS=1800
 ```
 
 주의:
 
-- `GOOGLE_CLIENT_SECRET`, `JWT_SECRET_KEY`, `GITHUB_TOKEN`, 이후 `OPENAI_API_KEY`는 GitHub/README/채팅에 노출하지 않는다.
+- `GOOGLE_CLIENT_SECRET`, `JWT_SECRET_KEY`, `GITHUB_TOKEN`, `OPENAI_API_KEY`는 GitHub/README/채팅에 노출하지 않는다.
 - `ADMIN_EMAILS`는 comma-separated 형식으로 여러 이메일을 넣을 수 있다.
 - `GITHUB_TOKEN`은 public repo만 조회할 때는 비워도 된다. private repo나 rate limit 대응이 필요하면 넣는다.
+- `OPENAI_MODEL`은 포트폴리오 글/면접 질문 생성에 사용한다.
+- `OPENAI_EMBEDDING_MODEL`은 RAG indexing/search에 사용한다.
+- OpenAI generation/embedding은 API 비용이 발생하므로 실제 호출 QA는 명시적으로 필요할 때만 진행한다.
 
 ## Google OAuth 설정
 

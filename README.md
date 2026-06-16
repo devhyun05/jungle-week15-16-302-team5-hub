@@ -335,6 +335,10 @@ DATABASE_URL=postgresql+psycopg://junglelog:junglelog@localhost:5432/junglelog
 FRONTEND_URL=http://localhost:5173
 BACKEND_CORS_ORIGINS=http://localhost:5173
 GITHUB_TOKEN= # 선택. public repo만 조회할 때는 비워도 됨
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4.1-mini
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OPENAI_MAX_OUTPUT_TOKENS=1800
 ```
 
 프론트엔드 설정:
