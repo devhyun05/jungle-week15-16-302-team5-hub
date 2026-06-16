@@ -5,6 +5,8 @@
 from app.db.models.auth_refresh_token import AuthRefreshToken
 # 댓글 테이블 모델
 from app.db.models.comment import Comment
+# GitHub commit message 저장 테이블 모델
+from app.db.models.github_commit import GitHubCommit
 # 알림 테이블 모델
 from app.db.models.notification import Notification
 # 게시글 테이블 모델
@@ -33,6 +35,7 @@ from app.db.models.user_approval_log import UserApprovalLog
 __all__ = [
     "AuthRefreshToken",
     "Comment",
+    "GitHubCommit",
     "Notification",
     "PortfolioProject",
     "PortfolioProjectPost",

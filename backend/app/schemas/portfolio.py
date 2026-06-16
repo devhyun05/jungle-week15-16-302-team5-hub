@@ -31,6 +31,14 @@ class PortfolioProjectPublishRequest(FrontendResponseModel):
     is_public: bool = Field(default=True, alias="isPublic")
 
 
+class GitHubCommitResponse(FrontendResponseModel):
+    sha: str
+    message: str
+    author_name: str | None = Field(default=None, alias="authorName")
+    committed_at: datetime | None = Field(default=None, alias="committedAt")
+    html_url: str | None = Field(default=None, alias="htmlUrl")
+
+
 class PortfolioProjectResponse(FrontendResponseModel):
     id: int
     title: str
@@ -43,7 +51,9 @@ class PortfolioProjectResponse(FrontendResponseModel):
     summary: str | None
     tech_stack: list[str] = Field(alias="techStack")
     readme_summary: str | None = Field(alias="readmeSummary")
+    readme_content_saved: bool = Field(alias="readmeContentSaved")
     recent_commit_summary: list[str] = Field(alias="recentCommitSummary")
+    github_commits: list[GitHubCommitResponse] = Field(alias="githubCommits")
     saved_portfolio_draft: str | None = Field(alias="savedPortfolioDraft")
     saved_interview_questions: str | None = Field(alias="savedInterviewQuestions")
     portfolio_status: str = Field(alias="portfolioStatus")

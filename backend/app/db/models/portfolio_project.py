@@ -43,6 +43,8 @@ class PortfolioProject(Base):
     tech_stack: Mapped[str | None] = mapped_column(Text, nullable=True)
     # GitHub README 요약이다. AI 참고 자료로 사용한다.
     readme_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # GitHub README 원문 전체다. 화면에는 요약만 보여주고 AI/RAG 재료로는 원문을 사용한다.
+    readme_content: Mapped[str | None] = mapped_column(Text, nullable=True)
     # 최근 커밋 요약이다. GitHub 분석 결과로 채워질 예정이다.
     recent_commit_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     # AI 도우미가 만든 포트폴리오 글 초안 저장 위치다.
@@ -72,3 +74,5 @@ class PortfolioProject(Base):
     published_post: Mapped["Post | None"] = relationship(foreign_keys=[published_post_id])
     # PortfolioProject -> ReviewRequest 목록 관계다. 프로젝트가 코치 리뷰 대상일 수 있다.
     review_requests: Mapped[list["ReviewRequest"]] = relationship(back_populates="target_project")
+    # PortfolioProject -> GitHubCommit 목록 관계다. AI/RAG 재료로 사용할 commit message들을 담는다.
+    github_commits: Mapped[list["GitHubCommit"]] = relationship(back_populates="project")

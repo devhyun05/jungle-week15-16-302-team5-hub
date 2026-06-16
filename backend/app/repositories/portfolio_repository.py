@@ -4,7 +4,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
-from app.db.models import PortfolioProject, PortfolioProjectPost, Post, PostCategory, User
+from app.db.models import GitHubCommit, PortfolioProject, PortfolioProjectPost, Post, PostCategory, User
 
 
 ROLE_ADMIN = "ADMIN"
@@ -18,7 +18,11 @@ def list_projects_by_owner(db: Session, owner_id: int) -> list[PortfolioProject]
     return list(
         db.scalars(
             select(PortfolioProject)
-            .options(selectinload(PortfolioProject.portfolio_project_posts))
+            .options(
+                selectinload(PortfolioProject.portfolio_project_posts),
+                selectinload(PortfolioProject.github_commits),
+                selectinload(PortfolioProject.published_post),
+            )
             .where(PortfolioProject.owner_id == owner_id)
             .order_by(PortfolioProject.updated_at.desc())
         )
@@ -41,7 +45,11 @@ def get_project_by_id(
 
     return db.scalar(
         select(PortfolioProject)
-        .options(selectinload(PortfolioProject.portfolio_project_posts))
+        .options(
+            selectinload(PortfolioProject.portfolio_project_posts),
+            selectinload(PortfolioProject.github_commits),
+            selectinload(PortfolioProject.published_post),
+        )
         .where(*filters)
     )
 
@@ -78,6 +86,7 @@ def create_project(
     summary: str | None,
     tech_stack: str | None,
     readme_summary: str | None = None,
+    readme_content: str | None = None,
     recent_commit_summary: str | None = None,
     last_commit_at: datetime | None = None,
 ) -> PortfolioProject:
@@ -94,6 +103,7 @@ def create_project(
         summary=summary,
         tech_stack=tech_stack,
         readme_summary=readme_summary,
+        readme_content=readme_content,
         recent_commit_summary=recent_commit_summary,
         saved_portfolio_draft=None,
         saved_interview_questions=None,
@@ -126,6 +136,7 @@ def update_github_analysis(
     summary: str | None,
     tech_stack: str | None,
     readme_summary: str | None,
+    readme_content: str | None,
     recent_commit_summary: str | None,
     last_commit_at: datetime | None,
 ) -> PortfolioProject:
@@ -143,6 +154,7 @@ def update_github_analysis(
     project.summary = summary
     project.tech_stack = tech_stack
     project.readme_summary = readme_summary
+    project.readme_content = readme_content
     project.recent_commit_summary = recent_commit_summary
     project.last_commit_at = last_commit_at
     project.github_connected = True
@@ -151,6 +163,41 @@ def update_github_analysis(
     db.refresh(project)
 
     return project
+
+
+def replace_github_commits(
+    db: Session,
+    project: PortfolioProject,
+    commits: list[dict[str, str | datetime | None]],
+) -> PortfolioProject:
+    """
+    프로젝트의 GitHub commit message 수집 결과를 교체 저장한다.
+    """
+
+    db.execute(delete(GitHubCommit).where(GitHubCommit.project_id == project.id))
+
+    for commit in commits:
+        sha = str(commit.get("sha") or "").strip()
+        message = str(commit.get("message") or "").strip()
+
+        if not sha or not message:
+            continue
+
+        db.add(
+            GitHubCommit(
+                project_id=project.id,
+                sha=sha,
+                message=message,
+                author_name=commit.get("author_name"),
+                committed_at=commit.get("committed_at"),
+                html_url=commit.get("html_url"),
+            )
+        )
+
+    db.commit()
+    db.refresh(project)
+
+    return get_project_by_id(db=db, project_id=project.id, current_user=project.owner) or project
 
 
 def update_project_branch(
@@ -163,6 +210,23 @@ def update_project_branch(
     """
 
     project.github_branch = github_branch
+
+    db.commit()
+    db.refresh(project)
+
+    return project
+
+
+def update_project_coach_feedback_status(
+    db: Session,
+    project: PortfolioProject,
+    coach_feedback_status: str,
+) -> PortfolioProject:
+    """
+    포트폴리오 프로젝트 대상 코치 리뷰 상태를 프로젝트 카드 상태에도 반영한다.
+    """
+
+    project.coach_feedback_status = coach_feedback_status
 
     db.commit()
     db.refresh(project)

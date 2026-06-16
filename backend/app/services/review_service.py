@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.db.models import ReviewRequest, User
-from app.repositories import notification_repository, review_repository
+from app.repositories import notification_repository, portfolio_repository, review_repository
 from app.schemas.review import (
     CoachOptionListResponse,
     CoachOptionResponse,
@@ -40,6 +40,8 @@ def create_review_request(
     """
     학생이 게시글 또는 포트폴리오 프로젝트에 대한 코치 리뷰를 요청한다.
     """
+
+    target_project = None
 
     if request.target_type == "post":
         target_post = review_repository.get_post_target(
@@ -90,6 +92,13 @@ def create_review_request(
         message=request.message.strip() if request.message else "리뷰 부탁드립니다.",
         coaches=coaches,
     )
+
+    if target_project is not None:
+        portfolio_repository.update_project_coach_feedback_status(
+            db=db,
+            project=target_project,
+            coach_feedback_status="요청함",
+        )
 
     for coach in coaches:
         notification_repository.create_notification(
@@ -162,6 +171,13 @@ def update_review_request(
         feedback=feedback,
     )
 
+    if updated_request.target_project is not None and request.status is not None:
+        portfolio_repository.update_project_coach_feedback_status(
+            db=db,
+            project=updated_request.target_project,
+            coach_feedback_status=request.status,
+        )
+
     if request.status is not None or feedback is not None:
         notification_message = (
             f"{current_user.name}님의 리뷰 피드백이 도착했습니다."
@@ -198,10 +214,19 @@ def cancel_my_review_request(
     if review_request.status != "대기 중":
         raise ValueError("검토가 시작된 요청은 취소할 수 없습니다.")
 
+    target_project = review_request.target_project
+
     review_repository.delete_pending_request(
         db=db,
         review_request=review_request,
     )
+
+    if target_project is not None:
+        portfolio_repository.update_project_coach_feedback_status(
+            db=db,
+            project=target_project,
+            coach_feedback_status="요청 전",
+        )
 
     return True
 

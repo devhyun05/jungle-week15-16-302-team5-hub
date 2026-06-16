@@ -70,7 +70,7 @@ def ensure_project_branch(project: PortfolioProject, db: Session) -> PortfolioPr
             github_branch="main",
         )
 
-    return portfolio_repository.update_github_analysis(
+    updated_project = portfolio_repository.update_github_analysis(
         db=db,
         project=project,
         title=analysis.title,
@@ -80,8 +80,15 @@ def ensure_project_branch(project: PortfolioProject, db: Session) -> PortfolioPr
         summary=analysis.summary,
         tech_stack=serialize_text_list(analysis.tech_stack),
         readme_summary=analysis.readme_summary,
+        readme_content=analysis.readme_content,
         recent_commit_summary=serialize_text_list(analysis.recent_commit_summary),
         last_commit_at=analysis.last_commit_at,
+    )
+
+    return portfolio_repository.replace_github_commits(
+        db=db,
+        project=updated_project,
+        commits=serialize_commit_messages(analysis.commit_messages),
     )
 
 
@@ -124,8 +131,14 @@ def create_portfolio_project(
         summary=summary,
         tech_stack=serialize_text_list(tech_stack),
         readme_summary=analysis.readme_summary,
+        readme_content=analysis.readme_content,
         recent_commit_summary=serialize_text_list(analysis.recent_commit_summary),
         last_commit_at=analysis.last_commit_at,
+    )
+    project = portfolio_repository.replace_github_commits(
+        db=db,
+        project=project,
+        commits=serialize_commit_messages(analysis.commit_messages),
     )
 
     return build_project_response(project)
@@ -163,8 +176,14 @@ def refresh_github_project(
         summary=analysis.summary,
         tech_stack=serialize_text_list(analysis.tech_stack),
         readme_summary=analysis.readme_summary,
+        readme_content=analysis.readme_content,
         recent_commit_summary=serialize_text_list(analysis.recent_commit_summary),
         last_commit_at=analysis.last_commit_at,
+    )
+    updated_project = portfolio_repository.replace_github_commits(
+        db=db,
+        project=updated_project,
+        commits=serialize_commit_messages(analysis.commit_messages),
     )
 
     return build_project_response(updated_project)
@@ -417,6 +436,14 @@ def build_portfolio_post_content(project: PortfolioProject) -> str:
         for post in linked_posts
     ) or "- 아직 연결된 학습 기록이 없습니다."
     commit_text = "\n".join(f"- {commit}" for commit in parse_recent_commit_summary(project.recent_commit_summary)) or "- 아직 최근 커밋 요약이 없습니다."
+    all_commit_text = "\n".join(
+        f"- {commit.message}"
+        for commit in sorted(
+            project.github_commits,
+            key=lambda github_commit: github_commit.committed_at or github_commit.created_at,
+            reverse=True,
+        )
+    ) or "- 아직 수집된 커밋 메시지가 없습니다."
     portfolio_text = normalize_optional_text(project.saved_portfolio_draft, LEGACY_DRAFT_PLACEHOLDERS)
 
     return f"""# {project.title}
@@ -437,6 +464,9 @@ def build_portfolio_post_content(project: PortfolioProject) -> str:
 
 ## 최근 커밋 요약
 {commit_text}
+
+## 전체 커밋 메시지
+{all_commit_text}
 
 ## 코치 피드백 상태
 {project.coach_feedback_status}
@@ -498,6 +528,23 @@ def serialize_text_list(items: list[str]) -> str:
     return "\n".join(item.strip() for item in items if item.strip())
 
 
+def serialize_commit_messages(commits: list[github_service.GitHubCommitMessage]) -> list[dict[str, object]]:
+    """
+    GitHubCommitMessage 목록을 repository 저장용 dict 목록으로 바꾼다.
+    """
+
+    return [
+        {
+            "sha": commit.sha,
+            "message": commit.message,
+            "author_name": commit.author_name,
+            "committed_at": commit.committed_at,
+            "html_url": commit.html_url,
+        }
+        for commit in commits
+    ]
+
+
 def parse_text_list(text: str | None) -> list[str]:
     """
     Text column에 저장된 줄바꿈 문자열을 프론트용 list[str]로 바꾼다.
@@ -547,6 +594,11 @@ def build_project_response(project: PortfolioProject, publish_status: str | None
     """
 
     linked_post_ids = [link.post_id for link in project.portfolio_project_posts]
+    github_commits = sorted(
+        project.github_commits,
+        key=lambda commit: commit.committed_at or commit.created_at,
+        reverse=True,
+    )
 
     return PortfolioProjectResponse(
         id=project.id,
@@ -560,7 +612,18 @@ def build_project_response(project: PortfolioProject, publish_status: str | None
         summary=project.summary,
         tech_stack=parse_tech_stack(project.tech_stack),
         readme_summary=normalize_optional_text(project.readme_summary, LEGACY_README_PLACEHOLDERS),
+        readme_content_saved=bool(normalize_optional_text(project.readme_content, set())),
         recent_commit_summary=parse_recent_commit_summary(project.recent_commit_summary),
+        github_commits=[
+            {
+                "sha": commit.sha,
+                "message": commit.message,
+                "authorName": commit.author_name,
+                "committedAt": commit.committed_at,
+                "htmlUrl": commit.html_url,
+            }
+            for commit in github_commits
+        ],
         saved_portfolio_draft=normalize_optional_text(project.saved_portfolio_draft, LEGACY_DRAFT_PLACEHOLDERS),
         saved_interview_questions=project.saved_interview_questions,
         portfolio_status=project.portfolio_status,

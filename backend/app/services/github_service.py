@@ -23,6 +23,19 @@ class GitHubApiError(Exception):
 
 
 @dataclass
+class GitHubCommitMessage:
+    """
+    GitHub commit API 응답 중 AI/RAG 재료로 쓸 최소 commit 정보다.
+    """
+
+    sha: str
+    message: str
+    author_name: str | None
+    committed_at: datetime | None
+    html_url: str | None
+
+
+@dataclass
 class GitHubRepositoryAnalysis:
     """
     GitHub API 여러 응답을 포트폴리오 프로젝트에 저장하기 좋은 형태로 모은 값이다.
@@ -38,7 +51,9 @@ class GitHubRepositoryAnalysis:
     summary: str | None
     tech_stack: list[str]
     readme_summary: str | None
+    readme_content: str | None
     recent_commit_summary: list[str]
+    commit_messages: list[GitHubCommitMessage]
     last_commit_at: datetime | None
 
 
@@ -63,10 +78,10 @@ def analyze_repository(repo_full_name: str, github_branch: str | None = None) ->
             f"/repos/{normalized_repo_full_name}/readme",
             params={"ref": effective_branch},
         )
-        commit_data = get_github_json(
-            client,
-            f"/repos/{normalized_repo_full_name}/commits",
-            params={"per_page": 5, "sha": effective_branch},
+        commit_data = fetch_all_commits(
+            client=client,
+            repo_full_name=normalized_repo_full_name,
+            github_branch=effective_branch,
         )
         language_data = get_optional_github_json(client, f"/repos/{normalized_repo_full_name}/languages")
         tree_data = get_optional_github_json(
@@ -92,7 +107,9 @@ def analyze_repository(repo_full_name: str, github_branch: str | None = None) ->
             tree_data=tree_data,
         ),
         readme_summary=build_readme_summary(readme_data),
+        readme_content=build_readme_content(readme_data),
         recent_commit_summary=build_recent_commit_summary(commit_data),
+        commit_messages=build_commit_messages(commit_data),
         last_commit_at=get_last_commit_at(commit_data),
     )
 
@@ -176,6 +193,41 @@ def get_optional_github_json(
         return get_github_json(client, path, params=params)
     except GitHubRepositoryNotFoundError:
         return None
+
+
+def fetch_all_commits(
+    client: httpx.Client,
+    repo_full_name: str,
+    github_branch: str,
+) -> list[dict[str, Any]]:
+    """
+    GitHub commits API는 한 번에 최대 100개까지만 내려준다.
+
+    포트폴리오 화면에는 일부만 보여주더라도, 이후 OpenAI/RAG 단계에서는 프로젝트의
+    전체 개발 흐름을 참고해야 하므로 page를 넘기며 가져올 수 있는 커밋 메시지를 모두 수집한다.
+    """
+
+    commits: list[dict[str, Any]] = []
+    page = 1
+
+    while True:
+        page_commits = get_github_json(
+            client,
+            f"/repos/{repo_full_name}/commits",
+            params={"per_page": 100, "page": page, "sha": github_branch},
+        )
+
+        if not isinstance(page_commits, list) or not page_commits:
+            break
+
+        commits.extend(page_commits)
+
+        if len(page_commits) < 100:
+            break
+
+        page += 1
+
+    return commits
 
 
 def build_tech_stack(
@@ -287,18 +339,9 @@ def build_readme_summary(readme_data: dict[str, Any] | list[dict[str, Any]] | No
     아직 AI 요약을 붙이지 않은 단계라, markdown의 주요 앞부분을 정리해서 저장한다.
     """
 
-    if not isinstance(readme_data, dict):
-        return None
+    decoded_readme = build_readme_content(readme_data)
 
-    encoded_content = readme_data.get("content")
-    encoding = readme_data.get("encoding")
-
-    if not encoded_content or encoding != "base64":
-        return None
-
-    try:
-        decoded_readme = base64.b64decode(str(encoded_content).replace("\n", "")).decode("utf-8", errors="ignore")
-    except ValueError:
+    if not decoded_readme:
         return None
 
     readable_lines = []
@@ -321,6 +364,31 @@ def build_readme_summary(readme_data: dict[str, Any] | list[dict[str, Any]] | No
         return f"{summary[:1000].rstrip()}..."
 
     return summary
+
+
+def build_readme_content(readme_data: dict[str, Any] | list[dict[str, Any]] | None) -> str | None:
+    """
+    GitHub README 원문 전체를 decode한다.
+
+    화면에는 summary만 노출하지만 AI/RAG 단계에서는 원문 전체를 참고해야 하므로
+    원본 markdown에 가까운 텍스트를 별도로 저장한다.
+    """
+
+    if not isinstance(readme_data, dict):
+        return None
+
+    encoded_content = readme_data.get("content")
+    encoding = readme_data.get("encoding")
+
+    if not encoded_content or encoding != "base64":
+        return None
+
+    try:
+        decoded_readme = base64.b64decode(str(encoded_content).replace("\n", "")).decode("utf-8", errors="ignore")
+    except ValueError:
+        return None
+
+    return decoded_readme.strip() or None
 
 
 def normalize_markdown_line(raw_line: str) -> str:
@@ -363,6 +431,40 @@ def build_recent_commit_summary(commit_data: dict[str, Any] | list[dict[str, Any
             summaries.append(f"{prefix} {short_sha} {message}".strip())
 
     return summaries
+
+
+def build_commit_messages(commit_data: dict[str, Any] | list[dict[str, Any]] | None) -> list[GitHubCommitMessage]:
+    """
+    GitHub commit 목록을 AI/RAG 재료로 저장하기 좋은 형태로 바꾼다.
+    """
+
+    if not isinstance(commit_data, list):
+        return []
+
+    commits = []
+
+    for commit_item in commit_data:
+        commit = commit_item.get("commit", {})
+        message = str(commit.get("message") or "").strip()
+        sha = str(commit_item.get("sha") or "").strip()
+
+        if not sha or not message:
+            continue
+
+        committed_at = commit.get("committer", {}).get("date") or commit.get("author", {}).get("date")
+        author_name = commit.get("author", {}).get("name") or commit.get("committer", {}).get("name")
+
+        commits.append(
+            GitHubCommitMessage(
+                sha=sha,
+                message=message,
+                author_name=str(author_name).strip() if author_name else None,
+                committed_at=parse_github_datetime(committed_at),
+                html_url=str(commit_item.get("html_url")).strip() if commit_item.get("html_url") else None,
+            )
+        )
+
+    return commits
 
 
 def get_last_commit_at(commit_data: dict[str, Any] | list[dict[str, Any]] | None) -> datetime | None:

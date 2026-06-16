@@ -221,8 +221,8 @@ export function AdminUsers() {
                       <p className="mt-1 text-sm text-slate-500">{user.email}</p>
                       <p className="mt-1 text-xs text-slate-400">
                         요청 {formatDate(user.requestedAt)}
-                        {user.approvedAt ? ` ? 처리 ${formatDate(user.approvedAt)}` : ""}
-                        {user.approvedBy ? ` ? 담당 ${user.approvedBy}` : ""}
+                        {user.approvedAt ? ` · 처리 ${formatDate(user.approvedAt)}` : ""}
+                        {user.approvedBy ? ` · 담당 ${user.approvedBy}` : ""}
                       </p>
                       {isProtectedUser && (
                         <p className="mt-2 text-xs font-medium text-emerald-700">

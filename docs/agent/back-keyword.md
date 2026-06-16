@@ -1,1038 +1,265 @@
+﻿# Backend Keyword Map
 
-## 2026-06-15 ??? ???: ?? PK? bulk delete
-
-`review_request_coaches`? `review_request_id`, `coach_id`? ?? primary key? ?? ?? ?????.
-
-ORM ??? ?? ??? ???? ?? ??? `db.delete(parent)`? ???? SQLAlchemy? ?? row? FK? NULL? ???? ? ? ??. ??? ?? PK? NULL? ? ? ??? ??? ??.
-
-?? ??:
-
-- ?? ??? row? bulk delete
-- ?? review_requests row? bulk delete
-- commit
-
-? ??? ??? ?? ????? ?? row? ??? ???? ?? ??? ???? ????.
-
----
-
-## 2026-06-15 ??? ???: N:M ?? ???
-
-????? ????? ???? N:M ???.
-
-- ???? ??? ?? ?? ??? ??? ? ??.
-- ??? ??? ?? ????? ??? ? ??.
-
-??? `portfolio_project_posts` ?? ???? ????.
-
-?? ?? ??:
-
-1. ?? project_id ??? ????.
-2. ? postIds ???? ?? row? ?? ???.
-3. ??? ?? ??? ???? ??? ??? DB? ???? ??.
-
----
-
-## 2026-06-15 ??? ???: ??? API? ?? ??
-
-### RBAC
-
-RBAC? Role-Based Access Control, ? ?? ?? ?? ???. JungleLog??? `STUDENT`, `COACH`, `ADMIN` ??? ??? API ?? ??? ???.
-
-?? ??? API? `require_roles("ADMIN")`?? ????.
-
-### Audit Log
-
-`users` ???? ?? ??? ????. ??? ?? ?? ??? ?????? ??? ?? ???? ????. ??? `user_approval_logs`? before/after role, before/after status, actor, reason? ????.
-
-### 422 Validation Error
-
-FastAPI?? request body? Pydantic schema? ?? ??? 422? ???. ?? ?? `approvalStatus`? ???? ?? ???? ???? API ??? ???? ?? 422? ????.
-
----
-
-## 2026-06-15 ??? ???: current_user? ?? ??
-
-### JWT / Session
-
-?? ??? Session ID? ??? ???? ??? ??? JWT access token? HttpOnly cookie? ??? ????. ???? token ???? ?? ?? ?? `credentials: "include"`? cookie? ?? ???.
-
-### 401 / 403
-
-- 401: ??? ??? ??? access token? ???? ??.
-- 403: ???? ??? ?? ??? ?? ??? ????.
-
-??:
-
-- ???? ? ??: 401
-- COACH ? ??: 403
-- ?? ??? ??? ? ??: 404? ?? ??
-
-### Authorization
-
-??(Authentication)? ????? ?????, ??(Authorization)? ???? ? ? ??? ?????.
-
-?? ?????:
-
-- `get_current_user`: ???? ??
-- `get_current_approved_user`: ?? ?? ????? ??
-- `require_roles("STUDENT", "ADMIN")`: ?? ?? ??
-- `can_manage_post`, `can_manage_comment`: ??? ?? ?? ADMIN?? ??
-
-### API Design
-
-request body? `authorId`? ?? ???. ???? ??? ? ?? ????. ??? id? ???? token?? ?? `current_user.id`? ????.
-
----
-# Backend Keyword Map
-
-## 2026-06-14 키워드 / python-jose, HS256, JWT Claim
-
-### python-jose
-
-- 상태: 진행 중
-- 언제 대화되는가: JWT를 직접 문자열 조립으로 만들지 않고 라이브러리로 서명/검증할 때
-- 우리 프로젝트에서 어디에 쓰이는가: `backend/app/core/security.py`
-- 핵심 개념: JWT encode/decode, 서명 검증, 만료 시간 검증을 맡는 라이브러리다.
-- 관련 파일: `backend/requirements.txt`, `backend/app/core/security.py`
-- 다음에 다시 볼 시점: `/auth/me`에서 access token을 검증할 때
-
-### HS256
-
-- 상태: 진행 중
-- 언제 대화되는가: JWT 서명 알고리즘을 정할 때
-- 우리 프로젝트에서 어디에 쓰이는가: `settings.jwt_algorithm`
-- 핵심 개념: 하나의 secret key로 JWT를 서명하고 검증하는 대칭키 방식이다. 로컬/개인 프로젝트에서는 단순하고 충분히 다루기 쉽다.
-- 관련 파일: `backend/app/core/config.py`, `backend/.env.example`
-- 다음에 다시 볼 시점: 배포 환경에서 secret key 관리 전략을 정할 때
-
-### JWT Claim
-
-- 상태: 진행 중
-- 언제 대화되는가: JWT payload에 어떤 값을 넣을지 결정할 때
-- 우리 프로젝트에서 어디에 쓰이는가: `sub`, `type`, `iat`, `exp`
-- 핵심 개념: `sub`는 사용자 식별자, `exp`는 만료 시간, `iat`는 발급 시간, `type`은 access token과 refresh token 혼용을 막는 용도다.
-- 관련 파일: `backend/app/core/security.py`
-- 다음에 다시 볼 시점: auth dependency에서 current user를 만들 때
-
-## 2026-06-14 키워드 / JWT Access Token, Refresh Token, Token Hash
-
-### Access Token
-
-- 상태: 진행 중
-- 언제 대화되는가: Google OAuth 로그인 후 JungleLog API 요청을 보호할 때
-- 우리 프로젝트에서 어디에 쓰이는가: 게시글 작성/수정/삭제, 댓글 작성/삭제, 내 기록, 코치 리뷰, 관리자 승인 API
-- 핵심 개념: access token은 API 요청마다 “현재 사용자가 누구인지” 증명하는 짧은 수명의 JWT다.
-- 관련 파일: 예정 `backend/app/core/security.py`, `backend/app/dependencies/auth.py`
-- 다음에 다시 볼 시점: `/auth/me`, 보호 API dependency를 구현할 때
-
-### Refresh Token
-
-- 상태: 진행 중
-- 언제 대화되는가: access token이 만료되었지만 사용자를 다시 Google 로그인으로 보내지 않고 새 access token을 발급할 때
-- 우리 프로젝트에서 어디에 쓰이는가: `auth_refresh_tokens` 테이블, 예정 `/auth/refresh`, `/auth/logout`
-- 핵심 개념: refresh token은 긴 수명의 로그인 세션 토큰이다. access token보다 민감하므로 원문 저장을 피하고 폐기/만료 관리를 해야 한다.
-- 관련 파일: `backend/app/db/models/auth_refresh_token.py`
-- 다음에 다시 볼 시점: refresh token 발급, 재발급, 로그아웃 API를 만들 때
-
-### Token Hash
-
-- 상태: 진행 중
-- 언제 대화되는가: refresh token을 DB에 저장할 때
-- 우리 프로젝트에서 어디에 쓰이는가: `auth_refresh_tokens.token_hash`
-- 핵심 개념: refresh token 원문을 DB에 저장하지 않고 sha256 같은 해시 결과만 저장한다. 요청이 오면 쿠키의 원문 refresh token을 다시 해시해서 DB 값과 비교한다.
-- 관련 파일: `backend/app/db/models/auth_refresh_token.py`, 예정 `backend/app/core/security.py`
-- 다음에 다시 볼 시점: `hash_refresh_token()` 유틸을 구현할 때
-
-### Refresh Token Rotation
-
-- 상태: 진행 중
-- 언제 대화되는가: refresh token으로 access token을 재발급할 때 기존 refresh token을 새 refresh token으로 교체할지 결정할 때
-- 우리 프로젝트에서 어디에 쓰이는가: `auth_refresh_tokens.replaced_by_token_id`, `revoked_at`
-- 핵심 개념: refresh token을 한 번 사용하면 기존 토큰을 폐기하고 새 토큰을 발급한다. 폐기된 토큰이 다시 사용되면 탈취 가능성을 의심할 수 있다.
-- 관련 파일: `backend/app/db/models/auth_refresh_token.py`
-- 다음에 다시 볼 시점: `/auth/refresh` 구현 때
-
-## 2026-06-14 키워드: /me API와 Current User
-
-### /me API
-
-`/me`는 현재 로그인한 사용자 자신을 의미하는 API prefix로 자주 쓴다.
-
-JungleLog에서는 다음처럼 역할을 나눴다.
-
-```txt
-GET /posts      -> 공개 게시글 전체 목록
-GET /me/posts   -> 내가 쓴 게시글 목록
-```
-
-### Current User
-
-실제 서비스에서는 JWT access token을 해석해서 현재 사용자를 알아낸다.
-
-현재 단계:
-
-```txt
-demo.student@junglelog.local
-```
-
-JWT 이후:
-
-```txt
-Authorization header
--> JWT 검증
--> current_user
--> current_user.id로 /me/posts 조회
-```
-
-### Visibility Filter
-
-내 기록은 공개 글과 비공개 글을 모두 다룬다.
-
-```txt
-visibility=all      -> 공개/비공개 모두
-visibility=public   -> is_public = true
-visibility=private  -> is_public = false
-```
-
-## 2026-06-14 키워드: Nested Resource와 댓글 Delete
-
-### Nested Resource
-
-댓글은 게시글 아래에 달리는 자원이므로 목록과 작성은 아래 경로처럼 게시글 id를 포함한다.
-
-```txt
-GET /posts/{post_id}/comments
-POST /posts/{post_id}/comments
-```
-
-반면 삭제는 댓글 id 하나만으로 댓글을 특정할 수 있으므로 아래처럼 설계했다.
-
-```txt
-DELETE /comments/{comment_id}
-```
-
-### 댓글 soft delete
-
-댓글도 게시글처럼 실제 row를 삭제하지 않고 `comments.deleted_at`을 채운다. 그래서 댓글 목록 조회에서는 아래 조건으로 삭제된 댓글을 제외한다.
-
-```txt
-Comment.deleted_at is null
-```
-
-### 권한 체크 예정
-
-현재는 JWT/OAuth2 전이라 권한 검사가 없다. 나중에는 댓글 작성자 본인 또는 ADMIN만 삭제 가능하게 만들어야 한다.
-
-## 2026-06-14 키워드: CRUD Delete, Soft Delete, 204 No Content
-
-### CRUD Delete
-
-CRUD에서 Delete는 데이터를 삭제하는 기능이다. JungleLog에서는 `DELETE /posts/{post_id}`가 게시글 삭제 API다.
-
-### Soft Delete
-
-soft delete는 실제 DB row를 없애지 않고 `deleted_at`에 삭제 시각을 기록하는 방식이다.
-
-이번 구현에서 soft delete를 사용한 이유:
-
-- 댓글, 코치 리뷰, 포트폴리오 연결 이력을 보존하기 위해서
-- 나중에 관리자 복구나 감사 로그를 만들 여지를 남기기 위해서
-- 목록/상세 조회에서 `deleted_at is null` 조건으로 쉽게 숨길 수 있기 때문에
-
-### 204 No Content
-
-`204 No Content`는 요청은 성공했지만 응답 body가 없다는 뜻이다. 삭제 API처럼 성공했다는 사실만 알려주면 되는 경우에 자주 사용한다.
-
-이번 흐름:
-
-```txt
-DELETE /posts/8
--> 204 No Content
--> GET /posts/8
--> 404 Not Found
-```
-
-### 나중에 JWT와 연결될 부분
-
-삭제는 위험한 작업이므로 로그인 후에는 다음 권한 검사가 필요하다.
-
-```txt
-작성자 본인 또는 ADMIN만 삭제 가능
-```
-
-## 2026-06-14 게시글 수정 API에서 나온 키워드
-
-### CRUD - Update
-
-이번 구현은 게시글 CRUD 중 Update에 해당한다.
-
-```txt
-Create: POST /posts
-Read: GET /posts, GET /posts/{post_id}
-Update: PATCH /posts/{post_id}
-Delete: DELETE /posts/{post_id} 예정
-```
-
-Update는 이미 존재하는 row를 바꾸는 작업이다. JungleLog에서는 `posts.title`, `posts.summary`, `posts.content`, `posts.category_id`, `posts.is_public`, `posts.related_commit`을 수정한다.
-
-### PATCH
-
-`PATCH /posts/{post_id}`는 특정 게시글 하나를 수정한다는 REST 표현이다. 현재 화면은 수정 폼 전체 값을 다시 보내므로 실질적으로 full-form update처럼 동작한다.
-
-### N:M Relationship Update
-
-게시글과 태그는 N:M 관계다.
-
-```txt
-posts
--> post_tags
--> tags
-```
-
-수정할 때 태그 목록이 바뀔 수 있으므로 기존 `post_tags` 연결을 삭제하고, 새 태그 목록으로 다시 연결했다. 이 방식은 초반 구현에서 이해하기 쉽고, 중복 연결을 피하기 좋다.
-
-### Transaction
-
-게시글 수정은 한 번에 여러 DB 작업을 수행한다.
-
-```txt
-posts UPDATE
-post_tags DELETE
-tags SELECT 또는 INSERT
-post_tags INSERT
-commit
-```
-
-이 작업들은 하나의 transaction으로 묶여야 한다. 중간에 실패했는데 일부만 저장되면 게시글과 태그 연결이 어긋날 수 있기 때문이다.
-
-### Authorization
-
-현재는 JWT/OAuth2 전 단계라 수정 권한 검사를 하지 않는다. 나중에는 `post.author_id`와 `current_user.id`를 비교해서 작성자 본인만 수정하게 하고, `ADMIN`은 예외적으로 수정 가능하게 만든다.
-
-## 2026-06-14 게시글 작성 API에서 나온 키워드
-
-### REST API / Resource
-
-`POST /posts`는 posts collection에 새 게시글 resource를 만드는 API다. 댓글 작성의 `POST /posts/{post_id}/comments`와 비교하면, 게시글은 최상위 resource이고 댓글은 게시글 아래의 하위 resource다.
-
-### CRUD - Create
-
-이번 구현은 게시글 CRUD 중 Create다.
-
-```txt
-Create: POST /posts
-Read: GET /posts, GET /posts/{post_id}
-Update: PATCH /posts/{post_id} 예정
-Delete: DELETE /posts/{post_id} 예정
-```
-
-### Primary Key / Foreign Key
-
-새 게시글을 저장할 때 `posts.author_id`는 `users.id`, `posts.category_id`는 `post_categories.id`를 참조한다. 즉 화면에서 author 이름이나 category label을 직접 저장하지 않고 FK로 연결한다.
-
-### N:M / Join Table
-
-게시글과 태그는 N:M 관계다.
-
-```txt
-posts
--> post_tags
--> tags
-```
-
-태그 이름이 이미 있으면 `tags` row를 재사용하고, 새 태그면 만든 뒤 `post_tags`에 연결한다.
-
-### Transaction
-
-게시글 작성은 `posts`, `tags`, `post_tags`가 함께 바뀔 수 있다. 그래서 repository에서 하나의 session 안에서 처리하고 마지막에 `db.commit()`으로 확정한다.
-
-### Layered Architecture
-
-이번 구현에서도 계층을 나눴다.
-
-```txt
-schema: PostCreateRequest, PostDetailResponse
-router: POST /posts, status code
-service: 검증, summary 생성, tag 정리
-repository: DB 조회/INSERT
-frontend api: fetch 호출
-page: form state와 사용자 이벤트
-```
-
-## 2026-06-13 댓글 작성 API에서 나온 키워드
-
-### REST API / POST
-
-댓글 작성은 새 리소스를 만드는 작업이므로 `POST /posts/{post_id}/comments`로 설계했다. URL은 “1번 게시글의 댓글들”이라는 collection을 가리키고, body에는 새 댓글에 필요한 `content`만 보낸다.
-
-### CRUD - Create
-
-이번 작업은 CRUD 중 Create에 해당한다.
-
-```txt
-Create: comments 테이블에 새 row INSERT
-Read: GET /posts/{post_id}/comments
-Update: 아직 미구현
-Delete: 아직 미구현
-```
-
-### HTTP 3xx / 4xx / 5xx
-
-이번 구현에서는 4xx/5xx를 직접 구분했다.
-
-- `201`: 댓글 생성 성공
-- `400`: 공백 댓글처럼 사용자가 잘못 보낸 요청
-- `404`: 댓글을 달 게시글이 없음
-- `500`: 서버 seed/demo user 문제
-
-### Transaction
-
-`comment_repository.create_comment()`에서 `db.add(comment)`, `db.commit()`, `db.refresh(comment)` 흐름을 사용했다.
-
-- `add`: SQLAlchemy session에 새 댓글 객체를 등록
-- `commit`: 실제 PostgreSQL에 INSERT 반영
-- `refresh`: DB가 만든 `id`, `created_at` 값을 다시 Python 객체에 채움
-
-### Layered Architecture / MVC
-
-이번 댓글 작성 흐름은 계층을 나눠서 구현했다.
-
-```txt
-router: HTTP 요청/응답, status code
-service: 게시글 존재 확인, 공백 검증, demo user 선택
-repository: SQLAlchemy DB 조회/저장
-schema: request/response JSON 모양
-```
-
-이 구조 덕분에 JWT/OAuth2를 붙일 때 router/service 일부만 바꾸고 DB 저장 함수는 대부분 유지할 수 있다.
-
-이 문서는 Trello에 정리한 백엔드/공용 학습 키워드를 JungleLog 구현과 연결해서 채운다.
-JWT 구현, DB 설계 문서, API 설계 문서는 팀원에게 공유해야 하는 공용 산출물로 따로 표시한다.
-
-## 작성 규칙
-
-각 키워드는 아래 기준으로 채운다.
-
-```txt
-### 키워드
-
-- 상태:
-- 언제 나왔는가:
-- 우리 프로젝트에서 어디에 쓰였는가:
-- 핵심 개념:
-- 관련 파일:
-- 팀 공유 필요:
-- 다음에 다시 볼 시점:
-```
-
-## 공용 산출물
-
-### JWT 구현
-
-- 상태: 예정
-- 언제 나왔는가: Google OAuth 로그인 성공 후 JungleLog API 보호 토큰을 발급할 때
-- 우리 프로젝트에서 어디에 쓰였는가: STUDENT / COACH / ADMIN 권한 구분, 승인된 사용자 보호 API 접근, 로그인 사용자 식별
-- 핵심 개념: Google이 사용자 신원을 확인하면, 우리 서버가 자체 JWT를 발급하고 클라이언트는 요청마다 토큰을 보내 인증한다.
-- 관련 파일: 예정 `backend/app/core/security.py`, `backend/app/routers/auth.py`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 5단계 Google OAuth / 자동 가입 / JWT 인증 구현
-
-### DB 설계 문서 작성
-
-- 상태: 진행 중
-- 언제 나왔는가: users, posts, comments, tags, portfolio_projects, review_requests 테이블을 설계할 때
-- 우리 프로젝트에서 어디에 쓰였는가: ERD, PK/FK, 관계, 정규화 기준 정리
-- 핵심 개념: 기능을 테이블과 관계로 바꾸는 작업이다.
-- 관련 파일: `docs/agent/db-design.md`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: DBML 초안을 dbdiagram.io에 붙여넣고 관계를 검토할 때
-
-### API 설계 문서 작성
-
-- 상태: 진행 중
-- 언제 나왔는가: 프론트 mock UI를 실제 API로 바꾸기 전에
-- 우리 프로젝트에서 어디에 쓰였는가: `GET /posts`, `GET /posts/{post_id}` endpoint, request query, response, error status 정리
-- 핵심 개념: 프론트와 백엔드가 같은 계약을 보고 개발하도록 API 모양을 문서화한다.
-- 관련 파일: `docs/agent/api-design.md`, `backend/app/schemas/post.py`, `backend/app/routers/posts.py`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 게시글 작성/수정/삭제 API를 만들기 전
+이 문서는 JungleLog 백엔드 구현 중 나온 학습 키워드를 정리한다. Trello에 적은 공통 학습 키워드를 실제 코드와 연결해서 이해하는 것이 목적이다.
 
 ## API / 인증 / 실시간
-
-### HTTP 3xx / 4xx / 5xx
-
-- 상태: 진행 중
-- 언제 나왔는가: API 응답과 에러 처리를 설계할 때
-- 우리 프로젝트에서 어디에 쓰였는가: 없는 게시글 id 조회 시 404 응답, 이후 로그인 실패/권한 없음/서버 오류 응답
-- 핵심 개념: 3xx는 리다이렉트, 4xx는 클라이언트 요청 문제, 5xx는 서버 문제다.
-- 관련 파일: `docs/agent/api-design.md`, `backend/app/routers/posts.py`, 예정 `backend/app/core/exceptions.py`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 공통 예외 처리 구현 시
 
 ### REST API
 
 - 상태: 진행 중
-- 언제 나왔는가: FastAPI 서버와 `/health` API를 만들 때
-- 우리 프로젝트에서 어디에 쓰였는가: `/health`, `/health/db`, `/posts`, `/posts/{post_id}`, `/posts/{post_id}/comments`
-- 핵심 개념: URL, HTTP method, status code로 서버 자원을 다루는 방식이다.
-- 관련 파일: `backend/app/routers/health.py`, `backend/app/routers/posts.py`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 게시글 작성/수정/삭제 API 작성 시
+- 쓰인 곳: `/posts`, `/comments`, `/portfolio/projects`, `/review-requests`, `/admin/users`, `/auth/*`
+- 핵심: URL은 리소스를 나타내고, HTTP method는 행동을 나타낸다.
+- 예시:
+  - `GET /posts`: 게시글 목록 조회
+  - `POST /posts`: 게시글 생성
+  - `PATCH /posts/{id}`: 게시글 수정
+  - `DELETE /posts/{id}`: 게시글 삭제
 
 ### API Design
 
 - 상태: 진행 중
-- 언제 나왔는가: 어떤 endpoint를 먼저 만들지 정할 때
-- 우리 프로젝트에서 어디에 쓰였는가: 게시글 목록/상세 API를 만들기 전에 query, response, 404 응답을 먼저 정했다.
-- 핵심 개념: API 이름, method, 요청/응답, 에러 모양을 일관되게 정하는 일이다.
-- 관련 파일: `docs/agent/api-design.md`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 댓글 API와 게시글 CRUD API 설계 전
+- 쓰인 곳: `docs/agent/api-design.md`, FastAPI router/schema
+- 핵심: 프론트와 백엔드가 주고받을 request, response, status code를 미리 정한다.
+- 배운 점: 화면 mock data와 실제 API response 필드명을 맞춰야 프론트 연결이 쉬워진다.
 
-### Pydantic Schema / DTO
+### HTTP 3xx / 4xx / 5xx
 
 - 상태: 진행 중
-- 언제 나왔는가: DB 모델을 그대로 응답하지 않고 프론트가 필요한 JSON 모양으로 바꿀 때
-- 우리 프로젝트에서 어디에 쓰였는가: 게시글 목록/상세 응답과 댓글 응답에서 `categorySlug`, `isPublic`, `postId`, `authorRole`, `createdAt` 같은 화면 친화적 필드를 만든다.
-- 핵심 개념: DB model은 테이블 구조이고, Pydantic schema는 API 요청/응답 구조다.
-- 관련 파일: `backend/app/schemas/post.py`, `backend/app/schemas/comment.py`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 게시글 작성 request body와 댓글 response schema를 만들 때
-
-### Repository / Service / Router
-
-- 상태: 진행 중
-- 언제 나왔는가: 게시글 조회 API에서 DB 조회, 응답 변환, HTTP endpoint 역할을 나눌 때
-- 우리 프로젝트에서 어디에 쓰였는가: `post_repository.py`는 DB query, `post_service.py`는 응답 조립, `posts.py` router는 HTTP 요청 처리를 담당한다.
-- 핵심 개념: 한 파일이 모든 일을 하지 않게 역할을 나누는 layered architecture 방식이다.
-- 관련 파일: `backend/app/repositories/post_repository.py`, `backend/app/services/post_service.py`, `backend/app/routers/posts.py`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 게시글 작성/수정/삭제 API에서 transaction을 다룰 때
+- 쓰인 곳: 게시글/댓글/인증/관리자 API
+- 핵심:
+  - 3xx: redirect. Google OAuth login에서 사용된다.
+  - 4xx: 클라이언트 요청 문제. 401, 403, 404, 422 등.
+  - 5xx: 서버 문제. 외부 GitHub API 실패는 502로 전달한다.
 
 ### Session / JWT
 
-- 상태: 예정
-- 언제 나왔는가: 로그인 상태를 서버가 어떻게 기억할지 정할 때
-- 우리 프로젝트에서 어디에 쓰였는가: Google 로그인 후 발급한 access token으로 role 기반 화면/API 보호
-- 핵심 개념: Session은 서버가 상태를 저장하고, JWT는 클라이언트가 서명된 토큰을 들고 다닌다.
-- 관련 파일: 예정 `backend/app/core/security.py`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 인증 구현 시
+- 상태: 진행 중
+- 쓰인 곳: `backend/app/core/security.py`, `backend/app/dependencies/auth.py`, `backend/app/routers/auth.py`
+- 핵심:
+  - access token은 짧게 살아 있고 API 인증에 사용한다.
+  - refresh token은 access token 재발급에 사용한다.
+  - token은 HttpOnly cookie로 저장해 JavaScript에서 직접 읽지 못하게 한다.
 
-### OAuth2
+### JWT Claim
 
 - 상태: 진행 중
-- 언제 나왔는가: 자체 이메일/비밀번호 로그인을 제거하고 Google 로그인으로 통일하기로 결정할 때
-- 우리 프로젝트에서 어디에 쓰였는가: Google 계정으로 사용자 인증, 첫 로그인 자동 가입, 운영자 승인 대기, 이후 자체 JWT 발급
-- 핵심 개념: 외부 인증 제공자가 사용자 신원을 확인하고, 서비스는 그 결과를 바탕으로 자체 사용자와 권한을 관리한다.
-- 관련 파일: 예정 `backend/app/routers/auth.py`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: Google OAuth callback과 token 검증을 구현할 때
+- 쓰인 곳: JWT encode/decode
+- 핵심:
+  - `sub`: 사용자 식별자
+  - `type`: access 또는 refresh 구분
+  - `iat`: 발급 시간
+  - `exp`: 만료 시간
 
-### RBAC / Approval Workflow
+### Refresh Token / Token Hash
 
 - 상태: 진행 중
-- 언제 나왔는가: 정글 내부 서비스라서 학생과 코치 모두 운영자 승인을 받아야 한다고 결정할 때
-- 우리 프로젝트에서 어디에 쓰였는가: `STUDENT`, `COACH`, `ADMIN` role과 `승인 대기`, `승인 완료`, `거절`, `정지` 승인 상태
-- 핵심 개념: 인증된 사용자가 어떤 권한으로 어떤 화면/API에 접근할 수 있는지 통제하는 구조다.
-- 관련 파일: `frontend/src/app/components/RoleGate.tsx`, `frontend/src/app/pages/admin/AdminUsers.tsx`, `docs/agent/db-design.md`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: JWT payload와 보호 API dependency를 설계할 때
+- 쓰인 곳: `auth_refresh_tokens` 테이블
+- 핵심:
+  - refresh token 원문은 DB에 저장하지 않는다.
+  - SHA-256 hash만 저장한다.
+  - 로그아웃이나 rotation 시 `revoked_at`을 채운다.
 
-### WebSocket / SSE
+### OAuth2 Authorization Code Flow
 
-- 상태: 후순위
-- 언제 나왔는가: 실시간 알림이나 코치 피드백 도착 알림을 고민할 때
-- 우리 프로젝트에서 어디에 쓰였는가: 현재는 mock 알림만 있음
-- 핵심 개념: 서버가 클라이언트에 실시간으로 이벤트를 밀어주는 방식이다.
-- 관련 파일: 예정
-- 팀 공유 필요: 아니오
-- 다음에 다시 볼 시점: 알림 기능을 실시간으로 확장할 때
+- 상태: 진행 중
+- 쓰인 곳: Google 로그인
+- 핵심 흐름:
+  1. 브라우저가 Google 로그인 화면으로 이동한다.
+  2. Google이 callback URL로 code를 돌려준다.
+  3. 백엔드가 code를 access token으로 교환한다.
+  4. 백엔드가 Google userinfo에서 email/name/picture/sub를 받는다.
+  5. JungleLog 자체 JWT를 발급한다.
+
+### 401 / 403
+
+- 상태: 진행 중
+- 핵심:
+  - 401 Unauthorized: 로그인 정보가 없거나 token이 유효하지 않다.
+  - 403 Forbidden: 로그인은 했지만 역할이나 승인 상태가 맞지 않다.
 
 ## Security
 
-### HTTPS
+### HttpOnly Cookie
 
-- 상태: 후순위
-- 언제 나왔는가: 배포와 보안 요구사항을 볼 때
-- 우리 프로젝트에서 어디에 쓰였는가: 로컬 개발 이후 배포 환경
-- 핵심 개념: HTTP 통신을 암호화해서 토큰과 개인정보를 보호한다.
-- 관련 파일: 배포 설정
-- 팀 공유 필요: 아니오
-- 다음에 다시 볼 시점: 배포 단계
+- 상태: 진행 중
+- 쓰인 곳: access/refresh token 저장
+- 핵심: JavaScript에서 token을 직접 읽지 못하므로 XSS 피해를 줄인다.
 
-### Rate Limit
+### SameSite
 
-- 상태: 후순위
-- 언제 나왔는가: 로그인/API 남용 방지를 고민할 때
-- 우리 프로젝트에서 어디에 쓰였는가: 로그인 시도 제한, AI 생성 요청 제한
-- 핵심 개념: 같은 사용자가 짧은 시간에 너무 많은 요청을 보내지 못하게 제한한다.
-- 관련 파일: 예정
-- 팀 공유 필요: 아니오
-- 다음에 다시 볼 시점: AI API 비용 보호를 설계할 때
+- 상태: 진행 중
+- 핵심: cookie가 외부 사이트 요청에 자동 첨부되는 범위를 제한해 CSRF 위험을 줄인다.
 
 ### CORS / CSRF
 
 - 상태: 진행 중
-- 언제 나왔는가: React dev server와 FastAPI server 포트가 다를 때
-- 우리 프로젝트에서 어디에 쓰였는가: `localhost:5173`에서 `localhost:8000` API 호출 허용
-- 핵심 개념: CORS는 브라우저의 다른 출처 요청 제한이고, CSRF는 사용자가 의도하지 않은 요청을 보내게 만드는 공격이다.
-- 관련 파일: `backend/app/main.py`, `backend/app/core/config.py`, `backend/.env.example`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 실제 배포 프론트 도메인을 CORS origin에 추가할 때
+- 쓰인 곳: FastAPI `CORSMiddleware`
+- 핵심:
+  - CORS는 브라우저가 다른 origin API를 호출할 수 있는지 정한다.
+  - JWT를 cookie로 쓰면 CSRF 전략도 같이 고려해야 한다.
+
+### API Key 관리
+
+- 상태: 진행 중
+- 쓰인 곳: `GOOGLE_CLIENT_SECRET`, `GITHUB_TOKEN`, 이후 `OPENAI_API_KEY`
+- 핵심: 민감한 값은 `.env`에 두고 Git에 커밋하지 않는다.
 
 ## PostgreSQL / Data Layer
-
-### PostgreSQL
-
-- 상태: 진행 중
-- 언제 나왔는가: `docker compose up -d`로 `postgres:16` 컨테이너를 실행할 때
-- 우리 프로젝트에서 어디에 쓰였는가: users, posts, comments, portfolio_projects, review_requests 데이터를 저장할 DB
-- 핵심 개념: 관계형 데이터베이스로, 테이블과 관계를 통해 데이터를 저장하고 SQL로 조회한다.
-- 관련 파일: `docker-compose.yml`, `backend/app/db/session.py`, `backend/app/routers/health.py`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: ERD와 SQLAlchemy model을 설계할 때
-
-### Docker Compose
-
-- 상태: 진행 중
-- 언제 나왔는가: 로컬에서 PostgreSQL을 직접 설치하지 않고 컨테이너로 실행할 때
-- 우리 프로젝트에서 어디에 쓰였는가: `junglelog-postgres` 컨테이너와 `postgres_data` volume 실행
-- 핵심 개념: 여러 개발 인프라 서비스를 YAML 파일 하나로 같은 방식으로 실행하게 해준다.
-- 관련 파일: `docker-compose.yml`, `docs/agent/setup.md`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: Redis, pgvector, MCP 관련 외부 서비스를 추가할 때
-
-### SQLAlchemy
-
-- 상태: 진행 중
-- 언제 나왔는가: FastAPI가 PostgreSQL에 연결할 수 있도록 DB 연결 계층을 만들 때
-- 우리 프로젝트에서 어디에 쓰였는가: `db/session.py`에서 engine과 session을 만들고, 이후 repository에서 DB 쿼리를 실행할 때
-- 핵심 개념: Python 코드와 관계형 DB 사이를 이어주는 ORM/DB toolkit이다.
-- 관련 파일: `backend/app/db/session.py`, 예정 `backend/app/db/models`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: SQLAlchemy model과 repository를 구현할 때
-
-### psycopg
-
-- 상태: 진행 중
-- 언제 나왔는가: SQLAlchemy가 PostgreSQL 서버와 실제 통신할 드라이버가 필요할 때
-- 우리 프로젝트에서 어디에 쓰였는가: `postgresql+psycopg://...` 형태의 DB 연결 문자열
-- 핵심 개념: Python과 PostgreSQL 사이의 실제 통신을 담당하는 드라이버다.
-- 관련 파일: `backend/requirements.txt`, `backend/.env.example`, `backend/app/core/config.py`, `backend/app/db/session.py`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: DB 연결 오류를 디버깅하거나 배포용 DB URL을 설정할 때
-
-### FastAPI Depends
-
-- 상태: 진행 중
-- 언제 나왔는가: `/health/db` endpoint에서 DB session을 주입받을 때
-- 우리 프로젝트에서 어디에 쓰였는가: `db: Session = Depends(get_db)`로 API 함수에 DB session 전달
-- 핵심 개념: FastAPI가 함수 실행에 필요한 값을 대신 만들어 넣어주는 dependency injection 방식이다.
-- 관련 파일: `backend/app/routers/health.py`, `backend/app/db/session.py`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 게시글 CRUD router에서 DB session을 사용할 때
 
 ### SQL
 
 - 상태: 진행 중
-- 언제 나왔는가: `/health/db`에서 `SELECT 1`로 DB 연결을 확인할 때
-- 우리 프로젝트에서 어디에 쓰였는가: PostgreSQL 조회/저장, 현재는 연결 확인용 query
-- 핵심 개념: 관계형 데이터베이스와 대화하는 언어다.
-- 관련 파일: `backend/app/routers/health.py`, 예정 `backend/app/db/models`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 테이블 생성과 CRUD query를 구현할 때
+- 쓰인 곳: SQLAlchemy query, dbdiagram ERD
+- 핵심: 데이터는 테이블, row, column으로 저장되고 query로 조회한다.
 
 ### CRUD
 
-- 상태: 예정
-- 언제 나왔는가: 게시글 작성, 조회, 수정, 삭제 API를 만들 때
-- 우리 프로젝트에서 어디에 쓰였는가: posts, comments, portfolio_projects, review_requests
-- 핵심 개념: Create, Read, Update, Delete의 기본 데이터 조작 흐름이다.
-- 관련 파일: 예정 `backend/app/routers/posts.py`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 게시글 API 구현 시
+- 상태: 진행 중
+- 쓰인 곳: 게시글, 댓글, 포트폴리오, 코치 리뷰
+- 핵심:
+  - Create: INSERT
+  - Read: SELECT
+  - Update: UPDATE
+  - Delete: DELETE 또는 soft delete
 
 ### Primary Key / Foreign Key
 
 - 상태: 진행 중
-- 언제 나왔는가: 테이블 관계를 설계할 때
-- 우리 프로젝트에서 어디에 쓰였는가: user와 post, post와 comment, portfolio_project와 post, review_request와 coach 관계
-- 핵심 개념: PK는 행의 고유 식별자, FK는 다른 테이블 행을 가리키는 연결 키다.
-- 관련 파일: `backend/app/db/models`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 게시글/포트폴리오/코치 리뷰 API에서 JOIN을 작성할 때
+- 쓰인 곳: 모든 주요 테이블
+- 핵심:
+  - PK는 row를 구분하는 고유 id다.
+  - FK는 다른 테이블의 PK를 참조한다.
+- 예시:
+  - `posts.author_id -> users.id`
+  - `comments.post_id -> posts.id`
+  - `portfolio_projects.owner_id -> users.id`
 
-### Join - Inner / Outer
+### Join Table / N:M
 
-- 상태: 예정
-- 언제 나왔는가: 사용자 정보와 게시글, 태그, 댓글을 함께 조회할 때
-- 우리 프로젝트에서 어디에 쓰였는가: 게시글 목록에서 작성자/태그/댓글 수 함께 표시
-- 핵심 개념: 여러 테이블의 데이터를 관계를 기준으로 합쳐 조회한다.
-- 관련 파일: 예정 repositories
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 목록 API 최적화 시
+- 상태: 진행 중
+- 쓰인 곳: `post_tags`, `portfolio_project_posts`, `review_request_coaches`
+- 핵심: 양쪽이 여러 개씩 연결될 수 있으면 중간 테이블이 필요하다.
 
-### Index
+### Index / UniqueConstraint
 
-- 상태: 예정
-- 언제 나왔는가: 검색과 정렬 성능을 고민할 때
-- 우리 프로젝트에서 어디에 쓰였는가: 게시글 검색, tag, created_at, author_id 조회
-- 핵심 개념: 자주 찾는 컬럼을 빠르게 조회하기 위한 DB 자료구조다.
-- 관련 파일: 예정 migration
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 검색/페이징 API 구현 시
+- 상태: 진행 중
+- 쓰인 곳: 사용자 email/google_sub, repo 중복 방지
+- 핵심:
+  - index는 조회 속도를 높인다.
+  - unique constraint는 중복 저장을 막는다.
+- 예시: 같은 사용자가 같은 GitHub repo/branch를 중복 등록하지 못하게 한다.
 
 ### Transaction
 
-- 상태: 예정
-- 언제 나왔는가: 여러 DB 작업이 한 번에 성공하거나 실패해야 할 때
-- 우리 프로젝트에서 어디에 쓰였는가: 게시글 생성과 태그 연결, 리뷰 요청 생성과 알림 생성
-- 핵심 개념: 여러 작업을 하나의 단위로 묶어 데이터 불일치를 막는다.
-- 관련 파일: 예정 service/repository
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 게시글+태그 저장 구현 시
+- 상태: 진행 중
+- 쓰인 곳: 게시글+태그 저장, 리뷰 요청+코치 연결, 프로젝트+연결 기록 저장
+- 핵심: 여러 DB 작업이 모두 성공하거나 모두 실패해야 데이터가 꼬이지 않는다.
 
-### ERD / Data Modeling / Normalization
+### Soft Delete
 
-- 상태: 예정
-- 언제 나왔는가: 테이블을 설계하기 전
-- 우리 프로젝트에서 어디에 쓰였는가: users, posts, comments, tags, portfolio_projects, review_requests 관계 정리
-- 핵심 개념: 중복을 줄이고 관계를 명확히 하기 위해 데이터를 구조화한다.
-- 관련 파일: 예정 `docs/db-design.md`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 4단계 DB 설계 시작 시
+- 상태: 진행 중
+- 쓰인 곳: 게시글/댓글 삭제
+- 핵심: 실제 row를 지우지 않고 `deleted_at`을 채워 목록에서 제외한다.
+- 이유: 댓글, 리뷰 요청, 포트폴리오 연결 이력을 보존하기 좋다.
+
+### Data Modeling / Normalization
+
+- 상태: 진행 중
+- 쓰인 곳: `docs/agent/db-design.md`, SQLAlchemy models
+- 핵심: 중복을 줄이고 관계를 명확히 하기 위해 데이터를 적절한 테이블로 나눈다.
 
 ## Language Basics
 
 ### Python
 
 - 상태: 진행 중
-- 언제 나왔는가: 백엔드 가상환경과 FastAPI 서버 세팅
-- 우리 프로젝트에서 어디에 쓰였는가: FastAPI 서버 구현 언어
-- 핵심 개념: 백엔드 로직, API, DB 연결을 작성하는 언어다.
-- 관련 파일: `backend`
-- 팀 공유 필요: 아니오
-- 다음에 다시 볼 시점: `app/main.py` 작성 시
+- 쓰인 곳: FastAPI 백엔드 전체
+- 핵심: 라우터, 서비스, repository, model을 Python으로 작성한다.
 
 ### Virtual Environment / pip / requirements.txt
 
 - 상태: 진행 중
-- 언제 나왔는가: `backend/.venv` 생성, FastAPI 설치, `requirements.txt` 생성
-- 우리 프로젝트에서 어디에 쓰였는가: 백엔드 의존성 격리와 재현 가능한 설치
-- 핵심 개념: 가상환경은 프로젝트 전용 패키지 공간이고, `requirements.txt`는 설치 목록이다.
-- 관련 파일: `backend/.venv`, `backend/requirements.txt`
-- 팀 공유 필요: 아니오
-- 다음에 다시 볼 시점: 팀원이 백엔드 환경을 설치할 때
+- 쓰인 곳: `backend/.venv`, `backend/requirements.txt`
+- 핵심: 프로젝트별 Python 패키지를 격리하고 재현 가능하게 관리한다.
 
-### OOP / Functional Programming
+### Pydantic Schema / DTO
 
-- 상태: 예정
-- 언제 나왔는가: service/repository 구조와 SQLAlchemy model을 다룰 때
-- 우리 프로젝트에서 어디에 쓰였는가: 모델 클래스, 함수형 데이터 변환
-- 핵심 개념: OOP는 객체 중심, 함수형은 입력과 출력 중심으로 코드를 구성한다.
-- 관련 파일: 예정
-- 팀 공유 필요: 아니오
-- 다음에 다시 볼 시점: DB model과 service 작성 시
+- 상태: 진행 중
+- 쓰인 곳: `backend/app/schemas`
+- 핵심: request body와 response JSON 모양을 타입으로 정의한다.
+- 배운 점: Pydantic validation 실패는 422로 나타난다.
 
-### Error Handling / Test Framework
+### Error Handling
 
-- 상태: 예정
-- 언제 나왔는가: API 실패 응답과 테스트를 작성할 때
-- 우리 프로젝트에서 어디에 쓰였는가: validation error, 404, 401, pytest
-- 핵심 개념: 실패를 예측 가능한 응답으로 바꾸고, 테스트로 반복 확인한다.
-- 관련 파일: 예정 `backend/app/core/exceptions.py`, `backend/tests`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 공통 예외 처리와 테스트 도입 시
+- 상태: 진행 중
+- 쓰인 곳: service/router exception 처리
+- 핵심: 실패 상황을 예측 가능한 HTTP status와 message로 바꾼다.
 
 ## Async / Cache / 운영
+
+### Configuration
+
+- 상태: 진행 중
+- 쓰인 곳: `backend/app/core/config.py`
+- 핵심: DB URL, CORS origin, JWT secret, OAuth client id 같은 설정은 코드와 분리한다.
+
+### Logging
+
+- 상태: 예정
+- 핵심: 서버 운영 중 문제를 추적하기 위해 요청, 오류, 외부 API 실패를 기록한다.
 
 ### Redis / Cache
 
 - 상태: 후순위
-- 언제 나왔는가: AI 결과 캐싱, 세션/알림 큐를 고민할 때
-- 우리 프로젝트에서 어디에 쓰였는가: 아직 미구현
-- 핵심 개념: 자주 쓰는 데이터나 임시 데이터를 빠르게 저장해 재사용한다.
-- 관련 파일: 예정
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: AI 비용 최적화나 세션 저장을 고민할 때
+- 예정 사용처: AI 결과 캐시, GitHub 분석 결과 캐시, rate limit 완화
 
 ### Async / Job Queue
 
 - 상태: 후순위
-- 언제 나왔는가: GitHub 분석, RAG 색인, AI 생성처럼 오래 걸리는 작업을 다룰 때
-- 우리 프로젝트에서 어디에 쓰였는가: 아직 미구현
-- 핵심 개념: 오래 걸리는 작업을 요청 응답과 분리해 백그라운드에서 처리한다.
-- 관련 파일: 예정
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: AI 생성 요청을 비동기 처리할 때
-
-### Logging / Configuration
-
-- 상태: 진행 중
-- 언제 나왔는가: 환경변수와 서버 실행 설정을 분리할 때
-- 우리 프로젝트에서 어디에 쓰였는가: 앱 이름, CORS origin, `DATABASE_URL`, 초기 관리자 `ADMIN_EMAILS`를 설정으로 분리
-- 핵심 개념: 설정은 코드에 박지 않고 환경에 따라 바꿀 수 있게 분리한다.
-- 관련 파일: `backend/app/core/config.py`, `backend/.env`, `backend/.env.example`, `backend/app/main.py`
-- 팀 공유 필요: 아니오
-- 다음에 다시 볼 시점: `JWT_SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `OPENAI_API_KEY`, `GITHUB_TOKEN`을 추가할 때
-
-### pydantic-settings
-
-- 상태: 진행 중
-- 언제 나왔는가: `.env` 설정값을 Python 코드에서 타입이 있는 객체로 읽을 때
-- 우리 프로젝트에서 어디에 쓰였는가: `Settings` 클래스가 `APP_NAME`, `BACKEND_CORS_ORIGINS`, `DATABASE_URL`, `ADMIN_EMAILS`를 읽는다.
-- 핵심 개념: 환경변수를 Pydantic 기반 설정 객체로 변환해 코드에서 안전하게 사용한다.
-- 관련 파일: `backend/app/core/config.py`, `backend/requirements.txt`
-- 팀 공유 필요: 아니오
-- 다음에 다시 볼 시점: DB URL, JWT secret, OpenAI key를 설정으로 추가할 때
+- 예정 사용처: GitHub 분석, RAG indexing, AI 생성처럼 오래 걸리는 작업
 
 ## Architecture / Reliability
 
 ### Layered Architecture / MVC
 
 - 상태: 진행 중
-- 언제 나왔는가: `routers`, `schemas`, `services`, `repositories`, `models` 폴더를 나눌 때
-- 우리 프로젝트에서 어디에 쓰였는가: 백엔드 폴더 구조
-- 핵심 개념: 요청 처리, 검증, 비즈니스 로직, DB 접근을 역할별로 나눠 유지보수성을 높인다.
-- 관련 파일: `backend/app`
-- 팀 공유 필요: 예
-- 다음에 다시 볼 시점: 게시글 CRUD API를 service/repository로 분리할 때
+- 쓰인 곳: `routers`, `schemas`, `services`, `repositories`, `models`
+- 핵심:
+  - router: HTTP 요청/응답
+  - service: 비즈니스 규칙
+  - repository: DB query
+  - schema: request/response 타입
+  - model: DB 테이블 구조
 
-### 멱등성 / Retry / Timeout
-
-- 상태: 후순위
-- 언제 나왔는가: 외부 API나 AI API 호출을 안정적으로 처리할 때
-- 우리 프로젝트에서 어디에 쓰였는가: GitHub API, OpenAI API, MCP tool 호출
-- 핵심 개념: 같은 요청을 반복해도 안전한지, 실패하면 재시도할지, 얼마나 기다릴지 정하는 설계다.
-- 관련 파일: 예정
-- 팀 공유 필요: 아니오
-- 다음에 다시 볼 시점: GitHub/OpenAI 연동 시
-
-### SQLAlchemy Model / Column / ForeignKey / relationship
+### Idempotency
 
 - 상태: 진행 중
-- 언제 소화되는가: ERD v1을 실제 Python 코드의 DB 모델로 옮길 때
-- 우리 프로젝트에서 어디에 쓰이는가: `backend/app/db/models/user.py`, `post_category.py`, `post.py`
-- 핵심 개념:
-  - SQLAlchemy model은 DB 테이블을 Python 클래스로 표현한 것이다.
-  - `mapped_column`은 DB 컬럼을 선언한다.
-  - `ForeignKey`는 다른 테이블의 PK를 참조해 관계를 만든다.
-  - `relationship`은 외래키로 연결된 객체를 Python 코드에서 쉽게 접근하게 해준다.
-- 이번 구현 예시:
-  - `Post.author_id -> users.id`
-  - `Post.category_id -> post_categories.id`
-  - `User.posts`
-  - `Post.author`
-  - `Post.category`
-- 다음에 다시 볼 시점: 실제 테이블 생성, 게시글 조회 API, JOIN 응답 작성 시
+- 쓰인 곳: 포트폴리오 게시글 발행
+- 핵심: 같은 요청을 여러 번 보내도 중복 게시글이 생기지 않아야 한다.
+- 예시: 이미 발행된 포트폴리오 글은 새로 만들지 않고 기존 게시글을 갱신한다.
 
-### create_all / Seed Data
+### Retry / Timeout
 
 - 상태: 진행 중
-- 언제 소화되는가: SQLAlchemy 모델을 실제 PostgreSQL 테이블로 만들 때
-- 우리 프로젝트에서 어디에 쓰이는가: `backend/app/db/init_db.py`
-- 핵심 개념:
-  - `Base.metadata.create_all(bind=engine)`은 SQLAlchemy가 알고 있는 모델 기준으로 실제 DB 테이블을 생성한다.
-  - seed data는 서비스 시작 전에 기본으로 들어가야 하는 데이터다.
-  - 이번 seed data는 게시글 카테고리 5개다.
-  - seed는 여러 번 실행해도 중복되지 않게 만들어야 한다.
-- 이번 구현 예시:
-  - `users`, `post_categories`, `posts` 테이블 생성
-  - `learning-log`, `troubleshooting`, `retrospective`, `interview`, `portfolio` 카테고리 삽입
-- 다음에 다시 볼 시점: Alembic migration 도입, 테스트 DB 초기화, 배포 환경 DB 초기화
+- 쓰인 곳: GitHub API 호출
+- 핵심: 외부 API는 느리거나 실패할 수 있으므로 timeout을 설정하고 오류를 명확히 처리한다.
 
-### N:M Relationship / Junction Table
+## AI 단계 예정 키워드
 
-- 상태: 진행 중
-- 언제 소화되는가: 게시글과 태그처럼 양쪽 모두 여러 개로 연결될 수 있는 데이터를 모델링할 때
-- 우리 프로젝트에서 어디에 쓰이는가: `post_tag.py`, `portfolio_project_post.py`, `review_request_coach.py`
-- 핵심 개념:
-  - N:M 관계는 테이블 두 개만으로 표현하기 어렵다.
-  - 중간 연결 테이블을 만들어 양쪽 id를 저장한다.
-  - `post_tags.post_id`는 게시글을 가리킨다.
-  - `post_tags.tag_id`는 태그를 가리킨다.
-  - `post_id + tag_id`를 primary key로 두면 중복 연결을 막을 수 있다.
-- 이번 구현 예시:
-  - `posts` N:M `tags`
-  - 연결 테이블: `post_tags`
-  - `portfolio_projects` N:M `posts`
-  - 연결 테이블: `portfolio_project_posts`
-  - `review_requests` N:M `users(coach)`
-  - 연결 테이블: `review_request_coaches`
-- 다음에 다시 볼 시점: 게시글 목록 API에서 태그 배열을 응답으로 만들 때
+### RAG
 
-### UniqueConstraint
+- 예정 사용처: README 원문, 전체 커밋 메시지, 연결된 학습 기록 검색
+- 핵심: LLM이 답변하기 전에 관련 문서를 찾아 근거로 넣는다.
 
-- 상태: 진행 중
-- 언제 소화되는가: 같은 학생이 같은 GitHub repo를 중복 등록하지 못하게 막을 때
-- 우리 프로젝트에서 어디에 쓰이는가: `backend/app/db/models/portfolio_project.py`
-- 핵심 개념: 여러 컬럼 조합이 중복되지 않도록 DB 차원에서 제한한다.
-- 이번 구현 예시: `portfolio_projects.owner_id + repo_full_name`
-- 다음에 다시 볼 시점: 포트폴리오 프로젝트 등록 API 구현 시
+### MCP
 
-### OAuth2 Authorization Code Flow
+- 예정 사용처: GitHub 외부 데이터 조회, 이후 다른 외부 시스템 연결
+- 핵심: LLM/Agent가 외부 시스템을 도구처럼 호출하게 한다.
 
-- ����: ���� ��
-- ���� ��ȭ�Ǵ°�: Google Cloud���� OAuth Client�� ����� FastAPI callback�� ������ ��
-- �츮 ������Ʈ���� ��� ���̴°�: Google �α������� ����ڸ� �����ϰ� JungleLog access/refresh token�� �߱��� ��
-- �ٽ� ����:
-  - �������� Google �α��� ȭ������ �̵��Ѵ�.
-  - Google�� �α��� ���� �� `code`�� �鿣�� callback URL�� �����ش�.
-  - �鿣��� �� `code`�� Google token endpoint�� ���� access token���� ��ȯ�Ѵ�.
-  - �鿣��� Google userinfo endpoint���� email/name/picture/sub�� �����´�.
-- ���� ����:
-  - ����: `backend/app/routers/auth.py`
-  - ����: `backend/app/services/auth_service.py`
-  - ����: `backend/app/repositories/user_repository.py`
+### OpenAI Function Calling
 
-### Session / JWT / Refresh Token
+- 예정 사용처: AI 도우미가 포트폴리오 생성, 면접 질문 생성 같은 도구를 선택할 때
 
-- ����: ���� ��
-- ���� ��ȭ�Ǵ°�: �α��� ����, ���� ����� ��ȸ, �α׾ƿ�, ��ū ��߱��� ������ ��
-- �츮 ������Ʈ���� ��� ���̴°�: JungleLog ��ü access token�� refresh token �߱�
-- �ٽ� ����:
-  - access token�� ª�� ��� �ְ� API ������ ����.
-  - refresh token�� ��� ��� �ְ� access token ��߱޿� ����.
-  - refresh token ������ DB�� �������� �ʰ� hash�� �����Ѵ�.
-  - token�� ����� ���� `revoked_at`�� ä���.
-- ���� ����:
-  - `backend/app/core/security.py`
-  - `backend/app/db/models/auth_refresh_token.py`
-  - `backend/app/repositories/auth_token_repository.py`
+### AI Agent Loop
 
-### Repository Layer
-
-- ����: ���� ��
-- ���� ��ȭ�Ǵ°�: router/service���� ���� SQL�� ���� �ʰ� DB ������ �и��� ��
-- �츮 ������Ʈ���� ��� ���̴°�: �Խñ�, ���, �����, refresh token DB ����
-- �ٽ� ����:
-  - repository�� SQLAlchemy query�� ����Ѵ�.
-  - service�� ����Ͻ� �帧�� ����Ѵ�.
-  - router�� HTTP ��û/������ ����Ѵ�.
-- �̹� ���� ����:
-  - `user_repository.py`: users ���̺� ��ȸ/����/����
-  - `auth_token_repository.py`: auth_refresh_tokens ���̺� ����/��ȸ/���
-
-### FastAPI Dependency
-
-- ����: ���� ��
-- ���� ��ȭ�Ǵ°�: ���� API���� ���� �α��� ����ڳ� ���� �˻縦 �������� ��� �� ��
-- �츮 ������Ʈ���� ��� ���̴°�: `get_current_user`, `get_current_approved_user`, `require_roles`
-- �ٽ� ����:
-  - `Depends()`�� FastAPI�� endpoint ���� ���� �ʿ��� ���� ����� �־��ִ� ����̴�.
-  - ���� dependency�� cookie���� token�� �а� DB ����ڷ� �ٲ��ش�.
-  - role dependency�� STUDENT/COACH/ADMIN ���� ���ѿ� ���ȴ�.
-- ���� ����:
-  - `backend/app/dependencies/auth.py`
-
-### HttpOnly Cookie / SameSite
-
-- ����: ���� ��
-- ���� ��ȭ�Ǵ°�: �������� access/refresh token�� ������ ��
-- �츮 ������Ʈ���� ��� ���̴°�: Google OAuth �α��� �� JungleLog token cookie ����
-- �ٽ� ����:
-  - HttpOnly cookie�� JavaScript���� ���� ���� �� ����.
-  - SameSite=Lax�� �Ϲ����� �ܺ� ����Ʈ CSRF ������ ���̸鼭 �α��� redirect �帧�� �����ϱ� ���� �⺻���̴�.
-  - � HTTPS ȯ�濡���� `COOKIE_SECURE=true`�� �ٲ�� �Ѵ�.
-- ���� ����:
-  - `backend/app/routers/auth.py`
-  - `backend/app/core/config.py`
-
-### 401 / 403 ���� ����
-
-- ����: ���� ��
-- ���� ��ȭ�Ǵ°�: �α������� �ʾҰų� ������ ���� ��û�� ó���� ��
-- �츮 ������Ʈ���� ��� ���̴°�: `/auth/me`, ������ ���� API, ��ġ ���� API
-- �ٽ� ����:
-  - 401 Unauthorized: �α��� ������ ���ų� ��ȿ���� �ʴ�.
-  - 403 Forbidden: �α����� ������ ���� �Ǵ� ���� ���°� ���� �ʴ�.
-- ���� ����:
-  - `backend/app/dependencies/auth.py`
-  - `backend/app/routers/auth.py`
-
----
-
-## 2026-06-16 백엔드 키워드: GitHub REST API 연동
-
-관련 구현:
-
-- `backend/app/services/github_service.py`
-- `backend/app/services/portfolio_service.py`
-- `backend/app/repositories/portfolio_repository.py`
-- `backend/app/routers/portfolio.py`
-- `frontend/src/app/pages/portfolio/Portfolio.tsx`
-
-키워드 연결:
-
-| 키워드 | 이번 구현에서 나온 부분 |
-| --- | --- |
-| REST API | GitHub의 `/repos/{owner}/{repo}`, `/readme`, `/commits`, `/languages` endpoint 호출 |
-| API Design | JungleLog 내부에는 `POST /portfolio/projects/{project_id}/github/refresh`로 감싸서 제공 |
-| HTTP 3xx/4xx/5xx | GitHub 404는 repo 없음, 403은 rate limit/권한 문제, JungleLog에서는 외부 API 실패를 502로 전달 |
-| Error Handling | `GitHubRepositoryNotFoundError`, `GitHubApiError`로 원인을 나누어 처리 |
-| Configuration | `GITHUB_API_BASE_URL`, `GITHUB_API_VERSION`, `GITHUB_TOKEN`을 `Settings`로 관리 |
-| Security | GitHub token은 백엔드 `.env`에만 두고 프론트엔드로 보내지 않음 |
-| Layered Architecture | router -> service -> repository 흐름 유지, 외부 API 호출은 `github_service`로 분리 |
-| Timeout | `httpx.Client(timeout=10.0)`으로 외부 API 요청이 무한히 기다리지 않게 함 |
-
-내가 이해해야 하는 점:
-
-- 프론트에서 GitHub API를 직접 부르면 token 노출 위험이 있고 DB 저장도 애매하다.
-- 백엔드 service가 GitHub JSON을 받아 JungleLog 도메인 모델에 맞게 정리한 뒤 repository가 저장한다.
-- 지금은 public repo 기준이고, private repo는 `GITHUB_TOKEN`을 넣어야 한다.
-- AI 단계에서는 이 GitHub 분석 결과가 RAG/Agent의 근거 자료가 된다.
-
----
-
-## 2026-06-16 백엔드 키워드: GitHub branch와 unique index
-
-관련 구현:
-
-- `portfolio_projects.github_branch`
-- `uq_portfolio_projects_owner_repo_branch`
-- `github_service.analyze_repository(repo_full_name, github_branch)`
-
-키워드 연결:
-
-| 키워드 | 이번 구현에서 나온 부분 |
-| --- | --- |
-| Primary Key / Foreign Key / Index | 같은 사용자에게 같은 repo/branch 중복 등록을 막기 위해 unique index를 사용했다. |
-| API Design | 프론트에는 `githubBranch`로 내려주고, DB는 `github_branch`로 저장한다. |
-| REST API | GitHub README의 `ref`, commits의 `sha`, git tree의 `recursive` query를 사용했다. |
-| Data Modeling | repo와 branch를 분리해 저장해 같은 repo의 다른 branch를 표현할 수 있게 했다. |
-| Migration | Alembic 전 단계라 `ALTER TABLE ADD COLUMN IF NOT EXISTS`로 기존 DB를 보강했다. |
-
-내가 이해해야 하는 점:
-
-- branch를 저장하지 않으면 같은 repo의 어느 시점/흐름을 분석했는지 알 수 없다.
-- 중복 기준도 branch를 포함해야 같은 repo의 다른 branch를 등록할 수 있다.
-- DB 컬럼 추가는 모델만 바꾸면 끝이 아니라 기존 DB 보강 코드도 필요하다.
-
----
-
-## 2026-06-16 프론트/백엔드 키워드: 프로젝트 기반 포트폴리오 게시글
-
-관련 구현:
-
-- `published_post_id`
-- `POST /portfolio/projects/{project_id}/publish-post`
-- `publishPortfolioProjectPost(projectId)`
-- `frontend/src/app/pages/ai/AIAssistant.tsx`
-
-키워드 연결:
-
-| 키워드 | 이번 구현에서 나온 부분 |
-| --- | --- |
-| CRUD | 프로젝트 내용을 기반으로 게시글을 생성하거나 갱신한다. |
-| API Design | 포트폴리오 프로젝트 API 아래에 발행 endpoint를 두어 일반 글쓰기와 구분했다. |
-| Data Modeling | 참고 기록 연결과 대표 게시글 연결을 분리했다. |
-| React State | 발행 후 반환된 프로젝트 응답으로 `projects` state를 갱신한다. |
-| Conditional Rendering | `publishedPostId`가 있을 때만 `게시글로 보기` 링크를 보여준다. |
-| UI Information Architecture | AI 도우미를 프로젝트 선택, 참고 자료, 생성 결과 영역으로 나누었다. |
-
-내가 이해해야 하는 점:
-
-- 포트폴리오 관리 화면은 프로젝트를 관리하는 곳이고, 전체 게시글 상세는 완성된 글을 읽는 곳이다.
-- 같은 데이터라도 화면 목적에 따라 preview와 full content로 다르게 보여줘야 한다.
-- 내부 필드명을 무리하게 바꾸지 않고 화면 문구만 정리하면 기존 저장 데이터가 덜 흔들린다.
+- 예정 사용처: 자료 수집 -> 검색 -> 생성 -> 저장 같은 흐름을 단계적으로 실행할 때

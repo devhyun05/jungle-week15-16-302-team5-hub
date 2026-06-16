@@ -1,1060 +1,212 @@
-# Setup Notes
+﻿# JungleLog Setup Notes
 
-## 2026-06-14 JWT 라이브러리 설치와 보안 유틸 검증 명령
+이 문서는 JungleLog를 로컬에서 다시 실행하거나 환경을 재구성할 때 필요한 명령어와 설정을 기록한다.
 
-JWT 생성/검증에는 `python-jose[cryptography]`를 사용한다.
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -m pip install "python-jose[cryptography]"
-.\.venv\Scripts\python.exe -m pip freeze > requirements.txt
-```
-
-JWT / refresh token 유틸 동작 확인:
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -c "from app.core.security import create_access_token, decode_access_token, create_refresh_token, hash_refresh_token; token = create_access_token(123); print(type(token).__name__); print(decode_access_token(token)); refresh = create_refresh_token(); print(len(refresh) > 40); digest = hash_refresh_token(refresh); print(len(digest)); print(digest == hash_refresh_token(refresh))"
-```
-
-기대 결과:
+## 프로젝트 위치
 
 ```txt
-str
-123
-True
-64
-True
+C:\junhee\WEEK15_AI_BOARD
 ```
 
-현재 설정값 로딩 확인:
+기본 구조:
+
+```txt
+WEEK15_AI_BOARD/
+  frontend/
+  backend/
+  docs/
+  README.md
+  docker-compose.yml
+```
+
+## Python / Backend 환경
+
+확인한 Python 버전:
+
+```powershell
+python --version
+# Python 3.11.9
+```
+
+가상환경 위치:
+
+```txt
+backend/.venv
+```
+
+가상환경 활성화:
 
 ```powershell
 cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -c "from app.core.config import settings; print(settings.jwt_access_token_expire_minutes); print(settings.jwt_refresh_token_expire_days); print(settings.auth_access_cookie_name); print(settings.auth_refresh_cookie_name)"
+.\.venv\Scripts\Activate.ps1
 ```
 
-기대 결과:
+패키지 설치:
 
-```txt
-15
-14
-junglelog_access_token
-junglelog_refresh_token
+```powershell
+pip install -r requirements.txt
 ```
 
-주의: 실제 로그인 구현 전에는 `backend/.env`의 `JWT_SECRET_KEY`를 긴 랜덤 문자열로 바꿔야 한다.
+requirements 갱신:
 
-## 2026-06-14 auth_refresh_tokens 테이블 생성 확인 명령
+```powershell
+pip freeze > requirements.txt
+```
 
-JWT refresh token 모델을 추가한 뒤에는 기존 DB 초기화 명령을 다시 실행하면 새 테이블이 생성된다.
+백엔드 서버 실행:
 
 ```powershell
 cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -c "from app.db.init_db import init_db; init_db(); print('init_db done')"
+.\.venv\Scripts\Activate.ps1
+uvicorn app.main:app --reload --port 8000
 ```
 
-실제 PostgreSQL 테이블 목록에서 `auth_refresh_tokens`가 보이는지 확인한다.
+8000 포트가 막힐 때 임시 실행:
 
 ```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -c "from sqlalchemy import inspect; from app.db.session import engine; print(sorted(inspect(engine).get_table_names()))"
+uvicorn app.main:app --reload --port 8010
 ```
 
-특정 테이블의 컬럼만 확인하려면 아래 명령을 사용한다.
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -c "from sqlalchemy import inspect; from app.db.session import engine; print([column['name'] for column in inspect(engine).get_columns('auth_refresh_tokens')])"
-```
-
-## 2026-06-14 내 기록 API QA에 사용한 명령어
-
-### 전체 내 기록 조회
-
-```powershell
-Invoke-RestMethod -Uri "http://localhost:8000/me/posts?visibility=all&size=50"
-```
-
-### 공개 글만 조회
-
-```powershell
-Invoke-RestMethod -Uri "http://localhost:8000/me/posts?visibility=public&size=50"
-```
-
-### 비공개 글만 조회
-
-```powershell
-Invoke-RestMethod -Uri "http://localhost:8000/me/posts?visibility=private&size=50"
-```
-
-### 카테고리 필터 조회
-
-```powershell
-Invoke-RestMethod -Uri "http://localhost:8000/me/posts?category=learning-log&visibility=all&size=50"
-```
-
-### 브라우저 확인 URL
-
-```txt
-http://localhost:5173/my-records
-```
-
-## 2026-06-14 댓글 삭제 API QA에 사용한 명령어
-
-### 댓글 삭제 상태 코드 확인
-
-```powershell
-curl.exe -s -o NUL -w "%{http_code}" -X DELETE "http://localhost:8000/comments/{comment_id}"
-```
-
-기대 결과:
-
-```txt
-204
-```
-
-### 없는 댓글 삭제 확인
-
-```powershell
-curl.exe -s -o NUL -w "%{http_code}" -X DELETE "http://localhost:8000/comments/999999999"
-```
-
-기대 결과:
-
-```txt
-404
-```
-
-### 댓글 목록 확인
-
-```powershell
-Invoke-RestMethod -Uri "http://localhost:8000/posts/{post_id}/comments"
-```
-
-삭제 후 기대 결과:
-
-```json
-{
-  "postId": 1,
-  "items": [],
-  "total": 0
-}
-```
-
-## 2026-06-14 삭제 API QA에 사용한 명령어
-
-### 백엔드 문법 검증
+백엔드 compile 확인:
 
 ```powershell
 cd C:\junhee\WEEK15_AI_BOARD\backend
 .\.venv\Scripts\python.exe -m compileall app
 ```
 
-### 프론트 빌드 검증
+## PostgreSQL / Docker
+
+Docker 확인:
 
 ```powershell
-cd C:\junhee\WEEK15_AI_BOARD\frontend
-npm run build
+docker --version
+docker compose version
 ```
 
-### 삭제 API 상태 코드 확인
-
-PowerShell `Invoke-WebRequest`가 `204 No Content`에서 내부 예외를 낼 수 있어서 상태 코드 확인에는 `curl.exe`를 사용했다.
-
-```powershell
-curl.exe -s -o NUL -w "%{http_code}" -X DELETE "http://localhost:8000/posts/{post_id}"
-```
-
-기대 결과:
-
-```txt
-204
-```
-
-### 삭제 후 상세 조회 확인
-
-```powershell
-curl.exe -s -o NUL -w "%{http_code}" "http://localhost:8000/posts/{post_id}"
-```
-
-기대 결과:
-
-```txt
-404
-```
-
-## 2026-06-14 게시글 수정 API 검증 명령과 확인 URL
-
-백엔드 서버와 프론트엔드 서버가 모두 켜져 있어야 한다.
-
-```powershell
-# backend
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\Activate.ps1
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-
-# frontend
-cd C:\junhee\WEEK15_AI_BOARD\frontend
-npm run dev
-```
-
-게시글 생성 후 수정 API를 검증하는 PowerShell 흐름:
-
-```powershell
-$createPayload = @{
-  title = "api patch flow seed"
-  summary = "seed summary"
-  content = "seed content"
-  categorySlug = "learning-log"
-  tags = @("FastAPI", "PatchSeed")
-  isPublic = $true
-  relatedCommit = "seed-commit"
-} | ConvertTo-Json
-
-$created = Invoke-RestMethod -Uri "http://localhost:8000/posts" -Method Post -ContentType "application/json" -Body $createPayload
-$postId = $created.id
-
-$updatePayload = @{
-  title = "api patch flow updated"
-  summary = "updated summary"
-  content = "updated content"
-  categorySlug = "troubleshooting"
-  tags = @("FastAPI", "UpdateAPI")
-  isPublic = $true
-  relatedCommit = "updated-commit"
-} | ConvertTo-Json
-
-Invoke-RestMethod -Uri "http://localhost:8000/posts/$postId" -Method Patch -ContentType "application/json" -Body $updatePayload
-Invoke-RestMethod -Uri "http://localhost:8000/posts/$postId" -Method Get
-```
-
-브라우저 확인 URL:
-
-```txt
-http://localhost:5173/posts/{postId}/edit
-```
-
-확인할 것:
-
-- 수정 화면 제목이 `게시글 수정`으로 보인다.
-- 제목 input에 수정된 제목이 들어간다.
-- 본문 textarea에 수정된 content가 들어간다.
-- 카테고리 select가 수정된 카테고리를 보여준다.
-- 수정 완료 버튼을 누르면 `PATCH /posts/{postId}`가 호출될 준비가 되어 있다.
-
-## 2026-06-14 게시글 목록/상세 화면 확인 URL
-
-프론트와 백엔드 서버가 모두 켜져 있어야 한다.
-
-```powershell
-# frontend
-cd C:\junhee\WEEK15_AI_BOARD\frontend
-npm run dev
-
-# backend
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\Activate.ps1
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-브라우저 확인 URL:
-
-```txt
-http://localhost:5173/posts
-http://localhost:5173/posts/4
-```
-
-기대 결과:
-
-- `/posts`에서 백엔드 `GET /posts` 응답 목록이 보인다.
-- `/posts/4`에서 `post create api test` 상세가 보인다.
-- 화면에 `Unexpected Application Error`가 없어야 한다.
-
-## 2026-06-14 게시글 작성 API 검증 명령어
-
-백엔드 서버가 켜져 있어야 한다.
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\Activate.ps1
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-OpenAPI에서 `/posts` method 확인:
-
-```powershell
-$openapi = Invoke-RestMethod -Uri http://127.0.0.1:8000/openapi.json
-$openapi.paths.'/posts'.PSObject.Properties.Name
-```
-
-게시글 작성:
-
-```powershell
-$body = @{
-  title = 'post create api test'
-  summary = 'post create api summary'
-  content = 'post create api content'
-  categorySlug = 'learning-log'
-  tags = @('FastAPI', 'CreateAPI')
-  isPublic = $true
-  relatedCommit = 'api-create-post-test'
-} | ConvertTo-Json
-
-Invoke-RestMethod -Uri http://127.0.0.1:8000/posts -Method Post -ContentType 'application/json' -Body $body
-```
-
-생성된 글 목록 조회:
-
-```powershell
-Invoke-RestMethod -Uri 'http://127.0.0.1:8000/posts?keyword=post%20create%20api%20test' | ConvertTo-Json -Depth 5
-```
-
-없는 카테고리 404 확인:
-
-```powershell
-try {
-  $body = @{
-    title = 'bad category test'
-    content = 'bad category content'
-    categorySlug = 'missing-category'
-    tags = @()
-    isPublic = $true
-  } | ConvertTo-Json
-
-  Invoke-RestMethod -Uri http://127.0.0.1:8000/posts -Method Post -ContentType 'application/json' -Body $body
-} catch {
-  $_.Exception.Response.StatusCode.value__
-}
-```
-
-공백 제목/본문 400 확인:
-
-```powershell
-try {
-  $body = @{
-    title = ' '
-    content = ' '
-    categorySlug = 'learning-log'
-    tags = @()
-    isPublic = $true
-  } | ConvertTo-Json
-
-  Invoke-RestMethod -Uri http://127.0.0.1:8000/posts -Method Post -ContentType 'application/json' -Body $body
-} catch {
-  $_.Exception.Response.StatusCode.value__
-}
-```
-
-## 2026-06-13 댓글 작성 API 검증 명령어
-
-백엔드 서버가 켜져 있어야 한다.
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\Activate.ps1
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-OpenAPI에서 댓글 경로와 method 확인:
-
-```powershell
-$openapi = Invoke-RestMethod -Uri http://127.0.0.1:8000/openapi.json
-$openapi.paths.'/posts/{post_id}/comments'.PSObject.Properties.Name
-```
-
-댓글 작성:
-
-```powershell
-$body = @{ content = 'comment api test' } | ConvertTo-Json
-Invoke-RestMethod -Uri http://127.0.0.1:8000/posts/1/comments -Method Post -ContentType 'application/json' -Body $body
-```
-
-댓글 목록 조회:
-
-```powershell
-Invoke-RestMethod -Uri http://127.0.0.1:8000/posts/1/comments | ConvertTo-Json -Depth 5
-```
-
-없는 게시글 댓글 작성 404 확인:
-
-```powershell
-try {
-  $body = @{ content = 'missing post test' } | ConvertTo-Json
-  Invoke-RestMethod -Uri http://127.0.0.1:8000/posts/999999/comments -Method Post -ContentType 'application/json' -Body $body
-} catch {
-  $_.Exception.Response.StatusCode.value__
-}
-```
-
-공백 댓글 400 확인:
-
-```powershell
-try {
-  $body = @{ content = '   ' } | ConvertTo-Json
-  Invoke-RestMethod -Uri http://127.0.0.1:8000/posts/1/comments -Method Post -ContentType 'application/json' -Body $body
-} catch {
-  $_.Exception.Response.StatusCode.value__
-}
-```
-
-이 문서는 JungleLog 프로젝트를 처음 세팅하거나 다른 컴퓨터에서 다시 실행할 때 필요한 명령어와 이유를 기록한다.
-README는 짧은 실행 방법을 담고, 이 문서는 세팅 과정과 확인 방법을 자세히 남긴다.
-
-## 작성 규칙
-
-- 실제로 실행한 명령어와 결과를 기록한다.
-- 왜 그 명령어를 쓰는지 한 줄로 설명한다.
-- 에러가 나면 해결 과정은 `troubleshooting.md`에 자세히 기록한다.
-- 새 패키지를 설치하면 `requirements.txt` 또는 `package.json` 반영 여부를 확인한다.
-
-## 현재 환경 기준
-
-| 항목 | 값 |
-| --- | --- |
-| 프로젝트 루트 | `C:\junhee\WEEK15_AI_BOARD` |
-| 프론트엔드 | React + Vite |
-| 백엔드 | FastAPI |
-| Python 권장 명령 | `python` |
-| Python 버전 | `Python 3.11.9` |
-| 주의 | `py --version`은 `Python 3.15.0a7` alpha 버전이므로 이 프로젝트에서는 사용하지 않는다. |
-
-## Backend 초기 세팅
-
-### 1. Python 확인
-
-```powershell
-python --version
-py --version
-```
-
-확인 결과:
-
-```txt
-python --version -> Python 3.11.9
-py --version -> Python 3.15.0a7
-```
-
-결론:
-
-- 프로젝트에서는 안정 버전인 `python` 명령을 사용한다.
-- `py`는 alpha 버전을 가리키므로 사용하지 않는다.
-
-### 2. backend 폴더로 이동
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-```
-
-이유:
-
-- 백엔드 가상환경과 Python 패키지는 `backend` 폴더 안에서 관리한다.
-
-### 3. Python 가상환경 생성
-
-```powershell
-python -m venv .venv
-```
-
-이유:
-
-- 프로젝트 전용 Python 패키지 공간을 만든다.
-- 전역 Python 환경과 프로젝트 의존성이 섞이지 않게 한다.
-
-확인:
-
-```powershell
-dir -Force
-```
-
-성공 기준:
-
-```txt
-backend/.venv 폴더가 보인다.
-```
-
-### 4. 가상환경 활성화
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
-성공 기준:
-
-```powershell
-(.venv) PS C:\junhee\WEEK15_AI_BOARD\backend>
-```
-
-PowerShell 실행 정책 오류가 나면:
-
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-.\.venv\Scripts\Activate.ps1
-```
-
-### 5. 가상환경 Python / pip 확인
-
-```powershell
-python --version
-pip --version
-```
-
-확인 결과:
-
-```txt
-Python 3.11.9
-pip 24.0 from C:\junhee\WEEK15_AI_BOARD\backend\.venv\Lib\site-packages\pip (python 3.11)
-```
-
-성공 기준:
-
-- `pip --version` 경로에 `backend\.venv`가 포함되어 있다.
-
-### 6. FastAPI / Uvicorn 설치
-
-```powershell
-pip install fastapi uvicorn
-```
-
-이유:
-
-- `fastapi`: Python API 서버 프레임워크
-- `uvicorn`: FastAPI 앱을 실행하는 ASGI 서버
-
-설치 확인:
-
-```powershell
-pip list
-```
-
-확인할 패키지:
-
-- `fastapi`
-- `uvicorn`
-- `pydantic`
-- `starlette`
-
-### 7. requirements.txt 생성
-
-```powershell
-pip freeze > requirements.txt
-```
-
-이유:
-
-- 현재 백엔드 가상환경에 설치된 패키지와 버전을 기록한다.
-- 다른 컴퓨터에서는 아래 명령으로 같은 패키지를 설치할 수 있다.
-
-```powershell
-pip install -r requirements.txt
-```
-
-현재 생성 확인:
-
-```txt
-backend/requirements.txt
-```
-
-### 8. FastAPI 서버 실행
-
-```powershell
-uvicorn app.main:app --reload
-```
-
-대체 명령:
-
-```powershell
-python -m uvicorn app.main:app --reload
-```
-
-읽는 법:
-
-- `app.main`: `backend/app/main.py` 파일을 의미한다.
-- `:app`: `main.py` 안의 `app = FastAPI(...)` 객체를 의미한다.
-- `--reload`: 코드가 바뀌면 서버를 자동 재시작한다.
-
-### 9. Health API 확인
-
-브라우저:
-
-```txt
-http://127.0.0.1:8000/health
-```
-
-기대 응답:
-
-```json
-{
-  "status": "ok",
-  "service": "junglelog-backend"
-}
-```
-
-Swagger 문서:
-
-```txt
-http://127.0.0.1:8000/docs
-```
-
-확인 기준:
-
-- `/docs`에 `GET /health`가 보인다.
-- `HealthResponse` schema에 `status`, `service`가 보인다.
-- 실제 `/health` 응답과 `/docs` schema가 일치한다.
-
-## Backend 환경변수 설정
-
-### 1. pydantic-settings 설치
-
-```powershell
-pip install pydantic-settings
-pip freeze > requirements.txt
-```
-
-이유:
-
-- `.env` 파일의 설정값을 `config.py`에서 읽기 위해 사용한다.
-
-확인:
-
-```powershell
-pip list
-```
-
-확인할 패키지:
-
-- `pydantic-settings`
-- `python-dotenv`
-
-### 2. .env 생성
-
-파일:
-
-```txt
-backend/.env
-```
-
-내용:
-
-```env
-APP_NAME=JungleLog API
-BACKEND_CORS_ORIGINS=http://localhost:5173
-```
-
-주의:
-
-- `.env`에는 나중에 `DATABASE_URL`, `JWT_SECRET_KEY`, `OPENAI_API_KEY`, `GITHUB_TOKEN` 같은 민감 정보가 들어갈 수 있다.
-- 민감 정보가 들어가면 Git에 올리지 않아야 한다.
-
-### 3. .env.example 생성
-
-파일:
-
-```txt
-backend/.env.example
-```
-
-내용:
-
-```env
-APP_NAME=JungleLog API
-BACKEND_CORS_ORIGINS=http://localhost:5173
-```
-
-이유:
-
-- 실제 `.env`는 Git에 올리지 않는다.
-- 대신 `.env.example`을 공유해서 팀원이 어떤 설정값이 필요한지 알 수 있게 한다.
-
-### 4. config.py에서 설정 읽기
-
-파일:
-
-```txt
-backend/app/core/config.py
-```
-
-역할:
-
-- `.env`의 `APP_NAME`을 `settings.app_name`으로 읽는다.
-- `.env`의 `BACKEND_CORS_ORIGINS`를 `settings.backend_cors_origins`로 읽는다.
-
-### 5. main.py에서 settings 사용
-
-파일:
-
-```txt
-backend/app/main.py
-```
-
-확인할 코드:
-
-```python
-app = FastAPI(title=settings.app_name)
-allow_origins=[settings.backend_cors_origins]
-```
-
-## Frontend 실행
-
-프론트엔드 개발 서버:
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\frontend
-npm install
-npm run dev
-```
-
-프론트엔드 빌드:
-
-```powershell
-npm run build
-```
-
-## PostgreSQL Docker 실행
-
-프로젝트 루트에서:
+PostgreSQL 실행:
 
 ```powershell
 cd C:\junhee\WEEK15_AI_BOARD
 docker compose up -d
 ```
 
-실행 결과:
-
-```txt
-Image postgres:16 Pulled
-Network week15_ai_board_default Created
-Volume week15_ai_board_postgres_data Created
-Container junglelog-postgres Started
-```
-
-확인:
+컨테이너 확인:
 
 ```powershell
 docker ps
-```
-
-확인 결과:
-
-```txt
-junglelog-postgres
-postgres:16
-Up
-0.0.0.0:5432->5432/tcp
-```
-
-로그 확인:
-
-```powershell
 docker logs junglelog-postgres
 ```
 
-성공 기준:
-
-```txt
-database system is ready to accept connections
-```
-
-데이터 유지용 volume 확인:
+PostgreSQL 접속:
 
 ```powershell
-docker volume ls --filter name=week15_ai_board_postgres_data
+docker exec -it junglelog-postgres psql -U junglelog -d junglelog
 ```
 
-확인 결과:
+자주 쓰는 psql 명령:
+
+```sql
+\dt
+\d users
+select id, email, role, approval_status from users;
+\q
+```
+
+## Backend 환경변수
+
+파일 위치:
 
 ```txt
-week15_ai_board_postgres_data
+backend/.env
+backend/.env.example
 ```
 
-접속 정보:
+주요 값:
 
 ```txt
-Host: localhost
-Port: 5432
-Database: junglelog
-Username: junglelog
-Password: junglelog
-```
-
-FastAPI에서 사용할 예정인 연결 문자열:
-
-```txt
-postgresql+psycopg://junglelog:junglelog@localhost:5432/junglelog
-```
-
-## SQLAlchemy / psycopg 설치
-
-backend 가상환경이 켜진 상태에서 실행:
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\Activate.ps1
-pip install sqlalchemy "psycopg[binary]"
-pip freeze > requirements.txt
-```
-
-설치된 주요 패키지:
-
-```txt
-SQLAlchemy==2.0.50
-psycopg==3.3.4
-psycopg-binary==3.3.4
-greenlet==3.5.1
-```
-
-역할:
-
-- `SQLAlchemy`: Python 코드에서 DB 연결, 세션, 모델, 쿼리를 다루는 도구
-- `psycopg`: Python이 PostgreSQL과 실제로 통신할 때 사용하는 드라이버
-- `requirements.txt`: 다른 환경에서도 같은 패키지를 설치할 수 있도록 남기는 의존성 목록
-
-## FastAPI DB 연결 확인
-
-DB 연결과 초기 관리자 설정에서 사용할 값:
-
-```env
 DATABASE_URL=postgresql+psycopg://junglelog:junglelog@localhost:5432/junglelog
-ADMIN_EMAILS=admin@junglelog.dev
+BACKEND_CORS_ORIGINS=http://localhost:5173
+FRONTEND_URL=http://localhost:5173
+JWT_SECRET_KEY=로컬용_긴_랜덤_문자열
+GOOGLE_CLIENT_ID=Google OAuth Client ID
+GOOGLE_CLIENT_SECRET=Google OAuth Client Secret
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+ADMIN_EMAILS=최고관리자이메일@example.com
+GITHUB_API_BASE_URL=https://api.github.com
+GITHUB_API_VERSION=2022-11-28
+GITHUB_TOKEN=
 ```
 
-`backend/app/core/config.py`에서 `database_url` 설정을 읽도록 추가했다.
+주의:
 
-```python
-database_url: str = "postgresql+psycopg://junglelog:junglelog@localhost:5432/junglelog"
-admin_emails: str = ""
-```
+- `GOOGLE_CLIENT_SECRET`, `JWT_SECRET_KEY`, `GITHUB_TOKEN`, 이후 `OPENAI_API_KEY`는 GitHub/README/채팅에 노출하지 않는다.
+- `ADMIN_EMAILS`는 comma-separated 형식으로 여러 이메일을 넣을 수 있다.
+- `GITHUB_TOKEN`은 public repo만 조회할 때는 비워도 된다. private repo나 rate limit 대응이 필요하면 넣는다.
 
-`backend/app/db/session.py`에서 SQLAlchemy engine, session factory, FastAPI dependency를 구성했다.
+## Google OAuth 설정
 
-```txt
-settings.database_url
--> create_engine(...)
--> SessionLocal
--> get_db()
--> router에서 Depends(get_db)
-```
-
-DB 연결 확인 endpoint:
-
-```txt
-GET http://localhost:8000/health/db
-```
-
-응답:
-
-```json
-{
-  "status": "ok",
-  "database": "postgresql"
-}
-```
-
-검증 명령:
-
-```powershell
-Invoke-RestMethod -Uri http://localhost:8000/health
-Invoke-RestMethod -Uri http://localhost:8000/health/db
-```
-
-백엔드 문법/import 검증:
-
-```powershell
-python -m compileall app
-```
-
-Codex 샌드박스에서는 로컬 Python 실행 권한 때문에 직접 실행이 막힐 수 있으므로, 필요한 경우 권한을 올려 검증한다.
-
-## 2026-06-13 DB 테이블 생성과 기본 카테고리 seed
-
-백엔드 가상환경 Python으로 DB 초기화 함수를 실행한다.
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -c "from app.db.init_db import init_db; init_db(); print('init_db done')"
-```
-
-실제 PostgreSQL에 테이블이 생겼는지 확인한다.
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -c "from sqlalchemy import inspect; from app.db.session import engine; print(sorted(inspect(engine).get_table_names()))"
-```
-
-기본 카테고리 seed 데이터를 확인한다.
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -c "from sqlalchemy import select; from app.db.models import PostCategory; from app.db.session import SessionLocal; db = SessionLocal(); rows = db.execute(select(PostCategory.slug, PostCategory.label).order_by(PostCategory.id)).all(); db.close(); print(rows)"
-```
-
-주의: PowerShell에서 시스템 Python을 쓰면 `sqlalchemy`가 없을 수 있다.
-반드시 `backend\.venv\Scripts\python.exe`를 사용하거나 가상환경을 활성화한 뒤 실행한다.
-
-## 2026-06-13 댓글/태그 테이블 생성 확인
-
-댓글/태그 모델을 추가한 뒤 기존 DB 초기화 명령을 다시 실행한다.
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -c "from app.db.init_db import init_db; init_db(); print('init_db done')"
-```
-
-실제 테이블 목록에 `comments`, `tags`, `post_tags`가 있는지 확인한다.
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -c "from sqlalchemy import inspect; from app.db.session import engine; print(sorted(inspect(engine).get_table_names()))"
-```
-
-새 테이블 count를 확인한다.
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -c "from sqlalchemy import func, select; from app.db.models import Comment, PostTag, Tag; from app.db.session import SessionLocal; db = SessionLocal(); print(db.scalar(select(func.count()).select_from(Comment))); print(db.scalar(select(func.count()).select_from(Tag))); print(db.scalar(select(func.count()).select_from(PostTag))); db.close()"
-```
-## 2026-06-13 게시글 조회 API seed와 검증 명령
-
-4단계 게시글 조회 API를 확인하기 위해 개발용 demo 사용자/게시글/태그 seed를 추가했다.
-
-### DB 테이블 생성과 seed 실행
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -c "from app.db.init_db import init_db; init_db(); print('init_db done')"
-```
-
-### 백엔드 import 검증
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -m compileall app
-```
-
-### posts API 수동 확인
-
-서버를 켠 뒤 아래 주소를 확인한다.
-
-```txt
-http://127.0.0.1:8000/posts
-http://127.0.0.1:8000/posts?category=learning-log
-http://127.0.0.1:8000/posts?keyword=JWT
-http://127.0.0.1:8000/posts/1
-http://127.0.0.1:8000/docs
-```
-
-주의: 실제 id는 DB seed 상태에 따라 달라질 수 있다. 먼저 `/posts`에서 첫 번째 게시글의 `id`를 확인한 뒤 상세 API를 호출한다.
-
-## 2026-06-13 실제 PostgreSQL 테이블 목록 확인
-
-SQLAlchemy 모델을 추가한 뒤 실제 PostgreSQL에 테이블이 만들어졌는지 확인할 때 사용한다.
-
-### init_db 실행
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -c "from app.db.init_db import init_db; init_db(); print('init_db done')"
-```
-
-### SQLAlchemy inspect로 테이블 목록 확인
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -c "from sqlalchemy import inspect; from app.db.session import engine; tables=inspect(engine).get_table_names(); print(len(tables)); print(sorted(tables))"
-```
-
-정상 결과는 12개 테이블이다.
-
-```txt
-comments
-notifications
-portfolio_project_posts
-portfolio_projects
-post_categories
-post_tags
-posts
-review_request_coaches
-review_requests
-tags
-user_approval_logs
-users
-```
-
-## 2026-06-13 댓글 조회 API 확인 URL
-
-백엔드 서버를 켠 뒤 댓글 조회 API를 확인한다.
-
-```txt
-http://localhost:8000/posts/1/comments
-http://localhost:8000/posts/999999/comments
-http://localhost:8000/docs
-```
-
-정상 응답 예시:
-
-```json
-{
-  "postId": 1,
-  "items": [],
-  "total": 0
-}
-```
-
-없는 게시글 id:
-
-```json
-{
-  "detail": "게시글을 찾을 수 없습니다."
-}
-```
-
-## 2026-06-14 Google OAuth / httpx ����
-
-Google OAuth �鿣�� ������ ���� HTTP client ���̺귯�� `httpx`�� ��ġ�ߴ�.
-FastAPI ������ Google token endpoint�� userinfo endpoint�� ��û�� ������ ���� ����Ѵ�.
-
-```powershell
-cd C:\junhee\WEEK15_AI_BOARD\backend
-.\.venv\Scripts\python.exe -m pip install httpx
-.\.venv\Scripts\python.exe -m pip freeze > requirements.txt
-```
-
-`.env`���� Google OAuth Client ID/Secret, redirect URI, JWT secret�� �����Ѵ�.
-����: `GOOGLE_CLIENT_SECRET`, `JWT_SECRET_KEY`�� ���� README, agent ����, GitHub, ä�ÿ� �������� �ʴ´�.
-
-## 2026-06-15 Google OAuth 설정 검증 방법
-
-실제 비밀값은 출력하지 않고 아래 항목이 비어 있지 않은지만 확인했다.
+Google Cloud Console에서 OAuth Client를 만든다.
 
 필수 설정:
 
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
-- `GOOGLE_REDIRECT_URI`
-- `JWT_SECRET_KEY`
-- `ADMIN_EMAILS`
-- `FRONTEND_URL`
-- `BACKEND_CORS_ORIGINS`
+```txt
+Application type: Web application
+Authorized JavaScript origins: http://localhost:5173
+Authorized redirect URIs: http://localhost:8000/auth/google/callback
+```
 
-자동 확인 결과:
+OAuth 동의 화면:
 
-- 모든 필수 설정이 `set` 상태였다.
-- `GOOGLE_REDIRECT_URI`는 `http://localhost:8000/auth/google/callback`와 일치했다.
-- `/auth/google/login` 호출 시 Google OAuth 인증 URL로 redirect가 생성됐다.
-- OAuth state cookie가 응답에 포함됐다.
+- 앱 이름: JungleLog
+- 테스트 사용자: 실제 로그인할 Gmail 추가
 
-남은 수동 설정/QA:
+설정 후 `.env`에 Client ID/Secret을 넣는다.
 
-- Google Cloud Console의 승인된 JavaScript 원본에 `http://localhost:5173`이 들어 있어야 한다.
-- 승인된 리디렉션 URI에 `http://localhost:8000/auth/google/callback`이 들어 있어야 한다.
-- OAuth 동의 화면 테스트 사용자에 실제 로그인할 Gmail이 들어 있어야 한다.
-- 브라우저에서 실제 Google 계정 선택과 동의 화면을 통과해야 한다.
+검증:
 
-## 2026-06-15 프론트엔드 API 주소 설정
+```txt
+GET http://localhost:8000/auth/google/login
+```
 
-프론트엔드는 백엔드 API 주소를 `VITE_API_BASE_URL`로 읽는다.
+예상 결과:
 
-예시 파일:
+- Google OAuth 로그인 URL로 redirect된다.
+- OAuth state cookie가 응답에 포함된다.
+
+주의:
+
+- OAuth Client Secret은 절대 프론트 `.env`에 넣지 않는다.
+- Google redirect URI는 backend callback URL과 정확히 일치해야 한다.
+
+## Frontend 환경
+
+프론트 패키지 설치:
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\frontend
+npm install
+```
+
+프론트 실행:
+
+```powershell
+npm run dev
+```
+
+기본 접속:
+
+```txt
+http://localhost:5173
+```
+
+프론트 build:
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\frontend
+npm run build
+```
+
+프론트 환경변수:
 
 ```txt
 frontend/.env.example
@@ -1066,37 +218,30 @@ frontend/.env.example
 VITE_API_BASE_URL=http://localhost:8000
 ```
 
-로컬 개발에서는 별도 `.env`가 없어도 기본값 `http://localhost:8000`을 사용한다. 배포 환경이나 포트를 바꿀 때는 `frontend/.env` 또는 배포 서비스 환경변수에 `VITE_API_BASE_URL`을 설정하면 된다.
-
 주의:
 
-- `VITE_`로 시작하는 값은 브라우저 번들에 포함될 수 있으므로 비밀값을 넣으면 안 된다.
-- Google Client Secret, JWT Secret 같은 비밀값은 반드시 백엔드 `.env`에만 둔다.
+- `VITE_`로 시작하는 값은 브라우저 bundle에 포함될 수 있다.
+- Secret 값은 절대 `VITE_` 환경변수로 두지 않는다.
 
----
+## GitHub REST API 설정
 
-## 2026-06-16 GitHub REST API 설정
+포트폴리오 프로젝트 등록과 새로고침은 GitHub REST API를 사용한다.
 
-포트폴리오 프로젝트 등록은 GitHub REST API를 사용한다.
-public repository는 token 없이도 조회할 수 있다.
-private repository를 읽거나 GitHub API rate limit을 줄이고 싶으면 `backend/.env`에 `GITHUB_TOKEN`을 추가한다.
+수집하는 데이터:
 
-`backend/.env.example`에 추가한 값:
+- repository metadata
+- README 원문
+- languages
+- commit message
 
-```txt
-GITHUB_API_BASE_URL=https://api.github.com
-GITHUB_API_VERSION=2022-11-28
-GITHUB_TOKEN=
-```
-
-검증 명령어:
+검증 명령 예시:
 
 ```powershell
 cd C:\junhee\WEEK15_AI_BOARD\backend
 .\.venv\Scripts\python.exe -c "from app.services.github_service import analyze_repository; a=analyze_repository('octocat/Hello-World'); print(a.repo_full_name); print(a.github_url); print(a.tech_stack[:3]); print(len(a.recent_commit_summary)); print(bool(a.readme_summary))"
 ```
 
-이번 검증 결과:
+예상 결과 예시:
 
 ```txt
 octocat/hello-world
@@ -1106,8 +251,68 @@ https://github.com/octocat/Hello-World
 True
 ```
 
-주의:
+GitHub token 주의:
 
-- `GITHUB_TOKEN`은 비밀값이므로 GitHub, README, 채팅에 올리지 않는다.
-- 프론트엔드 `.env`에는 GitHub token을 넣으면 안 된다. 브라우저 번들에 노출될 수 있다.
-- 실제 서비스에서는 GitHub API rate limit, timeout, 재시도, 캐시 정책을 추가로 설계한다.
+- public repo 조회는 token 없이도 가능하다.
+- token을 쓰면 rate limit에 유리하다.
+- token은 backend `.env`에만 둔다.
+- frontend에 노출하지 않는다.
+
+## 서버 종료
+
+PowerShell에서 실행 중인 서버는 해당 터미널에서 `Ctrl + C`로 종료한다.
+
+포트 점유 확인이 필요하면:
+
+```powershell
+netstat -ano | findstr :8000
+netstat -ano | findstr :5173
+```
+
+특정 PID 종료:
+
+```powershell
+taskkill /PID <PID> /F
+```
+
+주의: 어떤 프로세스인지 확인한 뒤 종료한다.
+
+## 자주 하는 QA 명령
+
+문서 깨짐 확인:
+
+```powershell
+rg -n "\?\?\?" README.md docs
+```
+
+백엔드 compile:
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\backend
+.\.venv\Scripts\python.exe -m compileall app
+```
+
+프론트 build:
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD\frontend
+npm run build
+```
+
+Git 상태 확인:
+
+```powershell
+cd C:\junhee\WEEK15_AI_BOARD
+git status --short
+```
+
+## 인코딩 주의
+
+한글 문서를 수정할 때는 UTF-8로 저장한다.
+
+주의할 점:
+
+- PowerShell here-string이나 pipe로 긴 한글 문서를 만들면 깨질 수 있다.
+- VSCode 오른쪽 아래 encoding이 UTF-8인지 확인한다.
+- 문서 수정 후 `rg -n "\?\?\?" README.md docs`로 물음표 손상을 확인한다.
+- 한글 exact match가 필요한 QA 스크립트는 코드 내부 상수나 unicode escape를 사용하는 편이 안전하다.

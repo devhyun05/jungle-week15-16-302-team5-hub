@@ -33,6 +33,7 @@ type PortfolioPostSections = {
   description: string;
   linkedRecords: string[];
   recentCommits: string[];
+  allCommitMessages: string[];
   coachFeedbackStatus: string;
   portfolioText: string;
 };
@@ -159,6 +160,7 @@ function parsePortfolioPostContent(content: string): PortfolioPostSections {
     description: getSectionText("프로젝트 설명") || "아직 프로젝트 설명이 없습니다.",
     linkedRecords: parsePortfolioList(getSectionText("연결된 학습 기록")),
     recentCommits: parsePortfolioList(getSectionText("최근 커밋 요약")),
+    allCommitMessages: parsePortfolioList(getSectionText("전체 커밋 메시지")),
     coachFeedbackStatus: getSectionText("코치 피드백 상태") || "요청 전",
     portfolioText: getSectionText("포트폴리오 글") || "아직 작성된 포트폴리오 글이 없습니다.",
   };
@@ -191,6 +193,8 @@ function PortfolioTextBlock({ text }: { text: string }) {
 function PortfolioPostDetail({ post }: { post: PostDetailApiResponse }) {
   const portfolio = parsePortfolioPostContent(post.content);
   const githubUrl = portfolio.githubUrl || post.relatedGitHubUrl;
+  const githubCommitsUrl =
+    portfolio.repository && portfolio.branch ? `https://github.com/${portfolio.repository}/commits/${portfolio.branch}` : null;
 
   return (
     <div className="space-y-6 py-6">
@@ -259,10 +263,19 @@ function PortfolioPostDetail({ post }: { post: PostDetailApiResponse }) {
 
       <div className="grid gap-4 md:grid-cols-2">
         <section className="rounded-xl border border-slate-200 bg-white p-5">
-          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
-            <GitCommit className="h-4 w-4 text-emerald-600" />
-            최근 커밋 요약
-          </h3>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <GitCommit className="h-4 w-4 text-emerald-600" />
+              최근 커밋 요약
+            </h3>
+            {githubCommitsUrl && (
+              <Button asChild variant="outline" size="sm" className="border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+                <a href={githubCommitsUrl} target="_blank" rel="noreferrer">
+                  GitHub 커밋 보기
+                </a>
+              </Button>
+            )}
+          </div>
           <ul className="space-y-2">
             {portfolio.recentCommits.map((commit) => (
               <li key={commit} className="text-sm leading-6 text-slate-700">
@@ -270,6 +283,18 @@ function PortfolioPostDetail({ post }: { post: PostDetailApiResponse }) {
               </li>
             ))}
           </ul>
+          <details className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <summary className="cursor-pointer text-xs font-semibold text-slate-600">
+              전체 커밋 메시지 보기
+            </summary>
+            <ul className="mt-3 max-h-64 space-y-2 overflow-y-auto text-sm leading-6 text-slate-700">
+              {portfolio.allCommitMessages.map((commit) => (
+                <li key={commit} className="rounded-md bg-white px-3 py-2">
+                  {commit}
+                </li>
+              ))}
+            </ul>
+          </details>
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white p-5">
