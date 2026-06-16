@@ -56,13 +56,16 @@ def generate_project_content(
     rag_context = ""
 
     if effective_mode == "rag":
-        rag_context = rag_service.build_rag_context(
-            db=db,
-            project_id=project.id,
-            query=build_rag_query(context=context, output_type=output_type),
-            current_user=current_user,
-            top_k=5,
-        )
+        try:
+            rag_context = rag_service.build_rag_context(
+                db=db,
+                project_id=project.id,
+                query=build_rag_query(context=context, output_type=output_type),
+                current_user=current_user,
+                top_k=5,
+            )
+        except rag_service.RagIndexError as error:
+            raise AIGenerationError(str(error)) from error
 
     content = call_openai_response(
         instructions=build_system_instructions(output_type=output_type, generation_mode=effective_mode),

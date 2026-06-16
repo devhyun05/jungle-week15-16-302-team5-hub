@@ -582,3 +582,10 @@ registered routes: /ai/generate, /ai/rag/index, /ai/rag/search, /mcp, /ai/agent/
 - `Agent 기반 생성`은 결과와 함께 tool call 로그가 보이는지 확인한다.
 - Swagger에서 `/ai/rag/index`, `/ai/rag/search`, `/mcp`, `/ai/agent/run`이 보이는지 확인한다.
 - `/mcp`의 `mcp.list_tools`가 도구 목록을 반환하는지 확인한다.
+
+### Edge case 확인
+
+- RAG 자료가 없는 프로젝트에서 `/ai/rag/index`가 서버 오류 없이 `indexed_count=0`을 반환하는지 확인한다.
+- RAG 자료가 없는 프로젝트에서 `/ai/rag/search`가 서버 오류 없이 빈 `items`를 반환하는지 확인한다.
+- `OPENAI_API_KEY`가 없을 때 RAG 기반 생성은 사용자에게 이해 가능한 오류로 표시되는지 확인한다.
+- 자동 검증에서는 `embed_texts([])`가 OpenAI 호출 없이 `[]`를 반환하는 것만 확인했다.

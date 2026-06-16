@@ -98,3 +98,18 @@ FastAPI app import: success
 registered route: /ai/rag/index
 registered route: /ai/rag/search
 ```
+
+## 2026-06-17 예외 처리 보강
+
+- RAG 자료가 하나도 없는 프로젝트는 OpenAI embedding 호출 없이 `indexed_count=0` 또는 빈 검색 결과를 반환하도록 보강했다.
+- `embed_texts([])`는 `[]`를 반환한다.
+- `/ai/generate`의 RAG mode에서 embedding 오류가 발생하면 FastAPI 500으로 새지 않고 AI generation error로 변환된다.
+
+검증:
+
+```txt
+backend compileall app: success
+frontend npm run build: success
+from app.main import app: success
+embed_texts([]): []
+```

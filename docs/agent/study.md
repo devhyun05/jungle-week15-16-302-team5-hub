@@ -812,3 +812,5 @@ get_portfolio_project -> rag_search -> generate_project_content
 - RAG는 검색, MCP는 외부 연결, Agent는 도구 실행 루프다.
 - RAG embedding과 AI generation은 비용이 발생하므로 자동 테스트에서 호출하면 안 된다.
 - 과제용 v1에서는 완전 자율 Agent보다 흐름이 보이는 제한된 Agent가 학습과 설명에 유리하다.
+- 빈 RAG 자료처럼 실제 서비스에서 충분히 생길 수 있는 edge case는 OpenAI 호출 전에 빠르게 return시키는 편이 안전하다.
+- 외부 API 호출 오류는 service 내부 예외로 감싸 router가 명확한 HTTP 응답으로 바꿀 수 있어야 한다.

@@ -742,3 +742,17 @@ backend compileall app: success
 from app.main import app: success
 registered routes: /ai/generate, /ai/rag/index, /ai/rag/search, /mcp, /ai/agent/run
 ```
+
+### 추가 QA 보강
+
+- RAG 자료가 없는 프로젝트에서 `embed_texts([])`가 호출되어 OpenAI API 오류가 날 수 있는 가능성을 제거했다.
+- RAG mode 생성 중 embedding 오류가 발생하면 `AIGenerationError`로 변환해 `/ai/generate`가 502 응답으로 처리할 수 있게 했다.
+
+검증:
+
+```txt
+frontend npm run build: success
+backend compileall app: success
+from app.main import app: success
+embed_texts([]): []
+```

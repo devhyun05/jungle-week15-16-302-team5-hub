@@ -47,6 +47,13 @@ def index_project_documents(db: Session, project_id: int, current_user: User) ->
         return None, 0
 
     chunks = build_project_chunks(project)
+
+    if not chunks:
+        rag_repository.delete_project_documents(db=db, project_id=project.id)
+        db.commit()
+
+        return project, 0
+
     embeddings = embed_texts([chunk.content for chunk in chunks])
     documents = [
         RagDocument(
@@ -86,6 +93,9 @@ def search_project_documents(
     if not documents:
         project, _indexed_count = index_project_documents(db=db, project_id=project.id, current_user=current_user)
         documents = rag_repository.get_project_documents(db=db, project_id=project_id)
+
+    if not documents:
+        return project, []
 
     query_embedding = embed_texts([query])[0]
     scored_documents = []
@@ -230,6 +240,9 @@ def split_text_into_chunks(source_type: str, source_id: str, title: str, text: s
 
 
 def embed_texts(texts: list[str]) -> list[list[float]]:
+    if not texts:
+        return []
+
     if not settings.openai_api_key:
         raise RagIndexError("OPENAI_API_KEY is required for RAG embeddings.")
 
