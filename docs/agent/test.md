@@ -589,3 +589,18 @@ registered routes: /ai/generate, /ai/rag/index, /ai/rag/search, /mcp, /ai/agent/
 - RAG 자료가 없는 프로젝트에서 `/ai/rag/search`가 서버 오류 없이 빈 `items`를 반환하는지 확인한다.
 - `OPENAI_API_KEY`가 없을 때 RAG 기반 생성은 사용자에게 이해 가능한 오류로 표시되는지 확인한다.
 - 자동 검증에서는 `embed_texts([])`가 OpenAI 호출 없이 `[]`를 반환하는 것만 확인했다.
+
+## 2026-06-17 QA: 제출용 데모 스크린샷
+
+### 생성한 파일
+
+```txt
+docs/demo/login.png
+```
+
+### 확인 결과
+
+- Headless Chrome으로 `http://localhost:5173/login` 화면을 캡처했다.
+- 첫 캡처는 인증 상태 확인 중 화면으로 찍혀 다시 캡처했다.
+- 두 번째 캡처에서 JungleLog 로그인 화면과 Google 로그인 버튼이 정상적으로 보였다.
+- README 데모 섹션에 해당 이미지를 연결했다.

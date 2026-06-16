@@ -414,9 +414,14 @@ Google Cloud Console 설정:
 
 현재 로컬 브라우저 QA 기준으로 로그인 화면, 보호 라우트 redirect, Swagger API 등록을 확인했습니다.
 
-제출 전 추가하면 좋은 스크린샷:
+### 스크린샷
 
-- Google 로그인 화면
+- Google 로그인 화면: [docs/demo/login.png](docs/demo/login.png)
+
+![JungleLog 로그인 화면](docs/demo/login.png)
+
+추가로 제출 전 캡처하면 좋은 화면:
+
 - 승인 대기 화면
 - 관리자 사용자 승인 화면
 - 학생 대시보드
