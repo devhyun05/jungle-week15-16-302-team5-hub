@@ -113,6 +113,16 @@ Important backend settings:
 - `JWT_SECRET`
 - `ACCESS_TOKEN_EXPIRE_MINUTES`
 
+Promote an existing user to admin for local demos:
+
+```bash
+cd backend
+../.venv/bin/python scripts/make_admin.py admin@example.com
+```
+
+The script only updates `users.role`; create the user through normal signup
+first.
+
 ## Tests
 
 Backend auth tests:
@@ -146,7 +156,6 @@ Latest verification:
 
 ## Known Follow-Ups
 
-- Admin seed command or documented repeatable seed procedure
 - Ensure Day 5 RAG/vector retrieval excludes deleted or admin-hidden posts and comments
 - Access token forced-expiry E2E check
 - Production HTTPS `Secure` cookie verification
