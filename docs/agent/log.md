@@ -733,7 +733,7 @@ backend compileall app: success
   - AI 도우미 화면에 `일반 생성`, `RAG 기반 생성`, `Agent 기반 생성` 선택 UI를 추가했다.
 - 안전 기준:
   - OpenAI generation/embedding은 비용이 발생하므로 자동 QA에서는 실제 호출하지 않았다.
-  - 실제 AI 호출 QA는 사용자의 명시적 허락 후 진행한다.
+  - 이후 사용자 허락을 받은 뒤 대표 경로 1회 실제 AI 호출 QA를 수행했다.
 - 검증:
 
 ```txt

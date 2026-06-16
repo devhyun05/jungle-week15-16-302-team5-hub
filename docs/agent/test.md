@@ -565,14 +565,16 @@ from app.main import app: success
 registered routes: /ai/generate, /ai/rag/index, /ai/rag/search, /mcp, /ai/agent/run
 ```
 
-### 비용 발생 때문에 자동 실행하지 않은 것
+### 비용 발생 때문에 자동 반복 실행하지 않는 것
 
 - `/ai/generate`
 - `/ai/rag/index`
 - `/ai/rag/search`
 - `/ai/agent/run`
 
-위 API는 OpenAI generation 또는 embedding 호출을 포함할 수 있으므로 사용자가 명시적으로 허락한 뒤 Swagger 또는 프론트에서 수동 QA한다.
+위 API는 OpenAI generation 또는 embedding 호출을 포함할 수 있으므로 자동 반복 테스트 대상에서 제외한다.
+
+사용자 허락 후 대표 경로인 Agent 기반 생성은 1회 실제 QA를 완료했다.
 
 ### 수동 확인할 것
 

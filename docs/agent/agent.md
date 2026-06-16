@@ -58,7 +58,7 @@ AI 단계에서는 아래 순서로 진행한다.
 2. RAG 문서 저장과 embedding 검색: 완료
 3. GitHub MCP tool 또는 MCP-like tool 구현: 완료
 4. Agent loop로 RAG와 MCP tool을 선택 실행: 완료
-5. 실제 AI 호출 QA와 제출 문서/스크린샷 정리: 남음
+5. 실제 AI 호출 QA와 제출 문서/스크린샷 정리: 완료
 
 핵심 문장:
 

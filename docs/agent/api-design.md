@@ -406,24 +406,27 @@ Body:
 
 학생이 아직 `대기 중`인 요청을 취소한다. 검토가 시작된 요청은 취소할 수 없다.
 
-## AI 예정 API
+## AI/RAG/MCP/Agent API
 
-AI 기능은 다음 단계에서 붙인다.
+AI 기능은 OpenAI 직접 생성, RAG 검색 기반 생성, MCP-like JSON-RPC tool, Agent tool loop로 나누어 구현한다.
 
-예정 endpoint:
+구현 endpoint:
 
 ```txt
-POST /ai/portfolio-draft
-POST /ai/interview-questions
+POST /ai/generate
+POST /ai/rag/index
 POST /ai/rag/search
-POST /agent/run
+POST /mcp
+POST /ai/agent/run
 ```
 
-예정 연결:
+연결 구조:
 
+- OpenAI: 포트폴리오 프로젝트 자료를 prompt로 구성해 포트폴리오 글 또는 면접 예상 질문을 생성
 - RAG: README 원문, GitHub 커밋 메시지, JungleLog 게시글을 검색 근거로 사용
-- MCP: GitHub 같은 외부 시스템 호출
-- Agent: 필요한 도구를 선택하고 실행하는 추론 루프
+- MCP: GitHub repo 또는 포트폴리오 프로젝트 정보를 도구 형태로 조회
+- Agent: 프로젝트 조회, RAG 검색, 생성 도구를 제한된 loop로 실행
+
 # 2026-06-17 AI/RAG/MCP/Agent API 추가
 
 ## AI Generate
