@@ -10,6 +10,22 @@ class AgentRunError(RuntimeError):
     pass
 
 
+def format_rag_context(results: list[rag_service.RagSearchResult]) -> str:
+    """
+    Convert already retrieved RAG chunks into the same prompt context format that
+    rag_service.build_rag_context returns.
+
+    The Agent calls RAG search as an explicit tool step. Reusing those results
+    keeps the tool log honest and prevents a second embedding/search call during
+    generation.
+    """
+
+    return "\n\n".join(
+        f"[{result.source_type}] {result.title}\nscore: {result.score:.3f}\n{result.content}"
+        for result in results
+    )
+
+
 def run_project_agent(
     db: Session,
     project_id: int,
@@ -30,6 +46,7 @@ def run_project_agent(
     """
 
     tool_calls: list[AgentToolCall] = []
+    rag_context = ""
     step = 1
 
     if step > max_iterations:
@@ -69,6 +86,7 @@ def run_project_agent(
         except rag_service.RagIndexError as error:
             raise AgentRunError(str(error)) from error
 
+        rag_context = format_rag_context(rag_results)
         tool_calls.append(
             AgentToolCall(
                 step=step,
@@ -88,6 +106,7 @@ def run_project_agent(
         output_type=output_type,
         generation_mode="rag",
         current_user=current_user,
+        rag_context_override=rag_context,
     )
 
     if result is None:

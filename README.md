@@ -892,6 +892,9 @@ OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 �
 - MCP tool은 `get_github_repository`, `get_portfolio_project`를 제공합니다.
 - `POST /ai/agent/run`은 `get_portfolio_project -> rag_search -> generate_project_content` 순서의 제한된 tool loop를 실행하고 tool call 로그를 반환합니다.
 - Agent는 `max_iterations`를 1~5로 제한해 무한 루프를 방지합니다.
+- Agent 기반 생성은 `rag_search`에서 이미 찾은 chunk를 생성 단계에 재사용합니다.
+- 따라서 같은 Agent 실행 안에서 RAG 검색과 embedding 요청이 불필요하게 두 번 발생하지 않습니다.
+- 이 구조는 tool call 로그에 남는 근거와 실제 OpenAI prompt에 들어가는 근거를 일치시키기 위한 설계입니다.
 
 ### 이번 AI 단계 검증
 

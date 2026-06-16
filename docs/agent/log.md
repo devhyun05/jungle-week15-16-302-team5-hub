@@ -756,3 +756,19 @@ backend compileall app: success
 from app.main import app: success
 embed_texts([]): []
 ```
+
+## 2026-06-17 Agent RAG 중복 검색 방지
+
+- 작업 파일:
+  - `backend/app/services/agent_service.py`
+  - `backend/app/services/ai_service.py`
+  - `docs/agent/ai-agent.md`
+  - `docs/agent/rag.md`
+- 구현:
+  - Agent 기반 생성에서 RAG 검색이 중복 실행될 수 있는 흐름을 점검했다.
+  - `generate_project_content`에 `rag_context_override` 인자를 추가했다.
+  - Agent는 `rag_search` 결과를 `format_rag_context`로 변환해 생성 함수에 전달한다.
+  - 생성 함수는 이미 전달받은 RAG context가 있으면 추가 RAG 검색을 하지 않는다.
+- 이유:
+  - Agent tool call 로그에 남긴 RAG 검색 결과와 실제 생성에 쓰는 근거를 일치시키기 위해서다.
+  - 같은 Agent 실행 안에서 embedding/search 비용이 두 번 발생하지 않게 하기 위해서다.

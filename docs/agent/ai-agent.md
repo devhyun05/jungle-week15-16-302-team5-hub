@@ -67,6 +67,21 @@ Agent는 내부에서 RAG embedding과 OpenAI generation을 호출할 수 있다
 
 실제 Agent 호출 QA는 사용자가 명시적으로 허락한 뒤 진행한다.
 
+### 2026-06-17 비용 최적화 보강
+
+처음 구현에서는 Agent가 `rag_search` 도구를 실행한 뒤, 생성 단계에서 다시 RAG 기반 생성을 호출하면서 같은 프로젝트에 대해 RAG 검색이 한 번 더 일어날 수 있었다.
+
+수정 후 흐름은 다음과 같다.
+
+```txt
+1. Agent가 rag_search를 한 번 실행한다.
+2. 검색된 chunk 목록을 prompt용 RAG context 문자열로 변환한다.
+3. generate_project_content에 rag_context_override로 전달한다.
+4. 생성 함수는 이미 받은 RAG context를 재사용하고, 추가 RAG 검색을 실행하지 않는다.
+```
+
+이렇게 한 이유는 Agent tool call 로그와 실제 generation context를 일치시키면서, embedding/search 비용이 중복으로 발생하지 않게 하기 위해서다.
+
 ## 한계와 개선
 
 현재 Agent는 deterministic tool loop다.

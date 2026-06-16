@@ -33,13 +33,15 @@ def generate_project_content(
     output_type: AIOutputType,
     generation_mode: AIGenerationMode,
     current_user: User,
+    rag_context_override: str | None = None,
 ) -> AIGenerateResponse | None:
     """
     Generate portfolio text or interview questions from one portfolio project.
 
     direct: sends the selected project context directly to OpenAI.
     rag: indexes/searches project references first, then sends retrieved context.
-    agent: currently delegates to direct generation until the Agent router is wired.
+    agent: uses the Agent router. If the Agent already searched RAG, it can pass
+    rag_context_override to avoid a duplicate embedding/search request.
     """
 
     project = portfolio_repository.get_project_by_id(
@@ -55,7 +57,9 @@ def generate_project_content(
     context = build_ai_context(project)
     rag_context = ""
 
-    if effective_mode == "rag":
+    if rag_context_override is not None:
+        rag_context = rag_context_override
+    elif effective_mode == "rag":
         try:
             rag_context = rag_service.build_rag_context(
                 db=db,

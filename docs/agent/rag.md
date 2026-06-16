@@ -99,6 +99,22 @@ registered route: /ai/rag/index
 registered route: /ai/rag/search
 ```
 
+## 2026-06-17 Agent 재사용 흐름
+
+Agent 기반 생성에서는 RAG 검색을 명시적인 도구 호출로 한 번 실행한다.
+
+그 뒤 검색 결과를 다시 embedding/search 하지 않고, 이미 검색된 chunk를 prompt context로 재사용한다.
+
+```txt
+rag_search result -> format_rag_context -> generate_project_content(rag_context_override)
+```
+
+이 구조의 장점:
+
+- Agent tool call 로그에 표시된 RAG 검색 결과가 실제 생성에도 그대로 사용된다.
+- 같은 Agent 실행 안에서 RAG query embedding 비용이 중복으로 발생하지 않는다.
+- 나중에 Agent memory/state를 DB에 저장할 때도 어떤 RAG 근거가 사용됐는지 추적하기 쉽다.
+
 ## 2026-06-17 예외 처리 보강
 
 - RAG 자료가 하나도 없는 프로젝트는 OpenAI embedding 호출 없이 `indexed_count=0` 또는 빈 검색 결과를 반환하도록 보강했다.

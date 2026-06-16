@@ -604,3 +604,24 @@ docs/demo/login.png
 - 첫 캡처는 인증 상태 확인 중 화면으로 찍혀 다시 캡처했다.
 - 두 번째 캡처에서 JungleLog 로그인 화면과 Google 로그인 버튼이 정상적으로 보였다.
 - README 데모 섹션에 해당 이미지를 연결했다.
+
+## 2026-06-17 QA: Agent RAG 중복 호출 방지
+
+### 자동 검증할 것
+
+- `backend/app/services/agent_service.py`에서 `rag_search` 결과를 `format_rag_context`로 변환하는지 확인한다.
+- `backend/app/services/ai_service.py`에서 `rag_context_override`가 있으면 `build_rag_context`를 다시 호출하지 않는지 확인한다.
+- `backend compileall app`이 성공하는지 확인한다.
+- `frontend npm run build`가 성공하는지 확인한다.
+
+### 실제 AI 호출 QA 기준
+
+실제 `/ai/agent/run` 호출은 OpenAI embedding과 generation 비용이 발생한다.
+
+사용자가 허락한 경우에도 다음 기준으로 최소 1회만 먼저 확인한다.
+
+1. 기존 포트폴리오 프로젝트 1개를 선택한다.
+2. Agent 기반 생성으로 `interview` 또는 `portfolio` 중 하나만 호출한다.
+3. 응답에 `tool_calls`가 `get_portfolio_project`, `rag_search`, `generate_project_content` 순서로 보이는지 확인한다.
+4. 같은 실행에서 서버 오류가 없는지 확인한다.
+5. 응답 내용을 바로 저장하지 않고, 화면에서 결과가 자연스럽게 보이는지만 먼저 확인한다.

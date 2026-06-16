@@ -814,3 +814,36 @@ get_portfolio_project -> rag_search -> generate_project_content
 - 과제용 v1에서는 완전 자율 Agent보다 흐름이 보이는 제한된 Agent가 학습과 설명에 유리하다.
 - 빈 RAG 자료처럼 실제 서비스에서 충분히 생길 수 있는 edge case는 OpenAI 호출 전에 빠르게 return시키는 편이 안전하다.
 - 외부 API 호출 오류는 service 내부 예외로 감싸 router가 명확한 HTTP 응답으로 바꿀 수 있어야 한다.
+
+## 2026-06-17 학습 기록: Agent RAG context 재사용
+
+### 수정한 파일
+
+- `backend/app/services/agent_service.py`
+  - Agent가 RAG 검색 결과를 prompt context 문자열로 바꾸는 `format_rag_context`를 추가했다.
+- `backend/app/services/ai_service.py`
+  - 이미 검색된 RAG context를 받을 수 있도록 `rag_context_override` 인자를 추가했다.
+
+### 왜 수정했나
+
+Agent는 tool call log를 보여줘야 하므로 RAG 검색을 명시적으로 한 번 실행한다.
+
+그런데 생성 함수도 `generation_mode="rag"`일 때 내부에서 RAG 검색을 다시 실행하면 같은 실행에서 embedding/search 비용이 중복될 수 있다.
+
+### 수정 후 흐름
+
+```txt
+Agent
+-> get_portfolio_project
+-> rag_search
+-> format_rag_context
+-> generate_project_content(rag_context_override)
+-> OpenAI generation
+```
+
+### 핵심 포인트
+
+- 이미 계산한 값은 함수 인자로 넘겨 재사용할 수 있다.
+- OpenAI embedding은 비용이 발생하므로 불필요한 중복 호출을 줄여야 한다.
+- Agent tool call log와 실제 prompt context가 같아야 “왜 이런 답변이 나왔는지” 설명하기 쉽다.
+- 이 구조는 나중에 Agent 실행 로그를 DB에 저장할 때도 사용 근거를 추적하기 좋다.
