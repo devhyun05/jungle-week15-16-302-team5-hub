@@ -33,7 +33,6 @@ type PortfolioPostSections = {
   description: string;
   linkedRecords: string[];
   recentCommits: string[];
-  allCommitMessages: string[];
   coachFeedbackStatus: string;
   portfolioText: string;
 };
@@ -160,7 +159,6 @@ function parsePortfolioPostContent(content: string): PortfolioPostSections {
     description: getSectionText("프로젝트 설명") || "아직 프로젝트 설명이 없습니다.",
     linkedRecords: parsePortfolioList(getSectionText("연결된 학습 기록")),
     recentCommits: parsePortfolioList(getSectionText("최근 커밋 요약")),
-    allCommitMessages: parsePortfolioList(getSectionText("전체 커밋 메시지")),
     coachFeedbackStatus: getSectionText("코치 피드백 상태") || "요청 전",
     portfolioText: getSectionText("포트폴리오 글") || "아직 작성된 포트폴리오 글이 없습니다.",
   };
@@ -283,18 +281,6 @@ function PortfolioPostDetail({ post }: { post: PostDetailApiResponse }) {
               </li>
             ))}
           </ul>
-          <details className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <summary className="cursor-pointer text-xs font-semibold text-slate-600">
-              전체 커밋 메시지 보기
-            </summary>
-            <ul className="mt-3 max-h-64 space-y-2 overflow-y-auto text-sm leading-6 text-slate-700">
-              {portfolio.allCommitMessages.map((commit) => (
-                <li key={commit} className="rounded-md bg-white px-3 py-2">
-                  {commit}
-                </li>
-              ))}
-            </ul>
-          </details>
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white p-5">

@@ -791,3 +791,19 @@ OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 �
 - `frontend`: `npm run build` 성공
 - `backend`: `.venv\Scripts\python.exe -m compileall app` 성공
 - `backend`: `from app.main import app` import 성공
+
+## 최근 변경: OpenAI 실제 호출 QA
+
+- `backend/.env`의 `OPENAI_API_KEY` 값을 설정한 뒤 실제 OpenAI 호출을 확인했습니다.
+- 오래 떠 있던 백엔드 서버가 새 AI 라우터를 반영하지 못해 처음에는 `/ai/generate`가 404였고, 서버 재시작 후 정상 등록됐습니다.
+- 테스트용 JWT access token cookie로 실제 `POST /ai/generate` HTTP endpoint를 호출했습니다.
+- `project_id=25`, `output_type=interview` 요청이 `200 OK`로 성공했고, `gpt-4.1-mini` 응답이 반환됐습니다.
+- 현재 브라우저 세션의 관리자 계정에는 포트폴리오 프로젝트가 없어, AI 도우미 화면 버튼 클릭 QA는 프로젝트 소유 학생 계정에서 추가 확인이 필요합니다.
+
+## 최근 변경: GitHub 참고 자료 UI 정리
+
+- 포트폴리오 관리 화면의 `수집된 커밋 n개 보기` 버튼과 전체 커밋 메시지 모달을 제거했습니다.
+- 커밋 전체 내용은 UI에 길게 노출하지 않고, AI/RAG 참고자료로 내부 저장된 데이터를 사용합니다.
+- 사용자가 커밋 전체를 확인하고 싶을 때는 `GitHub 커밋 보기`로 GitHub 커밋 페이지에서 확인하도록 정리했습니다.
+- GitHub 커밋 메시지 참고 자료와 README 참고 자료의 설명/배지/요약을 제목 아래로 들여쓰기해 읽기 쉽게 정리했습니다.
+- 포트폴리오 게시글 상세에서도 `전체 커밋 메시지 보기` 접힘 영역을 제거하고 최근 커밋 요약과 GitHub 커밋 링크만 남겼습니다.

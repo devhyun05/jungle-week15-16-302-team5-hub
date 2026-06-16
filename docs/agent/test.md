@@ -353,3 +353,49 @@ backend app import: success
 
 - `backend/.env`에 `OPENAI_API_KEY` 변수명은 있으나 값이 비어 있다.
 - 실제 OpenAI 생성 QA는 키 값을 넣은 뒤 다시 진행해야 한다.
+
+## 2026-06-17 QA 결과: OpenAI 실제 호출
+
+### 확인한 것
+
+- `OPENAI_API_KEY` 값이 들어간 것을 비밀값 출력 없이 길이로만 확인했다.
+- 백엔드 서버 재시작 전에는 `/ai/generate`가 `404 Not Found`였다.
+- 서버 재시작 후 OpenAPI 문서에 `/ai/generate`가 등록됐다.
+- JWT access token cookie를 직접 만들어 실제 HTTP endpoint를 호출했다.
+- `project_id=25`, `output_type=interview` 요청이 `200 OK`로 성공했다.
+- 응답에는 `project_id`, `output_type`, `model`, `content`가 포함됐다.
+
+### 아직 남은 수동 QA
+
+- 현재 브라우저 로그인 계정은 관리자이고, 관리자 계정에는 포트폴리오 프로젝트가 없다.
+- `/ai-assistant` 화면에서 실제 버튼을 눌러 생성하려면 프로젝트 소유자인 `leejunhee2796@gmail.com` 계정으로 로그인하거나, 현재 관리자 계정에 테스트 프로젝트를 등록해야 한다.
+- 학생 계정에서 `/ai-assistant` → 프로젝트 선택 → `OpenAI로 생성하기` → 결과 저장까지 브라우저 기준으로 확인해야 한다.
+
+### 주의할 점
+
+- OpenAI 실제 호출은 API 사용량이 발생한다.
+- 개발 중에는 짧은 유형인 `interview`로 먼저 검증하고, 포트폴리오 본문 생성은 필요할 때 호출한다.
+
+## 2026-06-17 QA: GitHub 참고 자료 UI 정리
+
+### 확인할 것
+
+- 포트폴리오 관리 화면의 GitHub 참고 정보에서 `수집된 커밋 n개 보기` 버튼이 보이지 않아야 한다.
+- GitHub 커밋 메시지 참고 자료에는 `GitHub 커밋 보기` 버튼만 남아야 한다.
+- 커밋 참고 설명은 제목 아래로 들여쓰기되어 보여야 한다.
+- GitHub README 참고 자료의 설명, 저장 상태 배지, README 요약도 제목 아래로 들여쓰기되어 보여야 한다.
+- 포트폴리오 게시글 상세의 최근 커밋 요약 섹션에서 `전체 커밋 메시지 보기` 접힘 영역이 보이지 않아야 한다.
+- 최근 커밋 요약과 `GitHub 커밋 보기` 링크는 기존처럼 보여야 한다.
+- AI 도우미 참고 자료 영역에서도 README/커밋 설명이 들여쓰기되어 보여야 한다.
+
+### 자동 검증
+
+```txt
+rg "수집된 커밋 ... 보기|전체 커밋 메시지 보기|setIsCommitDialogOpen|isCommitDialogOpen|allCommitMessages": no result
+frontend npm run build: success
+backend compileall app: success
+```
+
+### 남은 수동 확인
+
+- 프로젝트가 있는 학생 계정으로 `/portfolio`와 포트폴리오 게시글 상세에 들어가 실제 시각 정렬을 확인한다.

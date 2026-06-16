@@ -163,7 +163,6 @@ export function Portfolio() {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [isConnectOpen, setIsConnectOpen] = useState(false);
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
-  const [isCommitDialogOpen, setIsCommitDialogOpen] = useState(false);
   const [publishVisibility, setPublishVisibility] = useState<"public" | "private">("public");
   const [selectedPostIds, setSelectedPostIds] = useState<number[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
@@ -828,24 +827,23 @@ export function Portfolio() {
                         </div>
 
                         <div className="py-4">
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                               <GitCommit className="h-4 w-4 text-emerald-600" />
                               GitHub 커밋 메시지 참고 자료
                             </p>
-                            <p className="text-xs leading-5 text-slate-500">
-                              화면에는 최근 일부만 보이고, AI/RAG 단계에서는 수집된 커밋 메시지 전체를 참고합니다.
-                            </p>
-                            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                              <Button type="button" variant="outline" size="sm" className={utilityActionClass} onClick={() => setIsCommitDialogOpen(true)}>
-                                수집된 커밋 {selectedProject.githubCommits.length}개 보기
-                              </Button>
+                            <div className="ml-6 space-y-3">
+                              <p className="text-xs leading-5 text-slate-500">
+                                화면에는 최근 커밋만 보이고, AI/RAG 단계에서는 수집된 커밋 메시지 전체를 참고합니다.
+                              </p>
                               {selectedProjectCommitsHref && (
-                                <Button asChild variant="outline" size="sm" className={utilityActionClass}>
-                                  <a href={selectedProjectCommitsHref} target="_blank" rel="noreferrer">
-                                    GitHub 커밋 보기
-                                  </a>
-                                </Button>
+                                <div>
+                                  <Button asChild variant="outline" size="sm" className={utilityActionClass}>
+                                    <a href={selectedProjectCommitsHref} target="_blank" rel="noreferrer">
+                                      GitHub 커밋 보기
+                                    </a>
+                                  </Button>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -872,24 +870,26 @@ export function Portfolio() {
                           <summary className="cursor-pointer text-sm font-semibold text-slate-900 hover:text-emerald-700">
                             GitHub README 참고 자료
                           </summary>
-                          <p className="mt-2 text-xs leading-5 text-slate-500">
-                            화면에는 README 요약만 보이고, AI/RAG 단계에서는 저장된 README 원문 전체를 참고합니다.
-                          </p>
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <Badge variant={selectedProject.readmeContentSaved ? "success" : "secondary"}>
-                              {selectedProject.readmeContentSaved ? "README 원문 저장됨" : "README 원문 저장 전"}
-                            </Badge>
-                            {selectedProjectReadmeHref && (
-                              <Button asChild variant="outline" size="sm" className={utilityActionClass}>
-                                <a href={selectedProjectReadmeHref} target="_blank" rel="noreferrer">
-                                  GitHub README 보기
-                                </a>
-                              </Button>
-                            )}
+                          <div className="ml-6 mt-2 space-y-3">
+                            <p className="text-xs leading-5 text-slate-500">
+                              화면에는 README 요약만 보이고, AI/RAG 단계에서는 저장된 README 원문 전체를 참고합니다.
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge variant={selectedProject.readmeContentSaved ? "success" : "secondary"}>
+                                {selectedProject.readmeContentSaved ? "README 원문 저장됨" : "README 원문 저장 전"}
+                              </Badge>
+                              {selectedProjectReadmeHref && (
+                                <Button asChild variant="outline" size="sm" className={utilityActionClass}>
+                                  <a href={selectedProjectReadmeHref} target="_blank" rel="noreferrer">
+                                    GitHub README 보기
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
+                            <p className="line-clamp-6 text-sm leading-6 text-slate-600">
+                              {selectedProject.readmeSummary ?? "아직 README 요약이 없습니다."}
+                            </p>
                           </div>
-                          <p className="mt-2 line-clamp-6 text-sm leading-6 text-slate-600">
-                            {selectedProject.readmeSummary ?? "아직 README 요약이 없습니다."}
-                          </p>
                         </details>
                       </div>
                     </section>
@@ -936,52 +936,6 @@ export function Portfolio() {
             </Button>
             <Button type="button" onClick={() => void publishPortfolioPost()} disabled={isSaving}>
               {isSaving ? "발행 중" : "선택한 범위로 발행"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isCommitDialogOpen} onOpenChange={setIsCommitDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>수집된 커밋 메시지</DialogTitle>
-          </DialogHeader>
-          <div className="max-h-[60vh] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
-            {selectedProject?.githubCommits.length ? (
-              <ul className="space-y-2">
-                {selectedProject.githubCommits.map((commit) => (
-                  <li key={commit.sha} className="rounded-md border border-slate-200 bg-white p-3">
-                    <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
-                      <span className="font-mono">{commit.sha.slice(0, 7)}</span>
-                      <span>{commit.committedAt ? new Date(commit.committedAt).toLocaleString("ko-KR") : "날짜 없음"}</span>
-                    </div>
-                    {commit.htmlUrl ? (
-                      <a href={commit.htmlUrl} target="_blank" rel="noreferrer" className="text-sm leading-6 text-slate-800 hover:text-emerald-700 hover:underline">
-                        {commit.message}
-                      </a>
-                    ) : (
-                      <p className="text-sm leading-6 text-slate-800">{commit.message}</p>
-                    )}
-                    {commit.authorName && <p className="mt-2 text-xs text-slate-500">author: {commit.authorName}</p>}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="p-6 text-center text-sm text-slate-500">
-                아직 수집된 커밋 메시지가 없습니다. GitHub 정보를 새로고침해 주세요.
-              </p>
-            )}
-          </div>
-          <DialogFooter>
-            {selectedProjectCommitsHref && (
-              <Button asChild variant="outline">
-                <a href={selectedProjectCommitsHref} target="_blank" rel="noreferrer">
-                  GitHub 커밋 페이지 열기
-                </a>
-              </Button>
-            )}
-            <Button type="button" onClick={() => setIsCommitDialogOpen(false)}>
-              닫기
             </Button>
           </DialogFooter>
         </DialogContent>

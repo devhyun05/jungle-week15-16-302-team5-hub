@@ -468,3 +468,46 @@ frontend npm run build: success
 backend compileall app: success
 backend app import: success
 ```
+
+## 2026-06-17 OpenAI 실제 호출 QA
+
+- `backend/.env`의 `OPENAI_API_KEY` 값이 들어간 것을 값 출력 없이 길이로만 확인했다.
+- 기존 백엔드 서버가 AI 라우터 추가 전 코드로 떠 있어서 `/ai/generate`가 처음에는 404를 반환했다.
+- 8000 포트의 기존 Python 서버 프로세스를 종료하고 `.venv` 기준으로 FastAPI 서버를 재시작했다.
+- 재시작 후 `http://localhost:8000/openapi.json`에서 `/ai/generate` 라우트가 등록된 것을 확인했다.
+- 테스트용 JWT access token cookie로 실제 `POST /ai/generate` HTTP endpoint를 호출했다.
+- `project_id=25`, `output_type=interview` 요청이 `200 OK`로 성공했고, `gpt-4.1-mini` 모델 응답이 반환됐다.
+- 브라우저의 현재 관리자 계정에는 포트폴리오 프로젝트가 없어 `/ai-assistant` 화면에서 실제 버튼 QA는 아직 못 했다. 현재 프로젝트는 `leejunhee2796@gmail.com` 계정 소유다.
+
+검증 결과:
+
+```txt
+POST /ai/generate: 200 OK
+model: gpt-4.1-mini
+content_length: 2313
+```
+
+## 2026-06-17 GitHub 참고 자료 UI 정리
+
+- 작업 파일:
+  - `frontend/src/app/pages/portfolio/Portfolio.tsx`
+  - `frontend/src/app/pages/posts/PostDetail.tsx`
+  - `frontend/src/app/pages/ai/AIAssistant.tsx`
+  - `README.md`
+  - `docs/agent/study.md`
+  - `docs/agent/log.md`
+  - `docs/agent/test.md`
+- 포트폴리오 관리 화면의 `수집된 커밋 n개 보기` 버튼을 제거했다.
+- 전체 커밋 메시지 모달도 제거했다.
+- 커밋 전체 목록은 화면에 직접 보여주지 않고, AI/RAG context로만 사용한다.
+- 사용자가 전체 커밋을 보고 싶을 때는 GitHub의 commits 페이지로 이동하도록 `GitHub 커밋 보기`만 남겼다.
+- GitHub 커밋 메시지 참고 자료와 README 참고 자료 설명을 제목 아래로 들여쓰기해 정리했다.
+- 포트폴리오 게시글 상세에서도 `전체 커밋 메시지 보기` details 영역을 제거했다.
+
+검증:
+
+```txt
+removed text search: no stale UI found
+frontend npm run build: success
+backend compileall app: success
+```

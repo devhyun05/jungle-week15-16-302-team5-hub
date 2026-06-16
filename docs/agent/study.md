@@ -499,3 +499,53 @@ AI:
 
 - `backend/.env`의 `OPENAI_API_KEY` 값이 비어 있으면 실제 생성은 실패한다.
 - 키를 넣은 뒤 AI 도우미 화면에서 실제 포트폴리오 글/면접 질문 생성 결과를 확인해야 한다.
+
+## 2026-06-17 학습 기록: AI API 실제 호출 QA
+
+### 오늘 확인한 흐름
+
+1. `.env`에 `OPENAI_API_KEY` 값이 들어갔는지 확인했다.
+2. `/ai/generate`가 처음에는 404로 나왔다.
+3. 이유는 백엔드 서버가 AI 라우터 추가 전 코드로 계속 떠 있었기 때문이다.
+4. 서버를 재시작하니 OpenAPI 문서에 `/ai/generate`가 등록됐다.
+5. 테스트용 JWT cookie를 만들어 실제 HTTP endpoint를 호출했다.
+6. FastAPI router, role dependency, service layer, OpenAI API 호출까지 통과했다.
+
+### 여기서 이해해야 할 백엔드 개념
+
+- 서버 재시작: 코드 파일을 수정해도 실행 중인 프로세스가 새 코드를 반영하지 못하면 API가 없다고 나올 수 있다.
+- OpenAPI 문서: FastAPI가 현재 등록된 router를 바탕으로 `/docs`와 `/openapi.json`을 만든다.
+- JWT cookie: 프론트가 직접 token을 읽지 않아도 브라우저가 cookie를 보내면 백엔드가 `get_current_user`로 사용자 인증을 한다.
+- Endpoint QA: service 함수 직접 호출과 HTTP endpoint 호출은 다르다. HTTP endpoint 호출은 router, dependency, schema 검증까지 함께 확인한다.
+
+### 지금 확인된 것과 남은 것
+
+- 확인됨: OpenAI key, service 호출, HTTP endpoint 호출, OpenAI 생성 응답.
+- 남음: 프로젝트를 가진 학생 계정으로 브라우저에서 `OpenAI로 생성하기` 버튼을 직접 눌러 저장 흐름까지 확인.
+
+## 2026-06-17 학습 기록: GitHub 참고 자료 UI 정리
+
+### 수정한 파일
+
+- `frontend/src/app/pages/portfolio/Portfolio.tsx`: 포트폴리오 관리 화면의 GitHub 참고 자료 섹션을 정리했다.
+- `frontend/src/app/pages/posts/PostDetail.tsx`: 포트폴리오 게시글 상세에서 전체 커밋 메시지 접힘 영역을 제거했다.
+- `frontend/src/app/pages/ai/AIAssistant.tsx`: AI 도우미 참고 자료 설명의 들여쓰기와 문구를 맞췄다.
+
+### 이번 구현에서 이해할 UI 설계 포인트
+
+- 데이터가 있다고 해서 전부 화면에 보여줄 필요는 없다.
+- 커밋 메시지 전체는 AI/RAG가 참고할 원천 자료이고, 사용자가 매번 읽어야 하는 핵심 산출물은 아니다.
+- 사용자가 원본 전체를 확인하고 싶을 때는 GitHub commits 페이지가 더 적합하다.
+- 그래서 서비스 화면에는 최근 커밋 preview와 `GitHub 커밋 보기`만 남기고, 전체 커밋 메시지 모달은 제거했다.
+
+### React 관점에서 볼 부분
+
+- JSX 제거: 불필요한 `details`, modal, state를 제거해 렌더링할 UI를 줄였다.
+- 상태 정리: `isCommitDialogOpen`처럼 더 이상 필요 없는 state를 제거했다.
+- 들여쓰기 UI: `ml-6`, `space-y-3`을 사용해 제목과 설명/버튼/본문의 시각적 계층을 만들었다.
+
+### AI/RAG 관점에서 볼 부분
+
+- UI에서 전체 커밋을 숨겨도 DB에 저장된 커밋 메시지는 AI context로 사용할 수 있다.
+- 사용자가 보는 정보와 AI가 참고하는 정보는 다를 수 있다.
+- 화면은 읽기 편하게 요약하고, AI는 더 많은 원천 자료를 참고하도록 나누는 것이 좋다.

@@ -378,30 +378,34 @@ export function AIAssistant() {
                       <summary className="cursor-pointer text-sm font-semibold text-slate-900">
                         GitHub README 참고 자료
                       </summary>
-                      <p className="mt-2 text-xs leading-5 text-slate-500">
-                        화면에는 README 요약만 표시합니다. OpenAI/RAG 연결 후에는 저장된 README 원문 전체를 실제 생성 참고자료로 사용합니다.
-                      </p>
-                      <Badge variant={selectedProject.readmeContentSaved ? "success" : "secondary"} className="mt-3">
-                        {selectedProject.readmeContentSaved ? "README 원문 저장됨" : "README 원문 저장 전"}
-                      </Badge>
-                      <p className="mt-2 line-clamp-5 text-sm leading-6 text-slate-600">
-                        {selectedProject.readmeSummary ?? "아직 README 요약이 없습니다."}
-                      </p>
+                      <div className="ml-6 mt-2 space-y-3">
+                        <p className="text-xs leading-5 text-slate-500">
+                          화면에는 README 요약만 표시합니다. OpenAI/RAG 연결 후에는 저장된 README 원문 전체를 실제 생성 참고자료로 사용합니다.
+                        </p>
+                        <Badge variant={selectedProject.readmeContentSaved ? "success" : "secondary"}>
+                          {selectedProject.readmeContentSaved ? "README 원문 저장됨" : "README 원문 저장 전"}
+                        </Badge>
+                        <p className="line-clamp-5 text-sm leading-6 text-slate-600">
+                          {selectedProject.readmeSummary ?? "아직 README 요약이 없습니다."}
+                        </p>
+                      </div>
                     </details>
                     <div className="rounded-lg border border-slate-200 bg-white p-3">
                       <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-900">
                         <GitCommit className="h-4 w-4 text-emerald-600" />
                         GitHub 커밋 메시지 참고 자료
                       </p>
-                      <p className="mb-2 text-xs leading-5 text-slate-500">
-                        화면에는 최근 일부만 표시합니다. OpenAI/RAG 연결 후에는 수집된 커밋 메시지 {selectedProject.githubCommits.length}개를 생성 참고자료로 사용합니다.
-                      </p>
-                      <ul className="space-y-1 text-xs leading-5 text-slate-500">
-                        {selectedProject.recentCommitSummary.slice(0, 4).map((commit) => (
-                          <li key={commit}>- {commit}</li>
-                        ))}
-                        {selectedProject.recentCommitSummary.length === 0 && <li>- 아직 최근 커밋 요약이 없습니다.</li>}
-                      </ul>
+                      <div className="ml-6 space-y-2">
+                        <p className="text-xs leading-5 text-slate-500">
+                          화면에는 최근 커밋만 표시합니다. OpenAI/RAG 연결 후에는 수집된 커밋 메시지 전체를 생성 참고자료로 사용합니다.
+                        </p>
+                        <ul className="space-y-1 text-xs leading-5 text-slate-500">
+                          {selectedProject.recentCommitSummary.slice(0, 4).map((commit) => (
+                            <li key={commit}>- {commit}</li>
+                          ))}
+                          {selectedProject.recentCommitSummary.length === 0 && <li>- 아직 최근 커밋 요약이 없습니다.</li>}
+                        </ul>
+                      </div>
                     </div>
                   </section>
 
