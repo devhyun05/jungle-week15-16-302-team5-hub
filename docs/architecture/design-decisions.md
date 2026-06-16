@@ -81,6 +81,9 @@
 | Author post deletion uses `posts.deleted_at` soft delete. | It preserves rows for audit/consistency and matches the comment deletion direction while keeping public lookup behavior as 404. |
 | Admin moderation uses `hidden_at`, `hidden_by_id`, and `hidden_reason` on posts and comments. | It keeps author deletion separate from admin visibility control and gives RAG a simple exclusion condition. |
 | Comment author deletion remains `deleted_at`; admin hide is separate `hidden_at`. | Admin restore must not accidentally revive a comment the author deleted. |
+| Public content queries use shared visibility helpers. | GraphQL, SSR preview, MyPage, comments, and future RAG retrieval must consistently exclude `deleted_at` and `hidden_at` rows. |
+| Local admin setup uses a promote-existing-user script. | Demo accounts should go through normal signup first; the script only changes `users.role` to avoid storing seed passwords in source. |
+| Day 4 jobs use `queued`, `running`, `succeeded`, and `failed`. | The status set is small enough for SSE/UI and maps cleanly to worker lifecycle before real embedding generation starts. |
 | Admin hide/restore writes compact rows to `admin_action_logs`. | Moderation needs traceability without storing raw content snapshots. |
 | MyPage and Admin moderation UI are implemented after the backend moderation guard. | The backend trust boundary came first; the UI now exposes the same hide/restore workflow without creating a separate moderation path. |
 | Frontend stores the current user role and hides Admin navigation from non-admin users. | This avoids confusing regular users while keeping backend `require_admin` as the actual security boundary. |
@@ -120,6 +123,8 @@ Notes:
 | pagination은 offset/page 방식으로 시작한다. | page/size UI와 전체 개수 표시가 쉽다. | cursor pagination |
 | list response는 pagination wrapper로 반환한다. | frontend가 page, total, next/prev 여부를 알아야 한다. | infinite scroll |
 | 다중 태그 필터는 AND 조건으로 둔다. | 선택한 태그를 모두 포함한 topic을 찾는 동작이 명확하다. | OR/advanced filter |
+
+Cursor pagination은 page 번호 대신 `created_at + id` 같은 "마지막으로 본 위치"를 cursor로 보내는 방식이다. 큰 feed나 infinite scroll에는 좋지만, 페이지 번호 이동과 전체 개수 UI는 offset 방식이 더 단순하다. GlowBoard의 게시글/댓글 목록은 offset으로 시작하고, activity feed나 알림처럼 데이터가 계속 추가되는 화면이 생기면 cursor를 다시 검토한다.
 
 ## Redis Rate Limit
 

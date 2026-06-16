@@ -75,6 +75,12 @@ cd backend
 ../.venv/bin/uvicorn app.main:app --reload
 ```
 
+Docker services:
+
+```bash
+docker compose up -d postgres redis rabbitmq
+```
+
 Frontend:
 
 ```bash
@@ -110,6 +116,7 @@ Important backend settings:
 
 - `DATABASE_URL`
 - `REDIS_URL`
+- `CELERY_BROKER_URL`
 - `JWT_SECRET`
 - `ACCESS_TOKEN_EXPIRE_MINUTES`
 
@@ -156,7 +163,8 @@ Latest verification:
 
 ## Known Follow-Ups
 
-- Ensure Day 5 RAG/vector retrieval excludes deleted or admin-hidden posts and comments
+- Ensure Day 5 RAG/vector retrieval reuses the public visibility helpers for
+  deleted or admin-hidden posts and comments
 - Access token forced-expiry E2E check
 - Production HTTPS `Secure` cookie verification
 - Access token denylist or per-request session check, if stronger immediate

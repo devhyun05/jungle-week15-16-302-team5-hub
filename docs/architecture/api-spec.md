@@ -38,8 +38,41 @@ Auth/session 상세 정책은 `docs/architecture/auth-session-design.md`를 따�
   "total": 0,
   "page": 1,
   "size": 20,
-  "total_pages": 0
+  "has_next": false,
+  "has_prev": false
 }
+```
+
+### Job Status Shape
+
+Long-running AI preparation work should be represented as a job instead of
+blocking the original HTTP request.
+
+```json
+{
+  "id": 1,
+  "job_type": "post_embedding",
+  "target_type": "post",
+  "target_id": 12,
+  "idempotency_key": "embedding:post:12:v1",
+  "status": "queued",
+  "progress": 0,
+  "result_json": null,
+  "error_message": null,
+  "attempt_count": 0,
+  "max_attempts": 2,
+  "created_at": "datetime",
+  "updated_at": "datetime",
+  "started_at": null,
+  "finished_at": null
+}
+```
+
+Allowed job statuses:
+
+```text
+queued -> running -> succeeded
+queued -> running -> failed
 ```
 
 ## Auth APIs
@@ -100,6 +133,29 @@ Admin auth is enforced by the backend `require_admin` dependency. Missing or inv
 
 `/api/users/me/activity` returns the current user profile, visible posts written by the current user, and visible comments written by the current user. Deleted or admin-hidden posts/comments are excluded.
 
+## Job APIs
+
+Day 4 introduces the job contract before real embedding generation starts.
+The first job type is `post_embedding`, created after post create/update and
+processed by a Celery worker through RabbitMQ.
+
+| Method | Path | Auth | Request | Response | Error |
+|---|---|---|---|---|---|
+| GET | `/api/jobs/{job_id}` | yes | none | job status | 401, 403, 404 |
+| GET | `/api/jobs/{job_id}/events` | yes | none | SSE stream | 401, 403, 404 |
+
+SSE event payloads use the same job status fields:
+
+```text
+data: {"id":1,"status":"queued","error_message":null}
+
+data: {"id":1,"status":"running","error_message":null}
+
+data: {"id":1,"status":"succeeded","error_message":null}
+```
+
+The event stream should close after `succeeded` or `failed`.
+
 ## AI APIs
 
 | Method | Path | Auth | Request | Response | Error |
@@ -142,7 +198,8 @@ SSR implementation can be a FastAPI `HTMLResponse` that returns a public topic p
 
 | Type | Path | Auth | Purpose | Events |
 |---|---|---|---|---|
-| WebSocket | `/ws/topics/{post_id}` | optional | comment/activity demo | `connected`, `message` |
+| WebSocket | `/ws/activity` | optional | activity echo demo | `connected`, `message` |
+| SSE | `/api/jobs/{job_id}/events` | yes | worker job progress | `queued`, `running`, `succeeded`, `failed` |
 | SSE | `/events/ai/{run_id}` | yes | AI progress | `progress`, `tool_call`, `done`, `error` |
 
 ## MCP JSON-RPC Shape

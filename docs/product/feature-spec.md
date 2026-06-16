@@ -162,6 +162,7 @@ Purpose:
 Behavior:
 
 - A user can request translation for a post or comment.
+- The UI may automatically offer or load a translation when the viewer's preferred language differs from the original language.
 - Translation output should preserve the original meaning and show the target language.
 - The original text remains stored as the source of truth.
 
@@ -169,7 +170,8 @@ Implementation notes:
 
 - Use a commercial LLM API.
 - Do not hard-code API keys.
-- Cache repeated translation results when practical.
+- Cache repeated translation results when practical, keyed by content type, content ID, target language, and content hash.
+- Translation can run as `post_translation` or `comment_translation` jobs using the same Day 4 job/status foundation as embeddings.
 
 ### RAG: Related Topics and Beauty Q&A
 
@@ -230,6 +232,7 @@ Behavior:
 - Agent checks intent.
 - Agent can call RAG related topic search.
 - Agent can call the MCP external metadata tool when a source URL is involved.
+- Agent can use cached translation results when the topic or comments are in another language.
 - Agent can generate a final answer with a short summary and referenced sources.
 
 Guardrails:

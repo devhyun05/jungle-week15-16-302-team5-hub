@@ -84,6 +84,7 @@ Frontend:
 | `frontend/src/main.tsx` | React entrypoint |
 | `frontend/src/App.tsx` | frontend route shell |
 | `frontend/src/api/client.ts` | common fetch wrapper |
+| `backend/scripts/make_admin.py` | local script to promote an existing user to admin |
 
 ### DB And Runtime Notes
 
@@ -114,6 +115,106 @@ Future candidate:
 Alembic migrations
 -> replace create_all as the project schema becomes more stable
 ```
+
+### Local Admin Setup
+
+Create a normal user through signup first, then promote that existing account:
+
+```bash
+cd backend
+../.venv/bin/python scripts/make_admin.py admin@example.com
+```
+
+The script only changes `users.role` to `admin`; it does not create users or
+store seed passwords in source.
+
+## Public Visibility Helpers
+
+### Status
+
+Implemented as a shared guard before Day 4 GraphQL/SSR and Day 5 RAG add new
+public read paths.
+
+### Files
+
+| File | Purpose |
+|---|---|
+| `backend/app/services/visibility.py` | shared public post/comment visibility query helpers |
+| `backend/app/services/post_service.py` | post list/detail reuse public post visibility |
+| `backend/app/services/comment_service.py` | comment list/detail reuse public comment visibility |
+| `backend/app/services/user_service.py` | MyPage reuses public post/comment visibility |
+
+### Rules
+
+| Content | Public condition |
+|---|---|
+| Post | `posts.deleted_at IS NULL` and `posts.hidden_at IS NULL` |
+| Comment | `comments.deleted_at IS NULL` and `comments.hidden_at IS NULL` |
+| Comment with parent post | comment is public and parent post is public |
+
+Admin moderation queries intentionally do not use these helpers because admin
+screens need to inspect hidden content.
+
+## Day 4 Async Job Foundation
+
+### Status
+
+Planned contract prepared before implementation.
+
+### Backend Files
+
+| File | Purpose |
+|---|---|
+| `backend/app/models/job.py` | planned `jobs` table |
+| `backend/app/schemas/job.py` | planned job status response |
+| `backend/app/services/job_service.py` | planned create/update/read job status rules |
+| `backend/app/api/routes/jobs.py` | planned job status API and SSE endpoint |
+| `backend/app/worker/celery_app.py` | planned Celery app using RabbitMQ broker |
+| `backend/app/worker/tasks.py` | planned `post_embedding` skeleton task |
+
+### API Contract
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/api/jobs/{job_id}` | Bearer | read job status |
+| GET | `/api/jobs/{job_id}/events` | Bearer | stream job status through SSE |
+
+### DB Contract
+
+```text
+jobs
+id
+job_type
+target_type
+target_id
+idempotency_key
+status
+progress
+result_json
+error_message
+attempt_count
+max_attempts
+created_at
+updated_at
+started_at
+finished_at
+```
+
+Allowed statuses:
+
+```text
+queued, running, succeeded, failed
+```
+
+### Runtime Contract
+
+| Runtime | Role |
+|---|---|
+| FastAPI | creates job rows and enqueues Celery tasks |
+| RabbitMQ | stores task messages |
+| Celery worker | processes messages and updates job status |
+| PostgreSQL | stores durable job status |
+| SSE | streams job status to frontend |
 
 ## Auth And Session
 
@@ -418,6 +519,12 @@ Implemented with offset pagination.
 | Backend | applies `offset`/`limit` to visible comments only, excluding `deleted_at` and `hidden_at` rows |
 | Frontend | `PostDetailPage` stores comment page metadata and shows previous/next controls |
 | Tests | comment pagination ordering, total, and page metadata |
+
+Offset pagination is the current implementation because `page`, `size`, and
+`total` map cleanly to the existing board UI. Cursor pagination remains a
+future option for infinite scroll, activity feeds, notifications, or other
+lists where new rows are inserted frequently and "next after this item" is more
+stable than "page 3".
 
 ## Tags
 

@@ -45,11 +45,13 @@ GlowBoard is designed around focused topic discussions. A user lands on a beauty
 1. User opens a topic.
 2. Frontend fetches post detail, tags, comments, related topics, and source metadata if available.
 3. User reads the original post.
-4. User requests translation when the original language differs from their preferred language.
-5. User reads comments.
-6. Logged-in user adds a comment.
-7. Backend saves the comment and enqueues embedding or update work if needed.
-8. Realtime or refreshed UI shows new discussion activity.
+4. Frontend compares the original language with the viewer's preferred language when that information is available.
+5. User requests translation, or the UI offers/loads a cached translation when the languages differ.
+6. Backend returns a cached translation or creates a `post_translation` / `comment_translation` job.
+7. User reads comments.
+8. Logged-in user adds a comment.
+9. Backend saves the comment and enqueues embedding or update work if needed.
+10. Realtime or refreshed UI shows new discussion activity.
 
 ## Search and Discovery Flow
 

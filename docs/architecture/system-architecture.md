@@ -132,7 +132,7 @@ flowchart LR
 | API style | REST primary | 결정 | 게시판 CRUD에 가장 단순 |
 | GraphQL | read-only posts query 위주 | 잠정 결정 | 요구사항 근거를 얇게 남기기 위함 |
 | SSR | public post preview HTML route | 잠정 결정 | React SSR 전체 구축보다 현실적 |
-| Realtime | WebSocket demo + SSE AI progress | 잠정 결정 | 요구사항과 AI progress에 맞음 |
+| Realtime | WebSocket activity echo + SSE job/AI progress | 잠정 결정 | 요구사항과 worker/AI progress에 맞음 |
 | DB | PostgreSQL | 결정 | 요구사항 |
 | Vector | pgvector | 결정 | 요구사항 |
 | Redis | 댓글 작성 rate limit 구현, AI cache/status는 후보 | 결정 일부 완료 | Day 2에서 fixed-window rate limit을 붙였고, AI cache/status는 Day 5 이후 결정 |
@@ -148,8 +148,8 @@ flowchart LR
 - FastAPI app 구조를 `router-service-repository`로 충분히 유지할 수 있는지 확인한다.
 - GraphQL library는 Strawberry로 갈지 Ariadne으로 갈지 구현 전에 정한다.
 - SSR은 FastAPI `HTMLResponse`로 충분한지, React SSR이 꼭 필요한지 확인한다.
-- WebSocket은 댓글 알림으로 만들지, 단순 activity echo로 만들지 정한다.
-- SSE는 Agent progress 전용으로 둘지, worker job progress에도 쓸지 정한다.
+- WebSocket은 Day 4에서 `/ws/activity` echo로 최소 근거를 남긴다.
+- SSE는 worker job progress에 먼저 쓰고, Agent progress에도 같은 개념을 확장한다.
 - Redis의 Day 2 역할은 댓글 작성 rate limit으로 확정했다. AI cache/job status까지 확장할지는 Day 5 이후 구현량을 보고 정한다.
 - MCP 외부 tool은 Open-Meteo weather로 갈지, URL metadata로 갈지 정한다.
 - LLM provider와 embedding model은 API key 상황을 보고 정한다.
@@ -185,6 +185,30 @@ sequenceDiagram
 나중에 확인할 것:
 
 - 목록 검색은 단순 `ilike`로 시작하고, 필요하면 full-text search를 개선안에 적는다.
+
+### Public Visibility
+
+현재 결정:
+
+- 일반 사용자, GraphQL, SSR preview, RAG source retrieval은 public visibility 기준을 따른다.
+- public post query는 `posts.deleted_at IS NULL`과 `posts.hidden_at IS NULL`을 제외 조건으로 둔다.
+- public comment query는 `comments.deleted_at IS NULL`과 `comments.hidden_at IS NULL`을 제외 조건으로 둔다.
+- 댓글이 속한 post도 public visibility 기준을 통과해야 한다.
+- Admin moderation 화면은 숨김 콘텐츠를 봐야 하므로 public helper를 쓰지 않는다.
+
+구현 기준:
+
+```text
+backend/app/services/visibility.py
+-> apply_public_post_visibility
+-> apply_public_comment_visibility
+-> public_posts_query
+-> public_comments_query
+```
+
+나중에 확인할 것:
+
+- Day 5 RAG source query가 위 helper를 재사용하는지 테스트한다.
 
 ### Admin Moderation
 

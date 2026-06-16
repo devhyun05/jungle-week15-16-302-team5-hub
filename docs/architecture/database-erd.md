@@ -424,3 +424,56 @@ posts.hidden_at / hidden_by_id / hidden_reason
 comments.hidden_at / hidden_by_id / hidden_reason
 admin_action_logs
 ```
+
+## Day 4 Planned Async Jobs
+
+Day 4 adds a `jobs` table before real embedding generation starts. The first
+job type is `post_embedding`; Day 5 will attach actual pgvector embedding work
+to this skeleton.
+
+### jobs
+
+```text
+jobs
+- id: integer, primary key
+- job_type: string, indexed
+- target_type: string, indexed
+- target_id: integer, indexed
+- idempotency_key: string, unique, indexed
+- status: string, indexed
+- progress: integer
+- result_json: json, nullable
+- error_message: text, nullable
+- attempt_count: integer
+- max_attempts: integer
+- created_at: datetime
+- updated_at: datetime
+- started_at: datetime, nullable
+- finished_at: datetime, nullable
+```
+
+Allowed status values:
+
+```text
+queued
+running
+succeeded
+failed
+```
+
+Initial lifecycle:
+
+```text
+post create/update
+-> create jobs row with status queued
+-> enqueue Celery task through RabbitMQ
+-> worker sets running
+-> worker sets succeeded or failed
+-> frontend reads status through GET /api/jobs/{job_id} or SSE
+```
+
+Visibility rule for future embedding jobs:
+
+- Day 5 embedding/RAG source jobs must skip posts where `deleted_at IS NOT NULL`.
+- Day 5 embedding/RAG source jobs must skip posts where `hidden_at IS NOT NULL`.
+- Comment embeddings, if added later, must apply the same comment and parent post visibility rules.
