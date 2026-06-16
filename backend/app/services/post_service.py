@@ -16,7 +16,9 @@ def get_posts(
     page: int,
     size: int,
 ) -> list[Post]:
+    # 현재 페이지 앞에 있는 게시글 수만큼 건너뛴다.
     offset = (page - 1) * size
+
     return post_repository.list_posts(
         db,
         keyword=keyword,
