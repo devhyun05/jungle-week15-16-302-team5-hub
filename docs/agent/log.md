@@ -790,3 +790,20 @@ embed_texts([]): []
   - 생성 결과 길이: 1142자
 - 의미:
   - OpenAI embedding, RAG 검색, MCP tool, Agent loop, OpenAI generation이 한 번의 최소 QA에서 연결됨을 확인했다.
+
+## 2026-06-17 AI 도우미 생성 방식 UI 단순화
+
+- 작업 파일:
+  - `frontend/src/app/pages/ai/AIAssistant.tsx`
+  - `README.md`
+  - `docs/agent/wei.md`
+  - `docs/agent/study.md`
+  - `docs/agent/test.md`
+- 구현:
+  - AI 도우미 화면에서 `일반 생성`, `RAG 기반 생성`, `Agent 기반 생성` 선택 UI를 제거했다.
+  - 사용자는 `포트폴리오 글 만들기`, `면접 예상 질문 만들기` 두 액션만 선택하도록 정리했다.
+  - 참고 자료 영역에 GitHub README, GitHub 커밋 메시지, 연결된 JungleLog 기록, 기존 저장 결과, 코치 피드백 상태가 AI 생성 재료임을 보여주도록 정리했다.
+  - 현재 화면 버튼은 내부적으로 `/ai/generate`의 direct 생성 흐름을 호출한다.
+- 이유:
+  - RAG/MCP/Agent는 사용자 선택 옵션이 아니라 내부 아키텍처 단계이기 때문이다.
+  - 사용자는 기술 방식보다 어떤 결과물을 만들지에 집중하는 편이 자연스럽다.

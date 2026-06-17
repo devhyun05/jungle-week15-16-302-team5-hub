@@ -19,7 +19,7 @@ import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import { getMyPosts, type PostListApiItem } from "../../api/posts";
 import { getPortfolioProjects, updatePortfolioProject, type PortfolioProjectApiItem } from "../../api/portfolio";
-import { generateAIContent, runAIAgent, type AIGenerationMode } from "../../api/ai";
+import { generateAIContent } from "../../api/ai";
 import { getDisplayTechStack } from "../../utils/techStack";
 import { cleanInterviewQuestionsText } from "../../utils/interviewQuestions";
 
@@ -31,87 +31,17 @@ const AI_ASSISTANT_REFERENCE_POST_PAGE_SIZE = 50;
 const outputOptions = [
   {
     value: "portfolio",
-    title: "포트폴리오 글",
-    description: "프로젝트 소개, 역할, 문제 해결, 배운 점을 하나의 글로 정리",
+    title: "포트폴리오 글 만들기",
+    description: "프로젝트 소개, 역할, 문제 해결, 배운 점을 하나의 글로 정리합니다.",
     icon: LayoutTemplate,
   },
   {
     value: "interview",
-    title: "면접 예상 질문",
-    description: "프로젝트와 연결 기록을 바탕으로 예상 질문과 답변 포인트 구성",
+    title: "면접 예상 질문 만들기",
+    description: "프로젝트와 연결 기록을 바탕으로 예상 질문과 답변 포인트를 구성합니다.",
     icon: MessageSquare,
   },
 ] as const;
-
-const generationModeOptions: Array<{
-  value: AIGenerationMode;
-  title: string;
-  description: string;
-}> = [
-  {
-    value: "direct",
-    title: "일반 생성",
-    description: "선택한 프로젝트 자료를 한 번에 OpenAI prompt로 전달합니다.",
-  },
-  {
-    value: "rag",
-    title: "RAG 기반 생성",
-    description: "README, 커밋, 연결 기록을 검색한 뒤 관련 근거를 prompt에 넣습니다.",
-  },
-  {
-    value: "agent",
-    title: "Agent 기반 생성",
-    description: "프로젝트 조회, RAG 검색, 생성 도구를 순서대로 선택해 실행합니다.",
-  },
-];
-
-function buildPortfolioDraft(project: PortfolioProjectApiItem, linkedRecords: PostListApiItem[]) {
-  // 실제 OpenAI 연결 전까지 선택 프로젝트 정보를 이용해 포트폴리오 글 미리보기를 만든다.
-  const displayTechStack = getDisplayTechStack(project.techStack);
-  const stackText = displayTechStack.length > 0 ? displayTechStack.slice(0, 3).join(", ") : "정리할 기술 스택";
-  const linkedRecordCount = linkedRecords.length;
-
-  return `1. 프로젝트 한 줄 소개
-${project.title}는 ${stackText} 기반으로 구현한 프로젝트입니다. GitHub ${project.repoFullName}의 ${project.githubBranch} branch와 JungleLog에 남긴 ${linkedRecordCount}개의 학습 기록을 연결해 구현 과정과 문제 해결 경험을 정리합니다.
-
-2. 문제 정의
-학습 로그, 트러블슈팅, 회고, 면접 질문이 흩어져 있으면 나중에 포트폴리오로 정리할 때 근거를 다시 찾기 어렵습니다.
-
-3. 나의 역할
-GitHub 프로젝트 등록, 학습 기록 연결, 포트폴리오 글 저장, 코치 리뷰 요청까지 이어지는 흐름을 설계하고 구현했습니다.
-
-4. 기술 스택
-${displayTechStack.length > 0 ? displayTechStack.join(", ") : "아직 GitHub에서 기술 스택을 충분히 감지하지 못했습니다."}
-
-5. 배운 점
-AI 기능은 버튼 하나가 아니라 어떤 자료를 참고하고 어떤 결과로 저장되는지 UI에서 먼저 설명되어야 한다는 점을 배웠습니다.`;
-}
-
-function buildInterviewQuestions(project: PortfolioProjectApiItem, linkedRecords: PostListApiItem[]) {
-  // 실제 AI 호출 전까지 선택 프로젝트 데이터 기반 면접 질문 미리보기를 만든다.
-  return `1. ${project.title}에서 GitHub 정보는 어떤 방식으로 활용되나요?
-- GitHub repo(${project.repoFullName})의 ${project.githubBranch} branch, 최근 커밋, README를 프로젝트 설명의 근거 자료로 활용합니다.
-
-2. 연결된 학습 기록은 답변에 어떤 영향을 주나요?
-- 현재 선택된 프로젝트에는 ${linkedRecords.length}개의 기록이 연결되어 있습니다. 학습 로그, 트러블슈팅, 회고를 함께 참고해 포트폴리오 문장에 근거를 붙입니다.
-
-3. README를 화면에서 크게 강조하지 않는 이유는 무엇인가요?
-- README는 이미 GitHub에 있는 참고 자료이고, JungleLog의 핵심 결과물은 포트폴리오 글과 면접 예상 질문이기 때문입니다.
-
-4. AI 도우미 흐름을 먼저 설계한 이유는 무엇인가요?
-- 인증, 포트폴리오, 기록 연결 흐름이 안정되어야 생성 결과도 실제 사용자 데이터와 자연스럽게 이어질 수 있습니다.`;
-}
-
-function getResultText(project: PortfolioProjectApiItem | null, linkedRecords: PostListApiItem[], outputType: OutputType) {
-  // 현재 선택 상태에 맞는 생성 결과 미리보기를 반환한다.
-  if (!project) {
-    return "";
-  }
-
-  return outputType === "interview"
-    ? buildInterviewQuestions(project, linkedRecords)
-    : buildPortfolioDraft(project, linkedRecords);
-}
 
 export function AIAssistant() {
   const [searchParams] = useSearchParams();
@@ -122,8 +52,6 @@ export function AIAssistant() {
   const [projects, setProjects] = useState<PortfolioProjectApiItem[]>([]);
   const [records, setRecords] = useState<PostListApiItem[]>([]);
   const [outputType, setOutputType] = useState<OutputType>(initialType);
-  const [generationMode, setGenerationMode] = useState<AIGenerationMode>("direct");
-  const [agentToolCalls, setAgentToolCalls] = useState<Array<{ step: number; toolName: string; status: string; summary: string }>>([]);
   const [savedNotice, setSavedNotice] = useState("");
   const [copyNotice, setCopyNotice] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -225,36 +153,26 @@ export function AIAssistant() {
     }
   };
 
-  const generateResult = async () => {
+  const generateResult = async (nextOutputType: OutputType = outputType) => {
     if (!selectedProject) {
       return;
     }
 
+    setOutputType(nextOutputType);
     setIsGenerating(true);
     setSavedNotice("");
     setErrorMessage("");
-    setAgentToolCalls([]);
+    setGeneratedText("");
 
     try {
-      const generatedContent =
-        generationMode === "agent"
-          ? await runAIAgent({
-              projectId: selectedProject.id,
-              outputType,
-              userGoal: outputType === "portfolio" ? "포트폴리오 글 생성" : "면접 예상 질문 생성",
-            }).then((response) => {
-              setAgentToolCalls(response.toolCalls);
-
-              return response.finalContent;
-            })
-          : await generateAIContent({
-              projectId: selectedProject.id,
-              outputType,
-              generationMode,
-            }).then((response) => response.content);
+      const generatedContent = await generateAIContent({
+        projectId: selectedProject.id,
+        outputType: nextOutputType,
+        generationMode: "direct",
+      }).then((response) => response.content);
 
       setGeneratedText(generatedContent);
-      toast.success(outputType === "portfolio" ? "AI 포트폴리오 글을 생성했습니다." : "AI 면접 예상 질문을 생성했습니다.");
+      toast.success(nextOutputType === "portfolio" ? "AI 포트폴리오 글을 생성했습니다." : "AI 면접 예상 질문을 생성했습니다.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "AI 생성에 실패했습니다.";
 
@@ -266,7 +184,7 @@ export function AIAssistant() {
   };
 
   const refreshResult = () => {
-    void generateResult();
+    void generateResult(outputType);
   };
 
   const copyResultWithFallback = async (text: string) => {
@@ -313,7 +231,7 @@ export function AIAssistant() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">AI 포트폴리오 도우미</h1>
           <p className="mt-1 text-slate-500">
-            등록된 프로젝트와 연결 기록을 참고해 포트폴리오 글과 면접 예상 질문을 정리합니다.
+            AI는 선택한 프로젝트의 GitHub README, 커밋 메시지, 연결된 JungleLog 기록, 코치 피드백을 참고해 결과를 생성합니다.
           </p>
         </div>
       </div>
@@ -368,17 +286,14 @@ export function AIAssistant() {
               </div>
 
               <div className="space-y-3">
-                <p className="text-sm font-semibold text-slate-800">생성할 결과</p>
-                <div className="grid gap-2">
+                <p className="text-sm font-semibold text-slate-800">AI 작업</p>
+                <div className="grid gap-3">
                   {outputOptions.map((option) => (
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => {
-                        setOutputType(option.value);
-                        setGeneratedText("");
-                        setSavedNotice("");
-                      }}
+                      onClick={() => void generateResult(option.value)}
+                      disabled={isGenerating}
                       className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
                         outputType === option.value
                           ? "border-emerald-500 bg-emerald-50 text-emerald-900"
@@ -394,31 +309,9 @@ export function AIAssistant() {
                   ))}
                 </div>
 
-                <div className="space-y-2 border-t border-slate-100 pt-3">
-                  <p className="text-sm font-semibold text-slate-800">생성 방식</p>
-                  <div className="grid gap-2">
-                    {generationModeOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => {
-                          setGenerationMode(option.value);
-                          setGeneratedText("");
-                          setSavedNotice("");
-                          setAgentToolCalls([]);
-                        }}
-                        className={`rounded-lg border px-3 py-2 text-left transition-colors ${
-                          generationMode === option.value
-                            ? "border-emerald-500 bg-emerald-50 text-emerald-900"
-                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                        }`}
-                      >
-                        <span className="block text-sm font-semibold">{option.title}</span>
-                        <span className="mt-1 block text-xs leading-5 text-slate-500">{option.description}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <p className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-800">
+                  화면에서는 만들 결과만 고릅니다. RAG 검색, MCP 도구 호출, Agent 실행 흐름은 내부 아키텍처로 확장됩니다.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -433,6 +326,10 @@ export function AIAssistant() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-5 p-5">
+                  <p className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-800">
+                    AI는 아래 자료를 참고해 포트폴리오 글과 면접 예상 질문을 만듭니다. 화면에는 요약만 보이고, 생성 단계에서는 저장된 원문과 연결 데이터를 활용합니다.
+                  </p>
+
                   <section className="space-y-2">
                     <h3 className="text-xs font-semibold uppercase text-slate-400">GitHub</h3>
                     <div className="rounded-lg border border-slate-200 bg-white p-3">
@@ -540,6 +437,21 @@ export function AIAssistant() {
                       </div>
                     </div>
                   </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-xs font-semibold uppercase text-slate-400">코치 피드백</h3>
+                    <div className="rounded-lg border border-slate-200 bg-white p-3">
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-900">코치 리뷰 상태</p>
+                        <Badge variant={selectedProject.coachFeedbackStatus === "피드백 완료" ? "success" : "secondary"}>
+                          {selectedProject.coachFeedbackStatus}
+                        </Badge>
+                      </div>
+                      <p className="text-xs leading-5 text-slate-500">
+                        코치 피드백이 저장되면 이후 포트폴리오 글을 보완하거나 면접 답변 포인트를 정리할 때 함께 참고합니다.
+                      </p>
+                    </div>
+                  </section>
                 </CardContent>
               </Card>
             </div>
@@ -565,26 +477,14 @@ export function AIAssistant() {
                     <pre className="whitespace-pre-wrap font-sans">{resultText}</pre>
                   ) : (
                     <div className="flex h-full min-h-[320px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-center text-sm text-slate-500">
-                      OpenAI로 생성하기를 누르면 이 영역에 결과가 표시됩니다.
+                      위의 포트폴리오 글 만들기 또는 면접 예상 질문 만들기를 누르면 결과가 표시됩니다.
                     </div>
                   )}
                 </div>
                 <div className="space-y-2 border-t border-slate-100 bg-slate-50 p-4">
-                  {agentToolCalls.length > 0 && (
-                    <div className="rounded-lg border border-emerald-100 bg-white p-3">
-                      <p className="text-xs font-semibold text-emerald-700">Agent tool calls</p>
-                      <ol className="mt-2 space-y-1 text-xs leading-5 text-slate-600">
-                        {agentToolCalls.map((toolCall) => (
-                          <li key={`${toolCall.step}-${toolCall.toolName}`}>
-                            {toolCall.step}. {toolCall.toolName} - {toolCall.summary}
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-                  )}
-                  <Button variant="secondary" className="w-full" onClick={() => void generateResult()} disabled={isGenerating}>
+                  <Button variant="secondary" className="w-full" onClick={() => void generateResult(outputType)} disabled={isGenerating}>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    {isGenerating ? "AI 생성 중..." : "OpenAI로 생성하기"}
+                    {isGenerating ? "AI 생성 중..." : outputType === "portfolio" ? "포트폴리오 글 다시 만들기" : "면접 예상 질문 다시 만들기"}
                   </Button>
                   <Button className="w-full" onClick={() => void saveResult()} disabled={isSaving || !hasResultText}>
                     <Save className="mr-2 h-4 w-4" />
@@ -592,7 +492,9 @@ export function AIAssistant() {
                   </Button>
                   {savedNotice && <p className="text-center text-xs text-emerald-700">{savedNotice}</p>}
                   {copyNotice && <p className="text-center text-xs text-slate-500">{copyNotice}</p>}
-                  <p className="text-center text-xs text-slate-400">OpenAI 연결 전에는 선택한 프로젝트 데이터로 결과 형태를 미리 구성합니다.</p>
+                  <p className="text-center text-xs text-slate-400">
+                    생성 결과는 저장 후 포트폴리오 관리와 포트폴리오 게시글 발행 흐름에서 다시 사용할 수 있습니다.
+                  </p>
                 </div>
               </CardContent>
             </Card>
