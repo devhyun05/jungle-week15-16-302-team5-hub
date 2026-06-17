@@ -50,14 +50,26 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
 
 
 def clear_auth_cookies(response: Response) -> None:
-    response.delete_cookie(settings.access_token_cookie_name)
-    response.delete_cookie(settings.refresh_token_cookie_name)
+    response.delete_cookie(
+        settings.access_token_cookie_name,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+    )
+    response.delete_cookie(
+        settings.refresh_token_cookie_name,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+    )
 
 
 def redirect_to_login_with_error(message: str) -> RedirectResponse:
     query_string = urlencode({"authError": message})
     response = RedirectResponse(f"{settings.frontend_url}/login?{query_string}")
-    response.delete_cookie(settings.oauth_state_cookie_name)
+    response.delete_cookie(
+        settings.oauth_state_cookie_name,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+    )
     clear_auth_cookies(response)
     return response
 
@@ -96,7 +108,11 @@ async def google_callback(
         return redirect_to_login_with_error(str(error.detail))
 
     response = RedirectResponse(f"{settings.frontend_url}/")
-    response.delete_cookie(settings.oauth_state_cookie_name)
+    response.delete_cookie(
+        settings.oauth_state_cookie_name,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+    )
     set_auth_cookies(
         response,
         access_token=access_token,

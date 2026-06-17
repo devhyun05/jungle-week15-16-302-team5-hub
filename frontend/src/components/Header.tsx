@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from "react"
-import { Link } from "react-router"
+import { Link, useNavigate } from "react-router"
 import JungleMarketLogo from "./JungleMarketLogo"
 import { useMockAuth } from "../lib/mockAuth"
 
 const Header = () => {
   const { user, isLoggedIn, logoutMockUser } = useMockAuth()
+  const navigate = useNavigate()
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const profileMenuRef = useRef<HTMLDivElement>(null)
 
-  const handleLogout = () => {
-    logoutMockUser()
+  const handleLogout = async () => {
+    await logoutMockUser()
     setIsProfileMenuOpen(false)
+    navigate("/login")
   }
 
   useEffect(() => {
