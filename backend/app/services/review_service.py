@@ -41,6 +41,7 @@ def create_review_request(
     학생이 게시글 또는 포트폴리오 프로젝트에 대한 코치 리뷰를 요청한다.
     """
 
+    target_post = None
     target_project = None
 
     if request.target_type == "post":
@@ -56,6 +57,10 @@ def create_review_request(
         category = target_post.category
         target_post_id = target_post.id
         target_project_id = None
+        target_project = portfolio_repository.get_project_by_published_post_id(
+            db=db,
+            post_id=target_post.id,
+        )
     else:
         target_project = review_repository.get_project_target(
             db=db,
@@ -173,10 +178,12 @@ def update_review_request(
         feedback=feedback,
     )
 
-    if updated_request.target_project is not None and request.status is not None:
+    target_project = get_review_target_project(db=db, review_request=updated_request)
+
+    if target_project is not None and request.status is not None:
         portfolio_repository.update_project_coach_feedback_status(
             db=db,
-            project=updated_request.target_project,
+            project=target_project,
             coach_feedback_status=request.status,
         )
 
@@ -216,7 +223,7 @@ def cancel_my_review_request(
     if review_request.status != "대기 중":
         raise ValueError("검토가 시작된 요청은 취소할 수 없습니다.")
 
-    target_project = review_request.target_project
+    target_project = get_review_target_project(db=db, review_request=review_request)
     coaches = [link.coach for link in review_request.review_request_coaches if link.coach is not None]
 
     review_repository.delete_pending_request(
@@ -286,4 +293,26 @@ def build_review_request_response(review_request: ReviewRequest) -> ReviewReques
         feedback=review_request.feedback,
         created_at=review_request.created_at,
         updated_at=review_request.updated_at,
+    )
+
+
+def get_review_target_project(db: Session, review_request: ReviewRequest):
+    """
+    코치 리뷰 요청이 실제로 연결된 포트폴리오 프로젝트를 찾는다.
+
+    `target_type=portfolio` 요청은 ReviewRequest.target_project에 바로 연결된다.
+    하지만 사용자가 `게시글` 탭에서 포트폴리오 발행 게시글을 선택하면
+    review_requests.target_post_id만 저장된다. 이 경우에도 published_post_id를
+    역조회해서 프로젝트 카드의 코치 상태를 동기화해야 한다.
+    """
+
+    if review_request.target_project is not None:
+        return review_request.target_project
+
+    if review_request.target_post_id is None:
+        return None
+
+    return portfolio_repository.get_project_by_published_post_id(
+        db=db,
+        post_id=review_request.target_post_id,
     )

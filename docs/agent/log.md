@@ -842,3 +842,19 @@ backend compileall app: success
 - 추가 확인 필요:
   - 실제 로그인 세션에서 AI 작업 버튼 클릭만으로 네트워크 생성 요청이 발생하지 않는지 브라우저 Network 탭으로 확인한다.
   - 실제 학생/코치 계정으로 포트폴리오 대상 리뷰 상태 동기화와 알림 생성을 다시 확인한다.
+
+## 2026-06-17 포트폴리오 게시글 리뷰 상태 동기화 보정
+
+- 문제:
+  - 학생이 코치 리뷰 요청 화면에서 `포트폴리오 프로젝트` 탭이 아니라 `게시글` 탭의 포트폴리오 게시글을 선택해 리뷰 요청을 보냈다.
+  - 이 경우 `review_requests.target_post_id`만 저장되고 `target_project_id`는 비어 있어, 포트폴리오 관리의 프로젝트 카드가 계속 `코치: 요청 전`으로 남았다.
+- 수정:
+  - `portfolio_projects.published_post_id`로 원본 포트폴리오 프로젝트를 찾는 repository 함수를 추가했다.
+  - 리뷰 요청 생성/상태 변경/취소 시 대상 게시글이 포트폴리오 발행 게시글이면 프로젝트 `coach_feedback_status`도 함께 갱신하도록 보강했다.
+  - 이미 생성된 요청도 반영되도록 포트폴리오 프로젝트 목록 조회 시 최신 리뷰 요청 상태를 기준으로 프로젝트 코치 상태를 보정한다.
+- 검증:
+
+```txt
+backend compileall app: success
+frontend npm run build: success
+```

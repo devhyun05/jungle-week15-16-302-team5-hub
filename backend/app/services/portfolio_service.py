@@ -43,10 +43,34 @@ def get_portfolio_projects(db: Session, current_user: User) -> PortfolioProjectL
         owner_id=current_user.id,
     )
     projects = [ensure_project_branch(project=project, db=db) for project in projects]
+    projects = [sync_project_review_status(project=project, db=db) for project in projects]
 
     return PortfolioProjectListResponse(
         items=[build_project_response(project) for project in projects],
         total=len(projects),
+    )
+
+
+def sync_project_review_status(project: PortfolioProject, db: Session) -> PortfolioProject:
+    """
+    포트폴리오 프로젝트 카드의 코치 상태를 최신 리뷰 요청 상태와 맞춘다.
+
+    `포트폴리오 프로젝트`로 요청한 경우뿐 아니라, 프로젝트가 발행한
+    `포트폴리오 관리` 게시글로 리뷰 요청한 경우도 같은 프로젝트 상태로 본다.
+    """
+
+    latest_review_status = portfolio_repository.get_latest_project_review_status(
+        db=db,
+        project=project,
+    )
+
+    if latest_review_status is None or latest_review_status == project.coach_feedback_status:
+        return project
+
+    return portfolio_repository.update_project_coach_feedback_status(
+        db=db,
+        project=project,
+        coach_feedback_status=latest_review_status,
     )
 
 

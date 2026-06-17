@@ -956,3 +956,34 @@ UI 버튼은 그대로 두고 내부 구현만 고도화할 수 있다.
 - 비용이 발생하는 AI 호출은 명확한 최종 실행 버튼에서만 일어나야 한다.
 - Agent/RAG/direct fallback은 사용자 UI가 아니라 백엔드 실행 전략이다.
 - 권한이 있는 사용자만 자신의 알림을 조회/읽음/삭제할 수 있어야 한다.
+
+## 2026-06-17 학습 기록: 포트폴리오 게시글과 프로젝트 상태 연결
+
+### 이번에 이해할 코드
+
+- `backend/app/repositories/portfolio_repository.py`
+  - `get_project_by_published_post_id`는 게시글 id로 원본 포트폴리오 프로젝트를 찾는다.
+  - `get_latest_project_review_status`는 프로젝트 자체 리뷰 요청과 발행 게시글 리뷰 요청을 함께 보고 최신 상태를 계산한다.
+- `backend/app/services/review_service.py`
+  - 리뷰 요청 대상이 일반 게시글이어도, 그 게시글이 포트폴리오 발행 게시글이면 프로젝트 상태를 같이 바꾼다.
+- `backend/app/services/portfolio_service.py`
+  - 포트폴리오 목록을 조회할 때 기존 리뷰 요청 상태를 프로젝트 카드 상태에 보정한다.
+
+### 왜 필요했나
+
+포트폴리오 관리는 프로젝트 중심 화면이지만, 사용자는 코치 리뷰 요청 화면에서 같은 포트폴리오를 `게시글`로도 선택할 수 있다.
+
+따라서 DB에는 두 가지 경로가 생긴다.
+
+```txt
+포트폴리오 프로젝트 직접 요청 -> review_requests.target_project_id
+포트폴리오 게시글로 요청 -> review_requests.target_post_id
+```
+
+두 번째 경우도 실제로는 같은 포트폴리오 프로젝트에 대한 리뷰이므로, `portfolio_projects.published_post_id`를 통해 프로젝트를 역조회해야 한다.
+
+### 핵심 포인트
+
+- 화면에서 같은 대상처럼 보여도 DB에는 다른 foreign key로 저장될 수 있다.
+- UI 상태가 안 바뀌는 문제는 프론트 state 문제가 아니라 DB 관계 설계와 서비스 동기화 문제일 수 있다.
+- 이미 만들어진 데이터까지 고려하려면 생성 시점 로직뿐 아니라 목록 조회 시점 보정도 필요하다.

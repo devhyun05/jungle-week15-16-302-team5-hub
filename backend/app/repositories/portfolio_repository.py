@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
@@ -51,6 +51,29 @@ def get_project_by_id(
             selectinload(PortfolioProject.published_post),
         )
         .where(*filters)
+    )
+
+
+def get_project_by_published_post_id(
+    db: Session,
+    post_id: int,
+) -> PortfolioProject | None:
+    """
+    포트폴리오 관리에서 발행한 게시글 id로 원본 프로젝트를 찾는다.
+
+    사용자가 코치 리뷰 요청 화면에서 `포트폴리오 프로젝트`가 아니라
+    `게시글` 탭의 포트폴리오 게시글을 선택해도 프로젝트 카드의 코치 상태를
+    함께 갱신하기 위해 사용한다.
+    """
+
+    return db.scalar(
+        select(PortfolioProject)
+        .options(
+            selectinload(PortfolioProject.portfolio_project_posts),
+            selectinload(PortfolioProject.github_commits),
+            selectinload(PortfolioProject.published_post),
+        )
+        .where(PortfolioProject.published_post_id == post_id)
     )
 
 
@@ -232,6 +255,37 @@ def update_project_coach_feedback_status(
     db.refresh(project)
 
     return project
+
+
+def get_latest_project_review_status(db: Session, project: PortfolioProject) -> str | None:
+    """
+    프로젝트 자체 또는 프로젝트가 발행한 포트폴리오 게시글에 연결된 최신 리뷰 상태를 찾는다.
+
+    과거에는 `target_type=portfolio` 요청만 프로젝트 상태에 반영했기 때문에,
+    `게시글` 탭에서 포트폴리오 게시글로 요청한 기록은 목록에서 보정해준다.
+    """
+
+    filters = [ReviewRequest.target_project_id == project.id]
+
+    if project.published_post_id is not None:
+        filters.append(ReviewRequest.target_post_id == project.published_post_id)
+
+    review_request = db.scalar(
+        select(ReviewRequest)
+        .where(or_(*filters))
+        .order_by(ReviewRequest.updated_at.desc(), ReviewRequest.created_at.desc())
+    )
+
+    if review_request is None:
+        return None
+
+    if review_request.status == "대기 중":
+        return "요청함"
+
+    if review_request.status == "최종 확인":
+        return "피드백 완료"
+
+    return review_request.status
 
 
 def update_published_post(
