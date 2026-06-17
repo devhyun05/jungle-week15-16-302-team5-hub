@@ -987,3 +987,35 @@ UI 버튼은 그대로 두고 내부 구현만 고도화할 수 있다.
 - 화면에서 같은 대상처럼 보여도 DB에는 다른 foreign key로 저장될 수 있다.
 - UI 상태가 안 바뀌는 문제는 프론트 state 문제가 아니라 DB 관계 설계와 서비스 동기화 문제일 수 있다.
 - 이미 만들어진 데이터까지 고려하려면 생성 시점 로직뿐 아니라 목록 조회 시점 보정도 필요하다.
+
+## 2026-06-17 학습 기록: 학생용 도움말 챗봇 MVP
+
+### 수정한 파일
+
+- `frontend/src/app/components/help/helpChatbotRules.ts`
+  - 빠른 질문, 키워드, 답변, 이동 버튼 정보를 한 파일에 모았다.
+  - OpenAI 호출 없이 rule-based로 답변을 찾는다.
+- `frontend/src/app/components/help/StudentHelpChatbot.tsx`
+  - 오른쪽 아래 floating 버튼과 챗봇 패널 UI를 담당한다.
+  - 사용자 입력과 빠른 질문 클릭을 같은 `submitQuestion` 흐름으로 처리한다.
+- `frontend/src/app/layouts/MainLayout.tsx`
+  - 승인 완료된 STUDENT에게만 챗봇을 렌더링한다.
+
+### React 개념
+
+- `useState`로 패널 열림 상태, 입력값, 대화 메시지 목록을 관리한다.
+- 빠른 질문 버튼과 입력 form 모두 같은 함수로 메시지를 추가한다.
+- 이동 버튼은 `useNavigate`로 React Router 라우트 이동을 실행한다.
+- role 기반 조건부 렌더링으로 COACH/ADMIN에게는 컴포넌트를 보여주지 않는다.
+
+### 핵심 포인트
+
+- MVP 챗봇은 AI를 붙이는 것보다 사용자가 다음 행동을 찾게 하는 것이 목적이다.
+- rule-based 로직을 별도 파일로 분리하면 나중에 API/RAG/Agent 호출로 교체하기 쉽다.
+- OpenAI 호출이 없는 UI라도 권한 조건과 노출 위치를 명확히 관리해야 한다.
+- floating UI는 화면 주요 기능을 가리지 않도록 작은 버튼과 제한된 패널 크기로 만든다.
+
+### 나중에 확장할 부분
+
+- RAG를 붙이면 JungleLog 게시글, 포트폴리오 프로젝트, README, 커밋 메시지, 코치 피드백을 검색 대상으로 삼을 수 있다.
+- Agent를 붙이면 질문 의도에 따라 페이지 이동, 자료 검색, 포트폴리오 상담 tool을 선택하게 만들 수 있다.

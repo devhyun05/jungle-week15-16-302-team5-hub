@@ -858,3 +858,30 @@ backend compileall app: success
 backend compileall app: success
 frontend npm run build: success
 ```
+
+## 2026-06-17 학생용 도움말 챗봇 MVP
+
+- 작업 파일:
+  - `frontend/src/app/components/help/helpChatbotRules.ts`
+  - `frontend/src/app/components/help/StudentHelpChatbot.tsx`
+  - `frontend/src/app/layouts/MainLayout.tsx`
+  - `README.md`
+  - `docs/agent/wei.md`
+  - `docs/agent/study.md`
+  - `docs/agent/test.md`
+- 구현:
+  - 승인 완료된 STUDENT 화면에만 오른쪽 아래 floating 도움말 버튼을 추가했다.
+  - 챗봇 패널에는 빠른 질문, 대화 메시지 영역, 입력창, 전송 버튼, 닫기 버튼을 넣었다.
+  - OpenAI/RAG/Agent 호출 없이 keyword 기반 rule로 답변한다.
+  - 답변별 이동 버튼으로 포트폴리오 관리, 글 작성, 내 기록, AI 도우미, 코치 리뷰 요청 화면으로 이동할 수 있다.
+  - COACH, ADMIN, 승인 대기/정지/거절 사용자는 챗봇을 보지 않는다.
+- 검증:
+
+```txt
+frontend npm run build: success
+backend compileall app: success
+```
+
+- 추가 확인 필요:
+  - 실제 STUDENT 로그인 세션에서 floating 버튼 위치와 패널 크기를 화면으로 확인한다.
+  - COACH/ADMIN 계정에서는 챗봇이 보이지 않는지 확인한다.

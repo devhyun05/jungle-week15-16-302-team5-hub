@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
+import { StudentHelpChatbot } from "../components/help/StudentHelpChatbot";
 import { resolveApiAssetUrl } from "../api/client";
 import {
   deleteNotification,
@@ -187,6 +188,7 @@ export function MainLayout() {
     imageUrl: resolveApiAssetUrl(user.profileImageUrl),
   };
   const homePath = getRoleHomePath(user.role, user.approvalStatus);
+  const shouldShowStudentHelpChatbot = isApproved && user.role === "STUDENT";
 
   const handleLogout = async () => {
     await logout();
@@ -445,6 +447,7 @@ export function MainLayout() {
           />
         </main>
       </div>
+      {shouldShowStudentHelpChatbot && <StudentHelpChatbot />}
     </div>
   );
 }
