@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
@@ -15,14 +17,14 @@ from app.repositories.user_repository import (
 )
 from app.schemas.auth import TokenRefreshResponse
 from app.schemas.user import UserMe
-from app.services.auth_service import login_with_slack_code
+from app.services.auth_service import login_with_google_code
 from app.services.jwt_service import (
     create_access_token,
     create_refresh_token,
     decode_refresh_token,
     get_refresh_token_expires_at,
 )
-from app.services.slack_service import build_slack_authorize_url
+from app.services.google_service import build_google_authorize_url
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 settings = get_settings()
@@ -52,15 +54,18 @@ def clear_auth_cookies(response: Response) -> None:
     response.delete_cookie(settings.refresh_token_cookie_name)
 
 
-@router.get("/slack/login")
-def start_slack_login() -> RedirectResponse:
-    # OAuth callback 검증에 사용할 state 값을 만든다.
+def redirect_to_login_with_error(message: str) -> RedirectResponse:
+    query_string = urlencode({"authError": message})
+    response = RedirectResponse(f"{settings.frontend_url}/login?{query_string}")
+    response.delete_cookie(settings.oauth_state_cookie_name)
+    clear_auth_cookies(response)
+    return response
+
+
+@router.get("/google/login")
+def start_google_login() -> RedirectResponse:
     state = create_oauth_state()
-
-    # 사용자를 Slack 인증 페이지로 보낸다.
-    response = RedirectResponse(build_slack_authorize_url(state=state))
-
-    # callback에서 비교할 수 있도록 같은 state를 쿠키에 저장한다.
+    response = RedirectResponse(build_google_authorize_url(state=state))
     response.set_cookie(
         key=settings.oauth_state_cookie_name,
         value=state,
@@ -69,12 +74,11 @@ def start_slack_login() -> RedirectResponse:
         samesite=settings.cookie_samesite,
         max_age=10 * 60,
     )
-
     return response
 
 
-@router.get("/slack/callback")
-async def slack_callback(
+@router.get("/google/callback")
+async def google_callback(
     code: str,
     state: str,
     db: Session = Depends(get_db),
@@ -84,12 +88,12 @@ async def slack_callback(
     ),
 ) -> RedirectResponse:
     if saved_state is None or saved_state != state:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid OAuth state.",
-        )
+        return redirect_to_login_with_error("로그인 요청이 만료되었습니다. 다시 시도해주세요.")
 
-    _, access_token, refresh_token = await login_with_slack_code(db, code=code)
+    try:
+        _, access_token, refresh_token = await login_with_google_code(db, code=code)
+    except HTTPException as error:
+        return redirect_to_login_with_error(str(error.detail))
 
     response = RedirectResponse(f"{settings.frontend_url}/")
     response.delete_cookie(settings.oauth_state_cookie_name)

@@ -11,6 +11,20 @@ settings = get_settings()
 SLACK_TRADE_ALERT_TOOL = "slack.send_trade_alert"
 
 
+def build_slack_error_message(action: str, data: dict) -> str:
+    error = data.get("error", "unknown_error")
+    needed = data.get("needed")
+    provided = data.get("provided")
+
+    message = f"{action} 실패: {error}"
+    if needed:
+        message += f" / 필요한 scope: {needed}"
+    if provided:
+        message += f" / 현재 token scope: {provided}"
+
+    return message
+
+
 def send_slack_trade_alert(
     *,
     post: Post,
@@ -95,7 +109,7 @@ def post_trade_alert_to_slack(arguments: dict) -> dict:
         if not open_data.get("ok"):
             return {
                 "status": "failed",
-                "message": open_data.get("error", "Slack DM 채널을 열지 못했습니다."),
+                "message": build_slack_error_message("Slack DM 채널 열기", open_data),
             }
 
         channel_id = open_data["channel"]["id"]
@@ -119,7 +133,7 @@ def post_trade_alert_to_slack(arguments: dict) -> dict:
     if not data.get("ok"):
         return {
             "status": "failed",
-            "message": data.get("error", "Slack 메시지를 전송하지 못했습니다."),
+            "message": build_slack_error_message("Slack 메시지 전송", data),
         }
 
     return {"status": "sent", "message": "판매자에게 Slack 거래 문의를 전송했습니다."}
@@ -127,8 +141,9 @@ def post_trade_alert_to_slack(arguments: dict) -> dict:
 
 def build_slack_message(arguments: dict) -> str:
     custom_message = arguments.get("message")
+    post_url = f"{settings.frontend_url.rstrip('/')}/post-details/{arguments['post_id']}"
     lines = [
-        "[Jungle Market] 거래 문의가 도착했습니다.",
+        "[Jungle Market] 새 거래 문의가 도착했습니다.",
         f"- 상품: {arguments['title']}",
         f"- 가격: {arguments['price']:,}원",
         f"- 장소: {arguments['trade_location']}",
@@ -139,5 +154,13 @@ def build_slack_message(arguments: dict) -> str:
 
     if custom_message:
         lines.append(f"- 메모: {custom_message}")
+
+    lines.extend(
+        [
+            "",
+            "상품 페이지에서 댓글을 확인하고 답변해주세요.",
+            f"상품 보기: {post_url}",
+        ]
+    )
 
     return "\n".join(lines)

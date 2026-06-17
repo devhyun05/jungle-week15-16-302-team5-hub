@@ -80,6 +80,8 @@ class PostResponse(BaseModel):
     view_count: int
     like_count: int
     comment_count: int
+    seller_slack_enabled: bool = False
+    seller_initial: str
     created_at: datetime
     updated_at: datetime
     images: list[PostImageResponse] = Field(default_factory=list)

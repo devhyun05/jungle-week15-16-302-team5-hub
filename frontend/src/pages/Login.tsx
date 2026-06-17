@@ -1,63 +1,58 @@
+import { useEffect, useState } from "react"
+import { useLocation, useNavigate } from "react-router"
 import AuthLayout from "../components/AuthLayout"
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api"
 
 function Login() {
-  const handleSlackLogin = () => {
-    window.location.href = `${API_BASE_URL}/auth/slack/login`
+  const navigate = useNavigate()
+  const location = useLocation()
+  const authError = new URLSearchParams(location.search).get("authError")
+  const [errorMessage, setErrorMessage] = useState(authError ?? "")
+  const [isRedirecting, setIsRedirecting] = useState(false)
+
+  useEffect(() => {
+    if (!authError) {
+      return
+    }
+
+    navigate("/login", { replace: true })
+  }, [authError, navigate])
+
+  const handleGoogleLogin = () => {
+    setErrorMessage("")
+    setIsRedirecting(true)
+    window.location.href = `${API_BASE_URL}/auth/google/login`
   }
 
   return (
     <AuthLayout
       title="Jungle Market에 오신 것을 환영합니다"
-      description="크래프톤 정글 Slack 계정으로 로그인하고 내부 중고거래 게시판을 이용하세요."
+      description="허용된 이메일의 Google 계정으로 로그인하고 내부 중고거래 게시판을 이용하세요."
     >
-      <div className="space-y-4">
+      <div className="space-y-5">
+        {errorMessage && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-500">
+            {errorMessage}
+          </div>
+        )}
+
         <button
           type="button"
-          onClick={handleSlackLogin}
-          className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#4A154B] px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-purple-950/20 transition hover:-translate-y-0.5 hover:bg-[#611f69]"
+          onClick={handleGoogleLogin}
+          disabled={isRedirecting}
+          className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white px-4 py-3.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:-translate-y-0.5 hover:border-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
         >
-          <svg className="h-5 w-5" viewBox="0 0 122.8 122.8" aria-hidden="true">
-            <path
-              fill="#36C5F0"
-              d="M25.8 77.6c0 7.1-5.8 12.9-12.9 12.9S0 84.7 0 77.6s5.8-12.9 12.9-12.9h12.9v12.9Z"
-            />
-            <path
-              fill="#36C5F0"
-              d="M32.3 77.6c0-7.1 5.8-12.9 12.9-12.9s12.9 5.8 12.9 12.9v32.3c0 7.1-5.8 12.9-12.9 12.9s-12.9-5.8-12.9-12.9V77.6Z"
-            />
-            <path
-              fill="#2EB67D"
-              d="M45.2 25.8c-7.1 0-12.9-5.8-12.9-12.9S38.1 0 45.2 0s12.9 5.8 12.9 12.9v12.9H45.2Z"
-            />
-            <path
-              fill="#2EB67D"
-              d="M45.2 32.3c7.1 0 12.9 5.8 12.9 12.9s-5.8 12.9-12.9 12.9H12.9C5.8 58.1 0 52.3 0 45.2s5.8-12.9 12.9-12.9h32.3Z"
-            />
-            <path
-              fill="#ECB22E"
-              d="M96.9 45.2c0-7.1 5.8-12.9 12.9-12.9s12.9 5.8 12.9 12.9-5.8 12.9-12.9 12.9H96.9V45.2Z"
-            />
-            <path
-              fill="#ECB22E"
-              d="M90.5 45.2c0 7.1-5.8 12.9-12.9 12.9s-12.9-5.8-12.9-12.9V12.9C64.7 5.8 70.5 0 77.6 0s12.9 5.8 12.9 12.9v32.3Z"
-            />
-            <path
-              fill="#E01E5A"
-              d="M77.6 96.9c7.1 0 12.9 5.8 12.9 12.9s-5.8 12.9-12.9 12.9-12.9-5.8-12.9-12.9V96.9h12.9Z"
-            />
-            <path
-              fill="#E01E5A"
-              d="M77.6 90.5c-7.1 0-12.9-5.8-12.9-12.9s5.8-12.9 12.9-12.9h32.3c7.1 0 12.9 5.8 12.9 12.9s-5.8 12.9-12.9 12.9H77.6Z"
-            />
-          </svg>
-          Slack으로 계속하기
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-sm font-bold text-[#4285F4]">
+            G
+          </span>
+          {isRedirecting ? "Google로 이동 중" : "Google로 계속하기"}
         </button>
 
         <p className="pt-2 text-center text-xs leading-5 text-gray-400">
-          정글 Slack 워크스페이스에 가입된 계정만 사용할 수 있습니다.
+          로그인 가능한 Google 이메일은 allowlist에 등록되어 있어야 합니다.
+          Slack은 거래 알림 전송에만 사용됩니다.
         </p>
       </div>
     </AuthLayout>

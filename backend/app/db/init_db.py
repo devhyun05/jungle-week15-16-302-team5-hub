@@ -1,6 +1,6 @@
 from app.db.base import Base
 from app.db.session import engine
-from app.models.ai import PostWritingEmbedding
+from app.models.ai import PostWritingEmbedding, RestrictedTradePolicyEmbedding
 from app.models.comment import Comment
 from app.models.post import Post
 from app.models.post_image import PostImage
@@ -14,6 +14,7 @@ __all__ = [
     "PostImage",
     "PostLike",
     "PostWritingEmbedding",
+    "RestrictedTradePolicyEmbedding",
     "RefreshToken",
     "User",
 ]
@@ -39,4 +40,16 @@ def init_db() -> None:
                 "ALTER TABLE post_images "
                 "ADD COLUMN IF NOT EXISTS object_key TEXT NOT NULL DEFAULT ''"
             )
+        )
+        connection.execute(
+            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT")
+        )
+        connection.execute(
+            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS google_user_id VARCHAR(100)")
+        )
+        connection.execute(
+            text("ALTER TABLE users ALTER COLUMN slack_user_id DROP NOT NULL")
+        )
+        connection.execute(
+            text("ALTER TABLE users ALTER COLUMN slack_team_id DROP NOT NULL")
         )

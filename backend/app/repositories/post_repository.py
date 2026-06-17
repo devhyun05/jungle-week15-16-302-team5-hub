@@ -16,7 +16,10 @@ def list_posts(
     offset: int = 0,
     limit: int = 20,
 ) -> list[Post]:
-    statement = select(Post).options(selectinload(Post.images))
+    statement = select(Post).options(
+        selectinload(Post.images),
+        selectinload(Post.seller),
+    )
     statement = statement.where(Post.deleted_at.is_(None))
 
     if keyword:
@@ -57,7 +60,10 @@ def list_posts(
 
 
 def get_post(db: Session, post_id: int) -> Post | None:
-    statement = select(Post).options(selectinload(Post.images)).where(
+    statement = select(Post).options(
+        selectinload(Post.images),
+        selectinload(Post.seller),
+    ).where(
         Post.id == post_id,
         Post.deleted_at.is_(None),
     )

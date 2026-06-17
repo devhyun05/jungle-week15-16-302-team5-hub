@@ -82,7 +82,7 @@ def delete_comment(
             detail="Comment not found.",
         )
 
-    if not can_delete_comment(comment, current_user):
+    if not can_delete_comment(comment, post, current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to delete this comment.",
@@ -107,7 +107,7 @@ def to_comment_response(
         content="비밀 댓글입니다." if is_hidden else comment.content,
         is_secret=comment.is_secret,
         is_hidden=is_hidden,
-        can_delete=can_delete_comment(comment, current_user),
+        can_delete=can_delete_comment(comment, post, current_user),
         created_at=comment.created_at,
         updated_at=comment.updated_at,
     )
@@ -131,8 +131,16 @@ def can_view_secret_comment(
     )
 
 
-def can_delete_comment(comment: Comment, current_user: User | None) -> bool:
+def can_delete_comment(
+    comment: Comment,
+    post: Post,
+    current_user: User | None,
+) -> bool:
     if current_user is None:
         return False
 
-    return current_user.id == comment.writer_id or current_user.role == "admin"
+    return (
+        current_user.id == comment.writer_id
+        or current_user.id == post.seller_id
+        or current_user.role == "admin"
+    )

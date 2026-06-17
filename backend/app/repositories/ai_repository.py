@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.ai import PostWritingEmbedding
+from app.models.ai import PostWritingEmbedding, RestrictedTradePolicyEmbedding
 from app.models.post import Post
 
 
@@ -58,3 +58,53 @@ def list_post_writing_embeddings(db: Session) -> list[tuple[PostWritingEmbedding
         .where(Post.deleted_at.is_(None))
     )
     return list(db.execute(statement))
+
+
+def get_restricted_policy_embedding(
+    db: Session,
+    policy_id: str,
+) -> RestrictedTradePolicyEmbedding | None:
+    statement = select(RestrictedTradePolicyEmbedding).where(
+        RestrictedTradePolicyEmbedding.policy_id == policy_id
+    )
+    return db.scalar(statement)
+
+
+def save_restricted_policy_embedding(
+    db: Session,
+    *,
+    policy: dict,
+    content_hash: str,
+    vector: list[float],
+) -> RestrictedTradePolicyEmbedding:
+    embedding = get_restricted_policy_embedding(db, policy_id=policy["policy_id"])
+
+    if embedding is None:
+        embedding = RestrictedTradePolicyEmbedding(
+            policy_id=policy["policy_id"],
+            title=policy["title"],
+            category=policy["category"],
+            severity=policy["severity"],
+            source_url=policy["source_url"],
+            source_text=policy["source_text"],
+            content_hash=content_hash,
+            vector=vector,
+        )
+        db.add(embedding)
+    else:
+        embedding.title = policy["title"]
+        embedding.category = policy["category"]
+        embedding.severity = policy["severity"]
+        embedding.source_url = policy["source_url"]
+        embedding.source_text = policy["source_text"]
+        embedding.content_hash = content_hash
+        embedding.vector = vector
+
+    db.commit()
+    db.refresh(embedding)
+    return embedding
+
+
+def list_restricted_policy_embeddings(db: Session) -> list[RestrictedTradePolicyEmbedding]:
+    statement = select(RestrictedTradePolicyEmbedding)
+    return list(db.scalars(statement))

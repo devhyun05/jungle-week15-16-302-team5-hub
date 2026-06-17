@@ -2,29 +2,35 @@ from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.repositories.user_repository import (
-    get_or_create_user_from_slack,
+    get_or_create_user_from_google,
     save_refresh_token,
+)
+from app.services.google_service import (
+    exchange_google_code_for_access_token,
+    fetch_google_user_info,
 )
 from app.services.jwt_service import (
     create_access_token,
     create_refresh_token,
     get_refresh_token_expires_at,
 )
-from app.services.slack_service import (
-    exchange_code_for_access_token,
-    fetch_slack_user_info,
-    validate_allowed_email,
-    validate_allowed_workspace,
-)
+from app.services.slack_service import lookup_slack_user_by_email
 
 
-async def login_with_slack_code(db: Session, code: str) -> tuple[User, str, str]:
-    slack_access_token = await exchange_code_for_access_token(code=code)
-    slack_user = await fetch_slack_user_info(access_token=slack_access_token)
-    validate_allowed_workspace(slack_team_id=slack_user.slack_team_id)
-    validate_allowed_email(email=slack_user.email)
+async def login_with_google_code(db: Session, code: str) -> tuple[User, str, str]:
+    google_access_token = await exchange_google_code_for_access_token(code=code)
+    google_user = await fetch_google_user_info(access_token=google_access_token)
+    slack_user = await lookup_slack_user_by_email(email=google_user.email)
 
-    user = get_or_create_user_from_slack(db, slack_user=slack_user)
+    user = get_or_create_user_from_google(
+        db,
+        google_user=google_user,
+        slack_user=slack_user,
+    )
+    return issue_login_tokens(db, user=user)
+
+
+def issue_login_tokens(db: Session, user: User) -> tuple[User, str, str]:
     access_token = create_access_token(user_id=user.id, role=user.role)
     refresh_token = create_refresh_token(user_id=user.id)
 

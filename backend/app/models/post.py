@@ -3,7 +3,14 @@ from datetime import datetime
 from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.config import get_settings
 from app.db.base import Base
+
+
+def get_post_image_sort_order():
+    from app.models.post_image import PostImage
+
+    return PostImage.sort_order
 
 
 class Post(Base):
@@ -37,5 +44,24 @@ class Post(Base):
         "PostImage",
         back_populates="post",
         cascade="all, delete-orphan",
-        order_by="PostImage.sort_order",
+        order_by=get_post_image_sort_order,
     )
+    seller = relationship("User")
+
+    @property
+    def seller_slack_enabled(self) -> bool:
+        if not self.seller or not self.seller.slack_user_id:
+            return False
+
+        allowed_slack_team_id = get_settings().allowed_slack_team_id
+        if not allowed_slack_team_id:
+            return True
+
+        return self.seller.slack_team_id == allowed_slack_team_id
+
+    @property
+    def seller_initial(self) -> str:
+        if self.seller and self.seller.username:
+            return self.seller.username.strip()[:1].upper()
+
+        return str(self.seller_id)[:1]

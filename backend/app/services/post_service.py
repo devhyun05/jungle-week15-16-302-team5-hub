@@ -5,7 +5,10 @@ from sqlalchemy.orm import Session
 from app.models.post import Post
 from app.models.user import User
 from app.repositories import post_repository
+from app.schemas.ai import RestrictedItemCheckRequest
 from app.schemas.post import PostCreate, PostSort, PostStatus, PostUpdate
+from app.services import restricted_item_agent_service
+from app.services.embedding_service import EmbeddingServiceError
 
 
 def get_posts(
@@ -44,6 +47,8 @@ def get_post_detail(
 
 
 def create_post(db: Session, post_data: PostCreate, seller: User) -> Post:
+    check_restricted_item_before_save(db, post_data)
+
     post = Post(
         seller_id=seller.id,
         title=post_data.title,
@@ -69,6 +74,7 @@ def update_post(
     if not values:
         return post
 
+    check_restricted_item_before_save(db, post_data, existing_post=post)
     return post_repository.update_post(db, post=post, values=values)
 
 
@@ -145,4 +151,47 @@ def check_post_owner(post: Post, current_user: User) -> None:
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="You do not have permission to edit this post.",
+    )
+
+
+def check_restricted_item_before_save(
+    db: Session,
+    post_data: PostCreate | PostUpdate,
+    existing_post: Post | None = None,
+) -> None:
+    title = post_data.title
+    description = post_data.description
+    category = post_data.category
+
+    if existing_post is not None:
+        changed_fields = post_data.model_fields_set
+        title = title if "title" in changed_fields else existing_post.title
+        description = (
+            description
+            if "description" in changed_fields
+            else existing_post.description
+        )
+        category = category if "category" in changed_fields else existing_post.category
+
+    try:
+        result = restricted_item_agent_service.run_restricted_item_agent(
+            db,
+            RestrictedItemCheckRequest(
+                title=title or "",
+                description=description,
+                category=category,
+            ),
+        )
+    except EmbeddingServiceError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI 거래 안전 검사를 실행하지 못했습니다.",
+        )
+
+    if result.status == "allowed":
+        return
+
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=result.message,
     )

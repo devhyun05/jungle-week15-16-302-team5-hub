@@ -6,7 +6,9 @@ from app.schemas.ai import RagSource
 from app.services.embedding_service import (
     content_hash,
     cosine_similarity,
-    create_fake_embedding,
+    create_embedding,
+    has_current_embedding,
+    normalize_text,
 )
 
 
@@ -30,7 +32,12 @@ def index_recent_posts(db: Session) -> None:
         source_hash = content_hash(source_text)
         embedding = ai_repository.get_post_writing_embedding(db, post_id=post.id)
 
-        if embedding is not None and embedding.content_hash == source_hash:
+        if embedding is not None and has_current_embedding(
+            stored_hash=embedding.content_hash,
+            stored_vector=embedding.vector,
+            current_hash=source_hash,
+            expected_dimension=None,
+        ):
             continue
 
         ai_repository.save_post_writing_embedding(
@@ -38,7 +45,7 @@ def index_recent_posts(db: Session) -> None:
             post=post,
             source_text=source_text,
             content_hash=source_hash,
-            vector=create_fake_embedding(source_text),
+            vector=create_embedding(source_text),
         )
 
 
@@ -48,8 +55,11 @@ def search_similar_posts(
     query_text: str,
     limit: int = 3,
 ) -> list[RagSource]:
+    if not normalize_text(query_text):
+        return []
+
     index_recent_posts(db)
-    query_vector = create_fake_embedding(query_text)
+    query_vector = create_embedding(query_text)
     scored_sources: list[RagSource] = []
 
     for embedding, post in ai_repository.list_post_writing_embeddings(db):

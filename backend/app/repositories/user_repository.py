@@ -5,12 +5,69 @@ from sqlalchemy.orm import Session
 
 from app.core.security import create_token_salt, hash_token
 from app.models.user import RefreshToken, User
+from app.services.google_service import GoogleUserInfo
 from app.services.slack_service import SlackUserInfo
 
 
 def get_user_by_id(db: Session, user_id: int) -> User | None:
     statement = select(User).where(User.id == user_id, User.deleted_at.is_(None))
     return db.scalar(statement)
+
+
+def get_user_by_email(db: Session, email: str) -> User | None:
+    statement = select(User).where(
+        User.email == email.strip().lower(),
+        User.deleted_at.is_(None),
+    )
+    return db.scalar(statement)
+
+
+def get_user_by_google_id(db: Session, google_user_id: str) -> User | None:
+    statement = select(User).where(
+        User.google_user_id == google_user_id,
+        User.deleted_at.is_(None),
+    )
+    return db.scalar(statement)
+
+
+def get_or_create_user_from_google(
+    db: Session,
+    google_user: GoogleUserInfo,
+    slack_user: SlackUserInfo | None = None,
+) -> User:
+    user = get_user_by_google_id(db, google_user_id=google_user.google_user_id)
+    if user is None:
+        user = get_user_by_email(db, email=google_user.email)
+    if user is None and slack_user is not None:
+        user = get_user_by_slack_identity(
+            db,
+            slack_team_id=slack_user.slack_team_id,
+            slack_user_id=slack_user.slack_user_id,
+        )
+
+    if user is None:
+        user = User(
+            google_user_id=google_user.google_user_id,
+            email=google_user.email.strip().lower(),
+            username=google_user.username,
+            profile_image_url=google_user.profile_image_url,
+        )
+        db.add(user)
+    else:
+        user.google_user_id = google_user.google_user_id
+        user.email = google_user.email.strip().lower()
+        user.username = google_user.username
+        user.profile_image_url = google_user.profile_image_url
+
+    if slack_user is not None:
+        user.slack_user_id = slack_user.slack_user_id
+        user.slack_team_id = slack_user.slack_team_id
+        user.username = slack_user.username or user.username
+        user.profile_image_url = slack_user.profile_image_url or user.profile_image_url
+
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 def get_user_by_slack_identity(

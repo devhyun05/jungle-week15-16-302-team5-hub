@@ -1,18 +1,17 @@
-import csv
 from dataclasses import dataclass
-from pathlib import Path
 from urllib.parse import urlencode
 
 import httpx
 from fastapi import HTTPException, status
 
-from app.core.config import BACKEND_DIR, get_settings
+from app.core.config import get_settings
 
 settings = get_settings()
 
 SLACK_AUTHORIZE_URL = "https://slack.com/openid/connect/authorize"
 SLACK_TOKEN_URL = "https://slack.com/api/openid.connect.token"
 SLACK_USER_INFO_URL = "https://slack.com/api/openid.connect.userInfo"
+SLACK_LOOKUP_BY_EMAIL_URL = "https://slack.com/api/users.lookupByEmail"
 
 
 @dataclass(frozen=True)
@@ -112,44 +111,76 @@ def validate_allowed_workspace(slack_team_id: str) -> None:
         )
 
 
-def get_allowed_email_set() -> set[str]:
-    if not settings.allowed_email_csv_path:
-        return set()
-
-    csv_path = Path(settings.allowed_email_csv_path)
-    if not csv_path.is_absolute():
-        csv_path = BACKEND_DIR / csv_path
-
-    if not csv_path.exists():
+async def lookup_slack_user_by_email(email: str) -> SlackUserInfo:
+    if not settings.slack_bot_token:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Allowed email CSV file does not exist.",
+            detail="Slack bot token is not configured.",
         )
 
-    allowed_emails: set[str] = set()
+    async with httpx.AsyncClient(timeout=10) as client:
+        response = await client.get(
+            SLACK_LOOKUP_BY_EMAIL_URL,
+            params={"email": email.strip().lower()},
+            headers={"Authorization": f"Bearer {settings.slack_bot_token}"},
+        )
 
-    with csv_path.open(newline="", encoding="utf-8") as file:
-        reader = csv.reader(file)
-        for row in reader:
-            if not row:
-                continue
+    try:
+        response.raise_for_status()
+        data = response.json()
+    except (httpx.HTTPError, ValueError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to communicate with Slack API.",
+        ) from error
 
-            email = row[0].strip().lower()
-            if not email or email == "email":
-                continue
-
-            allowed_emails.add(email)
-
-    return allowed_emails
-
-
-def validate_allowed_email(email: str) -> None:
-    allowed_emails = get_allowed_email_set()
-    if not allowed_emails:
-        return
-
-    if email.strip().lower() not in allowed_emails:
+    slack_error = data.get("error")
+    if slack_error == "users_not_found":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="This email is not allowed to use Jungle Market.",
+            detail="정글 Slack workspace에 가입된 이메일로 로그인해주세요.",
         )
+    if slack_error == "missing_scope":
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Slack app 권한에 users:read, users:read.email이 필요합니다.",
+        )
+    if slack_error in {"invalid_auth", "not_authed"}:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Slack bot token 설정을 확인해주세요.",
+        )
+    if data.get("ok") is not True:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Slack workspace 멤버 확인에 실패했습니다.",
+        )
+
+    user = data.get("user") or {}
+    profile = user.get("profile") or {}
+    slack_user_id = user.get("id")
+    slack_team_id = user.get("team_id") or settings.allowed_slack_team_id
+    slack_email = profile.get("email") or email.strip().lower()
+    username = (
+        profile.get("display_name")
+        or profile.get("real_name")
+        or user.get("name")
+        or slack_email
+    )
+    profile_image_url = profile.get("image_512") or profile.get("image_192")
+
+    if not slack_user_id or not slack_team_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Slack user info is missing required fields.",
+        )
+
+    validate_allowed_workspace(slack_team_id)
+
+    return SlackUserInfo(
+        slack_user_id=slack_user_id,
+        slack_team_id=slack_team_id,
+        email=slack_email,
+        username=username,
+        profile_image_url=profile_image_url,
+    )

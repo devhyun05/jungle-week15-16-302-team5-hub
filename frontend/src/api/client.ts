@@ -38,7 +38,16 @@ export const apiRequest = async <T>(
   }
 
   if (!response.ok) {
-    throw new Error("요청에 실패했습니다.")
+    let message = "요청에 실패했습니다."
+
+    try {
+      const data = (await response.json()) as { detail?: string }
+      message = data.detail ?? message
+    } catch {
+      // 응답 본문이 JSON이 아닐 때는 기본 메시지를 사용한다.
+    }
+
+    throw new Error(message)
   }
 
   if (response.status === 204) {

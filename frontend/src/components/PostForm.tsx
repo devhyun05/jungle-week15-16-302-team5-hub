@@ -4,6 +4,8 @@ import { assistPostWriting } from "../api/ai"
 import type { PostWritingAction, RagSource } from "../api/ai"
 import type { Post } from "../types/post"
 
+const isLocalAiAssistBlocked = import.meta.env.DEV
+
 type PostFormProps = {
   mode: "create" | "edit"
   formId?: string
@@ -85,6 +87,11 @@ const PostForm = ({
   }
 
   const handleWritingAssist = async (action: PostWritingAction) => {
+    if (isLocalAiAssistBlocked) {
+      setAssistantMessage("로컬에서는 AI 작성 도구를 잠시 꺼두었습니다.")
+      return
+    }
+
     setIsAssisting(true)
     setAssistantMessage("")
 
@@ -298,34 +305,36 @@ const PostForm = ({
               AI 작성 도구
             </p>
             <p className="mt-1 text-xs text-gray-400">
-              작성한 설명을 기준으로 AI 도움을 받을 수 있습니다.
+              {isLocalAiAssistBlocked
+                ? "로컬에서는 잠시 비활성화되어 있습니다."
+                : "작성한 설명을 기준으로 AI 도움을 받을 수 있습니다."}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              disabled={isAssisting}
+              disabled={isAssisting || isLocalAiAssistBlocked}
               onClick={() => handleWritingAssist("refine")}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50"
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-300"
             >
               {isAssisting ? "실행 중" : "문장 다듬기"}
             </button>
 
             <button
               type="button"
-              disabled={isAssisting}
+              disabled={isAssisting || isLocalAiAssistBlocked}
               onClick={() => handleWritingAssist("fix_typos")}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50"
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-300"
             >
               오타 수정
             </button>
 
             <button
               type="button"
-              disabled={isAssisting}
+              disabled={isAssisting || isLocalAiAssistBlocked}
               onClick={() => handleWritingAssist("suggest_tags")}
-              className="rounded-md bg-[#00C471] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#00A862]"
+              className="rounded-md bg-[#00C471] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#00A862] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
             >
               태그 추천
             </button>

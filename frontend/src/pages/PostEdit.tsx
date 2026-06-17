@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
+import { checkRestrictedItem } from "../api/ai"
 import {
   createPostImage,
   createPresignedUrl,
@@ -9,6 +10,7 @@ import { getPost, updatePost } from "../api/posts"
 import AlertBanner from "../components/AlertBanner"
 import PostForm from "../components/PostForm"
 import type { FormEvent } from "react"
+import type { RestrictedItemCheckResponse } from "../api/ai"
 import type { AlertType } from "../components/AlertBanner"
 import type { Post, PostCategory, PostStatus } from "../types/post"
 
@@ -26,6 +28,8 @@ const PostEdit = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [alert, setAlert] = useState<AlertState | null>(null)
+  const [safetyCheck, setSafetyCheck] =
+    useState<RestrictedItemCheckResponse | null>(null)
 
   useEffect(() => {
     let isMounted = true
@@ -74,18 +78,38 @@ const PostEdit = () => {
 
     setIsSubmitting(true)
     setAlert(null)
+    setSafetyCheck(null)
 
     const formData = new FormData(event.currentTarget)
     const price = String(formData.get("price") ?? "").replaceAll(",", "")
     const imageFile = formData.get("image")
+    const title = String(formData.get("title") ?? "")
+    const description = String(formData.get("description") ?? "") || null
+    const category = String(formData.get("category") ?? "기타") as PostCategory
 
     try {
+      const safetyResult = await checkRestrictedItem({
+        title,
+        description,
+        category,
+      })
+      setSafetyCheck(safetyResult)
+
+      if (safetyResult.status !== "allowed") {
+        setAlert({
+          type: "error",
+          title: "거래 안전 검사를 통과하지 못했습니다.",
+          message: safetyResult.message,
+        })
+        return
+      }
+
       const updatedPost = await updatePost(Number(postId), {
-        title: String(formData.get("title") ?? ""),
-        description: String(formData.get("description") ?? "") || null,
+        title,
+        description,
         price: Number(price),
         trade_location: String(formData.get("trade_location") ?? ""),
-        category: String(formData.get("category") ?? "기타") as PostCategory,
+        category,
         status: String(formData.get("status") ?? "selling") as PostStatus,
       })
 
@@ -111,11 +135,14 @@ const PostEdit = () => {
           },
         },
       })
-    } catch {
+    } catch (error) {
       setAlert({
         type: "error",
         title: "게시글을 수정하지 못했습니다.",
-        message: "입력값과 네트워크 상태를 확인한 뒤 다시 시도해주세요.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "입력값과 네트워크 상태를 확인한 뒤 다시 시도해주세요.",
       })
     } finally {
       setIsSubmitting(false)
@@ -188,6 +215,32 @@ const PostEdit = () => {
         initialValues={post}
         onSubmit={handleSubmit}
       />
+
+      {safetyCheck && safetyCheck.status !== "allowed" && (
+        <div
+          className={`mt-4 rounded-lg border px-4 py-3 text-sm ${
+            safetyCheck.status === "blocked"
+              ? "border-red-200 bg-red-50 text-red-700"
+              : "border-amber-200 bg-amber-50 text-amber-800"
+          }`}
+        >
+          <p className="font-semibold">AI 거래 안전 검사</p>
+          <p className="mt-1">{safetyCheck.message}</p>
+
+          {safetyCheck.matched_policy_titles.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {safetyCheck.matched_policy_titles.map((title) => (
+                <span
+                  key={title}
+                  className="rounded-full bg-white px-2.5 py-1 text-xs font-medium"
+                >
+                  {title}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </section>
   )
 }

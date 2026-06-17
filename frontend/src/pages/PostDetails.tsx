@@ -21,6 +21,10 @@ const statusLabel: Record<PostStatus, string> = {
   sold: "거래완료",
 }
 
+const ALERT_AUTO_CLOSE_MS = 4000
+const DEFAULT_INQUIRY_MESSAGE =
+  "안녕하세요. 아직 거래 가능할까요? 확인 부탁드립니다."
+
 const formatPrice = (price: number) => `${price.toLocaleString("ko-KR")}원`
 
 const formatTime = (createdAt: string) => {
@@ -41,23 +45,40 @@ const PostDetailPage = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { user } = useMockAuth()
+  const routeState = location.state as { alert?: AlertState } | null
   const [post, setPost] = useState<Post | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isSendingSlackAlert, setIsSendingSlackAlert] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isInquiryDialogOpen, setIsInquiryDialogOpen] = useState(false)
+  const [inquiryMessage, setInquiryMessage] = useState(DEFAULT_INQUIRY_MESSAGE)
   const [errorMessage, setErrorMessage] = useState("")
-  const [alert, setAlert] = useState<AlertState | null>(null)
+  const [alert, setAlert] = useState<AlertState | null>(
+    routeState?.alert ?? null,
+  )
 
   useEffect(() => {
-    const routeState = location.state as { alert?: AlertState } | null
     if (!routeState?.alert) {
       return
     }
 
-    setAlert(routeState.alert)
     navigate(location.pathname, { replace: true, state: null })
-  }, [location.pathname, location.state, navigate])
+  }, [location.pathname, routeState?.alert, navigate])
+
+  useEffect(() => {
+    if (!alert) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setAlert(null)
+    }, ALERT_AUTO_CLOSE_MS)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [alert])
 
   useEffect(() => {
     let isMounted = true
@@ -124,11 +145,14 @@ const PostDetailPage = () => {
           },
         },
       })
-    } catch {
+    } catch (error) {
       setAlert({
         type: "error",
         title: "게시글을 삭제하지 못했습니다.",
-        message: "권한 또는 네트워크 상태를 확인한 뒤 다시 시도해주세요.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "권한 또는 네트워크 상태를 확인한 뒤 다시 시도해주세요.",
       })
     } finally {
       setIsDeleting(false)
@@ -141,19 +165,35 @@ const PostDetailPage = () => {
       return
     }
 
+    const message = inquiryMessage.trim()
+    if (!message) {
+      setAlert({
+        type: "error",
+        title: "문의 내용을 입력해주세요.",
+        message: "입력한 내용이 댓글로 남고 판매자에게 Slack으로 전달됩니다.",
+      })
+      return
+    }
+
     setIsSendingSlackAlert(true)
     setAlert(null)
 
     try {
-      const result = await sendSlackTradeAlert(post.id)
+      const result = await sendSlackTradeAlert(post.id, message)
       setAlert({
         type: result.status === "failed" ? "error" : "success",
         title:
           result.status === "sent"
             ? "판매자에게 Slack 문의를 보냈습니다."
-            : "Slack 문의 preview를 만들었습니다.",
+            : result.status === "skipped"
+              ? "Slack 문의 preview를 만들었습니다."
+              : "Slack 문의를 보내지 못했습니다.",
         message: result.message,
       })
+      if (result.status !== "failed") {
+        setIsInquiryDialogOpen(false)
+        setInquiryMessage(DEFAULT_INQUIRY_MESSAGE)
+      }
     } catch {
       setAlert({
         type: "error",
@@ -206,6 +246,61 @@ const PostDetailPage = () => {
         onConfirm={handleConfirmDeletePost}
       />
 
+      {isInquiryDialogOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/45 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="inquiry-dialog-title"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.28)]">
+            <h2
+              id="inquiry-dialog-title"
+              className="text-lg font-semibold text-gray-950"
+            >
+              판매자에게 문의하기
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-gray-500">
+              작성한 내용은 비밀댓글로 남고, 판매자에게 Slack 알림으로도
+              전송됩니다.
+            </p>
+
+            <label className="mt-5 block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                문의 내용
+              </span>
+              <textarea
+                value={inquiryMessage}
+                onChange={(event) => setInquiryMessage(event.target.value)}
+                rows={5}
+                maxLength={1000}
+                className="mt-2 w-full resize-none rounded-lg border border-gray-300 px-4 py-3 text-sm leading-6 text-gray-800 outline-none focus:border-[#00C471] focus:ring-2 focus:ring-[#D1FAE5]"
+                placeholder="판매자에게 전달할 문의 내용을 입력하세요."
+              />
+            </label>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={isSendingSlackAlert}
+                onClick={() => setIsInquiryDialogOpen(false)}
+                className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                disabled={isSendingSlackAlert}
+                onClick={handleSendSlackAlert}
+                className="rounded-lg bg-[#00C471] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#00A862] disabled:cursor-not-allowed disabled:bg-gray-300"
+              >
+                {isSendingSlackAlert ? "전송 중" : "비밀댓글 남기고 알림 보내기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-4">
         <Link
           to="/"
@@ -215,7 +310,11 @@ const PostDetailPage = () => {
         </Link>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div
+        className={`grid gap-6 ${
+          isOwner ? "" : "lg:grid-cols-[minmax(0,1fr)_320px]"
+        }`}
+      >
         <div className="space-y-6">
           <article className="overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm">
             <div className="flex h-96 items-center justify-center overflow-hidden border-b border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100">
@@ -309,20 +408,17 @@ const PostDetailPage = () => {
           <CommentList postId={post.id} />
         </div>
 
-        <aside className="space-y-6">
+        {!isOwner && (
+          <aside className="space-y-6">
           <section className="rounded-lg border border-gray-300 bg-white p-5 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-gray-800">판매자</h2>
 
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-600">
-                {String(post.seller_id).slice(0, 1)}
-              </div>
-
-              <div>
-                <p className="font-semibold text-gray-900">
-                  판매자 #{post.seller_id}
-                </p>
-                <p className="text-sm text-gray-500">정글 구성원</p>
+            <div className="flex justify-center">
+              <div
+                aria-label="판매자 기본 프로필"
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-[#00C471] text-base font-semibold text-white shadow-sm"
+              >
+                {post.seller_initial}
               </div>
             </div>
 
@@ -333,11 +429,11 @@ const PostDetailPage = () => {
               프로필 보기
             </button>
 
-            {user && !isOwner && (
+            {user && !isOwner && post.seller_slack_enabled && (
               <button
                 type="button"
                 disabled={isSendingSlackAlert}
-                onClick={handleSendSlackAlert}
+                onClick={() => setIsInquiryDialogOpen(true)}
                 className="mt-2 w-full rounded-md bg-[#00C471] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#00A862] disabled:cursor-not-allowed disabled:bg-gray-300"
               >
                 {isSendingSlackAlert
@@ -345,8 +441,16 @@ const PostDetailPage = () => {
                   : "판매자에게 Slack 문의 보내기"}
               </button>
             )}
+
+            {user && !isOwner && !post.seller_slack_enabled && (
+              <p className="mt-3 rounded-md bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-500">
+                이 판매자는 Slack 알림을 아직 연결하지 않았습니다. 댓글로
+                문의해주세요.
+              </p>
+            )}
           </section>
-        </aside>
+          </aside>
+        )}
       </div>
     </section>
   )

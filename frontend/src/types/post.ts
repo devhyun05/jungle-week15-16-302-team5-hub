@@ -21,6 +21,8 @@ export type Post = {
   view_count: number
   like_count: number
   comment_count: number
+  seller_slack_enabled: boolean
+  seller_initial: string
   created_at: string
   updated_at: string
   images: PostImage[]

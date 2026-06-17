@@ -24,8 +24,13 @@ class Settings(BaseSettings):
     slack_client_secret: str = ""
     slack_redirect_uri: str = "http://localhost:8000/api/auth/slack/callback"
     allowed_slack_team_id: str = ""
-    allowed_email_csv_path: str = ""
     slack_bot_token: str = ""
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = "http://localhost:8000/api/auth/google/callback"
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4.1-mini"
+    openai_embedding_model: str = "text-embedding-3-small"
 
     jwt_secret_key: str = Field(default="", min_length=1)
     jwt_algorithm: str = "HS256"

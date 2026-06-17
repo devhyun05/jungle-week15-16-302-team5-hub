@@ -32,11 +32,29 @@ const notifyAuthChange = () => {
   window.dispatchEvent(new Event(AUTH_CHANGE_EVENT))
 }
 
+const refreshAccessToken = async () => {
+  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+  })
+
+  return response.ok
+}
+
 const fetchCurrentUser = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+    let response = await fetch(`${API_BASE_URL}/auth/me`, {
       credentials: "include",
     })
+
+    if (response.status === 401) {
+      const refreshed = await refreshAccessToken()
+      if (refreshed) {
+        response = await fetch(`${API_BASE_URL}/auth/me`, {
+          credentials: "include",
+        })
+      }
+    }
 
     if (!response.ok) {
       return null
@@ -47,10 +65,6 @@ const fetchCurrentUser = async () => {
   } catch {
     return null
   }
-}
-
-export const loginWithMockSlack = () => {
-  window.location.href = `${API_BASE_URL}/auth/slack/login`
 }
 
 export const logoutMockUser = async () => {
@@ -95,7 +109,6 @@ export const useMockAuth = () => {
     user,
     isLoggedIn: Boolean(user),
     isCheckingAuth,
-    loginWithMockSlack,
     logoutMockUser,
   }
 }

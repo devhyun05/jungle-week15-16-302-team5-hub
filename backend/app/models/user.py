@@ -13,10 +13,12 @@ class User(Base):
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    slack_user_id: Mapped[str] = mapped_column(String(50), nullable=False)
-    slack_team_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    slack_user_id: Mapped[str | None] = mapped_column(String(50))
+    slack_team_id: Mapped[str | None] = mapped_column(String(50))
+    google_user_id: Mapped[str | None] = mapped_column(String(100), unique=True)
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     username: Mapped[str] = mapped_column(String(50), nullable=False)
+    password_hash: Mapped[str | None] = mapped_column(Text)
     profile_image_url: Mapped[str | None] = mapped_column(Text)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
     created_at: Mapped[datetime] = mapped_column(

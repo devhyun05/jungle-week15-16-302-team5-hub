@@ -32,6 +32,7 @@ const formatDate = (date: string) =>
 const Profile = () => {
   const location = useLocation()
   const navigate = useNavigate()
+  const routeState = location.state as { alert?: AlertState } | null
   const [activeTab, setActiveTab] = useState<ProfileTab>("posts")
   const [profile, setProfile] = useState<UserMe | null>(null)
   const [postSummary, setPostSummary] = useState<MyPostSummary | null>(null)
@@ -40,17 +41,17 @@ const Profile = () => {
   const [deletingPostId, setDeletingPostId] = useState<number | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null)
   const [errorMessage, setErrorMessage] = useState("")
-  const [alert, setAlert] = useState<AlertState | null>(null)
+  const [alert, setAlert] = useState<AlertState | null>(
+    routeState?.alert ?? null,
+  )
 
   useEffect(() => {
-    const routeState = location.state as { alert?: AlertState } | null
     if (!routeState?.alert) {
       return
     }
 
-    setAlert(routeState.alert)
     navigate(location.pathname, { replace: true, state: null })
-  }, [location.pathname, location.state, navigate])
+  }, [location.pathname, routeState?.alert, navigate])
 
   useEffect(() => {
     let isMounted = true
