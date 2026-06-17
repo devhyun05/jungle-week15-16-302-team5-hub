@@ -1,9 +1,10 @@
 from datetime import datetime
 
 from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.user import User
 
 
 class Comment(Base):
@@ -34,3 +35,10 @@ class Comment(Base):
         onupdate=func.now(),
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    writer = relationship("User", foreign_keys=[writer_id])
+    parent_comment = relationship(
+        "Comment",
+        remote_side=[id],
+        foreign_keys=[parent_comment_id],
+    )

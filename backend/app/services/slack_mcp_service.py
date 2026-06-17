@@ -47,6 +47,7 @@ def send_slack_trade_alert(
                     "seller_slack_user_id": {"type": "string"},
                     "sender_name": {"type": "string"},
                     "sender_email": {"type": "string"},
+                    "sender_profile_image_url": {"type": "string"},
                     "message": {"type": "string"},
                 },
                 "required": [
@@ -70,6 +71,7 @@ def send_slack_trade_alert(
         "seller_slack_user_id": seller.slack_user_id,
         "sender_name": sender.username,
         "sender_email": sender.email,
+        "sender_profile_image_url": sender.profile_image_url or "",
         "message": message or "",
     }
     response = client.call_tool(SLACK_TRADE_ALERT_TOOL, payload)
@@ -113,16 +115,23 @@ def post_trade_alert_to_slack(arguments: dict) -> dict:
             }
 
         channel_id = open_data["channel"]["id"]
+        message_payload = {
+            "channel": channel_id,
+            "text": slack_message,
+            "username": arguments["sender_name"],
+        }
+        if arguments.get("sender_profile_image_url"):
+            message_payload["icon_url"] = arguments["sender_profile_image_url"]
+        else:
+            message_payload["icon_emoji"] = ":speech_balloon:"
+
         response = httpx.post(
             "https://slack.com/api/chat.postMessage",
             headers={
                 "Authorization": f"Bearer {settings.slack_bot_token}",
                 "Content-Type": "application/json; charset=utf-8",
             },
-            json={
-                "channel": channel_id,
-                "text": slack_message,
-            },
+            json=message_payload,
             timeout=5,
         )
         response.raise_for_status()

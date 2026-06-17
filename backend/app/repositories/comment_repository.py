@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.comment import Comment
 from app.models.post import Post
@@ -10,6 +10,10 @@ from app.models.post import Post
 def list_comments(db: Session, post_id: int) -> list[Comment]:
     statement = (
         select(Comment)
+        .options(
+            selectinload(Comment.writer),
+            selectinload(Comment.parent_comment),
+        )
         .where(
             Comment.post_id == post_id,
             Comment.deleted_at.is_(None),
@@ -20,9 +24,16 @@ def list_comments(db: Session, post_id: int) -> list[Comment]:
 
 
 def get_comment(db: Session, comment_id: int) -> Comment | None:
-    statement = select(Comment).where(
-        Comment.id == comment_id,
-        Comment.deleted_at.is_(None),
+    statement = (
+        select(Comment)
+        .options(
+            selectinload(Comment.writer),
+            selectinload(Comment.parent_comment),
+        )
+        .where(
+            Comment.id == comment_id,
+            Comment.deleted_at.is_(None),
+        )
     )
     return db.scalar(statement)
 

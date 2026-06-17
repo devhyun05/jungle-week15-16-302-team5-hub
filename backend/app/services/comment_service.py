@@ -53,7 +53,7 @@ def create_comment(
 
     comment = Comment(
         post_id=post_id,
-        writer_id=writer.id,
+        writer=writer,
         parent_comment_id=comment_data.parent_comment_id,
         content=comment_data.content,
         is_secret=comment_data.is_secret,
@@ -103,6 +103,7 @@ def to_comment_response(
         id=comment.id,
         post_id=comment.post_id,
         writer_id=comment.writer_id,
+        writer_name=get_comment_writer_name(comment),
         parent_comment_id=comment.parent_comment_id,
         content="비밀 댓글입니다." if is_hidden else comment.content,
         is_secret=comment.is_secret,
@@ -127,6 +128,7 @@ def can_view_secret_comment(
     return (
         current_user.id == comment.writer_id
         or current_user.id == post.seller_id
+        or is_parent_comment_writer(comment, current_user)
         or current_user.role == "admin"
     )
 
@@ -144,3 +146,17 @@ def can_delete_comment(
         or current_user.id == post.seller_id
         or current_user.role == "admin"
     )
+
+
+def get_comment_writer_name(comment: Comment) -> str:
+    if comment.writer and comment.writer.username:
+        return comment.writer.username
+
+    return f"사용자 {comment.writer_id}"
+
+
+def is_parent_comment_writer(comment: Comment, current_user: User) -> bool:
+    if comment.parent_comment is None:
+        return False
+
+    return current_user.id == comment.parent_comment.writer_id

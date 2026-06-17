@@ -23,6 +23,7 @@ class CommentResponse(BaseModel):
     id: int
     post_id: int
     writer_id: int
+    writer_name: str
     parent_comment_id: int | None
     content: str
     is_secret: bool

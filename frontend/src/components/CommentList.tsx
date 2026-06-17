@@ -20,6 +20,10 @@ const formatTime = (createdAt: string) => {
   return `${Math.floor(diffHours / 24)}일 전`
 }
 
+const getCommentInitial = (comment: Comment) => {
+  return comment.writer_name.trim().slice(0, 1).toUpperCase()
+}
+
 const CommentList = ({ postId }: CommentListProps) => {
   const [comments, setComments] = useState<Comment[]>([])
   const [content, setContent] = useState("")
@@ -123,7 +127,7 @@ const CommentList = ({ postId }: CommentListProps) => {
       <form onSubmit={handleSubmit} className="mb-6 space-y-3">
         {replyTarget && (
           <div className="flex items-center justify-between rounded-md bg-gray-50 px-4 py-2 text-xs text-gray-500">
-            <span>작성자 #{replyTarget.writer_id}님에게 답글 작성 중</span>
+            <span>{replyTarget.writer_name}님에게 답글 작성 중</span>
             <button
               type="button"
               className="font-semibold text-gray-700 hover:text-gray-950"
@@ -193,12 +197,12 @@ const CommentList = ({ postId }: CommentListProps) => {
             >
               <div className="flex gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-600">
-                  {comment.is_hidden ? "🔒" : String(comment.writer_id).slice(0, 1)}
+                  {comment.is_hidden ? "🔒" : getCommentInitial(comment)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <strong className="text-sm text-gray-800">
-                      작성자 #{comment.writer_id}
+                      {comment.is_hidden ? "비밀 댓글" : comment.writer_name}
                     </strong>
                     {comment.is_secret && (
                       <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500">

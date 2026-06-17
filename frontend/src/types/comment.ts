@@ -2,6 +2,7 @@ export type Comment = {
   id: number
   post_id: number
   writer_id: number
+  writer_name: string
   parent_comment_id: number | null
   content: string
   is_secret: boolean
