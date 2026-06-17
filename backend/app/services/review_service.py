@@ -100,12 +100,14 @@ def create_review_request(
             coach_feedback_status="요청함",
         )
 
+    target_title = target_post.title if request.target_type == "post" else target_project.title
+
     for coach in coaches:
         notification_repository.create_notification(
             db=db,
             user_id=coach.id,
             notification_type="review-request",
-            message=f"{current_user.name}님이 리뷰 요청을 보냈습니다.",
+            message=f"{current_user.name}님이 {target_title} 리뷰 요청을 보냈습니다.",
             link_url="/coach-review",
         )
 
@@ -215,11 +217,21 @@ def cancel_my_review_request(
         raise ValueError("검토가 시작된 요청은 취소할 수 없습니다.")
 
     target_project = review_request.target_project
+    coaches = [link.coach for link in review_request.review_request_coaches if link.coach is not None]
 
     review_repository.delete_pending_request(
         db=db,
         review_request=review_request,
     )
+
+    for coach in coaches:
+        notification_repository.create_notification(
+            db=db,
+            user_id=coach.id,
+            notification_type="review-cancel",
+            message=f"{current_user.name}님이 코치 리뷰 요청을 취소했습니다.",
+            link_url="/coach-review",
+        )
 
     if target_project is not None:
         portfolio_repository.update_project_coach_feedback_status(

@@ -74,6 +74,23 @@ def get_user_by_email(db: Session, email: str) -> User | None:
     return db.scalar(select(User).where(User.email == email.lower()))
 
 
+def list_approved_admins(db: Session) -> list[User]:
+    """
+    승인 완료된 관리자 계정 목록을 조회한다.
+
+    새 사용자가 승인 대기 상태로 들어왔을 때 관리자 알림을 만들기 위해 사용한다.
+    """
+
+    return list(
+        db.scalars(
+            select(User).where(
+                User.role == ROLE_ADMIN,
+                User.approval_status == APPROVAL_APPROVED,
+            )
+        )
+    )
+
+
 def create_google_user(
     db: Session,
     email: str,

@@ -807,3 +807,38 @@ embed_texts([]): []
 - 이유:
   - RAG/MCP/Agent는 사용자 선택 옵션이 아니라 내부 아키텍처 단계이기 때문이다.
   - 사용자는 기술 방식보다 어떤 결과물을 만들지에 집중하는 편이 자연스럽다.
+
+## 2026-06-17 AI 생성 실행 분리와 알림 동기화
+
+- 작업 파일:
+  - `frontend/src/app/pages/ai/AIAssistant.tsx`
+  - `frontend/src/app/layouts/MainLayout.tsx`
+  - `frontend/src/app/api/notifications.ts`
+  - `backend/app/services/ai_service.py`
+  - `backend/app/services/portfolio_service.py`
+  - `backend/app/services/review_service.py`
+  - `backend/app/services/auth_service.py`
+  - `backend/app/repositories/notification_repository.py`
+  - `backend/app/repositories/user_repository.py`
+  - `backend/app/routers/notifications.py`
+  - `README.md`
+  - `docs/agent/wei.md`
+  - `docs/agent/study.md`
+  - `docs/agent/test.md`
+- 구현:
+  - AI 작업 버튼은 선택만 하고, 실제 생성은 `생성하기` 버튼에서만 실행되도록 분리했다.
+  - 생성 실행은 Agent -> RAG -> direct fallback 순서로 처리한다.
+  - AI 생성 완료와 포트폴리오 게시글 발행/갱신 완료 알림을 생성한다.
+  - 리뷰 요청 생성/취소/피드백 상태 변경 알림을 보강했다.
+  - 새 Google 사용자가 승인 대기 상태가 되면 승인 완료 관리자에게 알림을 생성한다.
+  - 알림 삭제 API와 드롭다운 `x` 삭제 버튼을 추가했다.
+- 검증:
+
+```txt
+frontend npm run build: success
+backend compileall app: success
+```
+
+- 추가 확인 필요:
+  - 실제 로그인 세션에서 AI 작업 버튼 클릭만으로 네트워크 생성 요청이 발생하지 않는지 브라우저 Network 탭으로 확인한다.
+  - 실제 학생/코치 계정으로 포트폴리오 대상 리뷰 상태 동기화와 알림 생성을 다시 확인한다.

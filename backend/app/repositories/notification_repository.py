@@ -1,4 +1,4 @@
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.db.models import Notification
@@ -92,4 +92,16 @@ def mark_all_notifications_read(db: Session, user_id: int) -> None:
     for notification in notifications:
         notification.is_read = True
 
+    db.commit()
+
+
+def delete_notification(db: Session, notification: Notification) -> None:
+    """
+    현재 사용자가 소유한 알림 하나를 목록에서 제거한다.
+
+    알림은 업무 데이터가 아니라 사용자별 확인 기록이므로 hard delete로 처리한다.
+    소유자 검증은 get_notification_by_id에서 user_id 조건으로 먼저 끝낸 뒤 호출한다.
+    """
+
+    db.execute(delete(Notification).where(Notification.id == notification.id))
     db.commit()

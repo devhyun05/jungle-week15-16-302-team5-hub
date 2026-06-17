@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 from sqlalchemy.orm import Session
 
 from app.db.models import PortfolioProject, Post, User
-from app.repositories import portfolio_repository, post_repository
+from app.repositories import notification_repository, portfolio_repository, post_repository
 from app.schemas.portfolio import (
     PortfolioProjectCreateRequest,
     PortfolioProjectListResponse,
@@ -359,6 +359,18 @@ def publish_portfolio_post(
         db=db,
         project=project,
         post=post,
+    )
+
+    notification_repository.create_notification(
+        db=db,
+        user_id=current_user.id,
+        notification_type="portfolio-publish",
+        message=(
+            f"{project.title} 포트폴리오 게시글을 발행했습니다."
+            if publish_status == "created"
+            else f"{project.title} 포트폴리오 게시글을 최신 내용으로 갱신했습니다."
+        ),
+        link_url=f"/posts/{post.id}",
     )
 
     return build_project_response(updated_project, publish_status=publish_status)

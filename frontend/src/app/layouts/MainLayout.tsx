@@ -18,6 +18,7 @@ import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { resolveApiAssetUrl } from "../api/client";
 import {
+  deleteNotification,
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -234,6 +235,22 @@ export function MainLayout() {
     }
   };
 
+  const removeNotification = async (notificationId: number) => {
+    try {
+      const targetNotification = notifications.find((notification) => notification.id === notificationId);
+
+      await deleteNotification(notificationId);
+      setNotifications((prev) => prev.filter((notification) => notification.id !== notificationId));
+
+      if (targetNotification && !targetNotification.isRead) {
+        setUnreadNotificationCount((prev) => Math.max(prev - 1, 0));
+      }
+    } catch (error) {
+      console.error(error);
+      setNotificationError("알림을 삭제하지 못했습니다.");
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
       <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white md:flex">
@@ -315,7 +332,11 @@ export function MainLayout() {
                 onClick={toggleNotifications}
               >
                 <Bell className="h-5 w-5 text-slate-600" />
-                {unreadNotificationCount > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />}
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-red-500 px-1 text-[10px] font-bold leading-4 text-white">
+                    {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
+                  </span>
+                )}
               </Button>
 
               {isNotificationOpen && (
@@ -340,13 +361,18 @@ export function MainLayout() {
                       <p className="px-4 py-6 text-center text-sm text-slate-500">아직 도착한 알림이 없습니다.</p>
                     )}
                     {!isNotificationLoading && !notificationError && notifications.map((notification) => (
-                      <button
+                      <div
                         key={notification.id}
-                        type="button"
-                        className="block w-full px-4 py-3 text-left transition-colors hover:bg-slate-50"
-                        onClick={() => void openNotification(notification)}
+                        className={`flex w-full items-start gap-2 px-4 py-3 transition-colors hover:bg-slate-50 ${
+                          notification.isRead ? "bg-white" : "bg-emerald-50/40"
+                        }`}
                       >
-                        <div className="flex items-start gap-2">
+                        <button
+                          type="button"
+                          className="min-w-0 flex-1 text-left"
+                          onClick={() => void openNotification(notification)}
+                        >
+                          <div className="flex items-start gap-2">
                           {!notification.isRead && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />}
                           <div className="min-w-0">
                             <p className={`text-sm ${notification.isRead ? "font-medium text-slate-600" : "font-semibold text-slate-900"}`}>
@@ -354,8 +380,17 @@ export function MainLayout() {
                             </p>
                             <p className="mt-1 text-xs text-slate-400">{formatNotificationTime(notification.createdAt)}</p>
                           </div>
-                        </div>
-                      </button>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-md px-1.5 py-0.5 text-xs font-bold text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                          aria-label="알림 삭제"
+                          onClick={() => void removeNotification(notification.id)}
+                        >
+                          x
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>

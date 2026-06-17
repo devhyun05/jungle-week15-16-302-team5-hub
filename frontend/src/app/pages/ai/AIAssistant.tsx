@@ -19,7 +19,7 @@ import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import { getMyPosts, type PostListApiItem } from "../../api/posts";
 import { getPortfolioProjects, updatePortfolioProject, type PortfolioProjectApiItem } from "../../api/portfolio";
-import { generateAIContent } from "../../api/ai";
+import { generateAIContent, runAIAgent } from "../../api/ai";
 import { getDisplayTechStack } from "../../utils/techStack";
 import { cleanInterviewQuestionsText } from "../../utils/interviewQuestions";
 
@@ -46,12 +46,14 @@ const outputOptions = [
 export function AIAssistant() {
   const [searchParams] = useSearchParams();
   const queryProjectParam = searchParams.get("project");
-  const initialType: OutputType = searchParams.get("type") === "interview" ? "interview" : "portfolio";
+  const queryTypeParam = searchParams.get("type");
+  const initialType: OutputType | null =
+    queryTypeParam === "portfolio" || queryTypeParam === "interview" ? queryTypeParam : null;
 
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [projects, setProjects] = useState<PortfolioProjectApiItem[]>([]);
   const [records, setRecords] = useState<PostListApiItem[]>([]);
-  const [outputType, setOutputType] = useState<OutputType>(initialType);
+  const [outputType, setOutputType] = useState<OutputType | null>(initialType);
   const [savedNotice, setSavedNotice] = useState("");
   const [copyNotice, setCopyNotice] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -111,12 +113,19 @@ export function AIAssistant() {
   const savedResultText =
     outputType === "portfolio"
       ? selectedProject?.savedPortfolioDraft ?? ""
-      : cleanInterviewQuestionsText(selectedProject?.savedInterviewQuestions);
+      : outputType === "interview"
+        ? cleanInterviewQuestionsText(selectedProject?.savedInterviewQuestions)
+        : "";
   const resultText = generatedText || savedResultText;
   const hasResultText = resultText.trim().length > 0;
 
   const saveResult = async () => {
     if (!selectedProject) {
+      return;
+    }
+
+    if (!outputType) {
+      toast.info("저장할 AI 작업을 먼저 선택해주세요.");
       return;
     }
 
@@ -153,26 +162,55 @@ export function AIAssistant() {
     }
   };
 
-  const generateResult = async (nextOutputType: OutputType = outputType) => {
+  const generateResult = async () => {
     if (!selectedProject) {
+      toast.info("프로젝트를 먼저 선택해주세요.");
       return;
     }
 
-    setOutputType(nextOutputType);
+    if (!outputType) {
+      toast.info("생성할 작업을 선택해주세요.");
+      return;
+    }
+
     setIsGenerating(true);
     setSavedNotice("");
     setErrorMessage("");
     setGeneratedText("");
 
     try {
-      const generatedContent = await generateAIContent({
-        projectId: selectedProject.id,
-        outputType: nextOutputType,
-        generationMode: "direct",
-      }).then((response) => response.content);
+      let generatedContent = "";
+
+      try {
+        const agentResult = await runAIAgent({
+          projectId: selectedProject.id,
+          outputType,
+          userGoal: outputType === "portfolio" ? "포트폴리오 글 생성" : "면접 예상 질문 생성",
+        });
+
+        generatedContent = agentResult.finalContent;
+      } catch (agentError) {
+        console.warn("Agent generation failed. Falling back to RAG generation.", agentError);
+
+        try {
+          generatedContent = await generateAIContent({
+            projectId: selectedProject.id,
+            outputType,
+            generationMode: "rag",
+          }).then((response) => response.content);
+        } catch (ragError) {
+          console.warn("RAG generation failed. Falling back to direct generation.", ragError);
+
+          generatedContent = await generateAIContent({
+            projectId: selectedProject.id,
+            outputType,
+            generationMode: "direct",
+          }).then((response) => response.content);
+        }
+      }
 
       setGeneratedText(generatedContent);
-      toast.success(nextOutputType === "portfolio" ? "AI 포트폴리오 글을 생성했습니다." : "AI 면접 예상 질문을 생성했습니다.");
+      toast.success(outputType === "portfolio" ? "AI 포트폴리오 글을 생성했습니다." : "AI 면접 예상 질문을 생성했습니다.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "AI 생성에 실패했습니다.";
 
@@ -184,7 +222,7 @@ export function AIAssistant() {
   };
 
   const refreshResult = () => {
-    void generateResult(outputType);
+    void generateResult();
   };
 
   const copyResultWithFallback = async (text: string) => {
@@ -292,7 +330,12 @@ export function AIAssistant() {
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => void generateResult(option.value)}
+                      onClick={() => {
+                        setOutputType(option.value);
+                        setGeneratedText("");
+                        setSavedNotice("");
+                        setErrorMessage("");
+                      }}
                       disabled={isGenerating}
                       className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
                         outputType === option.value
@@ -310,7 +353,7 @@ export function AIAssistant() {
                 </div>
 
                 <p className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-800">
-                  화면에서는 만들 결과만 고릅니다. RAG 검색, MCP 도구 호출, Agent 실행 흐름은 내부 아키텍처로 확장됩니다.
+                  화면에서는 만들 결과만 고릅니다. 생성하기를 누르면 내부 Agent가 RAG 검색과 필요한 도구 호출을 순서대로 사용합니다.
                 </p>
               </div>
             </CardContent>
@@ -327,7 +370,7 @@ export function AIAssistant() {
                 </CardHeader>
                 <CardContent className="space-y-5 p-5">
                   <p className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-800">
-                    AI는 아래 자료를 참고해 포트폴리오 글과 면접 예상 질문을 만듭니다. 화면에는 요약만 보이고, 생성 단계에서는 저장된 원문과 연결 데이터를 활용합니다.
+                    AI는 선택한 프로젝트의 GitHub README, 커밋 메시지, 연결된 JungleLog 기록, 코치 피드백을 참고해 결과를 생성합니다.
                   </p>
 
                   <section className="space-y-2">
@@ -477,18 +520,18 @@ export function AIAssistant() {
                     <pre className="whitespace-pre-wrap font-sans">{resultText}</pre>
                   ) : (
                     <div className="flex h-full min-h-[320px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-center text-sm text-slate-500">
-                      위의 포트폴리오 글 만들기 또는 면접 예상 질문 만들기를 누르면 결과가 표시됩니다.
+                      AI 작업을 선택한 뒤 생성하기 버튼을 누르면 결과가 표시됩니다.
                     </div>
                   )}
                 </div>
                 <div className="space-y-2 border-t border-slate-100 bg-slate-50 p-4">
-                  <Button variant="secondary" className="w-full" onClick={() => void generateResult(outputType)} disabled={isGenerating}>
+                  <Button variant="secondary" className="w-full" onClick={() => void generateResult()} disabled={isGenerating}>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    {isGenerating ? "AI 생성 중..." : outputType === "portfolio" ? "포트폴리오 글 다시 만들기" : "면접 예상 질문 다시 만들기"}
+                    {isGenerating ? "AI 생성 중..." : "생성하기"}
                   </Button>
-                  <Button className="w-full" onClick={() => void saveResult()} disabled={isSaving || !hasResultText}>
+                  <Button className="w-full" onClick={() => void saveResult()} disabled={isSaving || !hasResultText || !outputType}>
                     <Save className="mr-2 h-4 w-4" />
-                    {outputType === "portfolio" ? "포트폴리오 글로 저장" : "면접 질문으로 저장"}
+                    {outputType === "portfolio" ? "포트폴리오 글로 저장" : outputType === "interview" ? "면접 질문으로 저장" : "결과 저장"}
                   </Button>
                   {savedNotice && <p className="text-center text-xs text-emerald-700">{savedNotice}</p>}
                   {copyNotice && <p className="text-center text-xs text-slate-500">{copyNotice}</p>}

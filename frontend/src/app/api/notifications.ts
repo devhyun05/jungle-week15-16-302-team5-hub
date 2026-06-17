@@ -53,3 +53,15 @@ export async function markAllNotificationsRead(): Promise<void> {
     throw new Error(message);
   }
 }
+
+export async function deleteNotification(notificationId: number): Promise<void> {
+  const response = await apiFetch(`${API_BASE_URL}/notifications/${notificationId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response);
+    throw new Error(message);
+  }
+}

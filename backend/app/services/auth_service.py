@@ -13,7 +13,7 @@ from app.core.security import (
     hash_refresh_token,
 )
 from app.db.models import User
-from app.repositories import auth_token_repository, user_repository
+from app.repositories import auth_token_repository, notification_repository, user_repository
 from app.schemas.auth import CurrentUserResponse
 
 
@@ -166,13 +166,33 @@ def get_or_create_google_login_user(
     처음 보는 Google 계정이면 승인 대기 사용자 또는 초기 관리자로 생성한다.
     """
 
-    return user_repository.get_or_create_google_user(
+    existing_user = user_repository.get_user_by_google_sub(
+        db=db,
+        google_sub=google_profile.google_sub,
+    ) or user_repository.get_user_by_email(
+        db=db,
+        email=google_profile.email,
+    )
+
+    user = user_repository.get_or_create_google_user(
         db=db,
         email=google_profile.email,
         google_sub=google_profile.google_sub,
         name=google_profile.name,
         profile_image_url=google_profile.profile_image_url,
     )
+
+    if existing_user is None and user.approval_status == user_repository.APPROVAL_PENDING:
+        for admin in user_repository.list_approved_admins(db=db):
+            notification_repository.create_notification(
+                db=db,
+                user_id=admin.id,
+                notification_type="approval-pending",
+                message=f"{user.name}님이 Google 로그인 후 승인 대기 상태가 되었습니다.",
+                link_url="/admin/users",
+            )
+
+    return user
 
 
 def issue_login_tokens(

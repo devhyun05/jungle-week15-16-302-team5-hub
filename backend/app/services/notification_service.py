@@ -52,6 +52,24 @@ def mark_all_my_notifications_read(db: Session, current_user: User) -> None:
     )
 
 
+def delete_my_notification(db: Session, current_user: User, notification_id: int) -> bool:
+    notification = notification_repository.get_notification_by_id(
+        db=db,
+        notification_id=notification_id,
+        user_id=current_user.id,
+    )
+
+    if notification is None:
+        return False
+
+    notification_repository.delete_notification(
+        db=db,
+        notification=notification,
+    )
+
+    return True
+
+
 def build_notification_item(notification: Notification) -> NotificationItemResponse:
     return NotificationItemResponse(
         id=notification.id,

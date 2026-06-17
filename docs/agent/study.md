@@ -918,3 +918,41 @@ UI 버튼은 그대로 두고 내부 구현만 고도화할 수 있다.
 - 사용자 UI와 내부 아키텍처는 같은 단어를 쓸 필요가 없다.
 - `RAG`, `MCP`, `Agent`는 발표/문서/코드에서 설명할 기술 구조다.
 - 서비스 화면에서는 “무엇을 만들 수 있는지”가 먼저 보여야 한다.
+
+## 2026-06-17 학습 기록: AI 생성 실행 분리와 알림 상태 동기화
+
+### 수정한 파일
+
+- `frontend/src/app/pages/ai/AIAssistant.tsx`
+  - `포트폴리오 글 만들기`, `면접 예상 질문 만들기` 버튼을 API 실행 버튼이 아니라 작업 선택 버튼으로 바꿨다.
+  - 실제 OpenAI 호출은 `생성하기` 버튼에서만 실행한다.
+  - 내부 실행은 Agent를 먼저 시도하고, 실패하면 RAG, 다시 실패하면 direct 생성으로 fallback한다.
+- `backend/app/services/ai_service.py`
+  - AI 생성 완료 시 현재 사용자에게 저장 알림을 만든다.
+- `backend/app/services/portfolio_service.py`
+  - 포트폴리오 게시글 발행/갱신 완료 시 저장 알림을 만든다.
+- `backend/app/services/review_service.py`
+  - 포트폴리오 대상 리뷰 요청 상태가 프로젝트 코치 피드백 상태와 동기화되는 흐름을 유지하고, 요청/취소/피드백 알림을 보강했다.
+- `backend/app/routers/notifications.py`
+  - `DELETE /notifications/{notification_id}` API를 추가했다.
+- `frontend/src/app/layouts/MainLayout.tsx`
+  - 알림 badge를 숫자로 보여주고, 알림별 `x` 삭제 버튼을 추가했다.
+
+### React 개념
+
+- `useState<OutputType | null>`처럼 선택되지 않은 상태를 타입으로 표현했다.
+- 작업 선택 버튼은 `setOutputType()`만 호출하고, 비싼 API 호출은 하지 않는다.
+- `생성하기` 버튼은 현재 state를 검증한 뒤 비동기 API를 실행한다.
+
+### 백엔드 개념
+
+- 저장 알림은 toast와 다르다. toast는 즉시 사라지는 UI 피드백이고, notification row는 사용자가 나중에 다시 확인할 이벤트다.
+- 알림 삭제 API는 `notification_id`와 `current_user.id`를 같이 조건으로 조회해 본인 알림만 삭제한다.
+- 포트폴리오 프로젝트 대상 코치 리뷰는 `review_requests.status`와 `portfolio_projects.coach_feedback_status`를 함께 갱신해야 화면 새로고침 후에도 상태가 유지된다.
+
+### 핵심 포인트
+
+- 버튼을 누른다는 행위가 항상 서버 요청을 의미하지는 않는다.
+- 비용이 발생하는 AI 호출은 명확한 최종 실행 버튼에서만 일어나야 한다.
+- Agent/RAG/direct fallback은 사용자 UI가 아니라 백엔드 실행 전략이다.
+- 권한이 있는 사용자만 자신의 알림을 조회/읽음/삭제할 수 있어야 한다.

@@ -63,3 +63,23 @@ def mark_all_notifications_read(
         db=db,
         current_user=current_user,
     )
+
+
+@router.delete("/{notification_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_notification(
+    notification_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_approved_user),
+) -> None:
+    """
+    현재 로그인 사용자의 알림 하나를 목록에서 제거한다.
+    """
+
+    is_deleted = notification_service.delete_my_notification(
+        db=db,
+        current_user=current_user,
+        notification_id=notification_id,
+    )
+
+    if not is_deleted:
+        raise HTTPException(status_code=404, detail="알림을 찾을 수 없습니다.")

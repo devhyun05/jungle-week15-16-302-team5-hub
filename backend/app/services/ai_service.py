@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.models import PortfolioProject, User
-from app.repositories import portfolio_repository
+from app.repositories import notification_repository, portfolio_repository
 from app.schemas.ai import AIGenerateResponse, AIGenerationMode, AIReferenceSummary, AIOutputType
 from app.services import rag_service
 from app.services.portfolio_service import parse_recent_commit_summary, parse_tech_stack
@@ -79,6 +79,18 @@ def generate_project_content(
             generation_mode=effective_mode,
             rag_context=rag_context,
         ),
+    )
+
+    notification_repository.create_notification(
+        db=db,
+        user_id=current_user.id,
+        notification_type="ai-generation",
+        message=(
+            f"{project.title} AI 포트폴리오 글 생성이 완료되었습니다."
+            if output_type == "portfolio"
+            else f"{project.title} AI 면접 예상 질문 생성이 완료되었습니다."
+        ),
+        link_url=f"/ai-assistant?project={project.id}&type={output_type}",
     )
 
     return AIGenerateResponse(
