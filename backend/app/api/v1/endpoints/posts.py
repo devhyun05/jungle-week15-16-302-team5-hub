@@ -4,6 +4,7 @@ from fastapi import APIRouter, Cookie, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.config import get_settings
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.post import (
@@ -17,6 +18,7 @@ from app.schemas.post import (
 from app.services import post_service
 
 router = APIRouter(prefix="/posts", tags=["posts"])
+settings = get_settings()
 
 VIEWED_POSTS_COOKIE_NAME = "viewed_posts"
 VIEW_COUNT_COOLDOWN_SECONDS = 24 * 60 * 60
@@ -98,7 +100,8 @@ def read_post(
             key=VIEWED_POSTS_COOKIE_NAME,
             value=serialize_viewed_posts_cookie(viewed_posts),
             httponly=True,
-            samesite="lax",
+            secure=settings.cookie_secure,
+            samesite=settings.cookie_samesite,
             max_age=VIEW_COUNT_COOLDOWN_SECONDS,
         )
 

@@ -126,6 +126,15 @@ const PostDetailPage = () => {
     setIsDeleteDialogOpen(true)
   }
 
+  const handleOpenInquiryDialog = () => {
+    if (!user) {
+      navigate("/login")
+      return
+    }
+
+    setIsInquiryDialogOpen(true)
+  }
+
   const handleConfirmDeletePost = async () => {
     if (!post) {
       return
@@ -429,11 +438,11 @@ const PostDetailPage = () => {
               프로필 보기
             </button>
 
-            {user && !isOwner && post.seller_slack_enabled && (
+            {!isOwner && post.seller_slack_enabled && (
               <button
                 type="button"
                 disabled={isSendingSlackAlert}
-                onClick={() => setIsInquiryDialogOpen(true)}
+                onClick={handleOpenInquiryDialog}
                 className="mt-2 w-full rounded-md bg-[#00C471] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#00A862] disabled:cursor-not-allowed disabled:bg-gray-300"
               >
                 {isSendingSlackAlert
