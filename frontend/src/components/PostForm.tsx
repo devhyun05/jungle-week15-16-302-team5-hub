@@ -1,10 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import type { ChangeEvent, FormEventHandler } from "react"
-import { assistPostWriting } from "../api/ai"
-import type { PostWritingAction, RagSource } from "../api/ai"
 import type { Post } from "../types/post"
-
-const isLocalAiAssistBlocked = import.meta.env.DEV
 
 type PostFormProps = {
   mode: "create" | "edit"
@@ -19,14 +15,9 @@ const PostForm = ({
   initialValues,
   onSubmit,
 }: PostFormProps) => {
-  const formRef = useRef<HTMLFormElement | null>(null)
   const imageInputRef = useRef<HTMLInputElement | null>(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null)
   const [imageFileName, setImageFileName] = useState("")
-  const [isAssisting, setIsAssisting] = useState(false)
-  const [assistantMessage, setAssistantMessage] = useState("")
-  const [assistantTags, setAssistantTags] = useState<string[]>([])
-  const [assistantSources, setAssistantSources] = useState<RagSource[]>([])
 
   useEffect(() => {
     return () => {
@@ -66,64 +57,8 @@ const PostForm = ({
     setImageFileName("")
   }
 
-  const getFormInputValue = (name: string) => {
-    const input = formRef.current?.elements.namedItem(name)
-    if (
-      input instanceof HTMLInputElement ||
-      input instanceof HTMLTextAreaElement ||
-      input instanceof HTMLSelectElement
-    ) {
-      return input.value
-    }
-
-    return ""
-  }
-
-  const setDescriptionValue = (value: string) => {
-    const descriptionInput = formRef.current?.elements.namedItem("description")
-    if (descriptionInput instanceof HTMLTextAreaElement) {
-      descriptionInput.value = value
-    }
-  }
-
-  const handleWritingAssist = async (action: PostWritingAction) => {
-    if (isLocalAiAssistBlocked) {
-      setAssistantMessage("로컬에서는 AI 작성 도구를 잠시 꺼두었습니다.")
-      return
-    }
-
-    setIsAssisting(true)
-    setAssistantMessage("")
-
-    const price = getFormInputValue("price").replaceAll(",", "")
-
-    try {
-      const result = await assistPostWriting({
-        action,
-        title: getFormInputValue("title"),
-        description: getFormInputValue("description") || null,
-        category: getFormInputValue("category") || null,
-        price: price ? Number(price) : null,
-        trade_location: getFormInputValue("trade_location") || null,
-      })
-
-      if (action !== "suggest_tags") {
-        setDescriptionValue(result.description)
-      }
-
-      setAssistantTags(result.suggested_tags)
-      setAssistantSources(result.sources)
-      setAssistantMessage("AI 작성 도구가 내용을 반영했습니다.")
-    } catch {
-      setAssistantMessage("AI 작성 도구를 실행하지 못했습니다.")
-    } finally {
-      setIsAssisting(false)
-    }
-  }
-
   return (
     <form
-      ref={formRef}
       id={formId}
       onSubmit={onSubmit}
       className="rounded-lg border border-gray-300 bg-white shadow-sm"
@@ -298,78 +233,6 @@ const PostForm = ({
 
       {/* 설명 입력 */}
       <div className="p-6">
-        {/* AI 작성 도구 */}
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              AI 작성 도구
-            </p>
-            <p className="mt-1 text-xs text-gray-400">
-              {isLocalAiAssistBlocked
-                ? "로컬에서는 잠시 비활성화되어 있습니다."
-                : "작성한 설명을 기준으로 AI 도움을 받을 수 있습니다."}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={isAssisting || isLocalAiAssistBlocked}
-              onClick={() => handleWritingAssist("refine")}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-300"
-            >
-              {isAssisting ? "실행 중" : "문장 다듬기"}
-            </button>
-
-            <button
-              type="button"
-              disabled={isAssisting || isLocalAiAssistBlocked}
-              onClick={() => handleWritingAssist("fix_typos")}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-300"
-            >
-              오타 수정
-            </button>
-
-            <button
-              type="button"
-              disabled={isAssisting || isLocalAiAssistBlocked}
-              onClick={() => handleWritingAssist("suggest_tags")}
-              className="rounded-md bg-[#00C471] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#00A862] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
-            >
-              태그 추천
-            </button>
-          </div>
-        </div>
-
-        {(assistantMessage || assistantTags.length > 0) && (
-          <div className="mb-4 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3">
-            {assistantMessage && (
-              <p className="text-xs font-medium text-emerald-700">
-                {assistantMessage}
-              </p>
-            )}
-
-            {assistantTags.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {assistantTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-emerald-700"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {assistantSources.length > 0 && (
-              <p className="mt-2 text-xs text-emerald-700">
-                유사 판매글 {assistantSources.length}개를 참고했습니다.
-              </p>
-            )}
-          </div>
-        )}
-
         <label className="block">
           <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
             설명
