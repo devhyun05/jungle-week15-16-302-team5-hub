@@ -1,0 +1,1186 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router";
+import { BookOpen, ExternalLink, FileText, Github, GitCommit, Link2, Plus, RefreshCw, Search, Sparkles, X } from "lucide-react";
+import { toast } from "sonner";
+import { Badge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
+import { Card, CardContent } from "../../components/ui/Card";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { Input } from "../../components/ui/Input";
+import { PortfolioMarkdownBlock } from "../../components/portfolio/PortfolioMarkdownBlock";
+import { InterviewQuestionsBlock } from "../../components/portfolio/InterviewQuestionsBlock";
+import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
+import { getMyPosts, type PostListApiItem } from "../../api/posts";
+import { getMyReviewRequests, type ReviewRequestApiItem } from "../../api/reviews";
+import {
+  createPortfolioProject,
+  deletePortfolioProject,
+  getPortfolioProjects,
+  linkPortfolioProjectPosts,
+  publishPortfolioProjectPost,
+  refreshPortfolioProjectGithubInfo,
+  updatePortfolioProject,
+  type PortfolioProjectApiItem,
+  type PortfolioStatus,
+} from "../../api/portfolio";
+import { getDisplayTechStack } from "../../utils/techStack";
+import { cleanInterviewQuestionsText, getInterviewQuestionPreview } from "../../utils/interviewQuestions";
+
+const portfolioStatuses: PortfolioStatus[] = ["작성중", "보완 필요", "정리 완료"];
+const coachFeedbackStatusFilters = ["전체", "요청 전", "요청함", "검토 중", "수정 요청", "피드백 완료"] as const;
+type CoachFeedbackStatusFilter = (typeof coachFeedbackStatusFilters)[number];
+// /me/posts API는 한 번에 최대 50개까지만 허용한다.
+// 포트폴리오 기록 연결 목록도 같은 제한을 지켜야 422 validation error가 나지 않는다.
+const PORTFOLIO_LINKABLE_POST_PAGE_SIZE = 50;
+const sectionActionClass =
+  "border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm hover:bg-emerald-100 hover:text-emerald-800";
+const utilityActionClass =
+  "border-slate-200 bg-white text-slate-700 shadow-sm hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800";
+
+function portfolioStatusClass(status: string) {
+  if (status === "정리 완료") return "bg-emerald-100 text-emerald-700";
+  if (status === "보완 필요") return "bg-amber-100 text-amber-700";
+  return "bg-blue-100 text-blue-700";
+}
+
+function feedbackStatusClass(status: string) {
+  if (status === "피드백 완료") return "bg-emerald-100 text-emerald-700";
+  if (status === "수정 요청") return "bg-amber-100 text-amber-700";
+  if (status === "검토 중") return "bg-blue-100 text-blue-700";
+  return "bg-slate-100 text-slate-700";
+}
+
+function getCoachFeedbackStatusLabel(status: string) {
+  return status === "요청함" ? "요청 대기 중" : status;
+}
+
+function categoryVariant(category: string) {
+  if (category === "트러블슈팅") return "warning";
+  if (category === "면접 질문") return "success";
+  if (category === "포트폴리오 관리") return "outline";
+  return "secondary";
+}
+
+function isLinkablePortfolioRecord(post: PostListApiItem) {
+  // 포트폴리오 프로젝트에서 발행한 포트폴리오 게시글을 다시 프로젝트에 연결하면
+  // "프로젝트 -> 게시글 -> 같은 프로젝트"로 순환 참조처럼 보일 수 있어 연결 후보에서 제외한다.
+  return post.categorySlug !== "portfolio" && post.category !== "포트폴리오 관리";
+}
+
+function formatDate(dateText: string | null) {
+  if (!dateText) {
+    return "분석 전";
+  }
+
+  return new Date(dateText).toLocaleString("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function parseGithubProjectReference(githubUrl: string) {
+  const normalizedUrl = githubUrl.trim().replace(/\.git$/, "");
+
+  if (!normalizedUrl) {
+    return null;
+  }
+
+  try {
+    const parsedUrl = new URL(normalizedUrl.includes("://") ? normalizedUrl : `https://${normalizedUrl}`);
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+
+    if (!parsedUrl.hostname.includes("github.com") || pathParts.length < 2) {
+      return null;
+    }
+
+    return {
+      repoFullName: `${pathParts[0]}/${pathParts[1]}`.toLowerCase(),
+      githubBranch: pathParts.length >= 4 && ["tree", "blob"].includes(pathParts[2]) ? pathParts.slice(3).join("/") : null,
+    };
+  } catch {
+    const cleanedUrl = normalizedUrl.replace("github.com/", "").replace(/^\/+/, "");
+    const pathParts = cleanedUrl.split("/").filter(Boolean);
+
+    if (pathParts.length < 2) {
+      return null;
+    }
+
+    return {
+      repoFullName: `${pathParts[0]}/${pathParts[1]}`.toLowerCase(),
+      githubBranch: pathParts.length >= 4 && ["tree", "blob"].includes(pathParts[2]) ? pathParts.slice(3).join("/") : null,
+    };
+  }
+}
+
+function getGithubHref(githubUrl: string) {
+  const trimmedGithubUrl = githubUrl.trim();
+
+  if (!trimmedGithubUrl) {
+    return null;
+  }
+
+  const href = trimmedGithubUrl.includes("://") ? trimmedGithubUrl : `https://${trimmedGithubUrl}`;
+
+  try {
+    const parsedUrl = new URL(href);
+    const isHttpUrl = parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
+    const isGithubHost = parsedUrl.hostname === "github.com" || parsedUrl.hostname.endsWith(".github.com");
+
+    return isHttpUrl && isGithubHost ? parsedUrl.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function getGithubRepoHref(project: PortfolioProjectApiItem) {
+  return getGithubHref(`https://github.com/${project.repoFullName}`);
+}
+
+function getGithubBranchHref(project: PortfolioProjectApiItem) {
+  const repoHref = getGithubRepoHref(project);
+
+  return repoHref ? `${repoHref.replace(/\/$/, "")}/tree/${project.githubBranch}` : null;
+}
+
+function getGithubReadmeHref(project: PortfolioProjectApiItem) {
+  const branchHref = getGithubBranchHref(project);
+
+  return branchHref ? `${branchHref}/README.md` : null;
+}
+
+function getGithubCommitsHref(project: PortfolioProjectApiItem) {
+  const repoHref = getGithubRepoHref(project);
+
+  return repoHref ? `${repoHref.replace(/\/$/, "")}/commits/${project.githubBranch}` : null;
+}
+
+export function Portfolio() {
+  const [projects, setProjects] = useState<PortfolioProjectApiItem[]>([]);
+  const [availablePosts, setAvailablePosts] = useState<PostListApiItem[]>([]);
+  const [reviewRequests, setReviewRequests] = useState<ReviewRequestApiItem[]>([]);
+  const [repoUrl, setRepoUrl] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [coachStatusFilter, setCoachStatusFilter] = useState<CoachFeedbackStatusFilter>("전체");
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [isConnectOpen, setIsConnectOpen] = useState(false);
+  const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<PortfolioProjectApiItem | null>(null);
+  const [isPortfolioTextDialogOpen, setIsPortfolioTextDialogOpen] = useState(false);
+  const [isInterviewQuestionsDialogOpen, setIsInterviewQuestionsDialogOpen] = useState(false);
+  const [isCoachFeedbackDialogOpen, setIsCoachFeedbackDialogOpen] = useState(false);
+  const [publishVisibility, setPublishVisibility] = useState<"public" | "private">("public");
+  const [selectedPostIds, setSelectedPostIds] = useState<number[]>([]);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  async function loadPortfolioData(preferredProjectId?: number): Promise<PortfolioProjectApiItem[]> {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      const [projectData, postData, reviewData] = await Promise.all([
+        getPortfolioProjects(),
+        getMyPosts({ visibility: "all", size: PORTFOLIO_LINKABLE_POST_PAGE_SIZE }),
+        getMyReviewRequests(),
+      ]);
+
+      setProjects(projectData.items);
+      setAvailablePosts(postData.items.filter(isLinkablePortfolioRecord));
+      setReviewRequests(reviewData.items);
+
+      const nextSelectedProject =
+        projectData.items.find((project) => project.id === preferredProjectId) ??
+        projectData.items.find((project) => project.id === selectedProjectId) ??
+        projectData.items[0] ??
+        null;
+
+      setSelectedProjectId(nextSelectedProject?.id ?? null);
+      setSelectedPostIds(nextSelectedProject?.linkedPostIds ?? []);
+
+      return projectData.items;
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadPortfolioData();
+  }, []);
+
+  const filteredProjects = useMemo(
+    () =>
+      projects.filter((project) => {
+        const keyword = searchKeyword.trim().toLowerCase();
+        const matchesCoachStatus = coachStatusFilter === "전체" || project.coachFeedbackStatus === coachStatusFilter;
+
+        if (!keyword) {
+          return matchesCoachStatus;
+        }
+
+        return matchesCoachStatus && (
+          project.title.toLowerCase().includes(keyword) ||
+          project.repoFullName.toLowerCase().includes(keyword) ||
+          project.githubBranch.toLowerCase().includes(keyword) ||
+          project.githubUrl.toLowerCase().includes(keyword) ||
+          project.techStack.some((stack) => stack.toLowerCase().includes(keyword))
+        );
+      }),
+    [coachStatusFilter, projects, searchKeyword],
+  );
+
+  const selectedProject =
+    projects.find((project) => project.id === selectedProjectId) ?? filteredProjects[0] ?? projects[0] ?? null;
+  const selectedProjectGithubHref = selectedProject ? getGithubRepoHref(selectedProject) : null;
+  const selectedProjectBranchHref = selectedProject ? getGithubBranchHref(selectedProject) : null;
+  const selectedProjectReadmeHref = selectedProject ? getGithubReadmeHref(selectedProject) : null;
+  const selectedProjectCommitsHref = selectedProject ? getGithubCommitsHref(selectedProject) : null;
+  const selectedDisplayTechStack = selectedProject ? getDisplayTechStack(selectedProject.techStack) : [];
+
+  const linkedRecords = useMemo(
+    () => (selectedProject ? availablePosts.filter((post) => selectedProject.linkedPostIds.includes(post.id)) : []),
+    [availablePosts, selectedProject],
+  );
+
+  const selectedProjectReviewRequests = useMemo(
+    () =>
+      selectedProject
+        ? reviewRequests
+            .filter((request) => request.targetType === "portfolio" && request.targetId === selectedProject.id)
+            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        : [],
+    [reviewRequests, selectedProject],
+  );
+
+  const latestCoachFeedback = selectedProjectReviewRequests.find((request) => request.feedback?.trim());
+  const cleanedInterviewQuestions = cleanInterviewQuestionsText(selectedProject?.savedInterviewQuestions);
+  const interviewQuestionPreview = getInterviewQuestionPreview(selectedProject?.savedInterviewQuestions);
+
+  const selectProject = (project: PortfolioProjectApiItem) => {
+    setSelectedProjectId(project.id);
+    setSelectedPostIds(project.linkedPostIds);
+    setErrorMessage("");
+  };
+
+  const upsertProject = (nextProject: PortfolioProjectApiItem) => {
+    setProjects((prev) => {
+      const exists = prev.some((project) => project.id === nextProject.id);
+
+      if (!exists) {
+        return [nextProject, ...prev];
+      }
+
+      return prev.map((project) => (project.id === nextProject.id ? nextProject : project));
+    });
+    setSelectedProjectId(nextProject.id);
+    setSelectedPostIds(nextProject.linkedPostIds);
+  };
+
+  const registerGithubProject = async () => {
+    const trimmedRepoUrl = repoUrl.trim();
+    const projectReference = parseGithubProjectReference(trimmedRepoUrl);
+
+    if (!trimmedRepoUrl) {
+      setErrorMessage("GitHub repo URL을 입력해 주세요.");
+      return;
+    }
+
+    if (!projectReference) {
+      setErrorMessage("github.com의 owner/repository 또는 owner/repository/tree/branch 형식 URL을 입력해주세요.");
+      return;
+    }
+
+    const existingProject = projects.find((project) => {
+      const isSameRepo = project.repoFullName.toLowerCase() === projectReference.repoFullName;
+      const isSameBranch = projectReference.githubBranch
+        ? project.githubBranch.toLowerCase() === projectReference.githubBranch.toLowerCase()
+        : false;
+
+      return isSameRepo && isSameBranch;
+    });
+
+    if (existingProject) {
+      setSearchKeyword("");
+      selectProject(existingProject);
+      toast.info("이미 등록된 GitHub 프로젝트입니다. 기존 프로젝트를 선택했습니다.");
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage("");
+
+    try {
+      const newProject = await createPortfolioProject({
+        githubUrl: trimmedRepoUrl,
+      });
+
+      setRepoUrl("");
+      setSearchKeyword("");
+      await loadPortfolioData(newProject.id);
+      toast.success("GitHub 프로젝트를 등록하고 README, 언어, 최근 커밋 정보를 가져왔습니다.");
+    } catch (error) {
+      console.error(error);
+      const message = error instanceof Error ? error.message : "GitHub 프로젝트를 등록하지 못했습니다.";
+
+      if (message.includes("이미 등록된")) {
+        setSearchKeyword("");
+        const reloadedProjects = await loadPortfolioData();
+        const reloadedProject = reloadedProjects.find((project) => {
+          const isSameRepo = project.repoFullName.toLowerCase() === projectReference.repoFullName;
+          const isSameBranch = projectReference.githubBranch
+            ? project.githubBranch.toLowerCase() === projectReference.githubBranch.toLowerCase()
+            : true;
+
+          return isSameRepo && isSameBranch;
+        });
+
+        if (reloadedProject) {
+          selectProject(reloadedProject);
+          setErrorMessage("");
+          toast.info("이미 등록된 GitHub 프로젝트입니다. 기존 프로젝트를 선택했습니다.");
+          return;
+        }
+      }
+
+      await loadPortfolioData();
+      setErrorMessage(message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const refreshGithubInfo = async () => {
+    if (!selectedProject) {
+      return;
+    }
+
+    setAnalyzing(true);
+    setErrorMessage("");
+
+    try {
+      const updatedProject = await refreshPortfolioProjectGithubInfo(selectedProject.id);
+
+      upsertProject(updatedProject);
+      toast.success("GitHub README, 언어, 최근 커밋 정보를 새로 가져왔습니다.");
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(error instanceof Error ? error.message : "GitHub 정보를 새로고침하지 못했습니다.");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const updatePortfolioStatus = async (status: PortfolioStatus) => {
+    if (!selectedProject) {
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage("");
+
+    try {
+      const updatedProject = await updatePortfolioProject(selectedProject.id, {
+        portfolioStatus: status,
+      });
+
+      upsertProject(updatedProject);
+      toast.success("포트폴리오 상태를 저장했습니다.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "포트폴리오 상태를 저장하지 못했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const togglePostSelection = (postId: number) => {
+    setSelectedPostIds((prev) => (prev.includes(postId) ? prev.filter((id) => id !== postId) : [...prev, postId]));
+  };
+
+  const applyConnectedRecords = async () => {
+    if (!selectedProject) {
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage("");
+
+    try {
+      const linkablePostIds = new Set(availablePosts.map((post) => post.id));
+      const nextPostIds = selectedPostIds.filter((postId) => linkablePostIds.has(postId));
+      const updatedProject = await linkPortfolioProjectPosts(selectedProject.id, nextPostIds);
+
+      upsertProject(updatedProject);
+      setIsConnectOpen(false);
+      toast.success("연결된 학습 기록을 저장했습니다.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "학습 기록 연결을 저장하지 못했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const openPublishDialog = () => {
+    if (!selectedProject) {
+      return;
+    }
+
+    setPublishVisibility(selectedProject.publishedPostIsPublic === false ? "private" : "public");
+    setIsPublishDialogOpen(true);
+  };
+
+  const publishPortfolioPost = async () => {
+    if (!selectedProject) {
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage("");
+
+    try {
+      const updatedProject = await publishPortfolioProjectPost(selectedProject.id, publishVisibility === "public");
+      const publishNoticeMap = {
+        created: "포트폴리오 게시글을 발행했습니다.",
+        updated: "포트폴리오 게시글을 최신 내용으로 갱신했습니다.",
+        unchanged: "이미 최신 포트폴리오 게시글입니다.",
+      };
+
+      upsertProject(updatedProject);
+      setIsPublishDialogOpen(false);
+
+      const publishMessage = publishNoticeMap[updatedProject.publishStatus ?? "updated"];
+      if (updatedProject.publishStatus === "unchanged") {
+        toast.info(publishMessage);
+      } else {
+        toast.success(publishMessage);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "포트폴리오 게시글을 발행하지 못했습니다.";
+
+      setErrorMessage(message);
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const openDeleteDialog = (project: PortfolioProjectApiItem) => {
+    setProjectToDelete(project);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const removeSelectedProject = async () => {
+    if (!projectToDelete) {
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage("");
+
+    try {
+      await deletePortfolioProject(projectToDelete.id);
+
+      const nextProjects = projects.filter((project) => project.id !== projectToDelete.id);
+
+      setProjects(nextProjects);
+      if (selectedProjectId === projectToDelete.id) {
+        setSelectedProjectId(nextProjects[0]?.id ?? null);
+        setSelectedPostIds(nextProjects[0]?.linkedPostIds ?? []);
+      }
+      setIsDeleteDialogOpen(false);
+      setProjectToDelete(null);
+      toast.success("포트폴리오 프로젝트를 삭제했습니다.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "포트폴리오 프로젝트를 삭제하지 못했습니다.";
+
+      setErrorMessage(message);
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto max-w-[1680px] space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">포트폴리오 관리</h1>
+        <p className="mt-1 text-slate-500">
+          GitHub 프로젝트를 등록하고 내 기록을 연결한 뒤 AI 도우미에서 포트폴리오 글을 생성합니다.
+        </p>
+      </div>
+
+      <Card className="border-emerald-100 bg-emerald-50/50">
+        <CardContent className="p-6">
+          <div className="flex flex-col gap-4 md:flex-row">
+            <div className="relative flex-1">
+              <Github className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+              <Input
+                value={repoUrl}
+                onChange={(event) => setRepoUrl(event.target.value)}
+                placeholder="https://github.com/username/repository 또는 /tree/branch"
+                className="h-10 border-slate-200 bg-white pl-10"
+              />
+            </div>
+            <Button className="h-10 px-6" onClick={() => void registerGithubProject()} disabled={isSaving}>
+              <Plus className="mr-2 h-4 w-4" />
+              {isSaving ? "등록 중" : "GitHub 프로젝트 등록"}
+            </Button>
+          </div>
+          <p className="mt-3 text-xs text-emerald-700">
+            branch URL을 넣으면 해당 branch 기준으로, repo URL만 넣으면 default branch 기준으로 분석합니다.
+          </p>
+        </CardContent>
+      </Card>
+
+      {errorMessage && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{errorMessage}</div>}
+
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-8 text-center text-sm text-slate-500">포트폴리오 프로젝트를 불러오는 중입니다.</CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-col gap-6 lg:flex-row">
+          <section className="w-full space-y-4 lg:w-[340px]">
+            <div className="flex items-center justify-between gap-3 px-1">
+              <h2 className="text-lg font-semibold text-slate-900">내 프로젝트</h2>
+              <span className="text-xs text-slate-400">{filteredProjects.length}개</span>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <Input
+                value={searchKeyword}
+                onChange={(event) => setSearchKeyword(event.target.value)}
+                placeholder="프로젝트, repo, branch, 기술 검색"
+                className="bg-white pl-9"
+              />
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+              <label htmlFor="coach-status-filter" className="mb-2 block text-xs font-semibold text-slate-500">
+                코치 리뷰 상태
+              </label>
+              <select
+                id="coach-status-filter"
+                value={coachStatusFilter}
+                onChange={(event) => setCoachStatusFilter(event.target.value as CoachFeedbackStatusFilter)}
+                className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition-colors hover:border-emerald-300 hover:bg-emerald-50/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+              >
+                {coachFeedbackStatusFilters.map((status) => (
+                  <option key={status} value={status}>
+                    {getCoachFeedbackStatusLabel(status)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {filteredProjects.length === 0 && (
+              <Card>
+                <CardContent className="p-6 text-sm text-slate-500">
+                  등록된 프로젝트가 없습니다. 위 입력창에 GitHub repo URL을 넣어 프로젝트를 등록해 주세요.
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="max-h-[calc(100vh-22rem)] space-y-4 overflow-y-auto pr-1">
+            {filteredProjects.map((project) => {
+              const isActive = selectedProject?.id === project.id;
+              const displayTechStack = getDisplayTechStack(project.techStack);
+              const projectRepoHref = getGithubRepoHref(project);
+              const projectBranchHref = getGithubBranchHref(project);
+
+              return (
+                <div
+                  key={project.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => selectProject(project)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      selectProject(project);
+                    }
+                  }}
+                  className="block w-full text-left"
+                >
+                  <Card className={`relative cursor-pointer overflow-hidden transition-colors ${isActive ? "border-emerald-500 shadow-sm ring-1 ring-emerald-500" : "hover:border-slate-300"}`}>
+                    {isActive && <div className="absolute left-0 top-0 h-full w-1 bg-emerald-500" />}
+                    <CardContent className="space-y-3 p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="min-w-0 flex-1 truncate font-semibold text-slate-900" title={project.title}>
+                          {project.title}
+                        </h3>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold ${portfolioStatusClass(project.portfolioStatus)}`}>
+                            {project.portfolioStatus}
+                          </span>
+                          <button
+                            type="button"
+                            aria-label={`${project.title} 삭제`}
+                            className="flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openDeleteDialog(project);
+                            }}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        {projectRepoHref ? (
+                          <a
+                            href={projectRepoHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(event) => event.stopPropagation()}
+                            className="block break-all font-mono text-xs leading-5 text-emerald-700 hover:underline"
+                          >
+                            {project.repoFullName}
+                          </a>
+                        ) : (
+                          <p className="break-all font-mono text-xs leading-5 text-slate-500">{project.repoFullName}</p>
+                        )}
+                        {projectBranchHref ? (
+                          <a
+                            href={projectBranchHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(event) => event.stopPropagation()}
+                            className="inline-flex max-w-full rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
+                          >
+                            branch: {project.githubBranch}
+                          </a>
+                        ) : (
+                          <span className="inline-flex max-w-full rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-600">
+                            branch: {project.githubBranch}
+                          </span>
+                        )}
+                      </div>
+                      <span className={`inline-flex max-w-full break-words rounded-full px-2 py-0.5 text-[10px] font-semibold ${feedbackStatusClass(project.coachFeedbackStatus)}`}>
+                        코치: {getCoachFeedbackStatusLabel(project.coachFeedbackStatus)}
+                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {displayTechStack.slice(0, 3).map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-[10px]">
+                            {tag}
+                          </Badge>
+                        ))}
+                        {displayTechStack.length === 0 && (
+                          <span className="text-[10px] text-slate-400">기술 스택 감지 전</span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-xs text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <BookOpen className="h-3 w-3" /> 기록 {project.linkedPostIds.length}개
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <GitCommit className="h-3 w-3" /> {formatDate(project.lastCommitAt)}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })}
+            </div>
+          </section>
+
+          <section className="min-w-0 flex-1 space-y-6">
+            {selectedProject ? (
+              <Card className="bg-white">
+                <CardContent className="grid gap-6 p-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.6fr)_minmax(340px,0.7fr)]">
+                  <section className="min-w-0 space-y-6">
+                    <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5">
+                      <div className="min-w-0">
+                        <h2 className="text-xl font-bold leading-7 text-slate-900">{selectedProject.title}</h2>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {selectedProjectGithubHref && (
+                            <a
+                              href={selectedProjectGithubHref}
+                              title={selectedProject.githubUrl}
+                              className="inline-flex min-w-0 items-center gap-1 font-mono text-sm leading-5 text-emerald-600 hover:underline"
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <Github className="h-4 w-4 shrink-0" />
+                              <span className="break-all">{selectedProject.repoFullName}</span>
+                            </a>
+                          )}
+                          {selectedProjectBranchHref && (
+                            <a
+                              href={selectedProjectBranchHref}
+                              className="inline-flex max-w-full rounded-full bg-white px-2 py-0.5 font-mono text-xs font-semibold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              branch: {selectedProject.githubBranch}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 border-t border-slate-200 pt-4">
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="outline" size="sm" className={`whitespace-nowrap ${sectionActionClass}`} onClick={openPublishDialog} disabled={isSaving}>
+                            포트폴리오 게시글로 발행
+                          </Button>
+                          {selectedProject.publishedPostId && (
+                            <Button variant="outline" size="sm" className={`whitespace-nowrap ${sectionActionClass}`} asChild>
+                              <Link to={`/posts/${selectedProject.publishedPostId}`}>게시글 보러가기</Link>
+                            </Button>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="outline" size="sm" className={`whitespace-nowrap ${utilityActionClass}`} onClick={() => void refreshGithubInfo()} disabled={analyzing}>
+                            <RefreshCw className={`mr-1 h-3 w-3 ${analyzing ? "animate-spin" : ""}`} />
+                            GitHub 정보 새로고침
+                          </Button>
+                          {selectedProjectGithubHref ? (
+                            <Button variant="outline" size="sm" className={`whitespace-nowrap ${utilityActionClass}`} asChild>
+                              <a href={selectedProjectGithubHref} target="_blank" rel="noreferrer">
+                                <ExternalLink className="mr-1 h-3 w-3" />
+                                GitHub 보기
+                              </a>
+                            </Button>
+                          ) : (
+                            <Button variant="outline" size="sm" className="whitespace-nowrap" disabled>
+                              GitHub URL 확인 필요
+                            </Button>
+                          )}
+                        </div>
+
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">포트폴리오 상태</p>
+                        <p className="mt-1 text-xs text-slate-500">학생이 직접 현재 정리 상태를 표시합니다.</p>
+                      </div>
+                      <select
+                        value={selectedProject.portfolioStatus}
+                        onChange={(event) => void updatePortfolioStatus(event.target.value as PortfolioStatus)}
+                        disabled={isSaving}
+                        className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:ring-1 focus:ring-emerald-500"
+                      >
+                        {portfolioStatuses.map((status) => (
+                          <option key={status}>{status}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-5">
+                      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                          <FileText className="h-4 w-4 text-emerald-600" />
+                          포트폴리오 글
+                        </h3>
+                        <Button variant="outline" size="sm" className={`whitespace-nowrap ${sectionActionClass}`} asChild>
+                          <Link to={`/ai-assistant?project=${selectedProject.id}&type=portfolio`}>
+                            <Sparkles className="mr-1 h-3 w-3" />
+                            AI 도우미에서 포트폴리오 글 만들기
+                          </Link>
+                        </Button>
+                      </div>
+                      <div className="rounded-lg border border-emerald-100 bg-white p-5 text-sm leading-7 text-slate-700">
+                        <PortfolioMarkdownBlock text={selectedProject.savedPortfolioDraft ?? "아직 저장된 포트폴리오 글이 없습니다."} compact />
+                        {selectedProject.savedPortfolioDraft && (
+                          <div className="mt-4 flex justify-end border-t border-slate-100 pt-4">
+                            <Button type="button" variant="outline" size="sm" className={utilityActionClass} onClick={() => setIsPortfolioTextDialogOpen(true)}>
+                              전체 포트폴리오 글 보기
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </section>
+
+                  <aside className="min-w-0 space-y-5">
+                    <section className="rounded-xl border border-slate-200 bg-white p-5">
+                      <div className="mb-4 space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-slate-900">면접 예상 질문</p>
+                          <Badge variant={selectedProject.aiInterviewSaved ? "success" : "secondary"}>
+                            {selectedProject.aiInterviewSaved ? "저장됨" : "저장 전"}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap justify-end gap-2">
+                          {cleanedInterviewQuestions && (
+                            <Button type="button" variant="outline" size="sm" className={utilityActionClass} onClick={() => setIsInterviewQuestionsDialogOpen(true)}>
+                              전체 예상 질문 보기
+                            </Button>
+                          )}
+                          <Button asChild variant="outline" size="sm" className={sectionActionClass}>
+                            <Link to={`/ai-assistant?project=${selectedProject.id}&type=interview`}>면접 질문 만들기</Link>
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="rounded-lg border border-slate-100 bg-slate-50/80 px-4 py-3">
+                        {interviewQuestionPreview.length > 0 ? (
+                          <ul className="space-y-2">
+                            {interviewQuestionPreview.map((question, index) => (
+                              <li key={`${question}-${index}`} className="flex gap-2 text-sm leading-6 text-slate-700">
+                                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                                <span className="line-clamp-2">{question}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : cleanedInterviewQuestions ? (
+                          <p className="line-clamp-3 text-sm leading-6 text-slate-600">저장된 면접 예상 질문이 있습니다. 전체 내용은 버튼을 눌러 확인하세요.</p>
+                        ) : (
+                          <p className="text-sm leading-6 text-slate-600">
+                            AI 도우미에서 이 프로젝트를 선택하면 GitHub repo와 연결 기록을 기준으로 면접 예상 질문을 저장할 수 있습니다.
+                          </p>
+                        )}
+                      </div>
+                    </section>
+
+                    <section className="rounded-xl border border-slate-200 bg-white p-5">
+                      <div className="mb-4 space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="whitespace-nowrap text-sm font-semibold text-slate-900">코치 리뷰/피드백</p>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${feedbackStatusClass(selectedProject.coachFeedbackStatus)}`}>
+                            {getCoachFeedbackStatusLabel(selectedProject.coachFeedbackStatus)}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <Button type="button" variant="outline" size="sm" className={utilityActionClass} onClick={() => setIsCoachFeedbackDialogOpen(true)}>
+                            전체 피드백 보기
+                          </Button>
+                          <Button asChild variant="outline" size="sm" className={sectionActionClass}>
+                            <Link to="/coach-review">코치 리뷰 요청하기</Link>
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="rounded-lg border border-slate-100 bg-slate-50/80 px-4 py-3">
+                        {latestCoachFeedback?.feedback ? (
+                          <PortfolioMarkdownBlock text={latestCoachFeedback.feedback} compact />
+                        ) : (
+                          <p className="text-sm leading-6 text-slate-600">
+                            포트폴리오 글을 저장한 뒤 코치 리뷰를 요청하면 피드백 이력과 상태를 이 프로젝트 기준으로 관리합니다.
+                          </p>
+                        )}
+                      </div>
+                    </section>
+
+                    <section className="rounded-xl border border-slate-200 bg-white p-5">
+                      <div className="mb-4 space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-900">
+                            <Link2 className="h-4 w-4 shrink-0 text-slate-500" />
+                            <span className="whitespace-nowrap">연결된 학습 기록</span>
+                          </h3>
+                          <span className="shrink-0 text-xs text-slate-400">{linkedRecords.length}개</span>
+                        </div>
+                        <div className="flex justify-end">
+                          <Button variant="outline" size="sm" className={sectionActionClass} onClick={() => setIsConnectOpen(true)}>
+                            기록 연결하기
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        {linkedRecords.map((record) => (
+                          <Link key={record.id} to={`/posts/${record.id}`} className="block rounded-lg border border-slate-200 bg-slate-50/80 p-4 transition-colors hover:border-emerald-200 hover:bg-emerald-50/60">
+                            <div className="border-l-2 border-emerald-300 pl-3">
+                              <div className="mb-2 flex flex-wrap items-center gap-2">
+                                <Badge variant={categoryVariant(record.category)} className="px-1.5 py-0 text-[10px]">
+                                  {record.category}
+                                </Badge>
+                                <span className="text-xs text-slate-400">{new Date(record.createdAt).toLocaleDateString("ko-KR")}</span>
+                              </div>
+                              <p className="line-clamp-2 text-sm font-semibold leading-6 text-slate-900">{record.title}</p>
+                              <p className="mt-1 line-clamp-3 text-xs leading-5 text-slate-500">{record.summary}</p>
+                            </div>
+                          </Link>
+                        ))}
+                        {linkedRecords.length === 0 && (
+                          <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-6 text-center text-sm text-slate-500">
+                            아직 연결된 기록이 없습니다.
+                          </div>
+                        )}
+                      </div>
+                    </section>
+                  </aside>
+
+                  <aside className="min-w-0">
+                    <section className="rounded-xl border border-slate-200 bg-white p-4">
+                      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+                        <Github className="h-4 w-4 text-slate-500" />
+                        GitHub 참고 정보
+                      </h3>
+                      <div className="divide-y divide-slate-100">
+                        <div className="pb-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">기술 스택</p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {selectedDisplayTechStack.map((stack) => (
+                              <span key={stack} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700">
+                                {stack}
+                              </span>
+                            ))}
+                            {selectedDisplayTechStack.length === 0 && (
+                              <span className="rounded-md border border-dashed border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-500">
+                                아직 기술 스택을 충분히 감지하지 못했습니다.
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="py-4">
+                          <div className="space-y-3">
+                            <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                              <GitCommit className="h-4 w-4 text-emerald-600" />
+                              GitHub 커밋 메시지 참고 자료
+                            </p>
+                            <div className="ml-6 space-y-3">
+                              <p className="text-xs leading-5 text-slate-500">
+                                화면에는 최근 커밋만 보이고, AI/RAG 단계에서는 수집된 커밋 메시지 전체를 참고합니다.
+                              </p>
+                              {selectedProjectCommitsHref && (
+                                <div>
+                                  <Button asChild variant="outline" size="sm" className={utilityActionClass}>
+                                    <a href={selectedProjectCommitsHref} target="_blank" rel="noreferrer">
+                                      GitHub 커밋 보기
+                                    </a>
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="py-4">
+                          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">최근 커밋 preview</p>
+                          <ul className="space-y-2">
+                            {selectedProject.recentCommitSummary.slice(0, 3).map((commit) => (
+                              <li key={commit} className="flex gap-2 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                                <GitCommit className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                                <span>{commit}</span>
+                              </li>
+                            ))}
+                            {selectedProject.recentCommitSummary.length === 0 && (
+                              <li className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-3 text-sm text-slate-500">
+                                아직 최근 커밋 요약이 없습니다.
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+
+                        <details className="pt-4">
+                          <summary className="cursor-pointer text-sm font-semibold text-slate-900 hover:text-emerald-700">
+                            GitHub README 참고 자료
+                          </summary>
+                          <div className="ml-6 mt-2 space-y-3">
+                            <p className="text-xs leading-5 text-slate-500">
+                              화면에는 README 요약만 보이고, AI/RAG 단계에서는 저장된 README 원문 전체를 참고합니다.
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge variant={selectedProject.readmeContentSaved ? "success" : "secondary"}>
+                                {selectedProject.readmeContentSaved ? "README 원문 저장됨" : "README 원문 저장 전"}
+                              </Badge>
+                              {selectedProjectReadmeHref && (
+                                <Button asChild variant="outline" size="sm" className={utilityActionClass}>
+                                  <a href={selectedProjectReadmeHref} target="_blank" rel="noreferrer">
+                                    GitHub README 보기
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
+                            <p className="line-clamp-6 text-sm leading-6 text-slate-600">
+                              {selectedProject.readmeSummary ?? "아직 README 요약이 없습니다."}
+                            </p>
+                          </div>
+                        </details>
+                      </div>
+                    </section>
+                  </aside>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center text-sm text-slate-500">
+                  GitHub 프로젝트를 등록하면 상세 정보와 연결 기록을 관리할 수 있습니다.
+                </CardContent>
+              </Card>
+            )}
+          </section>
+        </div>
+      )}
+
+      <Dialog open={isPortfolioTextDialogOpen} onOpenChange={setIsPortfolioTextDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{selectedProject?.title ?? "프로젝트"} 포트폴리오 글</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white p-5">
+            <PortfolioMarkdownBlock text={selectedProject?.savedPortfolioDraft ?? "아직 저장된 포트폴리오 글이 없습니다."} />
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={() => setIsPortfolioTextDialogOpen(false)}>
+              닫기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isInterviewQuestionsDialogOpen} onOpenChange={setIsInterviewQuestionsDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{selectedProject?.title ?? "프로젝트"} 면접 예상 질문</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white p-5">
+            <InterviewQuestionsBlock text={cleanedInterviewQuestions} />
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={() => setIsInterviewQuestionsDialogOpen(false)}>
+              닫기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCoachFeedbackDialogOpen} onOpenChange={setIsCoachFeedbackDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{selectedProject?.title ?? "프로젝트"} 코치 피드백</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold text-slate-900">현재 상태</span>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${selectedProject ? feedbackStatusClass(selectedProject.coachFeedbackStatus) : "bg-slate-100 text-slate-700"}`}>
+                {selectedProject ? getCoachFeedbackStatusLabel(selectedProject.coachFeedbackStatus) : "요청 전"}
+              </span>
+            </div>
+            <div className="max-h-[56vh] overflow-y-auto rounded-lg bg-slate-50 p-4">
+              <PortfolioMarkdownBlock text={latestCoachFeedback?.feedback ?? "아직 저장된 코치 피드백이 없습니다."} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={() => setIsCoachFeedbackDialogOpen(false)}>
+              닫기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeleteDialogOpen(open);
+          if (!open) {
+            setProjectToDelete(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>포트폴리오 프로젝트를 삭제할까요?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm leading-6 text-slate-600">
+            <p>
+              `{projectToDelete?.title ?? "선택한 프로젝트"}` 프로젝트 등록과 연결 기록, GitHub 분석 정보, 코치 리뷰 요청이 삭제됩니다.
+            </p>
+            <p className="text-xs text-slate-500">이미 발행된 포트폴리오 게시글은 게시판 기록으로 남습니다.</p>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isSaving}>
+              취소
+            </Button>
+            <Button type="button" variant="destructive" onClick={() => void removeSelectedProject()} disabled={isSaving}>
+              {isSaving ? "삭제 중" : "삭제 확인"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isPublishDialogOpen} onOpenChange={setIsPublishDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>포트폴리오 게시글 발행 설정</DialogTitle>
+          </DialogHeader>
+          <RadioGroup
+            value={publishVisibility}
+            onValueChange={(value) => setPublishVisibility(value as "public" | "private")}
+            className="grid gap-3"
+          >
+            <label className={`flex cursor-pointer items-center gap-3 rounded-lg border bg-white p-4 transition-colors hover:border-emerald-200 hover:bg-emerald-50/70 ${publishVisibility === "public" ? "border-emerald-400 ring-1 ring-emerald-200" : "border-slate-200"}`}>
+              <RadioGroupItem value="public" className="mt-1" />
+              <span>
+                <span className="block text-sm font-semibold text-slate-900">공개</span>
+              </span>
+            </label>
+            <label className={`flex cursor-pointer items-center gap-3 rounded-lg border bg-white p-4 transition-colors hover:border-emerald-200 hover:bg-emerald-50/70 ${publishVisibility === "private" ? "border-emerald-400 ring-1 ring-emerald-200" : "border-slate-200"}`}>
+              <RadioGroupItem value="private" className="mt-1" />
+              <span>
+                <span className="block text-sm font-semibold text-slate-900">비공개</span>
+              </span>
+            </label>
+          </RadioGroup>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsPublishDialogOpen(false)} disabled={isSaving}>
+              취소
+            </Button>
+            <Button type="button" onClick={() => void publishPortfolioPost()} disabled={isSaving}>
+              {isSaving ? "발행 중" : "선택한 범위로 발행"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {isConnectOpen && selectedProject && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/40 p-4">
+          <Card className="max-h-[85vh] w-full max-w-2xl overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-100 p-4">
+              <div>
+                <h2 className="font-bold text-slate-900">기록 연결하기</h2>
+                <p className="text-sm text-slate-500">내 기록에서 이 프로젝트와 관련 있는 글을 선택합니다.</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setIsConnectOpen(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="max-h-[56vh] space-y-2 overflow-y-auto p-4">
+              {availablePosts.map((post) => {
+                const isChecked = selectedPostIds.includes(post.id);
+                return (
+                  <label key={post.id} className={`flex cursor-pointer gap-3 rounded-lg border p-3 transition-colors ${isChecked ? "border-emerald-300 bg-emerald-50" : "border-slate-200 hover:bg-slate-50"}`}>
+                    <input type="checkbox" checked={isChecked} onChange={() => togglePostSelection(post.id)} className="mt-1 accent-emerald-600" />
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex flex-wrap items-center gap-2">
+                        <Badge variant={categoryVariant(post.category)} className="px-1.5 py-0 text-[10px]">
+                          {post.category}
+                        </Badge>
+                        <span className="text-xs text-slate-400">{new Date(post.createdAt).toLocaleDateString("ko-KR")}</span>
+                      </div>
+                      <p className="font-medium text-slate-900">{post.title}</p>
+                      <p className="mt-1 line-clamp-2 text-sm text-slate-500">{post.summary}</p>
+                    </div>
+                  </label>
+                );
+              })}
+              {availablePosts.length === 0 && (
+                <div className="rounded-lg border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
+                  연결할 수 있는 내 기록이 없습니다.
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 border-t border-slate-100 p-4">
+              <Button variant="outline" onClick={() => setIsConnectOpen(false)}>
+                취소
+              </Button>
+              <Button onClick={() => void applyConnectedRecords()} disabled={isSaving}>
+                {isSaving ? "저장 중" : "연결 완료"}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}

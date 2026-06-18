@@ -1,1 +1,962 @@
-# jungle-week15-16-302-team5-hub
+﻿# JungleLog
+
+JungleLog는 크래프톤 정글 수강생이 학습 기록, 트러블슈팅, 프로젝트 회고, 면접 질문, 포트폴리오 자료를 관리하고 코치가 기록을 보고 피드백할 수 있는 AI 게시판 프로젝트입니다.
+
+현재 목표는 **AI 응용 기능을 과제 제출 가능한 수준까지 연결하는 것**입니다. 인증/권한/게시판/포트폴리오/GitHub repo 분석/코치 리뷰 흐름은 실제 FastAPI API 기준으로 연결했고, OpenAI 기본 생성에 이어 RAG, MCP, Agent 최소 동작 API를 추가했습니다.
+
+## 프로젝트 개요
+
+- 프로젝트명: JungleLog
+- 목적: 정글 수강생의 학습 기록과 포트폴리오 관리, 코치 피드백 흐름을 한 서비스 안에 연결
+- 주요 사용자: 학생, 코치, 관리자
+- 프론트엔드: React, TypeScript, Vite
+- 백엔드: FastAPI, SQLAlchemy
+- 데이터베이스: PostgreSQL
+- 인증: Google OAuth 2.0, JWT access token, refresh token rotation, HttpOnly cookie
+- 외부 연동: GitHub REST API
+- AI 모델: OpenAI API
+
+## 현재 구현 상태
+
+### 완료
+
+- Google OAuth/JWT 인증 API
+- access token / refresh token HttpOnly cookie 처리
+- 공통 `apiFetch`로 access token 만료 시 refresh 후 서비스 API 1회 재시도
+- 인증/서비스 API 조회 요청의 브라우저 캐시 방지 처리
+- refresh token hash DB 저장, 재발급, 로그아웃 폐기
+- `/auth/me` 기반 현재 사용자 조회
+- 최초 로그인 사용자 `승인 대기` 처리
+- `ADMIN_EMAILS` 기반 초기 관리자 자동 승인
+- 기존 이메일 사용자와 Google OAuth sub 연결 처리
+- 관리자 사용자 승인/역할 변경 API
+- STUDENT / COACH / ADMIN 역할별 라우트 보호
+- 승인 대기/거절/정지 사용자 서비스 접근 제한
+- DB 초기화 시 개발용 demo 사용자를 자동 생성하지 않도록 정리
+- 게시글 CRUD API와 화면 연결
+- 댓글 조회/작성/삭제 API와 화면 연결
+- 내 기록 조회 API와 화면 연결
+- 프로필 이름/이미지 수정 API와 설정 화면 연결
+- 포트폴리오 프로젝트 등록/수정/목록 API와 화면 연결
+- GitHub REST API 기반 repo/branch 등록, README 요약, 사용 언어, 최근 커밋 조회 연결
+- 등록된 프로젝트의 GitHub 정보 새로고침 API와 화면 연결
+- 포트폴리오 프로젝트와 게시글 연결 API
+- 포트폴리오 프로젝트 기반 `포트폴리오 관리` 게시글 발행/갱신 API
+- 포트폴리오 프로젝트 중복 등록 방지와 GitHub 링크 이동 UI
+- 포트폴리오 프로젝트 등록 후 목록 재조회/중복 등록 UX/긴 repo 카드 표시 안정화
+- 코치 리뷰 요청 생성/취소/목록/인박스/피드백 API와 화면 연결
+- 코치 리뷰 인박스에서 게시글/포트폴리오 리뷰 대상 미리보기 제공
+- 알림 조회/읽음 처리 API와 헤더 알림 드롭다운 연결
+- 관리자 승인, 리뷰 요청, 리뷰 피드백 이벤트 알림 생성
+- 게시글 상세 조회 시 조회수 증가 처리
+- 대시보드 주요 통계 API 기반 정리
+- AI 도우미 화면을 포트폴리오 API 데이터 기반 실제 생성/저장 흐름으로 정리
+- AI 도우미 화면을 프로젝트 선택, 참고 자료, 생성 결과 중심으로 재정리
+- AI 도우미 화면에 포트폴리오 글/면접 질문 저장 상태 UI 추가
+- 포트폴리오/AI 도우미의 내 기록 조회를 `/me/posts` API 계약(`size <= 50`)에 맞게 정리
+- 레거시 `mockData.ts` 제거
+- 브라우저 타이틀/메타 정보를 JungleLog 기준으로 정리
+- 학생 주요 화면의 개발용/debug 문구를 서비스 문구로 정리
+- 공통 API 에러 메시지 처리 보강으로 raw object 노출 방지
+- 학생 주요 화면 브라우저 스모크 QA와 빈 상태/계정/설정 문구 정리
+- 게시글 상세에서 자동 생성 요약과 본문이 중복 노출되지 않도록 정리
+
+### 남은 개선 과제
+
+- 실서비스 수준에서는 pgvector index 또는 전용 Vector DB로 RAG 성능 개선
+- OpenAI tool/function calling 기반 Agent 고도화
+- 실시간 알림
+- 실제 Google 계정 선택/동의 화면 추가 수동 QA
+- 배포 환경에서 HTTPS, CORS, cookie secure 설정 검증
+
+## 주요 사용자 흐름
+
+### 학생
+
+1. Google 계정으로 로그인한다.
+2. 최초 로그인 시 `승인 대기` 상태가 된다.
+3. 관리자가 학생으로 승인하면 서비스 화면에 접근한다.
+4. 학습 로그, 트러블슈팅, 프로젝트 회고, 면접 질문, 포트폴리오 관리 글을 작성한다.
+5. GitHub repo 또는 `/tree/{branch}` URL로 포트폴리오 프로젝트를 등록하고 README, 사용 언어, 최근 커밋을 가져온다.
+6. 프로젝트와 자신의 기록을 연결한다.
+7. AI 도우미에서 `포트폴리오 글 만들기` 또는 `면접 예상 질문 만들기`를 실행한다.
+8. 게시글 또는 포트폴리오 프로젝트를 선택해 코치 리뷰를 요청한다.
+
+### 코치
+
+1. Google 계정으로 로그인한다.
+2. 관리자가 코치로 승인하면 코치 화면에 접근한다.
+3. 전체 게시글을 확인한다.
+4. 자신에게 들어온 리뷰 요청을 인박스에서 확인한다.
+5. 요청 상세를 보고 피드백과 상태를 저장한다.
+
+### 관리자
+
+1. `.env`의 `ADMIN_EMAILS`에 등록된 Google 계정으로 로그인한다.
+2. 신규 사용자 목록을 확인한다.
+3. 사용자를 STUDENT / COACH / ADMIN으로 지정한다.
+4. 승인 대기 / 승인 완료 / 거절 / 정지 상태를 관리한다.
+
+## 전체 아키텍처
+
+```txt
+Browser
+  |
+  | React + TypeScript + Vite
+  | - AuthContext
+  | - React Router RoleGate
+  | - API client apiFetch(credentials: "include", refresh retry)
+  v
+FastAPI
+  |
+  | Routers
+  | - auth
+  | - posts / comments / me
+  | - admin
+  | - portfolio
+  | - review-requests
+  v
+Service Layer
+  |
+  | 비즈니스 규칙
+  | - 승인 상태 확인
+  | - 역할별 권한 확인
+  | - 게시글/댓글/리뷰 상태 검증
+  | - GitHub REST API 조회 결과 정리
+  | - branch 기준 README/commit/tree 정보 정리
+  v
+Repository Layer
+  |
+  | SQLAlchemy ORM
+  v
+PostgreSQL
+
+External API
+  |
+  | GitHub REST API
+  | - Repository metadata
+  | - Branch README
+  | - Branch tree based tech stack
+  | - Branch recent commits
+```
+
+## 폴더 구조
+
+```txt
+WEEK15_AI_BOARD/
+  frontend/
+    src/app/
+      api/
+      components/
+      constants/
+      contexts/
+      layouts/
+      pages/
+      routes.tsx
+  backend/
+    app/
+      core/
+      db/
+      dependencies/
+      repositories/
+      routers/
+      schemas/
+      services/
+      main.py
+  docs/
+    agent/
+      code.md
+      setup.md
+      study.md
+      log.md
+      test.md
+      troubleshooting.md
+      db-design.md
+      api-design.md
+  docker-compose.yml
+  README.md
+```
+
+## 주요 라우트
+
+| Route | 화면 | 접근 |
+| --- | --- | --- |
+| `/login` | Google 로그인 | 비로그인 |
+| `/pending-approval` | 승인 대기/거절/정지 안내 | 로그인 사용자 |
+| `/` | 대시보드 | STUDENT, COACH, ADMIN |
+| `/posts` | 전체 게시글 | STUDENT, COACH, ADMIN |
+| `/posts/new` | 게시글 작성 | STUDENT, ADMIN |
+| `/posts/:id` | 게시글 상세 | STUDENT, COACH, ADMIN |
+| `/posts/:id/edit` | 게시글 수정 | 작성자, ADMIN |
+| `/my-records` | 내 기록 | STUDENT, ADMIN |
+| `/portfolio` | 포트폴리오 관리 | STUDENT, ADMIN |
+| `/ai-assistant` | AI 도우미 | STUDENT, ADMIN |
+| `/coach-review` | 학생 리뷰 요청 / 코치 인박스 | STUDENT, COACH, ADMIN |
+| `/admin/users` | 사용자 승인 관리 | ADMIN |
+| `/settings` | 설정 | STUDENT, COACH, ADMIN |
+
+## 주요 API
+
+### 인증
+
+- `GET /auth/google/login`
+- `GET /auth/google/callback`
+- `GET /auth/me`
+- `POST /auth/refresh`
+- `POST /auth/logout`
+
+### 게시글/댓글
+
+- `GET /posts`
+- `POST /posts`
+- `GET /posts/{post_id}`
+- `PATCH /posts/{post_id}`
+- `DELETE /posts/{post_id}`
+- `GET /me/posts`
+- `GET /posts/{post_id}/comments`
+- `POST /posts/{post_id}/comments`
+- `DELETE /comments/{comment_id}`
+
+### 관리자
+
+- `GET /admin/users`
+- `PATCH /admin/users/{user_id}`
+
+### 포트폴리오
+
+- `GET /portfolio/projects`
+- `POST /portfolio/projects`
+- `PATCH /portfolio/projects/{project_id}`
+- `POST /portfolio/projects/{project_id}/github/refresh`
+- `PUT /portfolio/projects/{project_id}/posts`
+- `POST /portfolio/projects/{project_id}/publish-post`
+
+### 코치 리뷰
+
+- `GET /review-requests/coaches`
+- `POST /review-requests`
+- `GET /review-requests/me`
+- `GET /review-requests/inbox`
+- `PATCH /review-requests/{review_request_id}`
+- `DELETE /review-requests/{review_request_id}`
+
+## AI 기능 설계
+
+AI 도우미는 포트폴리오 관리에 등록된 프로젝트를 기준으로 포트폴리오 글과 면접 예상 질문을 생성합니다.
+
+사용자 화면에서는 내부 구현 방식을 고르지 않습니다. 사용자는 만들 결과만 선택합니다.
+
+- `포트폴리오 글 만들기`
+- `면접 예상 질문 만들기`
+
+내부 구현 단계는 다음처럼 나뉩니다.
+
+- 일반 생성: 프로젝트의 README, commit message, 연결 기록, 코치 피드백, 기존 포트폴리오 글을 prompt context에 넣습니다.
+- RAG 생성: 저장된 자료 전체 중 관련 근거를 검색해 prompt context에 추가하는 내부 구조입니다.
+- Agent 생성: MCP tool 조회와 RAG 검색, 생성 단계를 제한된 loop로 실행하는 내부 구조입니다.
+
+### RAG 기능
+
+- 데이터 소스: GitHub README 원문, GitHub commit message 전체, 연결된 학습 기록, 저장된 포트폴리오 글, 저장된 면접 예상 질문
+- Vector 저장소: PostgreSQL `rag_documents` 테이블
+- embedding 모델: `OPENAI_EMBEDDING_MODEL`, 기본값 `text-embedding-3-small`
+- 검색 방식: query embedding과 문서 embedding의 cosine similarity
+- API:
+  - `POST /ai/rag/index`
+  - `POST /ai/rag/search`
+
+### MCP 기능
+
+- JSON-RPC 2.0 기반 `/mcp` endpoint를 제공합니다.
+- 지원 method:
+  - `mcp.list_tools`
+  - `mcp.call_tool`
+- 지원 tool:
+  - `get_github_repository`
+  - `get_portfolio_project`
+
+### Agent 기능
+
+- API: `POST /ai/agent/run`
+- 현재 tool loop:
+  1. `get_portfolio_project`
+  2. `rag_search`
+  3. `generate_project_content`
+- 무한 루프 방지를 위해 `max_iterations`를 1~5로 제한합니다.
+- 응답에는 생성 결과와 tool call 로그가 포함됩니다.
+
+## 실행 방법
+
+### 1. PostgreSQL 실행
+
+```powershell
+docker compose up -d
+```
+
+### 2. 백엔드 실행
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+uvicorn app.main:app --reload
+```
+
+Swagger UI:
+
+```txt
+http://localhost:8000/docs
+```
+
+### 3. 프론트엔드 실행
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+프론트엔드:
+
+```txt
+http://localhost:5173
+```
+
+## 환경 변수
+
+실제 비밀값은 `backend/.env`에 저장하고 커밋하지 않습니다. 예시는 `backend/.env.example`을 참고합니다.
+프론트엔드 API 주소 예시는 `frontend/.env.example`을 참고합니다.
+
+필수 설정:
+
+```txt
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+JWT_SECRET_KEY=
+ADMIN_EMAILS=
+DATABASE_URL=postgresql+psycopg://junglelog:junglelog@localhost:5432/junglelog
+FRONTEND_URL=http://localhost:5173
+BACKEND_CORS_ORIGINS=http://localhost:5173
+GITHUB_TOKEN= # 선택. public repo만 조회할 때는 비워도 됨
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4.1-mini
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OPENAI_MAX_OUTPUT_TOKENS=1800
+```
+
+프론트엔드 설정:
+
+```txt
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+`VITE_API_BASE_URL`이 없으면 프론트엔드는 기본값으로 `http://localhost:8000`을 사용합니다.
+
+Google Cloud Console 설정:
+
+- 승인된 JavaScript 원본: `http://localhost:5173`
+- 승인된 리디렉션 URI: `http://localhost:8000/auth/google/callback`
+- 테스트 모드라면 OAuth 동의 화면 테스트 사용자에 실제 Gmail 추가
+
+## QA 결과
+
+최근 검증:
+
+- `npm run build` 성공
+- `python -m compileall app` 성공
+- public GitHub repo smoke test 성공: `octocat/Hello-World`의 README/최근 커밋 조회 확인
+- `git diff --check` 통과
+- 학생 화면 QA 개선 1차 검증
+- Swagger/OpenAPI 주요 API 등록 확인
+- Google OAuth/JWT callback 흐름 TestClient 검증
+- 비밀값 출력 없이 OAuth/JWT 환경변수 설정 여부 확인
+- `/auth/google/login`이 Google OAuth URL과 state cookie를 생성하는지 확인
+- 관리자/학생/코치 실제 API 시나리오 검증
+- 비로그인 브라우저 진입 시 `/login` 이동 확인
+- 비로그인 사용자의 `/posts/new` 직접 접근 시 `/login` 이동 확인
+- 브라우저 탭 제목과 HTML 메타 정보가 JungleLog 기준인지 확인
+- 로그인 화면의 Google 로그인 버튼이 실제 Google OAuth 화면으로 이동하는지 확인
+- 로컬 DB의 과거 개발용 demo 사용자 잔존 데이터 제거 확인
+
+통합 시나리오에서 검증한 흐름:
+
+- ADMIN 최초 로그인과 승인 완료 처리
+- 신규 STUDENT 승인 대기 처리
+- 승인 전 보호 API 접근 차단
+- ADMIN의 학생/코치 승인과 역할 변경
+- 승인된 STUDENT의 게시글 작성, 내 기록 조회, 댓글 작성
+- 승인된 STUDENT의 포트폴리오 프로젝트 등록, 게시글 연결, 초안 저장
+- 승인된 STUDENT의 코치 리뷰 요청 생성
+- 승인된 COACH의 리뷰 인박스 조회, 피드백 작성, 상태 변경
+- 피드백 완료 이후 학생의 리뷰 요청 취소 차단
+- 리뷰 요청 생성, 코치 인박스 조회, 피드백 저장, 학생 알림 생성 왕복 흐름 검증
+- 실제 STUDENT 브라우저 화면에서 글쓰기 -> 게시글 상세 -> 코치 리뷰 요청 대상 표시 -> 리뷰 요청 전송 흐름 검증
+- 코치 리뷰 요청 대상 조회 시 `/me/posts` API의 `size <= 50` 계약에 맞게 프론트 호출값 수정
+- 실제 COACH 브라우저 화면에서 리뷰 인박스 표시, 상태 변경, 저장된 피드백 재표시 흐름 검증
+- COACH 기본 진입 화면과 사이드바를 코치 리뷰 인박스 중심으로 정리
+- 실제 STUDENT 브라우저 화면에서 코치 피드백 완료 상태, 피드백 본문, 리뷰 피드백 알림, 알림 읽음 처리 흐름 검증
+- 포트폴리오/AI 도우미에서 `/me/posts` 조회 크기 오류 수정 후 프로젝트 연결, AI 도우미 이동, 초안 저장 흐름 검증
+- 포트폴리오 프로젝트 등록 후 목록 유지, 대소문자 다른 같은 repo 중복 차단, GitHub 보기 링크, 긴 repo 카드 overflow 없음 검증
+- 게시글 목록/상세의 조회수 증가와 댓글 수 반영 흐름을 실제 API 기준으로 검증
+- 게시글 작성 직후 코치 리뷰 요청 대상 목록과 요청 전송 흐름을 실제 API/브라우저 기준으로 검증
+- 학생 화면의 `API`, `샘플`, `MCP/RAG 연결 후` 같은 개발용 문구 노출 여부 점검 및 정리
+- 공통 `getErrorMessage()` 보강으로 `[object Object]` 노출 위험 점검
+- 학생 주요 라우트 8개에서 debug/기술 문구와 빈 상태 문구 점검
+- 학생 글쓰기 브라우저 QA 중 발견한 상세 화면 요약/본문 중복 표시 수정
+- 코치 리뷰 인박스 피드백 상태 반영, 학생 알림 생성, 관리자 role 복구 흐름 검증
+- 오래 떠 있던 Vite dev 서버와 브라우저 캐시로 role/menu가 낡게 보이는 문제를 공통 `apiFetch`와 `cache: "no-store"`로 정리
+
+남은 수동 QA:
+
+- 실제 브라우저에서 Google 계정 선택과 OAuth 동의 화면 통과
+- 실제 관리자 계정으로 신규 사용자 승인 후 프론트 화면 분기 확인
+- 브라우저 자동화 입력 제한이 풀리면 코치 피드백 textarea 직접 입력까지 E2E 재검증
+- 브라우저 자동화 입력 제한이 풀리면 포트폴리오 repo URL 입력/중복 등록 UX를 실제 클릭으로 재검증
+
+## 데모
+
+현재 로컬 브라우저 QA 기준으로 로그인 화면, 보호 라우트 redirect, Swagger API 등록을 확인했습니다.
+
+### 스크린샷
+
+- Google 로그인 화면: [docs/demo/login.png](docs/demo/login.png)
+
+![JungleLog 로그인 화면](docs/demo/login.png)
+
+추가로 제출 전 캡처하면 좋은 화면:
+
+- 승인 대기 화면
+- 관리자 사용자 승인 화면
+- 학생 대시보드
+- 포트폴리오 관리 화면
+- 코치 리뷰 인박스
+
+## 회고와 한계
+
+### 배운 점
+
+- React 화면 mock 단계와 실제 API 연결 단계는 설계 기준이 다르다.
+- 로그인 상태와 승인 상태는 분리해서 생각해야 한다.
+- 프론트 라우트 보호는 UX를 위한 것이고, 실제 보안은 백엔드 권한 검사가 담당해야 한다.
+- refresh token은 원문을 DB에 저장하지 않고 hash로 저장하는 편이 안전하다.
+- access token이 짧게 만료되는 구조에서는 일반 API 호출도 refresh 재시도 흐름을 공유해야 한다.
+- 학생/코치/관리자 role이 생기면 단순 CRUD보다 권한 검증이 훨씬 중요해진다.
+
+### 현재 한계
+
+- 실제 Google 계정 선택 후 callback 수동 QA가 아직 남아 있다.
+- 알림은 현재 API 기반 조회/읽음 처리까지 지원하며, 실시간 push는 아직 없다.
+- GitHub repo 분석은 기본 REST API와 MCP tool endpoint 양쪽에서 사용할 수 있다.
+- AI 도우미는 OpenAI/RAG/Agent API와 연결됐고, 사용자 허락 후 최소 실제 호출 QA를 1회 완료했다.
+- 비용이 발생하는 AI 호출은 자동 반복 테스트 대상에서 제외하고 대표 경로 중심으로 검증한다.
+- AI 도우미 화면은 프로젝트 기반 생성 결과 보관함과 클립보드 복사 흐름까지 UI 기준으로 정리했다.
+- 프로필 이름 수정과 이미지 업로드는 API 기준으로 검증했고, 업로드 이미지 URL이 게시글/댓글/리뷰 요청 응답까지 이어진다.
+- 학생 게시글 작성/상세/댓글/수정/삭제/내 기록 반영 흐름을 브라우저에서 확인했고, 댓글 시간은 한국식 날짜/시간으로 표시한다.
+
+### 개선 아이디어
+
+- pgvector 기반 RAG index로 검색 성능 개선
+- 표준 MCP SDK 기반 서버로 분리
+- OpenAI function calling 기반 Agent 고도화
+- WebSocket 또는 SSE 기반 실시간 알림 추가
+- 테스트 자동화 파일 분리
+- Playwright 기반 프론트 E2E 테스트 추가
+
+## 학습/운영 문서
+
+- [코드 컨벤션](docs/agent/code.md)
+- [세팅 기록](docs/agent/setup.md)
+- [학습 기록](docs/agent/study.md)
+- [진행 로그](docs/agent/log.md)
+- [QA 체크리스트](docs/agent/test.md)
+- [트러블슈팅](docs/agent/troubleshooting.md)
+- [DB 설계](docs/agent/db-design.md)
+- [API 설계](docs/agent/api-design.md)
+
+### OAuth 실패 UX
+
+OAuth callback 실패 시 백엔드 JSON 에러 화면을 직접 보여주지 않고 `/login?authError=...`로 돌아가도록 처리했습니다.
+
+- callback 값 부족, state 불일치, Google token/profile 처리 실패 시 로그인 화면으로 redirect
+- 로그인 화면에서 실패 안내와 `Google로 계속하기` 버튼 표시
+- 실패 시 OAuth state cookie 삭제
+
+### 관리자 메뉴 정리
+
+관리자 화면은 사용자 승인 관리가 중심이므로 사이드바에서 대시보드 메뉴를 제거했습니다.
+
+- ADMIN 기본 진입 화면: `/admin/users`
+- ADMIN 메뉴: 사용자 승인, 전체 게시글, 설정
+- `/`에 직접 접근하면 관리자 사용자는 사용자 승인 화면으로 이동합니다.
+
+### 코치 메뉴 정리
+
+코치 화면은 학생 기록 작성보다 리뷰 요청 처리가 중심이므로 사이드바에서 대시보드 메뉴를 제거했습니다.
+
+- COACH 기본 진입 화면: `/coach-review`
+- COACH 메뉴: 코치 리뷰 인박스, 전체 게시글, 설정
+- `/`에 직접 접근하면 코치 사용자는 코치 리뷰 인박스로 이동합니다.
+
+## 최근 변경: AI 도우미 결과 보관
+
+- AI 도우미에서 만든 면접 예상 질문을 포트폴리오 프로젝트에 저장할 수 있도록 `savedInterviewQuestions` 흐름을 추가했습니다.
+- 포트폴리오 프로젝트 응답에 `aiInterviewSaved`를 추가해 저장 여부를 화면 badge로 보여줍니다.
+- 현재 생성은 OpenAI API 기반 결과를 저장할 수 있으며, 저장/조회 흐름은 실제 포트폴리오 API와 DB 기준으로 동작합니다.
+- 백엔드 로컬 개발 DB는 Alembic 도입 전 단계이므로 `ADD COLUMN IF NOT EXISTS`로 새 nullable column을 보강합니다.
+
+## 최근 변경: 포트폴리오 빈 상태 문구 정리
+
+- 새 GitHub 프로젝트 등록 시 README/최근 커밋/포트폴리오 초안 안내 문구를 DB에 저장하지 않고 빈 값으로 둡니다.
+- 포트폴리오 관리와 AI 도우미 화면은 빈 값일 때 사용자용 empty state 문구를 직접 보여줍니다.
+- 과거 개발 단계에서 저장된 안내 문구는 포트폴리오 API 응답에서 빈 값처럼 정리해 화면에 노출되지 않게 했습니다.
+
+## 최근 변경: 코치 리뷰 인박스 QA
+
+- 코치 리뷰 요청 생성부터 코치 인박스 조회, 피드백 저장, 학생 요청 목록/알림 반영까지 DB/API 기준으로 검증했습니다.
+- 배정되지 않은 코치는 리뷰 요청을 수정할 수 없고, 배정된 코치만 피드백과 상태를 저장할 수 있습니다.
+- 코치 인박스에서 필터를 바꿨을 때 상세 패널도 필터된 요청 기준으로 함께 바뀌도록 정리했습니다.
+
+## 최근 변경: 남은 연결 공백 UI 정리
+
+- 게시글 작성 화면에서 실제 저장 API가 없는 임시저장 버튼을 제거하고, 실제 동작하는 발행/수정 흐름만 남겼습니다.
+- GitHub 프로젝트 등록 시 기술 스택에 `분석 예정` 같은 placeholder 값을 저장하지 않고 `GitHub`만 기본값으로 둡니다.
+- 과거 저장된 `분석 예정` 기술 스택 값은 포트폴리오 API 응답에서 제거해 화면에 데이터처럼 보이지 않게 했습니다.
+
+## 최근 변경: 파트 단위 커밋 운영 기준
+
+- 앞으로 기능 구현, 문서 업데이트, QA가 끝난 작은 단위마다 커밋을 남기도록 `docs/agent/agent.md`에 운영 기준을 추가했습니다.
+- 커밋 전에는 `git status`, 프론트 빌드, 백엔드 compile, 필요한 QA 기록을 확인합니다.
+- `backend/.env`는 Google OAuth/JWT 민감정보가 있으므로 커밋 대상에서 제외합니다.
+
+## 최근 변경: 학생 핵심 흐름 QA 기록
+
+- 포트폴리오 프로젝트 등록/중복 차단/목록 조회/기록 연결 흐름을 DB/API 기준으로 검증했습니다.
+- 게시글 작성 후 내 기록 조회, 댓글 작성, 상세 조회수 증가, 댓글 수 반영 흐름을 검증했습니다.
+- AI 도우미 저장 구조인 포트폴리오 초안과 면접 예상 질문 저장을 프로젝트 응답 기준으로 확인했습니다.
+- 학생 리뷰 요청 생성, 코치 인박스 조회, 코치 최종 확인 피드백이 학생 요청 목록에 반영되는 왕복 흐름을 검증했습니다.
+
+## 최근 변경: 코치 화면 브라우저 QA 기록
+
+- 코치 세션으로 `/coach-review`, `/posts`, `/settings`가 에러 없이 열리는지 확인했습니다.
+- 코치 메뉴에서 대시보드가 보이지 않고, 코치 리뷰 인박스/전체 게시글/설정 중심으로 보이는지 확인했습니다.
+- 코치가 학생 전용 화면인 `/portfolio`, `/ai-assistant`, `/my-records`에 직접 접근하면 접근 제한 안내가 보이는지 확인했습니다.
+- QA용 임시 사용자와 리뷰 요청 데이터는 검증 후 삭제했습니다.
+
+## 최근 변경: 프로필 업로드 QA 기록
+
+- `PATCH /me/profile`로 이름 수정과 프로필 이미지 업로드가 실제 API 기준으로 동작하는지 검증했습니다.
+- 업로드된 이미지는 `/uploads/profiles/...` 정적 파일 경로로 접근 가능함을 확인했습니다.
+- Google 재로그인 상황에서도 사용자가 수정한 이름과 업로드 이미지가 덮어써지지 않는지 확인했습니다.
+
+## 최근 변경: 학생 화면 브라우저 QA 기록
+
+- 학생 세션으로 대시보드, 전체 게시글, 게시글 작성/상세/댓글, 내 기록, 포트폴리오 관리, AI 도우미, 코치 리뷰 요청, 설정 화면을 브라우저에서 확인했습니다.
+- 긴 GitHub repo 등록 후 다른 화면에 갔다 돌아와도 프로젝트가 유지되고, 같은 repo 중복 등록 시 기존 프로젝트 안내가 보이는지 확인했습니다.
+- `GitHub 보기` 링크가 실제 repo URL과 새 탭 대상(`target="_blank"`)을 갖는지 확인했습니다.
+- 코치 리뷰 요청 화면에서 게시글과 포트폴리오 프로젝트가 모두 리뷰 대상이 되는지 확인했습니다.
+- 확인한 화면에 `Unexpected Application Error`, `[object Object]`, 개발/debug 문구가 보이지 않는지 확인했습니다.
+
+## 최근 변경: 긴 repo 카드 레이아웃 QA 기록
+
+- 긴 GitHub repo 이름을 가진 포트폴리오 카드에서 상태 badge와 코치 badge가 카드 안에 유지되는지 브라우저 bounding box로 확인했습니다.
+- 긴 repo 이름 때문에 전체 화면에 가로 스크롤이 생기지 않는지 확인했습니다.
+
+## 최근 변경: GitHub REST API 연동
+
+- 포트폴리오 프로젝트 등록 시 GitHub REST API로 repo metadata, README, languages, 최근 커밋을 가져오도록 연결했습니다.
+- 등록된 프로젝트의 `GitHub 정보 새로고침` 버튼은 `/portfolio/projects/{project_id}/github/refresh` API를 호출해 DB 값을 갱신합니다.
+- public repo는 `GITHUB_TOKEN` 없이 조회할 수 있고, private repo 또는 rate limit 대응이 필요하면 백엔드 `.env`에 `GITHUB_TOKEN`을 설정합니다.
+- 사이드바 JungleLog 로고를 누르면 역할별 기본 화면으로 이동합니다.
+- 주요 업무 화면의 최대 폭을 `max-w-7xl`로 넓혀 데스크톱 여백을 줄였습니다.
+
+## 최근 변경: GitHub branch 기준 포트폴리오 관리
+
+- GitHub 프로젝트 등록 시 `/tree/{branch}` 또는 `/blob/{branch}` URL에서 branch를 파싱합니다.
+- branch가 없는 repo URL은 GitHub repository metadata의 `default_branch`를 저장합니다.
+- README는 GitHub contents API의 `ref`, 최근 커밋은 commits API의 `sha`를 사용해 branch 기준으로 조회합니다.
+- GitHub languages API는 repo 단위라 branch별 값을 직접 제공하지 않으므로, branch tree를 조회해 파일 확장자 기반 기술 스택을 우선 추정합니다.
+- 포트폴리오 관리 화면은 repo와 branch를 함께 보여주고, 포트폴리오 글은 preview 중심으로 표시합니다.
+
+## 최근 변경: 포트폴리오 게시글 발행과 AI 도우미 정리
+
+- 포트폴리오 프로젝트에 `publishedPostId`를 추가해 프로젝트가 발행한 대표 포트폴리오 게시글을 명확히 연결합니다.
+- 포트폴리오 관리 화면에서 `포트폴리오 게시글로 발행`을 누르면 `포트폴리오 관리` 카테고리 게시글을 생성하거나 갱신합니다.
+- 발행된 게시글 상세에서는 프로젝트 이름, GitHub repo/branch, 기술 스택, 프로젝트 설명, 연결 기록, 최근 커밋, 코치 피드백 상태, 포트폴리오 글 전체가 보입니다.
+- AI 도우미 화면은 프로젝트 선택, 생성 유형 선택, 참고 자료, 생성 결과 저장 흐름으로 정리했습니다.
+- 화면 문구는 `초안`보다 `포트폴리오 글` 중심으로 바꾸고, 내부 DB 필드명은 기존 `savedPortfolioDraft`를 유지해 기존 데이터 흐름을 깨지 않게 했습니다.
+
+## 최근 변경: 포트폴리오 관리 액션 버튼 UI 정리
+
+- 포트폴리오 관리 화면의 액션 버튼을 기능이 속한 섹션 근처로 옮겼습니다.
+- `포트폴리오 글`, `면접 예상 질문`, `코치 리뷰/피드백`, `연결된 학습 기록` 섹션에서 각각 관련 버튼을 바로 실행할 수 있습니다.
+- 하단 액션 영역에는 `포트폴리오 게시글로 발행`, `게시글 보러가기`, `GitHub 보기`, `GitHub 정보 새로고침`만 남겨 프로젝트 단위 작업을 구분했습니다.
+- 주요 액션 버튼은 연한 초록색 계열로 맞춰 JungleLog 톤과 버튼 우선순위를 통일했습니다.
+
+## 최근 변경: GitHub README 참고 정보 표시 개선
+
+- 포트폴리오 관리와 AI 도우미의 GitHub 참고 정보 영역에서 `Markdown` 같은 배지가 단독으로 보여 사용자가 의미를 알기 어려운 문제를 줄였습니다.
+- 기술 스택/문서 유형 배지 위에 `감지된 기술/문서 유형` 라벨과 설명을 추가했습니다.
+- README는 핵심 결과물이 아니라 AI 참고 자료라는 설명을 붙이고, 접힘/펼침 형태로 작게 보여줍니다.
+
+## 최근 변경: 포트폴리오 게시글 상세 전용 UI 개선
+
+- `포트폴리오 관리` 카테고리 게시글은 일반 본문 문자열이 아니라 전용 상세 UI로 렌더링합니다.
+- 게시글 제목 화면에서는 `[포트폴리오]` prefix를 숨기고 `프로젝트명 포트폴리오`처럼 자연스럽게 보여줍니다.
+- 저장된 Markdown 형식 본문은 화면에서 `##`, `###`, `-` 기호가 그대로 보이지 않도록 섹션별 카드로 파싱해 표시합니다.
+- 포트폴리오 상세는 프로젝트 개요, GitHub 정보, 기술 스택, 연결된 학습 기록, 최근 커밋 요약, 코치 피드백 상태, 포트폴리오 글 영역으로 나뉩니다.
+
+## 최근 변경: 포트폴리오 UI 개선 최종 QA
+
+- 포트폴리오 관리 액션 버튼 정리, GitHub README 참고 정보 개선, 포트폴리오 게시글 상세 전용 UI 적용을 기능 단위 커밋으로 나누어 완료했습니다.
+- 최종 QA에서 프론트엔드 `npm run build`와 백엔드 compile을 다시 실행해 성공을 확인했습니다.
+- `/posts/47` 포트폴리오 게시글 상세에서 `[포트폴리오]`, `##`, `###` 같은 저장용 Markdown 기호가 화면에 노출되지 않는지 확인했습니다.
+
+## 최근 변경: 기술 스택 표시에서 Markdown 제거
+
+- GitHub README가 Markdown 파일이라는 사실은 포트폴리오에서 중요한 기술 스택 정보가 아니므로 화면 표시에서 제외했습니다.
+- `Markdown`, `README`, 단독 `GitHub`처럼 실제 구현 기술로 보기 어려운 값은 포트폴리오 관리, AI 도우미, 포트폴리오 게시글 상세에서 숨깁니다.
+- README는 계속 `GitHub README 참고 자료` 접힘 영역에서만 확인할 수 있습니다.
+
+## 최근 변경: 포트폴리오 게시글 발행 상태 구분
+
+- 포트폴리오 게시글 제목 생성 기준을 `[포트폴리오] 프로젝트명`에서 `프로젝트명 포트폴리오`로 바꿨습니다.
+- 포트폴리오 게시글 재발행 시 기존 게시글과 제목/요약/본문/태그/GitHub URL이 같으면 DB update를 생략합니다.
+- 발행 API 응답에 `publishStatus`를 추가해 `created`, `updated`, `unchanged` 상태별 안내 문구를 다르게 보여줍니다.
+
+## 2026-06-16 UX/권한 안전성 업데이트
+
+- 로그인 화면에서 승인 대기/역할 승인 설명 문구를 제거하고, Google 로그인 중심 화면으로 정리했습니다.
+- 포트폴리오 게시글 발행은 공개/비공개 선택 모달을 거친 뒤 실행됩니다.
+- 포트폴리오 게시글 발행 결과는 `created`, `updated`, `unchanged` 상태에 따라 toast로 안내합니다.
+- 게시글 삭제 확인은 화면을 밀어내는 inline block 대신 dialog로 표시합니다.
+- `.env`의 `ADMIN_EMAILS`에 포함된 최고관리자 계정은 프론트에서 역할/승인 상태 변경 UI가 비활성화되고, 백엔드에서도 변경 요청을 거부합니다.
+- 백엔드 API가 필요한 실제 저장/권한 판단은 기존 Google OAuth/JWT cookie 흐름을 유지합니다.
+
+검증:
+
+- `frontend`: `npm run build` 성공
+- `backend`: `.venv\Scripts\python.exe -m compileall app` 성공
+- 서비스 QA: 포트폴리오 공개 발행, 동일 내용 unchanged, 공개 여부 변경 updated, 최고관리자 변경 차단, 일반 사용자 승인 성공 확인
+### 2026-06-16 포트폴리오 발행 모달 UI 정리
+
+- 포트폴리오 게시글 발행 설정 모달의 보조 설명 문구를 제거했습니다.
+- 공개/비공개 선택 카드는 선택 또는 hover 시 연초록색으로 보이도록 정리했습니다.
+
+## 최근 변경: 로그인/게시글 상호작용 QA 수정
+
+- 로그인 화면을 작은 카드형 UI에서 넓은 Google OAuth 중심 화면으로 개선했습니다.
+- 로그인 화면에서는 승인 대기/역할 승인 같은 내부 운영 문구를 보여주지 않습니다.
+- 게시글 작성/수정 성공 안내를 화면을 밀어내는 block이 아니라 toast로 표시합니다.
+- 게시글 삭제 성공 처리에서 남아 있던 `setDeleteNotice` 호출을 제거하고, 삭제 확인은 dialog로 유지했습니다.
+- 댓글 작성/댓글 삭제 실패 시 백엔드가 내려준 실제 에러 메시지를 보여주도록 정리했습니다.
+- 포트폴리오 프로젝트의 `기록 연결하기` 목록에서 포트폴리오 게시글을 제외했습니다.
+- 백엔드도 `portfolio` 카테고리 게시글이 프로젝트 연결 기록으로 저장되지 않도록 방어합니다.
+
+검증:
+
+- `frontend`: `npm run build` 성공
+- `backend`: `.venv\Scripts\python.exe -m compileall app` 성공
+- API QA: 테스트 사용자 기준 게시글 생성 201, 댓글 작성 201, 게시글 삭제 204 확인
+- API QA: 포트폴리오 게시글 연결 방어가 400 대상 에러로 차단되는 것 확인
+- Browser QA: 로그인 화면에서 승인 대기/쿠키 설명 문구가 보이지 않고 콘솔 에러가 없는 것 확인
+
+## 최근 변경: 로그인 화면과 관리자 통계 정리
+
+- 로그인 화면을 좌우 2단 구성에서 중앙 단일 SIGN IN 화면으로 정리했습니다.
+- 긴 서비스 설명과 내부 인증 설명은 제거하고 `JungleLog`, `SIGN IN`, `Google로 계속하기` 중심으로 단순화했습니다.
+- Google 로그인 버튼은 기존 `loginWithGoogle` 호출을 유지하면서 더 크고 명확하게 보이도록 수정했습니다.
+- 관리자 사용자 승인 화면에 `승인 완료 학생` 통계 카드를 추가했습니다.
+- 관리자 통계 카드 순서는 `승인 대기`, `승인 완료 사용자`, `승인 완료 학생`, `승인 완료 코치`입니다.
+- 코치 리뷰 왕복 QA는 별도 학생 계정이 필요하므로, 새 Google 계정을 학생으로 승인해 테스트하는 방식을 우선 추천합니다.
+
+## 최근 변경: 코치 리뷰 피드백 전송 UI 정리
+
+- 코치 리뷰 인박스의 피드백 전송을 개별 액션 버튼에서 `검토 중` / `수정 요청` / `피드백 완료` 상태 토글과 `피드백 전송` 버튼 흐름으로 정리했습니다.
+- `최종 확인 보내기` 액션은 제거하고, 기존 데이터 표시 호환을 위해 상태 배지와 필터의 기존 상태 값은 유지했습니다.
+- 피드백 전송 성공/실패 안내는 화면을 밀어내는 block 대신 toast로 표시합니다.
+- `수정 요청`과 `피드백 완료`는 피드백 내용이 없으면 textarea 근처 validation과 toast error를 함께 보여줍니다.
+- 게시글 상세의 댓글 영역 제목은 `댓글 및 코치 피드백`에서 `댓글`로 변경했습니다.
+- 코치 리뷰 화면의 보조 안내 문구는 제거했습니다.
+- 코치 리뷰 인박스 상태 필터에서는 `최종 확인`을 제거하고, 피드백 상태 토글 간격과 전송 버튼 색상을 JungleLog 초록 톤에 맞춰 정리했습니다.
+
+## 최근 변경: AI 전 검증과 GitHub branch URL 보정
+
+- AI 기능 구현 전에 프론트 빌드, 백엔드 compile, DB 연결, 게시글 목록, 포트폴리오 프로젝트, 코치 리뷰 왕복 흐름을 점검했습니다.
+- `ai-board-lab` 프로젝트의 로컬 QA 데이터에서 `github_url`은 `/tree/dev`를 가리키지만 `github_branch`는 `main`인 불일치를 발견했습니다.
+- 포트폴리오 게시글 발행 링크가 `/tree/dev/tree/main`처럼 꼬이지 않도록 백엔드에서 GitHub repo 기본 URL을 정규화한 뒤 branch URL을 조합하도록 방어했습니다.
+- 로컬 QA 데이터의 `ai-board-lab` 프로젝트는 `github_branch=dev`, `github_url=https://github.com/leejunhee8235/ai-board-lab`로 보정했습니다.
+
+검증:
+
+- `frontend`: `npm run build` 성공
+- `backend`: `.venv\Scripts\python.exe -m compileall app` 성공
+- service smoke: 공개 게시글 조회, 학생 리뷰 현황, 코치 인박스, 포트폴리오 프로젝트 목록 조회 성공
+
+## 최근 변경: AI/RAG용 GitHub 참고 자료 저장 준비
+
+- GitHub README는 화면에는 요약만 보여주고, AI/RAG 단계에서 사용할 수 있도록 README 원문 전체 저장 여부를 관리합니다.
+- GitHub commit diff는 v1에서 제외하고, commit message 중심으로 GitHub API 페이지를 넘기며 가져올 수 있는 전체 커밋 메시지를 `github_commits` 테이블에 저장합니다.
+- 포트폴리오 관리 화면에는 최근 커밋 요약 일부만 보여주고, `수집된 커밋 메시지 보기` 모달에서 저장된 commit message 전체를 확인할 수 있습니다.
+- AI 도우미 참고자료 패널에는 “화면에는 요약만 보이고 OpenAI/RAG 연결 후 원문/수집 전체를 사용한다”는 문구를 추가했습니다.
+- 포트폴리오 게시글 상세는 전체 커밋 메시지 섹션을 접어서 확인할 수 있게 준비했습니다.
+- 포트폴리오 프로젝트 대상 코치 리뷰 요청은 생성/상태 변경 시 프로젝트 카드의 `coachFeedbackStatus`에도 반영됩니다.
+- 프로젝트 카드의 repo 링크와 branch 링크를 분리해 클릭 영역이 섞이지 않도록 정리했습니다.
+- 내 프로젝트 목록은 프로젝트가 많아져도 화면이 길게 늘어나지 않도록 내부 scroll 영역으로 관리합니다.
+
+검증:
+
+- `frontend`: `npm run build` 성공
+- `backend`: `.venv\Scripts\python.exe -m compileall app` 성공
+- local DB: `readme_content` 컬럼, `github_commits` 테이블 반영
+- service smoke: README 원문 저장 여부, 전체 커밋 메시지 수집 수, 코치 피드백 상태 동기화 확인
+
+## 최근 변경: GitHub 전체 커밋 메시지 수집
+
+- GitHub commits API는 한 번에 최대 100개만 반환하므로, 백엔드에서 `page` 값을 증가시키며 더 이상 응답이 없을 때까지 커밋 메시지를 수집합니다.
+- 화면에는 기존처럼 최근 커밋 요약과 일부 preview를 중심으로 보여주고, 포트폴리오 관리 모달과 포트폴리오 게시글 상세에서는 수집된 전체 커밋 메시지를 확인할 수 있습니다.
+- AI/RAG 단계에서는 README 원문 전체와 수집된 전체 커밋 메시지를 프로젝트 근거 자료로 사용합니다.
+- 로컬 검증 기준 `project/junhee-dev` 브랜치는 GitHub API가 1페이지 100개, 2페이지 0개를 반환해 현재 전체 커밋 메시지 수집 수가 100개임을 확인했습니다.
+
+## 최근 변경: 포트폴리오/AI 도우미 응답 정규화
+
+- 포트폴리오 API 응답을 프론트 `portfolio.ts` 경계에서 정규화해 `githubCommits`, `linkedPostIds`, `recentCommitSummary` 같은 배열 필드가 없어도 빈 배열로 처리합니다.
+- 백엔드가 재시작되기 전이거나 과거 응답 형태가 남아 있어도 포트폴리오 관리와 AI 도우미 화면에서 `.length`, `.includes`, `.map` 접근으로 런타임 에러가 나지 않도록 방어했습니다.
+- 실제 브라우저에서 `/portfolio`, `/ai-assistant` 라우트가 열리고 콘솔 에러가 없는지 확인했습니다.
+
+## 최근 변경: 포트폴리오 관리 상세 레이아웃 조정
+
+- 포트폴리오 관리의 선택 프로젝트 상세를 왼쪽 핵심 영역과 오른쪽 보조 영역으로 나눴습니다.
+- 왼쪽에는 프로젝트 제목, GitHub 액션, 포트폴리오 상태, 긴 포트폴리오 글을 크게 배치했습니다.
+- 오른쪽에는 면접 예상 질문, 코치 리뷰/피드백, GitHub 참고 정보, 연결된 학습 기록을 세로로 정리했습니다.
+- 내 프로젝트 목록에는 코치 리뷰 상태 필터를 추가해 `요청 전`, `요청함`, `검토 중`, `수정 요청`, `피드백 완료` 기준으로 프로젝트를 볼 수 있습니다.
+- 관리자 사용자 승인 화면의 요청/처리/담당 정보 구분자를 깨진 `?` 표시 대신 자연스러운 `·` 구분자로 정리했습니다.
+
+검증:
+
+- `frontend`: `npm run build` 성공
+- `backend`: `.venv\Scripts\python.exe -m compileall app` 성공
+- 검색 QA: 제거 대상 문구가 `frontend/src`에 남아 있지 않은 것 확인
+
+## 최근 변경: 포트폴리오 필터와 GitHub 참고 정보 정리
+
+- 포트폴리오 관리 화면의 `코치 리뷰 상태` 필터를 흩어진 pill 버튼 대신 segmented control 형태로 정리했습니다.
+- 선택된 코치 리뷰 상태는 emerald 배경으로 명확히 보이고, 선택되지 않은 항목은 흰색/연한 회색 톤으로 조용하게 보입니다.
+- 포트폴리오 상세 오른쪽 column의 `GitHub 참고 정보`를 기술 스택, 커밋 참고, 최근 커밋 preview, README 참고 섹션으로 나눴습니다.
+- GitHub 참고 정보 안쪽은 카드 중첩을 줄이고 얇은 divider 기반 구조로 정리해 보조 자료 영역처럼 읽히게 했습니다.
+
+## 최근 변경: 포트폴리오 상세 3단 레이아웃과 상태 필터 정리
+
+- 포트폴리오 관리의 `코치 리뷰 상태` 필터를 가로 segmented button에서 기본 select/dropdown 형태로 바꿨습니다.
+- API 값은 기존 `요청함`을 유지하되, 화면 표시명은 `요청 대기 중`으로 보여주도록 정리했습니다.
+- 선택 프로젝트 상세는 포트폴리오 글, 보조 정보, GitHub 참고 정보를 3단 column으로 나누어 GitHub 참고 자료가 면접 질문/코치 리뷰/연결 기록과 섞이지 않게 했습니다.
+- GitHub 참고 정보 column은 기술 스택, 커밋 참고, 최근 커밋 preview, README 참고를 세로 section으로 보여줍니다.
+
+## 최근 변경: 포트폴리오 보조 정보 column 정리
+
+- 포트폴리오 상세 가운데 column의 면접 예상 질문, 코치 리뷰/피드백, 연결된 학습 기록 섹션 간격을 맞췄습니다.
+- 코치 리뷰 설명과 면접 질문 설명은 연한 배경의 본문 박스로 묶어 제목/버튼과 구분했습니다.
+- 연결된 학습 기록은 카테고리/날짜/제목/요약이 한 기록 카드 안에서 들여쓰기되도록 정리했습니다.
+
+## 최근 변경: 포트폴리오 보조 카드 header 정리
+
+- 포트폴리오 상세 가운데 column에서 제목과 버튼이 한 줄에 끼어 제목이 `코치 리뷰/피드백`, `연결된 학습 기록`처럼 어색하게 줄바꿈되는 문제를 줄였습니다.
+- 면접 질문, 코치 리뷰, 연결 기록 카드의 header를 제목 영역과 버튼 영역으로 나누어 작은 폭에서도 읽기 쉽게 정리했습니다.
+- 가운데 column 최소 폭을 조금 넓혀 보조 정보 카드가 덜 답답하게 보이도록 조정했습니다.
+
+## 최근 변경: 포트폴리오 GitHub 액션 버튼 순서 조정
+
+- 포트폴리오 상세 상단 액션 영역에서 `GitHub 정보 새로고침` 버튼을 `GitHub 보기` 왼쪽으로 이동했습니다.
+- GitHub 관련 액션이 한 줄에서 더 자연스럽게 붙어 보이도록 버튼 순서를 조정했습니다.
+
+## 최근 변경: 포트폴리오 액션 버튼 그룹 정렬
+
+- 포트폴리오 상세 상단 액션 버튼을 포트폴리오 작업 그룹과 GitHub 작업 그룹으로 나눴습니다.
+- `GitHub 정보 새로고침`과 `GitHub 보기`는 같은 흰색 버튼 그룹 안에서 함께 정렬되도록 조정했습니다.
+
+## 최근 변경: 포트폴리오 액션 버튼 2줄 정렬
+
+- 포트폴리오 상세 상단 액션 버튼을 2줄로 정리했습니다.
+- 첫 줄은 `포트폴리오 게시글로 발행`, `게시글 보러가기`이고, 둘째 줄은 `GitHub 정보 새로고침`, `GitHub 보기`입니다.
+- 버튼을 좌우로 벌리지 않고 왼쪽 기준으로 같은 리듬에 맞춰 정렬했습니다.
+
+## 최근 변경: OpenAI 기본 연결 1차 구현
+
+- 백엔드에 `openai` Python SDK를 설치하고 `requirements.txt`에 반영했습니다.
+- `backend/app/core/config.py`에 `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_MAX_OUTPUT_TOKENS` 설정을 추가했습니다.
+- `backend/app/services/ai_service.py`를 추가해 포트폴리오 프로젝트 자료를 OpenAI Responses API prompt로 구성하는 경계를 만들었습니다.
+- `backend/app/routers/ai.py`와 `backend/app/schemas/ai.py`를 추가해 `POST /ai/generate` API를 만들었습니다.
+- 현재 API는 RAG/MCP/Agent 전 단계이며, 선택 프로젝트의 README, 커밋 메시지, 연결된 학습 기록을 직접 context로 넣어 포트폴리오 글 또는 면접 질문을 생성합니다.
+- 실제 호출을 위해서는 `backend/.env`에 `OPENAI_API_KEY`를 설정해야 합니다.
+
+### AI API
+
+- `POST /ai/generate`
+- 요청 예시: `{ "projectId": 25, "outputType": "portfolio" }`가 아니라 백엔드 스키마 기준 `{ "project_id": 25, "output_type": "portfolio" }`입니다.
+- 출력 유형: `portfolio`, `interview`
+
+## 최근 변경: AI 도우미 프론트 API 연결
+
+- `frontend/src/app/api/ai.ts`를 추가해 프론트에서 `POST /ai/generate`를 호출할 수 있게 했습니다.
+- AI 도우미 화면의 `포트폴리오 글 만들기`, `면접 예상 질문 만들기` 버튼을 누르면 선택한 포트폴리오 프로젝트 id와 생성 유형을 백엔드로 보냅니다.
+- 화면을 열자마자 자동으로 OpenAI를 호출하지 않고, 사용자가 버튼을 눌렀을 때만 호출해 비용이 불필요하게 발생하지 않도록 했습니다.
+- API 호출 전에는 기존 mock preview를 그대로 보여주고, 호출 성공 후에는 실제 OpenAI 생성 결과를 결과 영역에 표시합니다.
+- 생성 결과 저장은 기존 포트폴리오 프로젝트 저장 API를 그대로 사용합니다.
+- 현재 `backend/.env`의 `OPENAI_API_KEY` 값이 비어 있으면 실제 생성은 실패하며, 키 설정 후 다시 검증해야 합니다.
+
+검증:
+
+- `frontend`: `npm run build` 성공
+- `backend`: `.venv\Scripts\python.exe -m compileall app` 성공
+- `backend`: `from app.main import app` import 성공
+
+## 최근 변경: OpenAI 실제 호출 QA
+
+- `backend/.env`의 `OPENAI_API_KEY` 값을 설정한 뒤 실제 OpenAI 호출을 확인했습니다.
+- 오래 떠 있던 백엔드 서버가 새 AI 라우터를 반영하지 못해 처음에는 `/ai/generate`가 404였고, 서버 재시작 후 정상 등록됐습니다.
+- 테스트용 JWT access token cookie로 실제 `POST /ai/generate` HTTP endpoint를 호출했습니다.
+- `project_id=25`, `output_type=interview` 요청이 `200 OK`로 성공했고, `gpt-4.1-mini` 응답이 반환됐습니다.
+- 현재 브라우저 세션의 관리자 계정에는 포트폴리오 프로젝트가 없어, AI 도우미 화면 버튼 클릭 QA는 프로젝트 소유 학생 계정에서 추가 확인이 필요합니다.
+
+## 최근 변경: GitHub 참고 자료 UI 정리
+
+- 포트폴리오 관리 화면의 `수집된 커밋 n개 보기` 버튼과 전체 커밋 메시지 모달을 제거했습니다.
+- 커밋 전체 내용은 UI에 길게 노출하지 않고, AI/RAG 참고자료로 내부 저장된 데이터를 사용합니다.
+- 사용자가 커밋 전체를 확인하고 싶을 때는 `GitHub 커밋 보기`로 GitHub 커밋 페이지에서 확인하도록 정리했습니다.
+- GitHub 커밋 메시지 참고 자료와 README 참고 자료의 설명/배지/요약을 제목 아래로 들여쓰기해 읽기 쉽게 정리했습니다.
+- 포트폴리오 게시글 상세에서도 `전체 커밋 메시지 보기` 접힘 영역을 제거하고 최근 커밋 요약과 GitHub 커밋 링크만 남겼습니다.
+
+## 최근 변경: AI 생성 결과 저장 흐름 QA
+
+- 프로젝트 소유 학생 계정 기준으로 AI 도우미와 동일한 API 흐름을 검증했습니다.
+- `/portfolio/projects`로 프로젝트 목록을 조회하고, `/ai/generate`로 면접 예상 질문을 생성했습니다.
+- 생성 결과를 `/portfolio/projects/{id}` PATCH API로 저장한 뒤 다시 조회해 `aiInterviewSaved=true`와 저장 본문 길이를 확인했습니다.
+- 브라우저 UI에서 직접 버튼을 누르는 QA는 프로젝트 소유 학생 계정으로 로그인한 뒤 추가 확인이 필요합니다.
+
+## 최근 변경: 포트폴리오 게시글 본문 파싱 수정
+
+- AI가 생성한 포트폴리오 글 안에 `#`, `##` 같은 Markdown 제목이 포함되어도 게시글 상세에서 포트폴리오 글 본문으로 유지되도록 수정했습니다.
+- 기존에는 `## 포트폴리오 글` 아래의 내부 제목을 새 섹션으로 오해해 상세 화면에 `아직 작성된 포트폴리오 글이 없습니다.`가 보일 수 있었습니다.
+- 포트폴리오 관리 화면의 저장된 포트폴리오 글은 긴 본문을 바로 전부 펼치지 않고 preview로 보여주며, `전체 포트폴리오 글 보기` 모달에서 전체 내용을 볼 수 있게 했습니다.
+- `/posts/62` 브라우저 확인 결과 placeholder가 사라지고 실제 AI 생성 포트폴리오 글이 표시됨을 확인했습니다.
+
+## 최근 변경: 포트폴리오 Markdown 렌더링 개선
+
+- `PortfolioMarkdownBlock` 공용 컴포넌트를 추가해 AI가 생성한 Markdown 포트폴리오 글을 구조화해서 보여줍니다.
+- `#`, `##`, `###`, `-`, `---` 문법을 단순 제거하지 않고 제목, 섹션 제목, 소제목, 목록, 구분선으로 렌더링합니다.
+- 포트폴리오 게시글 상세의 `포트폴리오 글` 영역과 포트폴리오 관리의 `전체 포트폴리오 글 보기` 모달이 같은 렌더러를 재사용합니다.
+- 일반 게시글 상세는 기존 렌더링을 유지하고, 포트폴리오 게시글에만 전용 렌더링을 적용합니다.
+- 현재는 외부 Markdown 라이브러리 없이 필요한 문법만 직접 처리하며, 추후 표/코드블록 등 복잡한 문법이 필요하면 `react-markdown` 같은 라이브러리를 검토할 수 있습니다.
+- AI 결과가 `### 제목`처럼 낮은 heading으로 시작하거나 Markdown heading 없이 제목 줄로 시작해도 첫 제목을 포트폴리오 대표 제목 카드로 보정합니다.
+- 포트폴리오 관리 화면의 미리보기 영역도 raw text가 아니라 같은 렌더러의 compact 모드로 보여줍니다.
+
+## 최근 변경: 포트폴리오 문서형 상세 UI 보강
+
+- `PortfolioMarkdownBlock`이 `####`~`######` heading과 numbered list도 처리하도록 확장했습니다.
+- 포트폴리오 관리 화면의 면접 예상 질문과 코치 피드백 preview도 포트폴리오 글과 같은 렌더러로 보여줍니다.
+- 면접 예상 질문과 코치 피드백은 각각 `전체 예상 질문 보기`, `전체 피드백 보기` 모달에서 전체 내용을 확인할 수 있습니다.
+- 포트폴리오 게시글 발행 본문에 저장된 면접 예상 질문 섹션을 포함하도록 백엔드 발행 로직을 보강했습니다.
+- 포트폴리오 게시글 상세는 일반 게시글보다 넓은 레이아웃을 사용하고, 프로젝트 개요 아래에 포트폴리오 글을 메인 영역으로 배치했습니다.
+- GitHub 정보, 기술 스택, 연결된 학습 기록, 최근 커밋 요약은 오른쪽 보조 영역으로 정리했습니다.
+
+## 최근 변경: AI 도우미와 면접 질문 표시 흐름 정리
+
+- AI 도우미 결과 영역에서 저장값이 없는데도 sample 포트폴리오 글/면접 질문이 보이던 흐름을 제거했습니다.
+- 이제 AI 도우미는 `포트폴리오 글 만들기` 또는 `면접 예상 질문 만들기`를 누르기 전에는 저장된 결과가 있을 때만 보여주고, 저장된 결과가 없으면 빈 결과 안내만 보여줍니다.
+- 면접 예상 질문 생성 prompt에서 `꼬리 질문` 요구를 제거하고, 질문과 답변 포인트 중심으로 생성하도록 바꿨습니다.
+- 기존 저장 데이터에 `꼬리 질문` 문구가 있더라도 화면 표시에서는 제거하도록 공통 정리 함수를 추가했습니다.
+- 포트폴리오 게시글 상세의 면접 예상 질문은 본문에 바로 펼치지 않고 `면접 예상 질문 보기` 모달로 확인하도록 변경했습니다.
+- 포트폴리오 관리 화면의 코치 리뷰/피드백 카드에는 `전체 피드백 보기` 버튼을 항상 노출하고, 아직 피드백이 없으면 모달에서 빈 상태를 안내합니다.
+
+## 최근 변경: 포트폴리오 프로젝트 삭제와 면접 질문 preview 정리
+
+- `DELETE /portfolio/projects/{project_id}` API를 추가해 포트폴리오 프로젝트 등록을 삭제할 수 있게 했습니다.
+- 프로젝트 삭제 시 GitHub 커밋 수집 데이터, 연결된 학습 기록 관계, 해당 프로젝트 대상 코치 리뷰 요청을 함께 정리합니다.
+- 이미 발행된 포트폴리오 게시글은 게시판 기록으로 남깁니다.
+- 포트폴리오 관리 화면에 `프로젝트 삭제` 버튼과 확인 모달을 추가했습니다.
+- 면접 예상 질문 preview는 전체 답변 포인트를 펼치지 않고 질문 3개만 요약해서 보여주도록 정리했습니다.
+- 포트폴리오 게시글 상세의 `면접 예상 질문 보기` 버튼은 오른쪽 보조 영역의 최근 커밋 요약 아래로 이동했습니다.
+
+### 추가 보정
+
+- 포트폴리오 프로젝트 삭제 버튼을 상세 영역에서 제거하고, 내 프로젝트 카드의 `X` 버튼으로 이동했습니다.
+- 삭제 실패 가능성이 있던 ORM 객체 삭제를 bulk delete 방식으로 바꿔 관계 로딩 상태의 영향을 줄였습니다.
+- 면접 예상 질문 전체보기는 `InterviewQuestionsBlock` 전용 컴포넌트로 보여줍니다.
+- 질문은 굵고 조금 크게 표시하고, 답변은 `POINT` 영역 안에 묶어 같은 질문의 답변처럼 읽히게 정리했습니다.
+- 면접 질문 parser의 한글 정규식을 유니코드 escape 기반으로 바꿔 인코딩 깨짐 때문에 질문/답변 분리가 실패하는 문제를 줄였습니다.
+- 포트폴리오 관리 preview와 전체보기 modal이 같은 parser 기준을 사용하도록 정리했습니다.
+
+## 최근 변경: RAG/MCP/Agent 최소 기능 연결
+
+- AI 도우미 화면에서는 사용자가 내부 생성 방식을 고르지 않고, `포트폴리오 글 만들기`, `면접 예상 질문 만들기`만 선택하도록 정리했습니다.
+- 일반 생성, RAG 검색, Agent loop는 사용자 선택 UI가 아니라 내부 아키텍처 단계로 문서화했습니다.
+- `POST /ai/generate`는 `generation_mode`를 받아 `direct` 또는 `rag` 생성 흐름을 구분합니다.
+- `POST /ai/rag/index`는 README 원문, GitHub commit message, 연결된 학습 기록, 저장된 포트폴리오 글/면접 질문을 RAG 문서로 색인합니다.
+- `POST /ai/rag/search`는 query와 가까운 RAG 문서를 검색합니다.
+- Vector 저장소는 PostgreSQL의 `rag_documents` 테이블을 사용하며, v1에서는 `embedding_json`에 embedding을 저장하고 Python에서 cosine similarity를 계산합니다.
+- `POST /mcp`는 JSON-RPC 2.0 형태의 MCP-like endpoint입니다.
+- MCP tool은 `get_github_repository`, `get_portfolio_project`를 제공합니다.
+- `POST /ai/agent/run`은 `get_portfolio_project -> rag_search -> generate_project_content` 순서의 제한된 tool loop를 실행하고 tool call 로그를 반환합니다.
+- Agent는 `max_iterations`를 1~5로 제한해 무한 루프를 방지합니다.
+- Agent 기반 생성은 `rag_search`에서 이미 찾은 chunk를 생성 단계에 재사용합니다.
+- 따라서 같은 Agent 실행 안에서 RAG 검색과 embedding 요청이 불필요하게 두 번 발생하지 않습니다.
+- 이 구조는 tool call 로그에 남는 근거와 실제 OpenAI prompt에 들어가는 근거를 일치시키기 위한 설계입니다.
+
+### 이번 AI 단계 검증
+
+```txt
+frontend npm run build: success
+backend compileall app: success
+FastAPI app import: success
+registered AI routes: /ai/generate, /ai/rag/index, /ai/rag/search, /mcp, /ai/agent/run
+```
+
+비용 안전 기준에 따라 자동 검증에서는 실제 OpenAI 생성/embedding 호출을 반복 실행하지 않습니다.
+
+사용자 허락 후 최소 실제 QA를 1회 수행했습니다.
+
+```txt
+project: ai-board-lab
+rag_indexed_count: 10
+mcp_project_title: ai-board-lab
+agent_stopped_reason: completed
+agent_tool_calls: get_portfolio_project -> rag_search -> generate_project_content
+agent_content_length: 1142
+```
+
+이 검증으로 OpenAI embedding, RAG 검색, MCP tool, Agent loop, OpenAI generation이 과제 요구사항 흐름대로 연결됨을 확인했습니다.
+
+## 최근 변경: AI 도우미 생성 방식 UI 단순화
+
+- AI 도우미 화면에서 `일반 생성`, `RAG 기반 생성`, `Agent 기반 생성` 선택 UI를 제거했습니다.
+- 사용자는 내부 구현 방식이 아니라 `포트폴리오 글 만들기`, `면접 예상 질문 만들기` 두 작업만 선택합니다.
+- 참고 자료 영역에는 GitHub README, GitHub 커밋 메시지, 연결된 JungleLog 기록, 코치 피드백, 기존 포트폴리오 글이 AI 생성 재료로 보이도록 정리했습니다.
+- 일반 생성/RAG/Agent는 사용자 선택 옵션이 아니라 내부 아키텍처 단계로 문서화했습니다.
+- 작업 유형 버튼은 선택만 담당하고, 실제 OpenAI 호출은 별도의 `생성하기` 버튼을 눌렀을 때만 실행됩니다.
+- 내부 기본 실행은 Agent 기반으로 시도하고, 실패 시 RAG 생성, 다시 실패하면 direct 생성으로 fallback합니다.
+- 코치 리뷰 요청 생성/상태 변경이 포트폴리오 프로젝트의 코치 피드백 상태에 동기화되며, 관련 사용자에게 알림이 생성됩니다.
+- 알림 드롭다운에는 읽지 않은 알림 수 badge가 표시되고, 알림 클릭 시 읽음 처리, `x` 버튼 클릭 시 삭제됩니다.
+
+## 최근 변경: AI 생성 흐름과 알림 상태 동기화
+
+- AI 도우미는 `내 프로젝트 선택 -> AI 작업 선택 -> 참고 자료 확인 -> 생성하기 -> 결과 저장` 흐름으로 정리했습니다.
+- `포트폴리오 글 만들기`, `면접 예상 질문 만들기`는 active 상태만 바꾸며 API 호출을 하지 않습니다.
+- `생성하기`를 누르면 내부적으로 Agent 실행을 먼저 시도하고, Agent 실패 시 RAG, RAG 실패 시 direct 생성으로 fallback합니다.
+- 화면에는 내부 fallback 용어를 노출하지 않고, 개발 로그와 문서에서만 구조를 설명합니다.
+- AI 생성 완료, 포트폴리오 게시글 발행/갱신, 코치 리뷰 요청/취소/피드백 상태 변경, 신규 승인 대기 사용자 이벤트를 저장 알림으로 남깁니다.
+- 알림 API에 `DELETE /notifications/{notification_id}`를 추가해 사용자가 본인 알림을 삭제할 수 있게 했습니다.
+- 새 사용자가 Google 로그인 후 승인 대기 상태가 되면 승인 완료 관리자에게 알림이 생성됩니다.
+
+## 최근 변경: 포트폴리오 게시글 리뷰 상태 동기화 보정
+
+- 코치 리뷰 요청 화면에서 `포트폴리오 프로젝트` 탭이 아니라 `게시글` 탭의 포트폴리오 게시글을 선택해도 원본 포트폴리오 프로젝트의 코치 상태가 함께 갱신되도록 보강했습니다.
+- `portfolio_projects.published_post_id`를 기준으로 포트폴리오 게시글과 원본 프로젝트를 연결합니다.
+- 이미 생성된 리뷰 요청도 포트폴리오 목록 조회 시 최신 리뷰 상태를 기준으로 프로젝트 카드의 코치 상태를 보정합니다.
+
+## 최근 변경: 학생용 도움말 챗봇 MVP
+
+- 승인 완료된 STUDENT 화면 오른쪽 아래에 `JungleLog 도움말` floating 챗봇을 추가했습니다.
+- COACH, ADMIN, 승인 대기/정지/거절 사용자, 비로그인 사용자는 챗봇을 보지 않습니다.
+- 현재 챗봇은 OpenAI를 호출하지 않는 rule-based mock UI입니다.
+- 빠른 질문과 키워드 매칭으로 포트폴리오 관리, GitHub 프로젝트 등록, 학습 기록 연결, AI 도우미, 코치 리뷰 요청, 공개/비공개 발행 차이를 안내합니다.
+- 답변 안의 이동 버튼으로 `/portfolio`, `/posts/new`, `/my-records`, `/ai-assistant`, `/coach-review`로 바로 이동할 수 있습니다.
+- 추후 RAG/Agent 챗봇으로 확장하면 JungleLog 게시글, 포트폴리오 프로젝트, README, 커밋 메시지, 코치 피드백을 검색해 프로젝트 상담까지 확장할 예정입니다.
