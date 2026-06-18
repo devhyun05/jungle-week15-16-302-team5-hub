@@ -1,10 +1,11 @@
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Response, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.api.deps import get_bearer_token
 from app.core.config import get_settings
 from app.core.security import create_oauth_state
 from app.db.session import get_db
@@ -107,7 +108,13 @@ async def google_callback(
     except HTTPException as error:
         return redirect_to_login_with_error(str(error.detail))
 
-    response = RedirectResponse(f"{settings.frontend_url}/")
+    query_string = urlencode(
+        {
+            "accessToken": access_token,
+            "refreshToken": refresh_token,
+        }
+    )
+    response = RedirectResponse(f"{settings.frontend_url}/?{query_string}")
     response.delete_cookie(
         settings.oauth_state_cookie_name,
         secure=settings.cookie_secure,
@@ -129,7 +136,10 @@ def refresh_access_token(
         default=None,
         alias=settings.refresh_token_cookie_name,
     ),
+    authorization: str | None = Header(default=None),
 ) -> TokenRefreshResponse:
+    refresh_token = refresh_token or get_bearer_token(authorization)
+
     if refresh_token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -170,7 +180,11 @@ def refresh_access_token(
         access_token=access_token,
         refresh_token=new_refresh_token,
     )
-    return TokenRefreshResponse(message="Token refreshed.")
+    return TokenRefreshResponse(
+        message="Token refreshed.",
+        access_token=access_token,
+        refresh_token=new_refresh_token,
+    )
 
 
 @router.get("/me", response_model=UserMe)
@@ -186,7 +200,10 @@ def logout(
         default=None,
         alias=settings.refresh_token_cookie_name,
     ),
+    authorization: str | None = Header(default=None),
 ) -> dict[str, str]:
+    refresh_token = refresh_token or get_bearer_token(authorization)
+
     if refresh_token is not None:
         try:
             payload = decode_refresh_token(refresh_token)

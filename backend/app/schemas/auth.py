@@ -9,3 +9,5 @@ class AuthResponse(BaseModel):
 
 class TokenRefreshResponse(BaseModel):
     message: str
+    access_token: str | None = None
+    refresh_token: str | None = None

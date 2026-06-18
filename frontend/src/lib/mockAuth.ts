@@ -1,4 +1,11 @@
 import { useEffect, useState } from "react"
+import {
+  captureAuthTokensFromUrl,
+  clearAuthTokens,
+  getAccessToken,
+  getRefreshToken,
+  setAuthTokens,
+} from "./authTokens"
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api"
@@ -33,25 +40,49 @@ const notifyAuthChange = () => {
 }
 
 const refreshAccessToken = async () => {
+  const refreshToken = getRefreshToken()
   const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
     method: "POST",
     credentials: "include",
+    headers: {
+      ...(refreshToken ? { Authorization: `Bearer ${refreshToken}` } : {}),
+    },
   })
+
+  if (response.ok) {
+    const data = (await response.json()) as {
+      access_token?: string
+      refresh_token?: string
+    }
+    if (data.access_token && data.refresh_token) {
+      setAuthTokens(data.access_token, data.refresh_token)
+    }
+  }
 
   return response.ok
 }
 
 const fetchCurrentUser = async () => {
   try {
+    const accessToken = getAccessToken()
     let response = await fetch(`${API_BASE_URL}/auth/me`, {
       credentials: "include",
+      headers: {
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
     })
 
     if (response.status === 401) {
       const refreshed = await refreshAccessToken()
       if (refreshed) {
+        const newAccessToken = getAccessToken()
         response = await fetch(`${API_BASE_URL}/auth/me`, {
           credentials: "include",
+          headers: {
+            ...(newAccessToken
+              ? { Authorization: `Bearer ${newAccessToken}` }
+              : {}),
+          },
         })
       }
     }
@@ -72,8 +103,14 @@ export const logoutMockUser = async () => {
     await fetch(`${API_BASE_URL}/auth/logout`, {
       method: "POST",
       credentials: "include",
+      headers: {
+        ...(getRefreshToken()
+          ? { Authorization: `Bearer ${getRefreshToken()}` }
+          : {}),
+      },
     })
   } finally {
+    clearAuthTokens()
     notifyAuthChange()
   }
 }
@@ -87,6 +124,7 @@ export const useMockAuth = () => {
 
     const syncUser = async () => {
       setIsCheckingAuth(true)
+      captureAuthTokensFromUrl()
 
       const currentUser = await fetchCurrentUser()
 
