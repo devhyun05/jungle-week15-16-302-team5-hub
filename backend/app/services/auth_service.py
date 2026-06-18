@@ -1,4 +1,3 @@
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.user import User
@@ -21,10 +20,7 @@ from app.services.slack_service import lookup_slack_user_by_email
 async def login_with_google_code(db: Session, code: str) -> tuple[User, str, str]:
     google_access_token = await exchange_google_code_for_access_token(code=code)
     google_user = await fetch_google_user_info(access_token=google_access_token)
-    try:
-        slack_user = await lookup_slack_user_by_email(email=google_user.email)
-    except HTTPException:
-        slack_user = None
+    slack_user = await lookup_slack_user_by_email(email=google_user.email)
 
     user = get_or_create_user_from_google(
         db,
